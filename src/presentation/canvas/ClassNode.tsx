@@ -6,10 +6,12 @@ import { useGameStore } from '../store/useGameStore';
 import { classDragId, classDropId } from './dndIds';
 import type { ClassFlowNode } from './layoutCodebase';
 import { MethodChip } from './MethodChip';
+import { useShowDetails } from './semanticZoom';
 
 export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
   const codeClass = useGameStore((state) => findClass(state.codebase, data.classId));
   const limit = useGameStore((state) => state.stage.limits.class);
+  const showDetails = useShowDetails();
   const { setNodeRef, isOver } = useDroppable({ id: classDropId(data.classId) });
   // ヘッダーを掴むとクラスごと別ファイルへドラッグできる
   const {
@@ -39,15 +41,19 @@ export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
         {...listeners}
       >
         <span className="class-node__name">{codeClass.name}</span>
-        <span className={lines > limit ? 'line-badge line-badge--over' : 'line-badge'}>{lines}行</span>
+        {showDetails ? (
+          <span className={lines > limit ? 'line-badge line-badge--over' : 'line-badge'}>{lines}行</span>
+        ) : null}
       </div>
-      <div className="class-node__methods">
-        {codeClass.methods.length === 0 ? (
-          <div className="class-node__empty">ここにメソッドをドロップ</div>
-        ) : (
-          codeClass.methods.map((method) => <MethodChip key={method.id} method={method} />)
-        )}
-      </div>
+      {showDetails ? (
+        <div className="class-node__methods">
+          {codeClass.methods.length === 0 ? (
+            <div className="class-node__empty">ここにメソッドをドロップ</div>
+          ) : (
+            codeClass.methods.map((method) => <MethodChip key={method.id} method={method} />)
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }

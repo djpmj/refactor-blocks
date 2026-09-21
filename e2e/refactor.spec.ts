@@ -98,6 +98,31 @@ test('抽出したメソッドを別クラスへ移すと、クラス間に依�
   await expect(edge).toHaveCount(1);
 });
 
+test('ズームアウトするとファイル名とクラス名だけになり、ズームインするとメソッドと行数が戻る', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  const classNode = page.getByTestId('class-OrderService');
+  const method = page.getByTestId('method-placeOrder');
+  await expect(method).toBeVisible();
+
+  // Act
+  for (let i = 0; i < 4; i++) await page.getByRole('button', { name: 'Zoom Out' }).click();
+
+  // Assert
+  await expect(method).toHaveCount(0);
+  await expect(classNode).toContainText('OrderService');
+  await expect(classNode).not.toContainText('行');
+  await expect(page.getByTestId('file-src/order/OrderService.ts')).toContainText('src/order/OrderService.ts');
+  await expect(page.getByTestId('file-src/order/OrderService.ts')).not.toContainText('行');
+
+  // Act
+  for (let i = 0; i < 4; i++) await page.getByRole('button', { name: 'Zoom In' }).click();
+
+  // Assert
+  await expect(method).toBeVisible();
+  await expect(classNode).toContainText('行');
+});
+
 test('初期状態の点数は、行数の上限を超えた placeOrder と責務が混ざった OrderService の分だけ減点されている', async ({
   page,
 }) => {
