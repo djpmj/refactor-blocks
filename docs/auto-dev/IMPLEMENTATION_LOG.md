@@ -28,6 +28,28 @@ diffは書かず、要約と確認観点だけを書く。
 
 ## ログ一覧
 
+## 2026-09-21 21:47 (JST) — クラスの新規作成とファイルの新規作成をできるようにする
+
+- 対応タスク: docs/auto-dev/TASKS.md の「クラスの新規作成とファイルの新規作成をできるようにする」
+- コミット: f5fd511db42a76d929a5c0fc014e145ec6b39798
+- 実装内容:
+  - ドメイン層に `addClass`(クラス名はコードベース全体で重複禁止)・`addFile`(同じパスは禁止)・`moveClass` を追加した。IDはユースケース層で採番して注入する
+  - キャンバス左上(React Flow の `Panel`)に「クラス名+追加先ファイル+クラスを追加」「パス+ファイルを追加」のフォームを置いた。失敗理由はメソッドエディタ下のメッセージ欄に出る
+  - クラスのヘッダー部分を掴むと、クラスごと別ファイルへドラッグできる(ファイルの中のクラスの上に落としても、そのファイルへの移動になる)
+  - ファイルが増えたら全体が収まるよう表示し直し、クラスが空のファイルには「ここにクラスをドロップ」を出す
+  - 新しいファイルはIDがUUIDになるため、ファイルノードの `data-testid` をパス基準(`file-<path>`)に変えた
+- 変更ファイル:
+  - src/domain/codebase/addClass.ts / addFile.ts / moveClass.ts(各テストとも新規)、Codebase.ts(`findFileOfClass`)
+  - src/application/RefactorUseCases.ts / RefactorUseCases.test.ts
+  - src/presentation/canvas/CanvasToolbar.tsx(新規)、ClassNode.tsx、FileNode.tsx、CodebaseCanvas.tsx、dndIds.ts、layoutCodebase.ts
+  - src/presentation/store/useGameStore.ts、src/index.css
+  - e2e/refactor.spec.ts
+- 確認してほしいこと:
+  - ファイルを追加すると右に新しいファイルが現れ、画面全体が収まるようにズームし直されるか(ズームが急に変わって気持ち悪くないか)
+  - クラスのヘッダーを掴んでドラッグしたとき、プレビュー(クラス名の札)が出て、別ファイルに落とすと移動し、行数バッジが更新されるか
+  - クラスのヘッダーをクリックしただけではドラッグにならないか、キーボード(Tab→Space→矢印→Space)でも移動できるか
+  - クラスが空になったファイルは残る(削除機能はない)。ツールバーがキャンバス左上のノードに重なって操作しづらくないか
+
 ## 2026-09-21 20:25 (JST) — メソッドの統合(Inline Method)を追加する
 
 - 対応タスク: docs/auto-dev/TASKS.md の「メソッドの統合(Inline Method)を追加する」
