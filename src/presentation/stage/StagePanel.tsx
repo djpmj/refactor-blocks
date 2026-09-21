@@ -60,6 +60,8 @@ export function StagePanel() {
   const resetStage = useGameStore((state) => state.resetStage);
   const undo = useGameStore((state) => state.undo);
   const redo = useGameStore((state) => state.redo);
+  const startChangeRequests = useGameStore((state) => state.startChangeRequests);
+  const investigating = useGameStore((state) => state.changeSession !== null);
   const canUndo = useGameStore((state) => state.history.past.length > 0);
   const canRedo = useGameStore((state) => state.history.future.length > 0);
   const score = useMemo(() => scoreCodebase(codebase, stage), [codebase, stage]);
@@ -79,13 +81,16 @@ export function StagePanel() {
         {describeScore(score)}
       </div>
       <div className="stage-panel__actions">
-        <button type="button" onClick={undo} disabled={!canUndo} title="Ctrl+Z">
+        <button type="button" data-testid="change-request-start" onClick={startChangeRequests} disabled={investigating}>
+          変更依頼に挑戦
+        </button>
+        <button type="button" onClick={undo} disabled={!canUndo || investigating} title="Ctrl+Z">
           元に戻す
         </button>
-        <button type="button" onClick={redo} disabled={!canRedo} title="Ctrl+Y">
+        <button type="button" onClick={redo} disabled={!canRedo || investigating} title="Ctrl+Y">
           やり直し
         </button>
-        <button type="button" className="stage-panel__reset" onClick={resetStage}>
+        <button type="button" className="stage-panel__reset" onClick={resetStage} disabled={investigating}>
           最初に戻す
         </button>
       </div>

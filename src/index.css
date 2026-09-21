@@ -65,6 +65,7 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .method-chip--protected .method-chip__visibility { color: var(--protected); }
 .method-chip--over { border-color: var(--danger); }
 .method-chip--selected { border-color: var(--accent); }
+.method-chip--investigated { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 20%, var(--bg)); }
 .method-chip__visibility { font-weight: 700; }
 .method-chip__name { flex: 1; }
 .method-chip__lines { color: var(--muted); font-size: 12px; }
@@ -98,3 +99,10 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .context-menu [role="menuitem"] { display: block; width: 100%; padding: 6px 8px; border: 0; border-radius: 6px; background: transparent; color: inherit; text-align: left; cursor: pointer; font: inherit; }
 .context-menu [role="menuitem"]:hover, .context-menu [role="menuitem"]:focus-visible { background: color-mix(in srgb, var(--accent) 15%, transparent); outline: none; }
 .context-menu__form { display: flex; gap: 4px; padding: 4px; }
+.change-panel { display: flex; flex-direction: column; gap: 8px; }
+.change-panel button { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+.change-outcomes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.change-outcome { border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 13px; }
+.change-outcome__title { margin: 0 0 4px; font-size: 14px; }
+.change-outcome__reasons { margin: 4px 0 0; padding-left: 18px; color: var(--muted); }
+.change-outcome__good { margin: 4px 0 0; color: var(--muted); }

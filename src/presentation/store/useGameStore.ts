@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { evaluateChangeRequestUseCase, type ChangeOutcome } from '../../application/ChangeRequestUseCases';
 import { findMethod, type Codebase } from '../../domain/codebase/Codebase';
 import { emptyHistory, recordChange, redoHistory, undoHistory, type History, type Travel } from '../../domain/codebase/history';
 import type { Stage } from '../../domain/stage/Stage';
@@ -24,6 +25,15 @@ import {
 import type { Result } from '../../domain/shared/Result';
 import { stages } from '../../infrastructure/stages/stageCatalog';
 
+/** 変更依頼に挑戦中の状態。調査中はコードベースを編集できず、依頼を1件ずつ片付ける。 */
+export type ChangeSession = {
+  /** 今の依頼の番号(0始まり)。 */
+  readonly index: number;
+  /** 今の依頼で「変更が必要」と選んだメソッドのID。 */
+  readonly selected: readonly string[];
+  readonly outcomes: readonly ChangeOutcome[];
+};
+
 type GameState = {
   stages: readonly Stage[];
   stage: Stage;
@@ -31,6 +41,7 @@ type GameState = {
   history: History;
   selectedMethodId: string | null;
   message: string | null;
+  changeSession: ChangeSession | null;
   selectMethod: (methodId: string | null) => void;
   moveMethod: (methodId: string, targetClassId: string) => void;
   extractMethod: (input: ExtractMethodInput) => boolean;
@@ -42,6 +53,10 @@ type GameState = {
   renameFile: (fileId: string, newPath: string) => boolean;
   undo: () => void;
   redo: () => void;
+  startChangeRequests: () => void;
+  toggleInvestigated: (methodId: string) => void;
+  finishInvestigation: () => void;
+  endChangeRequests: () => void;
   resetStage: () => void;
   selectStage: (stageId: string) => void;
 };
@@ -50,21 +65,73 @@ const [firstStage] = stages;
 
 /** コードベースが変わったときだけ、変更前のものを履歴に積んで差し替える。何も変わらない操作は1手に数えない。 */
 function commit(state: GameState, codebase: Codebase): Partial<GameState> {
-  if (codebase === state.codebase) return {};
+  // 変更依頼の調査中は、調べているコードが変わらないよう編集を受け付けない
+  if (codebase === state.codebase || state.changeSession !== null) return {};
   return { codebase, history: recordChange(state.history, state.codebase) };
 }
 
 /** 操作の結果を状態の更新にする。成功したらコードベースを差し替え、失敗したら理由を出す。 */
 function applyResult<E>(state: GameState, result: Result<Codebase, E>, describe: (error: E) => string): Partial<GameState> {
+  if (state.changeSession !== null) return { message: '変更依頼の調査中は編集できません' };
   return result.ok ? { ...commit(state, result.value), message: null } : { message: describe(result.error) };
 }
 
 /** 取り消し・やり直しの結果を状態にする。選択中のメソッドがなくなっていたら選択を外す。 */
 function travelTo(state: GameState, travel: Travel | undefined): Partial<GameState> {
-  if (travel === undefined) return {};
+  if (travel === undefined || state.changeSession !== null) return {};
   const { codebase, history } = travel;
   const stillThere = state.selectedMethodId !== null && findMethod(codebase, state.selectedMethodId) !== undefined;
   return { codebase, history, selectedMethodId: stillThere ? state.selectedMethodId : null, message: null };
+}
+
+function toggleInvestigated(state: GameState, methodId: string): Partial<GameState> {
+  const session = state.changeSession;
+  if (session === null) return {};
+  const selected = session.selected.includes(methodId)
+    ? session.selected.filter((id) => id !== methodId)
+    : [...session.selected, methodId];
+  return { changeSession: { ...session, selected } };
+}
+
+/** 今の依頼を評価して結果に積み、次の依頼へ進む。 */
+function finishInvestigation(state: GameState): Partial<GameState> {
+  const session = state.changeSession;
+  const request = session === null ? undefined : state.stage.changeRequests[session.index];
+  if (session === null || request === undefined) return {};
+  const result = evaluateChangeRequestUseCase(state.stage, state.codebase, request, session.selected);
+  if (!result.ok) return { message: 'この依頼で変更が必要な場所が見つかりません' };
+  return { changeSession: { index: session.index + 1, selected: [], outcomes: [...session.outcomes, result.value] }, message: null };
+}
+
+function historyActions(set: (partial: Partial<GameState>) => void, get: () => GameState): Pick<GameState, 'undo' | 'redo'> {
+  return {
+    undo: () => {
+      set(travelTo(get(), undoHistory(get().history, get().codebase)));
+    },
+    redo: () => {
+      set(travelTo(get(), redoHistory(get().history, get().codebase)));
+    },
+  };
+}
+
+function changeSessionActions(
+  set: (partial: Partial<GameState>) => void,
+  get: () => GameState,
+): Pick<GameState, 'startChangeRequests' | 'toggleInvestigated' | 'finishInvestigation' | 'endChangeRequests'> {
+  return {
+    startChangeRequests: () => {
+      set({ changeSession: { index: 0, selected: [], outcomes: [] }, selectedMethodId: null, message: null });
+    },
+    toggleInvestigated: (methodId) => {
+      set(toggleInvestigated(get(), methodId));
+    },
+    finishInvestigation: () => {
+      set(finishInvestigation(get()));
+    },
+    endChangeRequests: () => {
+      set({ changeSession: null, message: null });
+    },
+  };
 }
 
 export const useGameStore = create<GameState>((set, get) => {
@@ -80,6 +147,7 @@ export const useGameStore = create<GameState>((set, get) => {
     history: emptyHistory(),
     selectedMethodId: null,
     message: null,
+    changeSession: null,
     selectMethod: (methodId) => {
       set({ selectedMethodId: methodId, message: null });
     },
@@ -112,19 +180,15 @@ export const useGameStore = create<GameState>((set, get) => {
     renameFile: (fileId, newPath) => {
       return apply(renameFileUseCase(get().codebase, fileId, newPath), describeRenameFileError);
     },
-    undo: () => {
-      set(travelTo(get(), undoHistory(get().history, get().codebase)));
-    },
-    redo: () => {
-      set(travelTo(get(), redoHistory(get().history, get().codebase)));
-    },
+    ...historyActions(set, get),
+    ...changeSessionActions(set, get),
     // 「最初に戻す」も1手として記録し、取り消しで戻せるようにする
     resetStage: () => {
       set({ ...commit(get(), get().stage.codebase), selectedMethodId: null, message: null });
     },
     selectStage: (stageId) => {
       const stage = stages.find((candidate) => candidate.id === stageId);
-      if (stage !== undefined) set({ stage, codebase: stage.codebase, history: emptyHistory(), selectedMethodId: null, message: null });
+      if (stage !== undefined) set({ stage, codebase: stage.codebase, history: emptyHistory(), selectedMethodId: null, message: null, changeSession: null });
     },
   };
 });

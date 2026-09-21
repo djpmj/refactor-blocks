@@ -15,6 +15,10 @@ const cyclicDependencyStage: Stage = {
   limits: { method: 50, class: 200, file: 300 },
   dependencyLimit: 2,
   responsibilityLimit: 4,
+  changeRequests: [
+    { id: 'req-price-rule', title: '価格の計算ルールを変えて', description: 'セール期間中は、明細の小計に期間限定の値引きを反映したい。', responsibility: 'pricing', linesPerSite: 8 },
+    { id: 'req-member-discount', title: '会員割引の条件を変えて', description: '会員ランクごとの割引率を見直すことになった。', responsibility: 'discount', linesPerSite: 6 },
+  ],
   codebase: {
     files: [
       {
@@ -119,6 +123,10 @@ const godFileStage: Stage = {
   limits: { method: 100, class: 180, file: 300 },
   dependencyLimit: 2,
   responsibilityLimit: 2,
+  changeRequests: [
+    { id: 'req-shipping-rule', title: '送料のルールを変えて', description: '離島への配送に追加料金がかかるようになった。', responsibility: 'shipping', linesPerSite: 8 },
+    { id: 'req-points-rule', title: 'ポイントのルールを変えて', description: 'ポイントの有効期限を1年から2年に延ばし、付与も見直す。', responsibility: 'points', linesPerSite: 6 },
+  ],
   codebase: {
     files: [
       {

@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { findChangeSites } from '../../domain/change/findChangeSites';
+import { measureChange } from '../../domain/change/measureChange';
+import { averageScore, scoreChange } from '../../domain/change/scoreChange';
 import { addClass } from '../../domain/codebase/addClass';
 import { addFile } from '../../domain/codebase/addFile';
 import { allClasses, type Codebase } from '../../domain/codebase/Codebase';
@@ -147,6 +150,23 @@ function longestMethodLines(codebase: Codebase): number {
   return Math.max(...methods.map((method) => methodLines(method)));
 }
 
+function changeReadiness(stage: Stage, codebase: Codebase): number {
+  const scores = stage.changeRequests.map((request) => scoreChange(unwrap(measureChange(codebase, request, stage.limits))));
+  return averageScore(scores);
+}
+
+function classesTouchedPerRequest(stage: Stage, codebase: Codebase): number[] {
+  return stage.changeRequests.map((request) => unwrap(measureChange(codebase, request, stage.limits)).classesTouched);
+}
+
+function isNoWorse(before: readonly number[], after: readonly number[]): boolean {
+  return after.every((count, index) => count <= (before[index] ?? 0));
+}
+
+function allRequestsHaveSites(stage: Stage): boolean {
+  return stage.changeRequests.every((request) => findChangeSites(stage.codebase, request).length > 0);
+}
+
 function allIds(stage: Stage): string[] {
   const { files } = stage.codebase;
   const classes = allClasses(stage.codebase);
@@ -243,6 +263,42 @@ describe('stageCatalog', () => {
 
       // Assert
       expect(scoreCodebase(solved, stage)).toEqual(expect.objectContaining({ total: 100 }));
+    });
+
+    it('変更依頼が2件以上あり、どれも初期のコードに変更箇所がある', () => {
+      // Arrange
+      const { changeRequests } = stage;
+
+      // Act
+      const everyRequestHasSites = allRequestsHaveSites(stage);
+
+      // Assert
+      expect(changeRequests.length).toBeGreaterThanOrEqual(2);
+      expect(everyRequestHasSites).toBe(true);
+    });
+
+    it('模範解答にすると、変更依頼のコストが初期状態より下がる(変更容易性スコアが上がる)', () => {
+      // Arrange
+      const solved = applySteps(stage, solutions[stage.id] ?? []);
+
+      // Act
+      const before = changeReadiness(stage, stage.codebase);
+      const after = changeReadiness(stage, solved);
+
+      // Assert
+      expect(after).toBeGreaterThan(before);
+    });
+
+    it('模範解答にしても、変更が必要なクラスの数は初期状態より増えない', () => {
+      // Arrange
+      const solved = applySteps(stage, solutions[stage.id] ?? []);
+
+      // Act
+      const before = classesTouchedPerRequest(stage, stage.codebase);
+      const after = classesTouchedPerRequest(stage, solved);
+
+      // Assert
+      expect(isNoWorse(before, after)).toBe(true);
     });
   });
 

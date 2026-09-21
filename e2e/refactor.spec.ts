@@ -385,3 +385,94 @@ test('メソッドをドラッグで移したあと Ctrl+Z で元のクラスに
   await page.getByRole('button', { name: '元に戻す' }).click();
   await expect(moved).toBeVisible();
 });
+
+/** 変更依頼の調査で、依頼ごとに選ぶメソッドを順にクリックして「調査を終える」を押す。 */
+async function investigateRequests(page: Page, methodNamesPerRequest: readonly (readonly string[])[]) {
+  await page.getByTestId('change-request-start').click();
+  for (const methodNames of methodNamesPerRequest) {
+    for (const name of methodNames) await page.getByTestId(`method-${name}`).click();
+    await page.getByTestId('change-request-finish').click();
+  }
+}
+
+async function readinessOf(page: Page, kind: 'current' | 'initial'): Promise<number> {
+  const text = await page.getByTestId(`change-readiness-${kind}`).innerText();
+  return Number.parseInt(text, 10);
+}
+
+test('変更依頼に挑戦し、変更が必要なメソッドを選んで調査を終えると、点数と理由が出る', async ({ page }) => {
+  // Arrange
+  await openOrderStage(page);
+
+  // Act
+  await page.getByTestId('change-request-start').click();
+  await expect(page.getByTestId('change-request-title')).toHaveText('軽減税率の対象を増やして');
+  await page.getByTestId('method-placeOrder').click();
+  await expect(page.getByTestId('method-placeOrder')).toHaveAttribute('data-investigated', 'true');
+  await page.getByTestId('change-request-finish').click();
+  await page.getByTestId('method-placeOrder').click();
+  await page.getByTestId('change-request-finish').click();
+  await page.getByTestId('method-placeOrder').click();
+  await page.getByTestId('change-request-finish').click();
+
+  // Assert
+  const outcome = page.getByTestId('change-outcome-req-reduced-tax');
+  await expect(outcome.getByTestId('outcome-current')).toHaveText('70点');
+  await expect(outcome).toContainText('巻き込み');
+  await expect(outcome).toContainText('上限超え');
+  await expect(page.getByTestId('change-readiness')).toBeVisible();
+});
+
+test('調査で変更が必要なメソッドを選び漏らすと、修正漏れとして減点される', async ({ page }) => {
+  // Arrange
+  await openOrderStage(page);
+
+  // Act(何も選ばずに終える)
+  await investigateRequests(page, [[], ['placeOrder'], ['placeOrder']]);
+
+  // Assert
+  const outcome = page.getByTestId('change-outcome-req-reduced-tax');
+  await expect(outcome.getByTestId('outcome-current')).toHaveText('60点');
+  await expect(outcome).toContainText('修正漏れ');
+});
+
+test('責務を分けたあとで同じ依頼を受けると、初期状態より変更容易性スコアが高くなる', async ({ page }) => {
+  // Arrange
+  await openOrderStage(page);
+  await page.getByTestId('method-placeOrder').click();
+  await page.getByLabel('消費税を計算する(軽減税率あり)').check();
+  await page.getByLabel('新しいメソッド名').fill('calculateTax');
+  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+  const from = await page.getByTestId('method-calculateTax').boundingBox();
+  const to = await page.getByTestId('class-TaxCalculator').boundingBox();
+  if (from === null || to === null) throw new Error('要素の位置を取得できません');
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(from.x + from.width / 2 + 20, from.y + from.height / 2, { steps: 5 });
+  await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 15 });
+  await page.mouse.up();
+  await expect(page.getByTestId('class-TaxCalculator').getByTestId('method-calculateTax')).toBeVisible();
+
+  // Act
+  await investigateRequests(page, [['calculateTax'], ['placeOrder'], ['placeOrder']]);
+
+  // Assert
+  await expect(page.getByTestId('change-outcome-req-reduced-tax').getByTestId('outcome-current')).toHaveText('95点');
+  expect(await readinessOf(page, 'current')).toBeGreaterThan(await readinessOf(page, 'initial'));
+});
+
+test('結果画面から戻ると、キャンバスは変更依頼を当てる前の状態のままで、編集を再開できる', async ({ page }) => {
+  // Arrange
+  await openOrderStage(page);
+  const before = await page.getByTestId('method-placeOrder').innerText();
+  await investigateRequests(page, [['placeOrder'], ['placeOrder'], ['placeOrder']]);
+
+  // Act
+  await page.getByTestId('change-request-close').click();
+
+  // Assert
+  await expect(page.getByTestId('change-panel')).toHaveCount(0);
+  expect(await page.getByTestId('method-placeOrder').innerText()).toBe(before);
+  await page.getByTestId('method-placeOrder').click();
+  await expect(page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' })).toBeVisible();
+});

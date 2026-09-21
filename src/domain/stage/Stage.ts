@@ -1,3 +1,4 @@
+import type { ChangeRequest } from '../change/ChangeRequest';
 import type { Codebase } from '../codebase/Codebase';
 import type { LineLimits } from '../scoring/lineLimits';
 
@@ -17,4 +18,6 @@ export type Stage = {
   /** 1クラスに混ぜてよい責務(Fragment の responsibility)の種類数の上限。 */
   readonly responsibilityLimit: number;
   readonly codebase: Codebase;
+  /** リファクタリング後に出す変更依頼。責務は初期のコードベースに存在するものを選ぶ。 */
+  readonly changeRequests: readonly ChangeRequest[];
 };
