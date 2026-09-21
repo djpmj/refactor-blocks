@@ -30,6 +30,24 @@ test('処理を選ぶと、選んだ処理に合わせてメソッド名が自�
   await expect(page.getByTestId('class-OrderService').getByTestId('method-validateItemsAndStock')).toBeVisible();
 });
 
+test('抽出したメソッドを「呼び出し元へ戻す」と、処理が元のメソッドに戻りメソッドが消える', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await page.getByTestId('method-placeOrder').click();
+  await page.getByLabel('消費税を計算する(軽減税率あり)').check();
+  await page.getByLabel('新しいメソッド名').fill('calculateTax');
+  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+  await page.getByTestId('method-calculateTax').click();
+
+  // Act
+  await page.getByRole('button', { name: '呼び出し元へ戻す' }).click();
+
+  // Assert
+  await expect(page.getByTestId('method-calculateTax')).toHaveCount(0);
+  await expect(page.getByLabel('消費税を計算する(軽減税率あり)')).toBeVisible();
+  await expect(page.getByRole('heading', { name: /OrderService\.placeOrder\(\)/ })).toBeVisible();
+});
+
 test('メソッドを別クラスへドラッグ&ドロップすると移動する', async ({ page }) => {
   // Arrange
   await page.goto('/');

@@ -19,6 +19,11 @@ export type ExtractMethodError =
 /** 抽出した処理の代わりに元のメソッドに残る「呼び出し」1行。 */
 const CALL_LINES = 1;
 
+/** 抽出したメソッドの呼び出し行のID。Inline Method で呼び出し元を探すときにも使う。 */
+export function callFragmentId(methodId: string): string {
+  return `${methodId}:call`;
+}
+
 function validate(codebase: Codebase, request: ExtractMethodRequest): Result<Method, ExtractMethodError> {
   const source = findMethod(codebase, request.sourceMethodId);
   const owner = findClassOfMethod(codebase, request.sourceMethodId);
@@ -65,7 +70,7 @@ export function extractMethod(codebase: Codebase, request: ExtractMethodRequest)
     fragments: source.fragments.filter((fragment) => selected.has(fragment.id)),
   };
   const callFragment: Fragment = {
-    id: `${request.newMethodId}:call`,
+    id: callFragmentId(request.newMethodId),
     label: `${name}() を呼び出す`,
     lines: CALL_LINES,
     responsibility: 'call',

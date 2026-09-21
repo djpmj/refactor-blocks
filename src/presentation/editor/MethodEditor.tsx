@@ -44,6 +44,7 @@ function FragmentList({
 function MethodEditorBody({ method }: Readonly<{ method: Method }>) {
   const owner = useGameStore((state) => findClassOfMethod(state.codebase, method.id));
   const extractMethod = useGameStore((state) => state.extractMethod);
+  const inlineMethod = useGameStore((state) => state.inlineMethod);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   // null のあいだは選んだ処理から名前を自動で考え、プレイヤーが入力したらその名前を優先する
   const [customName, setCustomName] = useState<string | null>(null);
@@ -81,6 +82,16 @@ function MethodEditorBody({ method }: Readonly<{ method: Method }>) {
           選んだ処理をメソッドとして抽出
         </button>
       </div>
+      {method.visibility === 'private' ? (
+        <button
+          type="button"
+          onClick={() => {
+            inlineMethod(method.id);
+          }}
+        >
+          呼び出し元へ戻す
+        </button>
+      ) : null}
     </>
   );
 }

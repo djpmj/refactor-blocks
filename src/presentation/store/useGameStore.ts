@@ -3,8 +3,10 @@ import type { Codebase } from '../../domain/codebase/Codebase';
 import type { Stage } from '../../domain/stage/Stage';
 import {
   describeExtractError,
+  describeInlineError,
   describeMoveError,
   extractMethodUseCase,
+  inlineMethodUseCase,
   moveMethodUseCase,
   type ExtractMethodInput,
 } from '../../application/RefactorUseCases';
@@ -18,6 +20,7 @@ type GameState = {
   selectMethod: (methodId: string | null) => void;
   moveMethod: (methodId: string, targetClassId: string) => void;
   extractMethod: (input: ExtractMethodInput) => boolean;
+  inlineMethod: (methodId: string) => void;
   resetStage: () => void;
 };
 
@@ -37,6 +40,14 @@ export const useGameStore = create<GameState>((set, get) => ({
     const result = extractMethodUseCase(get().codebase, input, () => crypto.randomUUID());
     set(result.ok ? { codebase: result.value, message: null } : { message: describeExtractError(result.error) });
     return result.ok;
+  },
+  inlineMethod: (methodId) => {
+    const result = inlineMethodUseCase(get().codebase, methodId);
+    set(
+      result.ok
+        ? { codebase: result.value.codebase, selectedMethodId: result.value.callerId, message: null }
+        : { message: describeInlineError(result.error) },
+    );
   },
   resetStage: () => {
     set({ codebase: get().stage.codebase, selectedMethodId: null, message: null });
