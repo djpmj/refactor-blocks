@@ -18,12 +18,13 @@ export type Score = {
 };
 
 const FULL_SCORE = 100;
-const POINTS_PER_VIOLATION = 10;
+export const POINTS_PER_VIOLATION = 10;
 
-function countCouplingViolations(dependencies: readonly ClassDependency[], dependencyLimit: number): number {
+/** 依存先が上限より多いクラスのIDを返す。 */
+export function findCouplingViolations(dependencies: readonly ClassDependency[], dependencyLimit: number): string[] {
   const countByClass = new Map<string, number>();
   for (const { from } of dependencies) countByClass.set(from, (countByClass.get(from) ?? 0) + 1);
-  return [...countByClass.values()].filter((count) => count > dependencyLimit).length;
+  return [...countByClass].filter(([, count]) => count > dependencyLimit).map(([classId]) => classId);
 }
 
 /** 行数・結合度・循環依存・責務の混在の違反1件につき10点を100点から引く。0点より下にはしない。 */
@@ -34,7 +35,7 @@ export function scoreCodebase(
   const dependencies = classDependencies(codebase);
   const counts: Record<ScoreRule, number> = {
     'line-limit': findLineLimitViolations(codebase, stage.limits).length,
-    coupling: countCouplingViolations(dependencies, stage.dependencyLimit),
+    coupling: findCouplingViolations(dependencies, stage.dependencyLimit).length,
     cycle: dependencies.filter((dependency) => dependency.cyclic).length,
     responsibility: findResponsibilityViolations(codebase, stage.responsibilityLimit).length,
   };

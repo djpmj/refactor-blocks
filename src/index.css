@@ -69,6 +69,7 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 
 .line-badge { font-size: 12px; font-weight: 400; color: var(--muted); }
 .line-badge--over { color: var(--danger); font-weight: 700; }
+.file-mark { font-size: 14px; margin-right: 6px; }
 
 .method-editor { width: 360px; padding: 16px; background: var(--surface); border-left: 1px solid var(--border); overflow-y: auto; }
 .method-editor__title { font-size: 15px; font-family: ui-monospace, monospace; }

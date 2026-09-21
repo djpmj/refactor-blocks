@@ -1,14 +1,27 @@
 import { useDroppable } from '@dnd-kit/core';
 import type { NodeProps } from '@xyflow/react';
 import { fileLines } from '../../domain/codebase/lineCount';
+import { fileDeductions, fileSeverity, type FileSeverity } from '../../domain/scoring/fileScores';
 import { useGameStore } from '../store/useGameStore';
 import { fileDropId } from './dndIds';
 import type { FileFlowNode } from './layoutCodebase';
 import { useShowDetails } from './semanticZoom';
 
+/** 修正が必要なファイルの印。色だけに頼らずアイコンとラベルでも伝える。ズームで詳細を隠していても出す。 */
+function FileMark({ severity, points }: Readonly<{ severity: FileSeverity; points: number }>) {
+  if (severity === 'ok') return null;
+  const label = severity === 'danger' ? `危険: -${points}点` : `修正が必要: -${points}点`;
+  return (
+    <span className="file-mark" role="img" aria-label={label} title={label} data-testid="file-mark" data-severity={severity}>
+      {severity === 'danger' ? '⛔' : '⚠️'}
+    </span>
+  );
+}
+
 export function FileNode({ data }: Readonly<NodeProps<FileFlowNode>>) {
   const file = useGameStore((state) => state.codebase.files.find((candidate) => candidate.id === data.fileId));
   const limit = useGameStore((state) => state.stage.limits.file);
+  const points = useGameStore((state) => fileDeductions(state.codebase, state.stage).get(data.fileId) ?? 0);
   const { setNodeRef, isOver } = useDroppable({ id: fileDropId(data.fileId) });
   const showDetails = useShowDetails();
   if (file === undefined) return null;
@@ -24,6 +37,7 @@ export function FileNode({ data }: Readonly<NodeProps<FileFlowNode>>) {
           📄
         </span>
         <span className="file-node__path">{file.path}</span>
+        <FileMark severity={fileSeverity(points)} points={points} />
         {showDetails ? (
           <span className={lines > limit ? 'line-badge line-badge--over' : 'line-badge'}>{lines}行</span>
         ) : null}

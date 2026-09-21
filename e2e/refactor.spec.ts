@@ -159,6 +159,8 @@ test('初期状態の点数は、行数の上限を超えた placeOrder と責�
   await expect(page.getByTestId('score')).toContainText('80点');
   await expect(page.getByTestId('score')).toContainText('行数 -10');
   await expect(page.getByTestId('score')).toContainText('責務の混在 -10');
+  await expect(page.getByTestId('file-src/order/OrderService.ts').getByTestId('file-mark')).toBeVisible();
+  await expect(page.getByTestId('file-src/tax/TaxCalculator.ts').getByTestId('file-mark')).toHaveCount(0);
 });
 
 test('税の計算を抽出して TaxCalculator へ移すと、責務の混在の減点が消える', async ({ page }) => {
@@ -169,6 +171,8 @@ test('税の計算を抽出して TaxCalculator へ移すと、責務の混在�
   await page.getByLabel('新しいメソッド名').fill('calculateTax');
   await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
   await expect(page.getByTestId('score')).toContainText('責務の混在 -10');
+  const mark = page.getByTestId('file-src/order/OrderService.ts').getByTestId('file-mark');
+  await expect(mark).toHaveAttribute('aria-label', /-20点/);
   const source = page.getByTestId('method-calculateTax');
   const target = page.getByTestId('class-TaxCalculator');
 
@@ -185,6 +189,7 @@ test('税の計算を抽出して TaxCalculator へ移すと、責務の混在�
   // Assert
   await expect(target.getByTestId('method-calculateTax')).toBeVisible();
   await expect(page.getByTestId('score')).not.toContainText('責務の混在');
+  await expect(mark).not.toHaveAttribute('aria-label', /-20点/);
 });
 
 test('クラスとファイルを追加し、クラスを新しいファイルへドラッグ&ドロップで移せる', async ({ page }) => {

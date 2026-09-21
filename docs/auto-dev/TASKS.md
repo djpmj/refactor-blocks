@@ -50,7 +50,7 @@ Claude Codeがこのファイルを上から順に読み、`### [ ]` の未完�
 - 関連ファイル: `src/presentation/canvas/layoutCodebase.ts`(`dependencyEdges`)、
   `src/presentation/canvas/ClassNode.tsx`、`src/presentation/canvas/CodebaseCanvas.tsx`
 
-### [ ] 修正が必要なファイルにエラーマーク・危険マークを付ける
+### [x] 修正が必要なファイルにエラーマーク・危険マークを付ける
 
 - 背景・目的: 画面上部の点数(例: 60点)だけでは、どのファイルから手を付ければよいか分からない。
   ファイルの箱に印を付け、「直すべき場所」と「特に悪い場所」をひと目で分かるようにしたい。
