@@ -90,11 +90,31 @@ function useFlowOverrides(stageId: string) {
   return { overrides, handleNodesChange };
 }
 
+/** ドロップ先に応じた移動を行う。ファイルの枠外に落としたら、新しいファイル(メソッドなら新しいクラスも)を自動で作って置く。 */
+function useDropHandler(codebase: Codebase, onEnd: () => void) {
+  const moveMethod = useGameStore((state) => state.moveMethod);
+  const moveClass = useGameStore((state) => state.moveClass);
+  const moveClassToNewFile = useGameStore((state) => state.moveClassToNewFile);
+  const moveMethodToNewClass = useGameStore((state) => state.moveMethodToNewClass);
+  return (event: DragEndEvent) => {
+    onEnd();
+    const methodId = parseMethodDragId(event.active.id);
+    const classId = parseClassDragId(event.active.id);
+    if (event.over === null) {
+      if (methodId !== null) moveMethodToNewClass(methodId);
+      if (classId !== null) moveClassToNewFile(classId);
+      return;
+    }
+    const targetClassId = parseClassDropId(event.over.id);
+    if (methodId !== null && targetClassId !== null) moveMethod(methodId, targetClassId);
+    const targetFileId = dropTargetFileId(codebase, event.over.id);
+    if (classId !== null && targetFileId !== undefined) moveClass(classId, targetFileId);
+  };
+}
+
 export function CodebaseCanvas() {
   const codebase = useGameStore((state) => state.codebase);
   const stageId = useGameStore((state) => state.stage.id);
-  const moveMethod = useGameStore((state) => state.moveMethod);
-  const moveClass = useGameStore((state) => state.moveClass);
   const { overrides, handleNodesChange } = useFlowOverrides(stageId);
   const nodes = useMemo(() => arrangeNodes(layoutCodebase(codebase), overrides), [codebase, overrides]);
   const edges = useMemo(() => dependencyEdges(codebase), [codebase]);
@@ -106,16 +126,9 @@ export function CodebaseCanvas() {
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id);
   };
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = useDropHandler(codebase, () => {
     setActiveId(null);
-    if (event.over === null) return;
-    const methodId = parseMethodDragId(event.active.id);
-    const targetClassId = parseClassDropId(event.over.id);
-    if (methodId !== null && targetClassId !== null) moveMethod(methodId, targetClassId);
-    const classId = parseClassDragId(event.active.id);
-    const targetFileId = dropTargetFileId(codebase, event.over.id);
-    if (classId !== null && targetFileId !== undefined) moveClass(classId, targetFileId);
-  };
+  });
 
   return (
     <DndContext

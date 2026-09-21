@@ -16,7 +16,10 @@ import {
   describeRenameFileError,
   extractMethodUseCase,
   inlineMethodUseCase,
+  describeMoveOutError,
+  moveClassToNewFileUseCase,
   moveClassUseCase,
+  moveMethodToNewClassUseCase,
   moveMethodUseCase,
   renameClassUseCase,
   renameFileUseCase,
@@ -59,6 +62,8 @@ type GameState = {
   addClass: (fileId: string, className: string) => boolean;
   addFile: (path: string) => boolean;
   moveClass: (classId: string, targetFileId: string) => void;
+  moveClassToNewFile: (classId: string) => void;
+  moveMethodToNewClass: (methodId: string) => void;
   renameClass: (classId: string, newName: string) => boolean;
   renameFile: (fileId: string, newPath: string) => boolean;
   undo: () => void;
@@ -151,6 +156,30 @@ function changeSessionActions(
   };
 }
 
+type Apply = <E>(result: Result<Codebase, E>, describe: (error: E) => string) => boolean;
+
+/** ドラッグ&ドロップによる移動系の操作。 */
+function moveActions(
+  apply: Apply,
+  get: () => GameState,
+): Pick<GameState, 'moveMethod' | 'moveClass' | 'moveClassToNewFile' | 'moveMethodToNewClass'> {
+  const newId = () => crypto.randomUUID();
+  return {
+    moveMethod: (methodId, targetClassId) => {
+      apply(moveMethodUseCase(get().codebase, methodId, targetClassId), describeMoveError);
+    },
+    moveClass: (classId, targetFileId) => {
+      apply(moveClassUseCase(get().codebase, classId, targetFileId), describeMoveClassError);
+    },
+    moveClassToNewFile: (classId) => {
+      apply(moveClassToNewFileUseCase(get().codebase, classId, newId), describeMoveOutError);
+    },
+    moveMethodToNewClass: (methodId) => {
+      apply(moveMethodToNewClassUseCase(get().codebase, methodId, newId), describeMoveOutError);
+    },
+  };
+}
+
 export const useGameStore = create<GameState>((set, get) => {
   /** 操作の結果を反映し、成功したかを返す。 */
   const apply = <E>(result: Result<Codebase, E>, describe: (error: E) => string): boolean => {
@@ -169,9 +198,6 @@ export const useGameStore = create<GameState>((set, get) => {
     selectMethod: (methodId) => {
       set({ selectedMethodId: methodId, message: null });
     },
-    moveMethod: (methodId, targetClassId) => {
-      apply(moveMethodUseCase(get().codebase, methodId, targetClassId), describeMoveError);
-    },
     extractMethod: (input) => {
       return apply(extractMethodUseCase(get().codebase, input, () => crypto.randomUUID()), describeExtractError);
     },
@@ -189,15 +215,13 @@ export const useGameStore = create<GameState>((set, get) => {
     addFile: (path) => {
       return apply(addFileUseCase(get().codebase, path, () => crypto.randomUUID()), describeAddFileError);
     },
-    moveClass: (classId, targetFileId) => {
-      apply(moveClassUseCase(get().codebase, classId, targetFileId), describeMoveClassError);
-    },
     renameClass: (classId, newName) => {
       return apply(renameClassUseCase(get().codebase, classId, newName), describeRenameClassError);
     },
     renameFile: (fileId, newPath) => {
       return apply(renameFileUseCase(get().codebase, fileId, newPath), describeRenameFileError);
     },
+    ...moveActions(apply, get),
     ...historyActions(set, get),
     ...changeSessionActions(set, get),
     // 「最初に戻す」も1手として記録し、取り消しで戻せるようにする

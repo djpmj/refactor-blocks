@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { findMethod } from '../domain/codebase/Codebase';
+import { findClassOfMethod, findFileOfClass, findMethod } from '../domain/codebase/Codebase';
 import { sampleCodebase } from '../domain/codebase/testFixtures';
 import {
   addClassUseCase,
@@ -15,6 +15,8 @@ import {
   extractMethodUseCase,
   inlineMethodUseCase,
   moveClassUseCase,
+  moveClassToNewFileUseCase,
+  moveMethodToNewClassUseCase,
   moveMethodUseCase,
   renameClassUseCase,
   renameFileUseCase,
@@ -221,5 +223,33 @@ describe('エラーメッセージ', () => {
       '名前を変えるクラスが見つかりません',
       '名前を変えるファイルが見つかりません',
     ]);
+  });
+});
+
+describe('moveClassToNewFileUseCase / moveMethodToNewClassUseCase', () => {
+  it('クラスを注入されたIDの新しいファイルへ移す', () => {
+    // Arrange
+    const codebase = sampleCodebase();
+
+    // Act
+    const result = moveClassToNewFileUseCase(codebase, 'class-tax', () => 'generated-file');
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    expect(findFileOfClass(result.value, 'class-tax')?.id).toBe('generated-file');
+  });
+
+  it('メソッドを注入されたIDの新しいクラスとファイルへ移す', () => {
+    // Arrange
+    const codebase = sampleCodebase();
+    const ids = ['generated-class', 'generated-file'];
+
+    // Act
+    const result = moveMethodToNewClassUseCase(codebase, 'method-place', () => ids.shift() ?? '');
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    expect(findClassOfMethod(result.value, 'method-place')?.id).toBe('generated-class');
+    expect(findFileOfClass(result.value, 'generated-class')?.id).toBe('generated-file');
   });
 });

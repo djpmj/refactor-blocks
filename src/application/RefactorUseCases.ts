@@ -4,6 +4,7 @@ import type { Codebase } from '../domain/codebase/Codebase';
 import { extractMethod, type ExtractMethodError } from '../domain/codebase/extractMethod';
 import { findCallerOf, inlineMethod, type InlineMethodError } from '../domain/codebase/inlineMethod';
 import { moveClass, type MoveClassError } from '../domain/codebase/moveClass';
+import { moveClassToNewFile, moveMethodToNewClass, type MoveClassToNewFileError, type MoveMethodToNewClassError } from '../domain/codebase/moveToNewHome';
 import { moveMethod, type MoveMethodError } from '../domain/codebase/moveMethod';
 import { renameClass, type RenameClassError } from '../domain/codebase/renameClass';
 import { renameFile, type RenameFileError } from '../domain/codebase/renameFile';
@@ -77,6 +78,24 @@ export function moveClassUseCase(
   return error === 'same-file' ? ok(codebase) : err(error);
 }
 
+/** プレイヤーの「クラスをファイルの枠外へドロップ」操作。新しいファイルを自動で作ってクラスを置く。 */
+export function moveClassToNewFileUseCase(
+  codebase: Codebase,
+  classId: string,
+  generateId: IdGenerator,
+): Result<Codebase, MoveClassToNewFileError> {
+  return moveClassToNewFile(codebase, classId, generateId());
+}
+
+/** プレイヤーの「メソッドをファイルの枠外へドロップ」操作。新しいファイルとクラスを自動で作ってメソッドを置く。 */
+export function moveMethodToNewClassUseCase(
+  codebase: Codebase,
+  methodId: string,
+  generateId: IdGenerator,
+): Result<Codebase, MoveMethodToNewClassError> {
+  return moveMethodToNewClass(codebase, methodId, { classId: generateId(), fileId: generateId() });
+}
+
 /** プレイヤーの「クラス名を変更」操作。 */
 export function renameClassUseCase(codebase: Codebase, classId: string, newName: string): Result<Codebase, RenameClassError> {
   return renameClass(codebase, classId, newName);
@@ -135,6 +154,10 @@ const MOVE_CLASS_ERROR_MESSAGES: Record<Exclude<MoveClassError, 'same-file'>, st
   'class-not-found': 'クラスが見つかりません',
   'file-not-found': '移動先のファイルが見つかりません',
 };
+
+export function describeMoveOutError(error: MoveClassToNewFileError | MoveMethodToNewClassError): string {
+  return error === 'class-not-found' ? 'クラスが見つかりません' : 'メソッドが見つかりません';
+}
 
 export function describeExtractError(error: ExtractMethodError): string {
   return EXTRACT_ERROR_MESSAGES[error];

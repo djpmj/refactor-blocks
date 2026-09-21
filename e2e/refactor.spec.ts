@@ -589,3 +589,47 @@ test('ファイルの箱をドラッグして位置をずらせる', async ({ pa
   const after = await file.boundingBox();
   expect(after?.y).toBeGreaterThan(before.y + 50);
 });
+
+/** 要素をつかんで、キャンバスの右下の余白(どのファイルの枠外)へドラッグして離す。 */
+async function dragToEmptyCanvas(page: Page, testId: string) {
+  const from = await page.getByTestId(testId).boundingBox();
+  const pane = await page.locator('.react-flow__pane').boundingBox();
+  if (from === null || pane === null) throw new Error('要素の位置を取得できません');
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(from.x + from.width / 2 + 20, from.y + from.height / 2, { steps: 5 });
+  await page.mouse.move(pane.x + pane.width - 20, pane.y + pane.height - 20, { steps: 15 });
+  await page.mouse.up();
+}
+
+test('クラスをファイルの枠外へドラッグすると、新しいファイルが作られてそこに置かれる', async ({ page }) => {
+  // Arrange
+  await openOrderStage(page);
+  await page.getByTestId('method-placeOrder').click();
+  await page.getByLabel('消費税を計算する(軽減税率あり)').check();
+  await page.getByLabel('新しいメソッド名').fill('calculateTax');
+  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+
+  // Act
+  await dragToEmptyCanvas(page, 'class-header-TaxCalculator');
+
+  // Assert
+  await expect(page.getByTestId('file-src/TaxCalculator.ts')).toBeVisible();
+  await expect(page.getByTestId('class-TaxCalculator')).toBeVisible();
+});
+
+test('メソッドをファイルの枠外へドラッグすると、新しいファイルとクラスが作られてそこに置かれる', async ({ page }) => {
+  // Arrange
+  await openOrderStage(page);
+  await page.getByTestId('method-placeOrder').click();
+  await page.getByLabel('消費税を計算する(軽減税率あり)').check();
+  await page.getByLabel('新しいメソッド名').fill('calculateTax');
+  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+
+  // Act
+  await dragToEmptyCanvas(page, 'method-calculateTax');
+
+  // Assert
+  await expect(page.getByTestId('class-NewClass').getByTestId('method-calculateTax')).toBeVisible();
+  await expect(page.getByTestId('file-src/NewClass.ts')).toBeVisible();
+});
