@@ -28,6 +28,27 @@ diffは書かず、要約と確認観点だけを書く。
 
 ## ログ一覧
 
+## 2026-09-22 01:10 (JST) — ファイルとクラスの名前を変更(Rename)できるようにする
+
+- 対応タスク: docs/auto-dev/TASKS.md の「ファイルとクラスの名前を変更(Rename)できるようにする」
+- コミット: 7aaa584ace19ffc788da2bf1a9f67a789c02dd51
+- 実装内容:
+  - `renameClass` / `renameFile`(`domain/codebase/`)を追加。前後の空白除去・空/重複はエラー・同じ名前は元のまま成功・存在しないIDはエラー
+  - 追加と名前変更で同じ検証を使うよう `naming.ts`(`validateClassName` / `validateFilePath`)に共通化し、`addClass` / `addFile` もそれを使う形に変更
+  - ユースケース・エラーメッセージ・ストアの `renameClass` / `renameFile` を追加。ストアの結果反映は `applyResult` にまとめた
+  - クラス・メソッドの右クリックに「クラスの名前を変更」、ファイル・クラス・メソッドの右クリックに「ファイルの名前を変更」を追加。今の名前が入った入力欄で Enter 確定・Escape 取消
+- 変更ファイル:
+  - src/domain/codebase/naming.ts、renameClass.ts、renameFile.ts(各テスト付き、新規)、addClass.ts、addFile.ts
+  - src/application/RefactorUseCases.ts(+test)
+  - src/presentation/store/useGameStore.ts
+  - src/presentation/canvas/CanvasContextMenu.tsx、useCanvasContextMenu.ts
+  - e2e/refactor.spec.ts
+- 確認してほしいこと:
+  - クラスのヘッダーを右クリックし、キーボード(Tab/Enter)だけでも名前を変更できるか
+  - 名前が変わっても、メソッド・依存の矢印・ファイルの印が保たれるか
+  - 重複した名前でエラーが出る位置(右のメソッドエディタ内)が、メニューを開いたままでも気づけるか
+  - ファイルの名前変更は、ファイルの箱のヘッダー付近を右クリックして開く(余白は「ファイルを追加」のみ)
+
 ## 2026-09-22 00:40 (JST) — ステージの行数を実業務の規模に合わせる
 
 - 対応タスク: docs/auto-dev/TASKS.md の「ステージの行数を実業務の規模に合わせる」
