@@ -1,8 +1,10 @@
 import { CodebaseCanvas } from './canvas/CodebaseCanvas';
 import { MethodEditor } from './editor/MethodEditor';
 import { StagePanel } from './stage/StagePanel';
+import { useUndoRedoShortcut } from './useUndoRedoShortcut';
 
 export function App() {
+  useUndoRedoShortcut();
   return (
     <div className="app">
       <StagePanel />

@@ -58,6 +58,10 @@ export function StagePanel() {
   const stage = useGameStore((state) => state.stage);
   const codebase = useGameStore((state) => state.codebase);
   const resetStage = useGameStore((state) => state.resetStage);
+  const undo = useGameStore((state) => state.undo);
+  const redo = useGameStore((state) => state.redo);
+  const canUndo = useGameStore((state) => state.history.past.length > 0);
+  const canRedo = useGameStore((state) => state.history.future.length > 0);
   const score = useMemo(() => scoreCodebase(codebase, stage), [codebase, stage]);
   return (
     <header className="stage-panel">
@@ -74,9 +78,17 @@ export function StagePanel() {
       <div className="stage-panel__status" data-testid="score" aria-live="polite">
         {describeScore(score)}
       </div>
-      <button type="button" className="stage-panel__reset" onClick={resetStage}>
-        やり直す
-      </button>
+      <div className="stage-panel__actions">
+        <button type="button" onClick={undo} disabled={!canUndo} title="Ctrl+Z">
+          元に戻す
+        </button>
+        <button type="button" onClick={redo} disabled={!canRedo} title="Ctrl+Y">
+          やり直し
+        </button>
+        <button type="button" className="stage-panel__reset" onClick={resetStage}>
+          最初に戻す
+        </button>
+      </div>
     </header>
   );
 }

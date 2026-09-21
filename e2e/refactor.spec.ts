@@ -353,3 +353,35 @@ test('重複した名前には変更できず、理由が表示されて名前�
   await input.press('Escape');
   await expect(menu).toHaveCount(0);
 });
+
+test('メソッドをドラッグで移したあと Ctrl+Z で元のクラスに戻り、Ctrl+Y で移動先に戻る', async ({ page }) => {
+  // Arrange
+  await openOrderStage(page);
+  await expect(page.getByRole('button', { name: '元に戻す' })).toBeDisabled();
+  await page.getByTestId('method-placeOrder').click();
+  await page.getByLabel('消費税を計算する(軽減税率あり)').check();
+  await page.getByLabel('新しいメソッド名').fill('calculateTax');
+  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+  const from = await page.getByTestId('method-calculateTax').boundingBox();
+  const to = await page.getByTestId('class-TaxCalculator').boundingBox();
+  if (from === null || to === null) throw new Error('要素の位置を取得できません');
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(from.x + from.width / 2 + 20, from.y + from.height / 2, { steps: 5 });
+  await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 15 });
+  await page.mouse.up();
+  const original = page.getByTestId('class-OrderService').getByTestId('method-calculateTax');
+  const moved = page.getByTestId('class-TaxCalculator').getByTestId('method-calculateTax');
+  await expect(moved).toBeVisible();
+
+  // Act & Assert
+  await page.keyboard.press('Control+z');
+  await expect(original).toBeVisible();
+  await expect(moved).toHaveCount(0);
+  await page.keyboard.press('Control+y');
+  await expect(moved).toBeVisible();
+  await page.getByRole('button', { name: '最初に戻す' }).click();
+  await expect(page.getByTestId('method-calculateTax')).toHaveCount(0);
+  await page.getByRole('button', { name: '元に戻す' }).click();
+  await expect(moved).toBeVisible();
+});

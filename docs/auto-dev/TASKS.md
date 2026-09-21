@@ -106,7 +106,7 @@ Claude Codeがこのファイルを上から順に読み、`### [ ]` の未完�
 - 関連ファイル: `src/domain/codebase/addClass.ts`、`addFile.ts`、`src/presentation/canvas/CanvasContextMenu.tsx`、
   `src/presentation/store/useGameStore.ts`
 
-### [ ] Ctrl+Z / Ctrl+Y で操作の取り消し・やり直しをできるようにする
+### [x] Ctrl+Z / Ctrl+Y で操作の取り消し・やり直しをできるようにする
 
 - 背景・目的: 今は間違えたら「やり直す」でステージの最初に戻るしかない。1手ずつ戻したり進めたりして、
   「この移動で点数がどう変わったか」を試せるようにしたい。
