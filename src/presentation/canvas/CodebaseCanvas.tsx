@@ -15,12 +15,14 @@ import { createPortal } from 'react-dom';
 import { findClass, findFileOfClass, findMethod, type Codebase } from '../../domain/codebase/Codebase';
 import { methodLines } from '../../domain/codebase/lineCount';
 import { useGameStore } from '../store/useGameStore';
+import { CanvasContextMenu } from './CanvasContextMenu';
 import { CanvasToolbar } from './CanvasToolbar';
 import { ClassNode } from './ClassNode';
 import { parseClassDragId, parseClassDropId, parseFileDropId, parseMethodDragId } from './dndIds';
 import { FileNode } from './FileNode';
 import { dependencyEdges, layoutCodebase } from './layoutCodebase';
 import { MethodChipView } from './MethodChip';
+import { useCanvasContextMenu } from './useCanvasContextMenu';
 
 const nodeTypes: NodeTypes = { fileNode: FileNode, classNode: ClassNode };
 
@@ -68,6 +70,8 @@ export function CodebaseCanvas() {
   const edges = useMemo(() => dependencyEdges(codebase), [codebase]);
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, POINTER_ACTIVATION), useSensor(KeyboardSensor));
+  const contextMenu = useCanvasContextMenu();
+
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id);
@@ -100,6 +104,8 @@ export function CodebaseCanvas() {
         nodesConnectable={false}
         fitView
         minZoom={0.3}
+        onNodeContextMenu={contextMenu.onNodeContextMenu}
+        onPaneContextMenu={contextMenu.onPaneContextMenu}
       >
         <Background gap={24} />
         <Controls showInteractive={false} />
@@ -107,6 +113,14 @@ export function CodebaseCanvas() {
         <FitViewOnLayoutChange stageId={stageId} fileCount={codebase.files.length} />
       </ReactFlow>
       <DraggingOverlay activeId={activeId} />
+      {contextMenu.target === null ? null : (
+        // 開き直すたびに入力途中の状態を捨てるため、位置でkeyを変える
+        <CanvasContextMenu
+          key={`${String(contextMenu.target.x)},${String(contextMenu.target.y)}`}
+          target={contextMenu.target}
+          onClose={contextMenu.close}
+        />
+      )}
     </DndContext>
   );
 }

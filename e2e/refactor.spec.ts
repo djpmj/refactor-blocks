@@ -225,3 +225,52 @@ test('ステージを選ぶと、そのステージのコードベースと目�
   await expect(page.getByTestId('class-Customer')).toBeVisible();
   await expect(page.getByTestId('score')).toContainText('循環依存 -20');
 });
+
+test('メソッドを右クリックしてメニューから、そのクラスのファイルにクラスを追加できる', async ({ page }) => {
+  // Arrange
+  await openOrderStage(page);
+
+  // Act
+  await page.getByTestId('method-placeOrder').click({ button: 'right' });
+  const menu = page.getByTestId('context-menu');
+  await expect(menu).toContainText('src/order/OrderService.ts');
+  await menu.getByRole('menuitem', { name: 'このファイルにクラスを追加' }).click();
+  await menu.getByLabel('追加するクラス名').fill('OrderValidator');
+  await menu.getByLabel('追加するクラス名').press('Enter');
+
+  // Assert
+  await expect(page.getByTestId('class-OrderValidator')).toBeVisible();
+  await expect(menu).toHaveCount(0);
+});
+
+test('キャンバスの余白を右クリックしてメニューから、ファイルを追加できる', async ({ page }) => {
+  // Arrange
+  await openOrderStage(page);
+  const pane = await page.locator('.react-flow__pane').boundingBox();
+  if (pane === null) throw new Error('キャンバスの位置を取得できません');
+
+  // Act
+  await page.mouse.click(pane.x + pane.width - 20, pane.y + pane.height - 20, { button: 'right' });
+  const menu = page.getByTestId('context-menu');
+  await expect(menu.getByRole('menuitem', { name: 'このファイルにクラスを追加' })).toHaveCount(0);
+  await menu.getByRole('menuitem', { name: 'ファイルを追加' }).click();
+  await menu.getByLabel('追加するファイルのパス').fill('src/mail/Mailer.ts');
+  await menu.getByRole('button', { name: '追加' }).click();
+
+  // Assert
+  await expect(page.getByTestId('file-src/mail/Mailer.ts')).toBeVisible();
+});
+
+test('右クリックメニューはEscapeで閉じる', async ({ page }) => {
+  // Arrange
+  await openOrderStage(page);
+  await page.getByTestId('class-header-OrderService').click({ button: 'right' });
+  const menu = page.getByTestId('context-menu');
+  await expect(menu).toBeVisible();
+
+  // Act
+  await page.keyboard.press('Escape');
+
+  // Assert
+  await expect(menu).toHaveCount(0);
+});
