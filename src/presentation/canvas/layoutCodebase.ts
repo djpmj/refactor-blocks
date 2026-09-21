@@ -1,5 +1,6 @@
-import type { Node } from '@xyflow/react';
+import { MarkerType, type Edge, type Node } from '@xyflow/react';
 import type { Codebase } from '../../domain/codebase/Codebase';
+import { classDependencies } from '../../domain/codebase/dependencies';
 
 export type FileNodeData = { fileId: string };
 export type ClassNodeData = { classId: string };
@@ -55,4 +56,15 @@ export function layoutCodebase(codebase: Codebase): CodebaseFlowNode[] {
     fileX += fileWidth + FILE_GAP;
   }
   return nodes;
+}
+
+/** クラス間の依存を矢印にする。循環している依存は赤で描く。 */
+export function dependencyEdges(codebase: Codebase): Edge[] {
+  return classDependencies(codebase).map(({ from, to, cyclic }) => ({
+    id: `dep-${from}-${to}`,
+    source: from,
+    target: to,
+    className: cyclic ? 'edge--cyclic' : undefined,
+    markerEnd: { type: MarkerType.ArrowClosed, color: cyclic ? 'var(--danger)' : undefined },
+  }));
 }

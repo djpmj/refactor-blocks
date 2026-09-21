@@ -6,5 +6,7 @@ export type Stage = {
   readonly title: string;
   readonly goal: string;
   readonly limits: LineLimits;
+  /** 1クラスが依存してよいクラス数の上限。 */
+  readonly dependencyLimit: number;
   readonly codebase: Codebase;
 };

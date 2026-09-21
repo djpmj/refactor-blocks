@@ -17,7 +17,7 @@ import { useGameStore } from '../store/useGameStore';
 import { ClassNode } from './ClassNode';
 import { parseClassDropId, parseMethodDragId } from './dndIds';
 import { FileNode } from './FileNode';
-import { layoutCodebase } from './layoutCodebase';
+import { dependencyEdges, layoutCodebase } from './layoutCodebase';
 import { MethodChipView } from './MethodChip';
 
 const nodeTypes: NodeTypes = { fileNode: FileNode, classNode: ClassNode };
@@ -42,6 +42,7 @@ export function CodebaseCanvas() {
   const codebase = useGameStore((state) => state.codebase);
   const moveMethod = useGameStore((state) => state.moveMethod);
   const nodes = useMemo(() => layoutCodebase(codebase), [codebase]);
+  const edges = useMemo(() => dependencyEdges(codebase), [codebase]);
   const [draggingMethodId, setDraggingMethodId] = useState<string | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, POINTER_ACTIVATION), useSensor(KeyboardSensor));
 
@@ -66,7 +67,7 @@ export function CodebaseCanvas() {
     >
       <ReactFlow
         nodes={nodes}
-        edges={[]}
+        edges={edges}
         nodeTypes={nodeTypes}
         nodesDraggable={false}
         nodesConnectable={false}

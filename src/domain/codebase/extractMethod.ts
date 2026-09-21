@@ -69,6 +69,7 @@ export function extractMethod(codebase: Codebase, request: ExtractMethodRequest)
     label: `${name}() を呼び出す`,
     lines: CALL_LINES,
     responsibility: 'call',
+    uses: [request.newMethodId],
   };
   const updatedSource: Method = { ...source, fragments: replaceWithCall(source, selected, callFragment) };
   return ok(

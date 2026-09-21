@@ -44,6 +44,19 @@ describe('extractMethod', () => {
     expect(source === undefined ? 0 : methodLines(source)).toBe(10 + 1 + 6 + 2);
   });
 
+  it('呼び出し行は抽出した新メソッドを uses に持つ', () => {
+    // Arrange
+    const codebase = sampleCodebase();
+
+    // Act
+    const result = extractMethod(codebase, request());
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    const call = findMethod(result.value, 'method-place')?.fragments.find((fragment) => fragment.id === 'method-tax:call');
+    expect(call?.uses).toEqual(['method-tax']);
+  });
+
   it('離れた複数の処理を選ぶと、呼び出しは最初の位置に1つだけ残る', () => {
     // Arrange
     const codebase = sampleCodebase();

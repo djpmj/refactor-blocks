@@ -6,6 +6,7 @@ export const tutorialStage: Stage = {
   title: 'ステージ1: 太った placeOrder',
   goal: 'メソッドは20行以内に。税の計算は TaxCalculator へ移そう',
   limits: { method: 20, class: 60, file: 80 },
+  dependencyLimit: 2,
   codebase: {
     files: [
       {
