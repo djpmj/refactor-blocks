@@ -1,18 +1,50 @@
-import { useDraggable, useDroppable } from '@dnd-kit/core';
-import { Handle, Position, type NodeProps } from '@xyflow/react';
-import { findClass } from '../../domain/codebase/Codebase';
-import { classLines } from '../../domain/codebase/lineCount';
-import { useGameStore } from '../store/useGameStore';
-import { classDragId, classDropId } from './dndIds';
-import type { ClassFlowNode } from './layoutCodebase';
-import { MethodChip } from './MethodChip';
-import { useShowDetails } from './semanticZoom';
+import { Fragment } from "react";
+import { useDraggable, useDroppable } from "@dnd-kit/core";
+import { Handle, Position, type NodeProps } from "@xyflow/react";
+import { findClass } from "../../domain/codebase/Codebase";
+import { classLines } from "../../domain/codebase/lineCount";
+import { useGameStore } from "../store/useGameStore";
+import { classDragId, classDropId } from "./dndIds";
+import type { ClassFlowNode } from "./layoutCodebase";
+import { MethodChip } from "./MethodChip";
+import { useShowDetails } from "./semanticZoom";
+
+const HANDLE_SIDES = [
+  { side: "left", position: Position.Left },
+  { side: "right", position: Position.Right },
+];
+
+/** 依存の矢印の向きに合わせて左右どちらにもつなげるよう、両側に source/target を置く。見た目には出さない。 */
+function DependencyHandles() {
+  return HANDLE_SIDES.map(({ side, position }) => (
+    <Fragment key={side}>
+      <Handle
+        id={`target-${side}`}
+        type="target"
+        position={position}
+        className="class-node__handle class-node__handle--target"
+        isConnectable={false}
+      />
+      <Handle
+        id={`source-${side}`}
+        type="source"
+        position={position}
+        className="class-node__handle class-node__handle--source"
+        isConnectable={false}
+      />
+    </Fragment>
+  ));
+}
 
 export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
-  const codeClass = useGameStore((state) => findClass(state.codebase, data.classId));
+  const codeClass = useGameStore((state) =>
+    findClass(state.codebase, data.classId),
+  );
   const limit = useGameStore((state) => state.stage.limits.class);
   const showDetails = useShowDetails();
-  const { setNodeRef, isOver } = useDroppable({ id: classDropId(data.classId) });
+  const { setNodeRef, isOver } = useDroppable({
+    id: classDropId(data.classId),
+  });
   // ヘッダーを掴むとクラスごと別ファイルへドラッグできる
   const {
     setNodeRef: setDragRef,
@@ -25,12 +57,11 @@ export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
   return (
     <div
       ref={setNodeRef}
-      className={isOver ? 'class-node class-node--drop-target' : 'class-node'}
+      className={isOver ? "class-node class-node--drop-target" : "class-node"}
       data-testid={`class-${codeClass.name}`}
     >
       {/* 依存の矢印の接続点。つなぐ操作はさせないので見た目には出さない。 */}
-      <Handle type="target" position={Position.Left} className="class-node__handle" isConnectable={false} />
-      <Handle type="source" position={Position.Right} className="class-node__handle" isConnectable={false} />
+      <DependencyHandles />
       <div
         ref={setDragRef}
         className="class-node__header nodrag nopan"
@@ -42,7 +73,13 @@ export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
       >
         <span className="class-node__name">{codeClass.name}</span>
         {showDetails ? (
-          <span className={lines > limit ? 'line-badge line-badge--over' : 'line-badge'}>{lines}行</span>
+          <span
+            className={
+              lines > limit ? "line-badge line-badge--over" : "line-badge"
+            }
+          >
+            {lines}行
+          </span>
         ) : null}
       </div>
       {showDetails ? (
@@ -50,7 +87,9 @@ export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
           {codeClass.methods.length === 0 ? (
             <div className="class-node__empty">ここにメソッドをドロップ</div>
           ) : (
-            codeClass.methods.map((method) => <MethodChip key={method.id} method={method} />)
+            codeClass.methods.map((method) => (
+              <MethodChip key={method.id} method={method} />
+            ))
           )}
         </div>
       ) : null}

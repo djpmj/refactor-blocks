@@ -1,11 +1,11 @@
-import { MarkerType, type Edge, type Node } from '@xyflow/react';
-import type { Codebase } from '../../domain/codebase/Codebase';
-import { classDependencies } from '../../domain/codebase/dependencies';
+import { MarkerType, type Edge, type Node } from "@xyflow/react";
+import type { Codebase } from "../../domain/codebase/Codebase";
+import { classDependencies } from "../../domain/codebase/dependencies";
 
 export type FileNodeData = { fileId: string };
 export type ClassNodeData = { classId: string };
-export type FileFlowNode = Node<FileNodeData, 'fileNode'>;
-export type ClassFlowNode = Node<ClassNodeData, 'classNode'>;
+export type FileFlowNode = Node<FileNodeData, "fileNode">;
+export type ClassFlowNode = Node<ClassNodeData, "classNode">;
 export type CodebaseFlowNode = FileFlowNode | ClassFlowNode;
 
 const FILE_GAP = 60;
@@ -20,7 +20,10 @@ const MIN_CLASS_HEIGHT = 110;
 const MIN_FILE_HEIGHT = 140;
 
 function classHeight(methodCount: number): number {
-  return Math.max(MIN_CLASS_HEIGHT, CLASS_HEADER + methodCount * METHOD_ROW + 16);
+  return Math.max(
+    MIN_CLASS_HEIGHT,
+    CLASS_HEADER + methodCount * METHOD_ROW + 16,
+  );
 }
 
 /**
@@ -36,9 +39,9 @@ export function layoutCodebase(codebase: Codebase): CodebaseFlowNode[] {
       const height = classHeight(codeClass.methods.length);
       const node: ClassFlowNode = {
         id: codeClass.id,
-        type: 'classNode',
+        type: "classNode",
         parentId: file.id,
-        extent: 'parent',
+        extent: "parent",
         position: { x: FILE_PADDING, y: classY },
         style: { width: CLASS_WIDTH, height },
         data: { classId: codeClass.id },
@@ -49,9 +52,12 @@ export function layoutCodebase(codebase: Codebase): CodebaseFlowNode[] {
     const fileWidth = CLASS_WIDTH + FILE_PADDING * 2;
     nodes.push({
       id: file.id,
-      type: 'fileNode',
+      type: "fileNode",
       position: { x: fileX, y: 0 },
-      style: { width: fileWidth, height: Math.max(MIN_FILE_HEIGHT, classY - CLASS_GAP + FILE_PADDING) },
+      style: {
+        width: fileWidth,
+        height: Math.max(MIN_FILE_HEIGHT, classY - CLASS_GAP + FILE_PADDING),
+      },
       data: { fileId: file.id },
     });
     nodes.push(...classNodes);
@@ -60,13 +66,44 @@ export function layoutCodebase(codebase: Codebase): CodebaseFlowNode[] {
   return nodes;
 }
 
-/** クラス間の依存を矢印にする。循環している依存は赤で描く。 */
+/** 矢印はファイルの箱(親ノード)より手前に描く。 */
+const EDGE_Z_INDEX = 1000;
+
+type Side = "left" | "right";
+
+/** 依存元・依存先のファイルの並び順から、矢印をつなぐ(依存元の側, 依存先の側)を選ぶ。 */
+function handleSides(fromIndex: number, toIndex: number): [Side, Side] {
+  if (toIndex === fromIndex) return ["right", "right"];
+  return toIndex > fromIndex ? ["right", "left"] : ["left", "right"];
+}
+
+/**
+ * クラス間の依存を矢印にする。循環している依存は赤で描く。
+ * 相手が右のファイルなら右端→左端、左なら左端→右端、同じファイルなら右端どうしでつなぐ。
+ * 双方向の依存はハンドルの高さ(CSS)が source と target で違うので、2本が重ならない。
+ */
 export function dependencyEdges(codebase: Codebase): Edge[] {
-  return classDependencies(codebase).map(({ from, to, cyclic }) => ({
-    id: `dep-${from}-${to}`,
-    source: from,
-    target: to,
-    className: cyclic ? 'edge--cyclic' : undefined,
-    markerEnd: { type: MarkerType.ArrowClosed, color: cyclic ? 'var(--danger)' : undefined },
-  }));
+  const fileIndexByClassId = new Map(
+    codebase.files.flatMap((file, index) =>
+      file.classes.map((codeClass) => [codeClass.id, index] as const),
+    ),
+  );
+  return classDependencies(codebase).map(({ from, to, cyclic }) => {
+    const fromIndex = fileIndexByClassId.get(from) ?? 0;
+    const toIndex = fileIndexByClassId.get(to) ?? 0;
+    const [sourceSide, targetSide] = handleSides(fromIndex, toIndex);
+    return {
+      id: `dep-${from}-${to}`,
+      source: from,
+      target: to,
+      sourceHandle: `source-${sourceSide}`,
+      targetHandle: `target-${targetSide}`,
+      zIndex: EDGE_Z_INDEX,
+      className: cyclic ? "edge--cyclic" : undefined,
+      markerEnd: {
+        type: MarkerType.ArrowClosed,
+        color: cyclic ? "var(--danger)" : undefined,
+      },
+    };
+  });
 }

@@ -82,6 +82,9 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .fragment-list__lines { color: var(--muted); font-size: 12px; }
 
 .class-node__handle { opacity: 0; pointer-events: none; }
+/* 双方向の依存が重ならないよう、出る点(上)と入る点(下)の高さをずらす */
+.class-node__handle--source { top: 35%; }
+.class-node__handle--target { top: 65%; }
 .react-flow__edge.edge--cyclic .react-flow__edge-path { stroke: var(--danger); stroke-width: 2; }
 .file-node--drop-target { border-color: var(--accent); }
 .file-node__empty { color: var(--muted); font-size: 12px; text-align: center; padding: 24px 0; }
