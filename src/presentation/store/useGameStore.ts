@@ -31,6 +31,8 @@ export type ChangeSession = {
   readonly index: number;
   /** 今の依頼で「変更が必要」と選んだメソッドのID。 */
   readonly selected: readonly string[];
+  /** 何をするメソッドか確かめるために、カーソルを合わせた(フォーカスした)メソッドのID。 */
+  readonly inspected: string | null;
   readonly outcomes: readonly ChangeOutcome[];
 };
 
@@ -55,6 +57,7 @@ type GameState = {
   redo: () => void;
   startChangeRequests: () => void;
   toggleInvestigated: (methodId: string) => void;
+  inspectMethod: (methodId: string) => void;
   finishInvestigation: () => void;
   endChangeRequests: () => void;
   resetStage: () => void;
@@ -100,7 +103,7 @@ function finishInvestigation(state: GameState): Partial<GameState> {
   if (session === null || request === undefined) return {};
   const result = evaluateChangeRequestUseCase(state.stage, state.codebase, request, session.selected);
   if (!result.ok) return { message: 'この依頼で変更が必要な場所が見つかりません' };
-  return { changeSession: { index: session.index + 1, selected: [], outcomes: [...session.outcomes, result.value] }, message: null };
+  return { changeSession: { index: session.index + 1, selected: [], inspected: null, outcomes: [...session.outcomes, result.value] }, message: null };
 }
 
 function historyActions(set: (partial: Partial<GameState>) => void, get: () => GameState): Pick<GameState, 'undo' | 'redo'> {
@@ -117,13 +120,17 @@ function historyActions(set: (partial: Partial<GameState>) => void, get: () => G
 function changeSessionActions(
   set: (partial: Partial<GameState>) => void,
   get: () => GameState,
-): Pick<GameState, 'startChangeRequests' | 'toggleInvestigated' | 'finishInvestigation' | 'endChangeRequests'> {
+): Pick<GameState, 'startChangeRequests' | 'toggleInvestigated' | 'inspectMethod' | 'finishInvestigation' | 'endChangeRequests'> {
   return {
     startChangeRequests: () => {
-      set({ changeSession: { index: 0, selected: [], outcomes: [] }, selectedMethodId: null, message: null });
+      set({ changeSession: { index: 0, selected: [], inspected: null, outcomes: [] }, selectedMethodId: null, message: null });
     },
     toggleInvestigated: (methodId) => {
       set(toggleInvestigated(get(), methodId));
+    },
+    inspectMethod: (methodId) => {
+      const { changeSession } = get();
+      if (changeSession !== null) set({ changeSession: { ...changeSession, inspected: methodId } });
     },
     finishInvestigation: () => {
       set(finishInvestigation(get()));

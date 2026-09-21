@@ -44,6 +44,7 @@ export function MethodChip({ method }: Readonly<{ method: Method }>) {
   const investigating = useGameStore((state) => state.changeSession !== null);
   const investigated = useGameStore((state) => state.changeSession?.selected.includes(method.id) ?? false);
   const toggleInvestigated = useGameStore((state) => state.toggleInvestigated);
+  const inspectMethod = useGameStore((state) => state.inspectMethod);
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: methodDragId(method.id) });
   return (
     <button
@@ -53,6 +54,12 @@ export function MethodChip({ method }: Readonly<{ method: Method }>) {
       style={{ opacity: isDragging ? 0.3 : 1 }}
       data-testid={`method-${method.name}`}
       data-investigated={investigating ? investigated : undefined}
+      onMouseEnter={() => {
+        inspectMethod(method.id);
+      }}
+      onFocus={() => {
+        inspectMethod(method.id);
+      }}
       onClick={() => {
         if (investigating) toggleInvestigated(method.id);
         else selectMethod(method.id);

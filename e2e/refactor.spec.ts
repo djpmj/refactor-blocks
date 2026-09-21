@@ -480,3 +480,48 @@ test('結果画面から戻ると、キャンバスは変更依頼を当てる�
   await page.getByTestId('method-placeOrder').click();
   await expect(page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' })).toBeVisible();
 });
+
+test('変更依頼の調査中にメソッドへカーソルを合わせると、そのメソッドが何をしているか(処理の一覧)が見える', async ({ page }) => {
+  // Arrange
+  await openOrderStage(page);
+  await page.getByTestId('change-request-start').click();
+  const inspect = page.getByTestId('change-inspect');
+  await expect(inspect).not.toContainText('消費税を計算する');
+
+  // Act
+  await page.getByTestId('method-placeOrder').hover();
+
+  // Assert
+  await expect(inspect).toContainText('placeOrder');
+  await expect(inspect).toContainText('消費税を計算する(軽減税率あり)');
+  await expect(inspect).toContainText('確認メールを送る');
+  await expect(page.getByTestId('method-placeOrder')).not.toHaveAttribute('data-investigated', 'true');
+});
+
+test('変更依頼の調査で複数のメソッドを選ぶと、選んだメソッドすべての中身が右側に並ぶ', async ({ page }) => {
+  // Arrange
+  await openOrderStage(page);
+  await page.getByTestId('method-placeOrder').click();
+  await page.getByLabel('消費税を計算する(軽減税率あり)').check();
+  await page.getByLabel('新しいメソッド名').fill('calculateTax');
+  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+  await page.getByTestId('change-request-start').click();
+  const inspect = page.getByTestId('change-inspect');
+
+  // Act
+  await page.getByTestId('method-placeOrder').click();
+  await page.getByTestId('method-calculateTax').hover();
+
+  // Assert(選んだものに加えて、カーソルを合わせたものが「確認中」で出る)
+  await expect(inspect.getByTestId('change-inspect-placeOrder')).not.toContainText('確認中');
+  await expect(inspect.getByTestId('change-inspect-calculateTax')).toContainText('確認中');
+
+  // Act(2つ目も選ぶ。カーソルを外しても両方残る)
+  await page.getByTestId('method-calculateTax').click();
+  await page.getByTestId('class-TaxCalculator').hover({ position: { x: 5, y: 5 } });
+
+  // Assert
+  await expect(inspect.getByTestId('change-inspect-placeOrder')).toBeVisible();
+  await expect(inspect.getByTestId('change-inspect-calculateTax')).not.toContainText('確認中');
+  await expect(inspect.getByTestId('change-inspect-calculateTax')).toContainText('消費税を計算する(軽減税率あり)');
+});
