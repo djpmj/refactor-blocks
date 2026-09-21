@@ -70,7 +70,7 @@ Claude Codeがこのファイルを上から順に読み、`### [ ]` の未完�
 - 関連ファイル: `src/domain/scoring/score.ts`、`src/presentation/canvas/FileNode.tsx`、
   `src/presentation/canvas/semanticZoom.ts`
 
-### [ ] ステージの行数を実業務の規模に合わせる
+### [x] ステージの行数を実業務の規模に合わせる
 
 - 背景・目的: 今のステージはメソッドが5〜34行、処理のまとまり(Fragment)が2〜12行、メソッドの上限が15行と小さすぎる。
   実業務では100行を超えるメソッドも珍しくなく、「長すぎて読めないメソッドを分解する」という

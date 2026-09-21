@@ -7,8 +7,8 @@ const userControllerStage: Stage = {
   title: '初級1: 何でも屋の UserController',
   description:
     'Web APIでユーザー登録・削除のリクエストを受ける UserController。本来の仕事はリクエストの検証とレスポンスの組み立てなのに、DBへの保存・削除やメール送信まで自分でやっている。',
-  goal: 'メソッドは15行・クラスは40行以内、1クラスの責務は1種類まで。DBとメールの処理は UserRepository と Mailer に任せよう',
-  limits: { method: 15, class: 40, file: 50 },
+  goal: 'メソッドは50行・クラスは150行以内、1クラスの責務は1種類まで。DBとメールの処理は UserRepository と Mailer に任せよう',
+  limits: { method: 50, class: 150, file: 300 },
   dependencyLimit: 2,
   // 入力値の検証とレスポンスの組み立ては、どちらもHTTPの受け口としての責務に数える
   responsibilityLimit: 1,
@@ -27,10 +27,10 @@ const userControllerStage: Stage = {
                 name: 'registerUser',
                 visibility: 'public',
                 fragments: [
-                  { id: 'frag-validate-input', label: '入力値を検証する', lines: 6, responsibility: 'http', suggestedName: 'validateInput' },
-                  { id: 'frag-save-user', label: 'ユーザーをDBに保存する', lines: 7, responsibility: 'persistence', suggestedName: 'saveUser' },
-                  { id: 'frag-welcome-mail', label: 'ようこそメールを送る', lines: 6, responsibility: 'notification', suggestedName: 'sendWelcomeMail' },
-                  { id: 'frag-register-response', label: 'レスポンスを組み立てる', lines: 4, responsibility: 'http', suggestedName: 'buildResponse' },
+                  { id: 'frag-validate-input', label: '入力値を検証する', lines: 26, responsibility: 'http', suggestedName: 'validateInput' },
+                  { id: 'frag-save-user', label: 'ユーザーをDBに保存する', lines: 36, responsibility: 'persistence', suggestedName: 'saveUser' },
+                  { id: 'frag-welcome-mail', label: 'ようこそメールを送る', lines: 30, responsibility: 'notification', suggestedName: 'sendWelcomeMail' },
+                  { id: 'frag-register-response', label: 'レスポンスを組み立てる', lines: 16, responsibility: 'http', suggestedName: 'buildResponse' },
                 ],
               },
               {
@@ -38,9 +38,9 @@ const userControllerStage: Stage = {
                 name: 'deleteUser',
                 visibility: 'public',
                 fragments: [
-                  { id: 'frag-delete-user', label: 'ユーザーをDBから削除する', lines: 5, responsibility: 'persistence', suggestedName: 'removeUserRecord' },
-                  { id: 'frag-farewell-mail', label: 'お別れメールを送る', lines: 4, responsibility: 'notification', suggestedName: 'sendFarewellMail' },
-                  { id: 'frag-delete-response', label: 'レスポンスを組み立てる', lines: 3, responsibility: 'http', suggestedName: 'buildDeleteResponse' },
+                  { id: 'frag-delete-user', label: 'ユーザーをDBから削除する', lines: 20, responsibility: 'persistence', suggestedName: 'removeUserRecord' },
+                  { id: 'frag-farewell-mail', label: 'お別れメールを送る', lines: 16, responsibility: 'notification', suggestedName: 'sendFarewellMail' },
+                  { id: 'frag-delete-response', label: 'レスポンスを組み立てる', lines: 10, responsibility: 'http', suggestedName: 'buildDeleteResponse' },
                 ],
               },
             ],
@@ -68,8 +68,8 @@ const invoiceServiceStage: Stage = {
   title: '初級2: クラスを自分で作る',
   description:
     '請求書を作って送る InvoiceService。金額の計算・PDFの描画・ストレージへの保存・メール送信・送信履歴の記録を1クラスで抱えている。今回は受け皿のクラスが用意されていない。',
-  goal: 'メソッドは15行、クラスは30行以内、1クラスの責務は2種類まで。「クラスを追加」で受け皿を作ろう',
-  limits: { method: 15, class: 30, file: 80 },
+  goal: 'メソッドは50行、クラスは150行以内、1クラスの責務は2種類まで。「クラスを追加」で受け皿を作ろう',
+  limits: { method: 50, class: 150, file: 300 },
   dependencyLimit: 3,
   responsibilityLimit: 2,
   codebase: {
@@ -87,10 +87,10 @@ const invoiceServiceStage: Stage = {
                 name: 'issueInvoice',
                 visibility: 'public',
                 fragments: [
-                  { id: 'frag-sum-items', label: '明細の金額を合計する', lines: 6, responsibility: 'pricing', suggestedName: 'sumItems' },
-                  { id: 'frag-apply-discount', label: '割引を適用する', lines: 5, responsibility: 'pricing', suggestedName: 'applyDiscount' },
-                  { id: 'frag-render-pdf', label: '請求書のPDFを描画する', lines: 12, responsibility: 'rendering', suggestedName: 'renderPdf' },
-                  { id: 'frag-store-pdf', label: 'PDFをストレージに保存する', lines: 6, responsibility: 'storage', suggestedName: 'storePdf' },
+                  { id: 'frag-sum-items', label: '明細の金額を合計する', lines: 24, responsibility: 'pricing', suggestedName: 'sumItems' },
+                  { id: 'frag-apply-discount', label: '割引を適用する', lines: 18, responsibility: 'pricing', suggestedName: 'applyDiscount' },
+                  { id: 'frag-render-pdf', label: '請求書のPDFを描画する', lines: 44, responsibility: 'rendering', suggestedName: 'renderPdf' },
+                  { id: 'frag-store-pdf', label: 'PDFをストレージに保存する', lines: 24, responsibility: 'storage', suggestedName: 'storePdf' },
                 ],
               },
               {
@@ -98,8 +98,8 @@ const invoiceServiceStage: Stage = {
                 name: 'sendInvoice',
                 visibility: 'public',
                 fragments: [
-                  { id: 'frag-attach-mail', label: '請求書をメールに添付して送る', lines: 5, responsibility: 'notification', suggestedName: 'mailInvoice' },
-                  { id: 'frag-record-history', label: '送信履歴を記録する', lines: 4, responsibility: 'storage', suggestedName: 'recordHistory' },
+                  { id: 'frag-attach-mail', label: '請求書をメールに添付して送る', lines: 26, responsibility: 'notification', suggestedName: 'mailInvoice' },
+                  { id: 'frag-record-history', label: '送信履歴を記録する', lines: 20, responsibility: 'storage', suggestedName: 'recordHistory' },
                 ],
               },
             ],

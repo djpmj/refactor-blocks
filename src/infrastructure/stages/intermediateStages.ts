@@ -11,8 +11,8 @@ const cyclicDependencyStage: Stage = {
   title: '中級1: 循環依存を断ち切る',
   description:
     '注文(Order)と顧客(Customer)のクラス。注文の合計金額を求めるメソッドが Customer に、顧客の過去の注文数を数えるメソッドが Order に置かれているせいで、2つのクラスがお互いを呼び合っている。',
-  goal: '赤い矢印(循環依存)をなくそう。メソッドが本来いるべきクラスはどこ? メソッドは15行以内、1クラスの責務は4種類まで',
-  limits: { method: 15, class: 50, file: 60 },
+  goal: '赤い矢印(循環依存)をなくそう。メソッドが本来いるべきクラスはどこ? メソッドは50行以内、1クラスの責務は4種類まで',
+  limits: { method: 50, class: 200, file: 300 },
   dependencyLimit: 2,
   responsibilityLimit: 4,
   codebase: {
@@ -30,10 +30,10 @@ const cyclicDependencyStage: Stage = {
                 name: 'checkout',
                 visibility: 'public',
                 fragments: [
-                  { id: 'frag-reserve-stock', label: '在庫を引き当てる', lines: 6, responsibility: 'inventory', uses: ['method-reserve'], suggestedName: 'reserveStock' },
-                  { id: 'frag-order-total', label: '合計金額を求める', lines: 2, responsibility: 'pricing', uses: ['method-calculate-order-total'], suggestedName: 'orderTotal' },
-                  { id: 'frag-member-discount', label: '会員ランクで割引する', lines: 5, responsibility: 'discount', uses: ['method-get-rank'], suggestedName: 'applyMemberDiscount' },
-                  { id: 'frag-pay', label: '決済する', lines: 6, responsibility: 'payment', suggestedName: 'pay' },
+                  { id: 'frag-reserve-stock', label: '在庫を引き当てる', lines: 30, responsibility: 'inventory', uses: ['method-reserve'], suggestedName: 'reserveStock' },
+                  { id: 'frag-order-total', label: '合計金額を求める', lines: 6, responsibility: 'pricing', uses: ['method-calculate-order-total'], suggestedName: 'orderTotal' },
+                  { id: 'frag-member-discount', label: '会員ランクで割引する', lines: 18, responsibility: 'discount', uses: ['method-get-rank'], suggestedName: 'applyMemberDiscount' },
+                  { id: 'frag-pay', label: '決済する', lines: 26, responsibility: 'payment', suggestedName: 'pay' },
                 ],
               },
               {
@@ -41,7 +41,7 @@ const cyclicDependencyStage: Stage = {
                 name: 'getLines',
                 visibility: 'public',
                 fragments: [
-                  { id: 'frag-list-lines', label: '注文明細の一覧を返す', lines: 3, responsibility: 'pricing', suggestedName: 'listLines' },
+                  { id: 'frag-list-lines', label: '注文明細の一覧を返す', lines: 10, responsibility: 'pricing', suggestedName: 'listLines' },
                 ],
               },
               {
@@ -49,7 +49,7 @@ const cyclicDependencyStage: Stage = {
                 name: 'countOrdersOf',
                 visibility: 'public',
                 fragments: [
-                  { id: 'frag-count-orders', label: '顧客の過去の注文数を数える', lines: 4, responsibility: 'history', suggestedName: 'countOrders' },
+                  { id: 'frag-count-orders', label: '顧客の過去の注文数を数える', lines: 14, responsibility: 'history', suggestedName: 'countOrders' },
                 ],
               },
             ],
@@ -69,7 +69,7 @@ const cyclicDependencyStage: Stage = {
                 name: 'getRank',
                 visibility: 'public',
                 fragments: [
-                  { id: 'frag-judge-rank', label: '注文数から会員ランクを判定する', lines: 5, responsibility: 'membership', uses: ['method-count-orders-of'], suggestedName: 'judgeRank' },
+                  { id: 'frag-judge-rank', label: '注文数から会員ランクを判定する', lines: 18, responsibility: 'membership', uses: ['method-count-orders-of'], suggestedName: 'judgeRank' },
                 ],
               },
               {
@@ -77,7 +77,7 @@ const cyclicDependencyStage: Stage = {
                 name: 'calculateOrderTotal',
                 visibility: 'public',
                 fragments: [
-                  { id: 'frag-sum-order-lines', label: '注文明細の金額を合計する', lines: 8, responsibility: 'pricing', uses: ['method-get-lines'], suggestedName: 'sumOrderLines' },
+                  { id: 'frag-sum-order-lines', label: '注文明細の金額を合計する', lines: 30, responsibility: 'pricing', uses: ['method-get-lines'], suggestedName: 'sumOrderLines' },
                 ],
               },
             ],
@@ -97,7 +97,7 @@ const cyclicDependencyStage: Stage = {
                 name: 'reserve',
                 visibility: 'public',
                 fragments: [
-                  { id: 'frag-decrease-stock', label: '在庫数を減らす', lines: 5, responsibility: 'inventory', suggestedName: 'decreaseStock' },
+                  { id: 'frag-decrease-stock', label: '在庫数を減らす', lines: 20, responsibility: 'inventory', suggestedName: 'decreaseStock' },
                 ],
               },
             ],
@@ -115,8 +115,8 @@ const godFileStage: Stage = {
   title: '中級2: 何でも入った services.ts',
   description:
     'カート(CartService)・配送(ShippingService)・ポイント(PointService)の3クラスが、1つのファイル services.ts に同居している。しかも CartService が、送料の計算とポイントの付与を private メソッドとして抱え込んでいる。',
-  goal: 'ファイルは40行、クラスは30行以内、1クラスの責務は2種類まで。メソッドを持ち主へ返し、「ファイルを追加」してクラスを移そう',
-  limits: { method: 15, class: 30, file: 40 },
+  goal: 'ファイルは300行、クラスは180行以内、1クラスの責務は2種類まで。メソッドを持ち主へ返し、「ファイルを追加」してクラスを移そう',
+  limits: { method: 100, class: 180, file: 300 },
   dependencyLimit: 2,
   responsibilityLimit: 2,
   codebase: {
@@ -134,8 +134,8 @@ const godFileStage: Stage = {
                 name: 'checkoutCart',
                 visibility: 'public',
                 fragments: [
-                  { id: 'frag-validate-cart', label: 'カートの中身を検証する', lines: 5, responsibility: 'validation', suggestedName: 'validateCart' },
-                  { id: 'frag-cart-subtotal', label: '小計を計算する', lines: 5, responsibility: 'pricing', suggestedName: 'calculateSubtotal' },
+                  { id: 'frag-validate-cart', label: 'カートの中身を検証する', lines: 34, responsibility: 'validation', suggestedName: 'validateCart' },
+                  { id: 'frag-cart-subtotal', label: '小計を計算する', lines: 44, responsibility: 'pricing', suggestedName: 'calculateSubtotal' },
                   { id: 'frag-call-shipping-fee', label: 'calculateShippingFee() を呼び出す', lines: 1, responsibility: 'call', uses: ['method-calculate-shipping-fee'] },
                   { id: 'frag-call-add-points', label: 'addPoints() を呼び出す', lines: 1, responsibility: 'call', uses: ['method-add-points'] },
                 ],
@@ -145,7 +145,7 @@ const godFileStage: Stage = {
                 name: 'calculateShippingFee',
                 visibility: 'private',
                 fragments: [
-                  { id: 'frag-shipping-fee', label: '地域と重さから送料を決める', lines: 9, responsibility: 'shipping', suggestedName: 'decideShippingFee' },
+                  { id: 'frag-shipping-fee', label: '地域と重さから送料を決める', lines: 64, responsibility: 'shipping', suggestedName: 'decideShippingFee' },
                 ],
               },
               {
@@ -153,7 +153,7 @@ const godFileStage: Stage = {
                 name: 'addPoints',
                 visibility: 'private',
                 fragments: [
-                  { id: 'frag-add-points', label: '購入額に応じてポイントを付ける', lines: 7, responsibility: 'points', suggestedName: 'grantPoints' },
+                  { id: 'frag-add-points', label: '購入額に応じてポイントを付ける', lines: 50, responsibility: 'points', suggestedName: 'grantPoints' },
                 ],
               },
             ],
@@ -167,7 +167,7 @@ const godFileStage: Stage = {
                 name: 'scheduleDelivery',
                 visibility: 'public',
                 fragments: [
-                  { id: 'frag-schedule-delivery', label: '配送日を決める', lines: 7, responsibility: 'shipping', suggestedName: 'decideDeliveryDate' },
+                  { id: 'frag-schedule-delivery', label: '配送日を決める', lines: 30, responsibility: 'shipping', suggestedName: 'decideDeliveryDate' },
                 ],
               },
               {
@@ -175,7 +175,7 @@ const godFileStage: Stage = {
                 name: 'trackPackage',
                 visibility: 'public',
                 fragments: [
-                  { id: 'frag-track-package', label: '配送状況を問い合わせる', lines: 6, responsibility: 'shipping', suggestedName: 'fetchTrackingStatus' },
+                  { id: 'frag-track-package', label: '配送状況を問い合わせる', lines: 26, responsibility: 'shipping', suggestedName: 'fetchTrackingStatus' },
                 ],
               },
             ],
@@ -189,7 +189,7 @@ const godFileStage: Stage = {
                 name: 'getBalance',
                 visibility: 'public',
                 fragments: [
-                  { id: 'frag-get-balance', label: 'ポイント残高を取得する', lines: 5, responsibility: 'points', suggestedName: 'fetchBalance' },
+                  { id: 'frag-get-balance', label: 'ポイント残高を取得する', lines: 20, responsibility: 'points', suggestedName: 'fetchBalance' },
                 ],
               },
               {
@@ -197,7 +197,7 @@ const godFileStage: Stage = {
                 name: 'expirePoints',
                 visibility: 'public',
                 fragments: [
-                  { id: 'frag-expire-points', label: '期限切れのポイントを失効させる', lines: 7, responsibility: 'points', suggestedName: 'expireOldPoints' },
+                  { id: 'frag-expire-points', label: '期限切れのポイントを失効させる', lines: 32, responsibility: 'points', suggestedName: 'expireOldPoints' },
                 ],
               },
             ],

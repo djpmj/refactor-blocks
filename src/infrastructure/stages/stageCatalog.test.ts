@@ -3,6 +3,7 @@ import { addClass } from '../../domain/codebase/addClass';
 import { addFile } from '../../domain/codebase/addFile';
 import { allClasses, type Codebase } from '../../domain/codebase/Codebase';
 import { extractMethod } from '../../domain/codebase/extractMethod';
+import { methodLines } from '../../domain/codebase/lineCount';
 import { moveClass } from '../../domain/codebase/moveClass';
 import { moveMethod } from '../../domain/codebase/moveMethod';
 import type { Result } from '../../domain/shared/Result';
@@ -141,6 +142,11 @@ function applySteps(stage: Stage, steps: readonly Step[]): Codebase {
   return steps.reduce((codebase, step, index) => applyStep(codebase, step, `solution-${String(index)}`), stage.codebase);
 }
 
+function longestMethodLines(codebase: Codebase): number {
+  const methods = allClasses(codebase).flatMap((codeClass) => codeClass.methods);
+  return Math.max(...methods.map((method) => methodLines(method)));
+}
+
 function allIds(stage: Stage): string[] {
   const { files } = stage.codebase;
   const classes = allClasses(stage.codebase);
@@ -193,6 +199,28 @@ describe('stageCatalog', () => {
 
       // Assert
       expect(trimmed).not.toBe('');
+    });
+
+    it('実業務の規模に合わせ、80行以上のメソッドが1つ以上ある', () => {
+      // Arrange
+      const { codebase } = stage;
+
+      // Act
+      const longest = longestMethodLines(codebase);
+
+      // Assert
+      expect(longest).toBeGreaterThanOrEqual(80);
+    });
+
+    it('行数の上限は メソッド < クラス < ファイル の順に大きい', () => {
+      // Arrange
+      const { method, class: classLimit, file } = stage.limits;
+
+      // Act
+      const ascending = method < classLimit && classLimit < file;
+
+      // Assert
+      expect(ascending).toBe(true);
     });
 
     it('初期状態では減点がある', () => {
