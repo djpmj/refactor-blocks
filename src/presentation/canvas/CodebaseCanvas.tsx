@@ -9,7 +9,7 @@ import {
   type DragStartEvent,
   type UniqueIdentifier,
 } from '@dnd-kit/core';
-import { Background, Controls, ReactFlow, useReactFlow, type NodeTypes } from '@xyflow/react';
+import { Background, Controls, ReactFlow, useReactFlow, type NodeChange, type NodeTypes, type XYPosition } from '@xyflow/react';
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { findClass, findFileOfClass, findMethod, type Codebase } from '../../domain/codebase/Codebase';
@@ -19,7 +19,7 @@ import { CanvasContextMenu } from './CanvasContextMenu';
 import { ClassNode } from './ClassNode';
 import { parseClassDragId, parseClassDropId, parseFileDropId, parseMethodDragId } from './dndIds';
 import { FileNode } from './FileNode';
-import { dependencyEdges, layoutCodebase } from './layoutCodebase';
+import { dependencyEdges, layoutCodebase, type CodebaseFlowNode } from './layoutCodebase';
 import { MethodChipView } from './MethodChip';
 import { useCanvasContextMenu } from './useCanvasContextMenu';
 
@@ -60,12 +60,43 @@ function FitViewOnLayoutChange({ stageId, fileCount }: Readonly<{ stageId: strin
   return null;
 }
 
+type Measured = { width: number; height: number };
+type FlowOverrides = { stageId: string; positions: Record<string, XYPosition>; measured: Record<string, Measured> };
+
+/** ファイルだけドラッグ可能にし(クラスはdnd-kitで動かす)、動かした位置と計測済みの大きさを反映する。 */
+function arrangeNodes(nodes: CodebaseFlowNode[], overrides: FlowOverrides): CodebaseFlowNode[] {
+  return nodes.map((node) => {
+    const measured = overrides.measured[node.id];
+    if (node.type === 'classNode') return { ...node, draggable: false, measured };
+    return { ...node, position: overrides.positions[node.id] ?? node.position, measured };
+  });
+}
+
+/**
+ * ファイルの箱はドラッグで動かせる(依存の矢印と重なるとき用)。動かした位置はステージごとに覚える。
+ * ノードはstoreから毎回作り直すので、React Flowが計測した大きさもここで持つ(反映しないとノードが非表示のままになる)。
+ */
+function useFlowOverrides(stageId: string) {
+  const [state, setState] = useState<FlowOverrides>({ stageId, positions: {}, measured: {} });
+  const overrides = state.stageId === stageId ? state : { stageId, positions: {}, measured: state.measured };
+  const handleNodesChange = (changes: NodeChange[]) => {
+    const next = { stageId, positions: { ...overrides.positions }, measured: { ...overrides.measured } };
+    for (const change of changes) {
+      if (change.type === 'position' && change.position !== undefined) next.positions[change.id] = change.position;
+      if (change.type === 'dimensions' && change.dimensions !== undefined) next.measured[change.id] = change.dimensions;
+    }
+    setState(next);
+  };
+  return { overrides, handleNodesChange };
+}
+
 export function CodebaseCanvas() {
   const codebase = useGameStore((state) => state.codebase);
   const stageId = useGameStore((state) => state.stage.id);
   const moveMethod = useGameStore((state) => state.moveMethod);
   const moveClass = useGameStore((state) => state.moveClass);
-  const nodes = useMemo(() => layoutCodebase(codebase), [codebase]);
+  const { overrides, handleNodesChange } = useFlowOverrides(stageId);
+  const nodes = useMemo(() => arrangeNodes(layoutCodebase(codebase), overrides), [codebase, overrides]);
   const edges = useMemo(() => dependencyEdges(codebase), [codebase]);
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, POINTER_ACTIVATION), useSensor(KeyboardSensor));
@@ -99,7 +130,7 @@ export function CodebaseCanvas() {
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
-        nodesDraggable={false}
+        onNodesChange={handleNodesChange}
         nodesConnectable={false}
         fitView
         minZoom={0.3}

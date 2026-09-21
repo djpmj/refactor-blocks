@@ -569,3 +569,23 @@ test('変更依頼の調査中は、前回の変更箇所の印を出さない(�
   // Assert
   await expect(page.getByTestId('change-site-badge')).toHaveCount(0);
 });
+
+test('ファイルの箱をドラッグして位置をずらせる', async ({ page }) => {
+  // Arrange
+  await openOrderStage(page);
+  const file = page.locator('.react-flow__node[data-id="file-tax-calculator"]');
+  const before = await file.boundingBox();
+  if (before === null) throw new Error('ファイルの位置を取得できません');
+
+  // Act: ファイルの箱の余白(クラスの外)をつかんで下へ動かす
+  const grabX = before.x + 8;
+  const grabY = before.y + 8;
+  await page.mouse.move(grabX, grabY);
+  await page.mouse.down();
+  await page.mouse.move(grabX + 20, grabY + 120, { steps: 5 });
+  await page.mouse.up();
+
+  // Assert
+  const after = await file.boundingBox();
+  expect(after?.y).toBeGreaterThan(before.y + 50);
+});
