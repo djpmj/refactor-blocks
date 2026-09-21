@@ -5,7 +5,7 @@ import { methodLines } from '../../domain/codebase/lineCount';
 import { useGameStore } from '../store/useGameStore';
 import { describeDeductions, siteNames } from './describeChange';
 
-function OutcomeCard({ outcome, codebase }: Readonly<{ outcome: ChangeOutcome; codebase: Codebase }>) {
+function OutcomeCard({ outcome, codebase, previous }: Readonly<{ outcome: ChangeOutcome; codebase: Codebase; previous?: number }>) {
   const { current, initial, request } = outcome;
   const reasons = describeDeductions(outcome, codebase);
   return (
@@ -13,6 +13,7 @@ function OutcomeCard({ outcome, codebase }: Readonly<{ outcome: ChangeOutcome; c
       <h3 className="change-outcome__title">{request.title}</h3>
       <p className="change-outcome__scores">
         今のコード <strong data-testid="outcome-current">{current.score.total}点</strong> / 初期状態 <span data-testid="outcome-initial">{initial.score.total}点</span>
+        {previous === undefined ? null : <span data-testid="outcome-previous"> / 前回 {previous}点</span>}
       </p>
       <p className="change-outcome__facts">
         変更が必要: {siteNames(outcome, codebase)}({current.impact.classesTouched}クラス・{current.impact.filesTouched}ファイル・+{current.impact.linesAdded}行)
@@ -33,6 +34,8 @@ function OutcomeCard({ outcome, codebase }: Readonly<{ outcome: ChangeOutcome; c
 function Results({ outcomes }: Readonly<{ outcomes: readonly ChangeOutcome[] }>) {
   const codebase = useGameStore((state) => state.codebase);
   const endChangeRequests = useGameStore((state) => state.endChangeRequests);
+  // 結果を閉じるまでは、直前の挑戦の結果がまだ残っているので、それを「前回」として並べる
+  const previousOutcomes = useGameStore((state) => state.lastChangeReport?.outcomes);
   return (
     <>
       <h2 className="method-editor__title">変更依頼の結果</h2>
@@ -42,7 +45,12 @@ function Results({ outcomes }: Readonly<{ outcomes: readonly ChangeOutcome[] }>)
       </p>
       <ul className="change-outcomes">
         {outcomes.map((outcome) => (
-          <OutcomeCard key={outcome.request.id} outcome={outcome} codebase={codebase} />
+          <OutcomeCard
+            key={outcome.request.id}
+            outcome={outcome}
+            codebase={codebase}
+            previous={previousOutcomes?.find((previous) => previous.request.id === outcome.request.id)?.current.score.total}
+          />
         ))}
       </ul>
       <button type="button" data-testid="change-request-close" onClick={endChangeRequests}>

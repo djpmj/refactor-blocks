@@ -110,3 +110,7 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .change-inspect__title { margin: 0 0 4px; font-size: 13px; font-family: ui-monospace, monospace; }
 .change-inspect__fragments { margin: 0; padding-left: 18px; }
 .change-inspect__methods { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.method-chip__badge { font-size: 11px; color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 0 6px; }
+.change-memo { margin-top: 16px; border-top: 1px solid var(--border); padding-top: 8px; font-size: 13px; }
+.change-memo__title { margin: 0 0 4px; font-size: 14px; }
+.change-memo__list { margin: 0; padding-left: 18px; color: var(--muted); }

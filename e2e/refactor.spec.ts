@@ -468,7 +468,8 @@ test('責務を分けたあとで同じ依頼を受けると、初期状態よ�
 test('結果画面から戻ると、キャンバスは変更依頼を当てる前の状態のままで、編集を再開できる', async ({ page }) => {
   // Arrange
   await openOrderStage(page);
-  const before = await page.getByTestId('method-placeOrder').innerText();
+  const lines = page.getByTestId('method-placeOrder').locator('.method-chip__lines');
+  const before = await lines.innerText();
   await investigateRequests(page, [['placeOrder'], ['placeOrder'], ['placeOrder']]);
 
   // Act
@@ -476,7 +477,7 @@ test('結果画面から戻ると、キャンバスは変更依頼を当てる�
 
   // Assert
   await expect(page.getByTestId('change-panel')).toHaveCount(0);
-  expect(await page.getByTestId('method-placeOrder').innerText()).toBe(before);
+  expect(await lines.innerText()).toBe(before);
   await page.getByTestId('method-placeOrder').click();
   await expect(page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' })).toBeVisible();
 });
@@ -524,4 +525,47 @@ test('変更依頼の調査で複数のメソッドを選ぶと、選んだメ�
   await expect(inspect.getByTestId('change-inspect-placeOrder')).toBeVisible();
   await expect(inspect.getByTestId('change-inspect-calculateTax')).not.toContainText('確認中');
   await expect(inspect.getByTestId('change-inspect-calculateTax')).toContainText('消費税を計算する(軽減税率あり)');
+});
+
+test('変更依頼の結果は、リファクタリングに戻っても手がかりとして残り、直してから再挑戦すると前回の点数と比べられる', async ({ page }) => {
+  // Arrange
+  await openOrderStage(page);
+  await investigateRequests(page, [['placeOrder'], ['placeOrder'], ['placeOrder']]);
+
+  // Act
+  await page.getByTestId('change-request-close').click();
+
+  // Assert(調査中は隠していた変更箇所の印と、前回の減点理由がキャンバスの横に残る)
+  await expect(page.getByTestId('method-placeOrder').getByTestId('change-site-badge')).toHaveText('変更×3');
+  const memo = page.getByTestId('change-memo');
+  await expect(memo).toContainText('軽減税率の対象を増やして');
+  await expect(memo).toContainText('70点');
+  await expect(memo).toContainText('巻き込み');
+  await expect(page.getByTestId('change-request-start')).toHaveText('もう一度挑戦');
+
+  // Act(税の計算を抽出して、もう一度挑戦する)
+  await page.getByTestId('method-placeOrder').click();
+  await page.getByLabel('消費税を計算する(軽減税率あり)').check();
+  await page.getByLabel('新しいメソッド名').fill('calculateTax');
+  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+  await investigateRequests(page, [['calculateTax'], ['placeOrder'], ['placeOrder']]);
+
+  // Assert
+  const outcome = page.getByTestId('change-outcome-req-reduced-tax');
+  await expect(outcome.getByTestId('outcome-current')).toHaveText('100点');
+  await expect(outcome.getByTestId('outcome-previous')).toContainText('前回 70点');
+});
+
+test('変更依頼の調査中は、前回の変更箇所の印を出さない(答えが見えてしまうため)', async ({ page }) => {
+  // Arrange
+  await openOrderStage(page);
+  await investigateRequests(page, [['placeOrder'], ['placeOrder'], ['placeOrder']]);
+  await page.getByTestId('change-request-close').click();
+  await expect(page.getByTestId('change-site-badge')).toHaveCount(1);
+
+  // Act
+  await page.getByTestId('change-request-start').click();
+
+  // Assert
+  await expect(page.getByTestId('change-site-badge')).toHaveCount(0);
 });

@@ -36,6 +36,13 @@ export type ChangeSession = {
   readonly outcomes: readonly ChangeOutcome[];
 };
 
+/** 直前に終えた変更依頼の結果。リファクタリングに戻ったあとも、どこを直せばよいかの手がかりとして残す。 */
+export type ChangeReport = {
+  readonly outcomes: readonly ChangeOutcome[];
+  /** 減点の理由(波及したクラスの名前など)を組み立てるための、挑戦した時点のコードベース。 */
+  readonly codebase: Codebase;
+};
+
 type GameState = {
   stages: readonly Stage[];
   stage: Stage;
@@ -44,6 +51,7 @@ type GameState = {
   selectedMethodId: string | null;
   message: string | null;
   changeSession: ChangeSession | null;
+  lastChangeReport: ChangeReport | null;
   selectMethod: (methodId: string | null) => void;
   moveMethod: (methodId: string, targetClassId: string) => void;
   extractMethod: (input: ExtractMethodInput) => boolean;
@@ -136,7 +144,9 @@ function changeSessionActions(
       set(finishInvestigation(get()));
     },
     endChangeRequests: () => {
-      set({ changeSession: null, message: null });
+      const { changeSession, codebase, lastChangeReport } = get();
+      const outcomes = changeSession === null ? [] : changeSession.outcomes;
+      set({ changeSession: null, message: null, lastChangeReport: outcomes.length > 0 ? { outcomes, codebase } : lastChangeReport });
     },
   };
 }
@@ -155,6 +165,7 @@ export const useGameStore = create<GameState>((set, get) => {
     selectedMethodId: null,
     message: null,
     changeSession: null,
+    lastChangeReport: null,
     selectMethod: (methodId) => {
       set({ selectedMethodId: methodId, message: null });
     },
@@ -195,7 +206,7 @@ export const useGameStore = create<GameState>((set, get) => {
     },
     selectStage: (stageId) => {
       const stage = stages.find((candidate) => candidate.id === stageId);
-      if (stage !== undefined) set({ stage, codebase: stage.codebase, history: emptyHistory(), selectedMethodId: null, message: null, changeSession: null });
+      if (stage !== undefined) set({ stage, codebase: stage.codebase, history: emptyHistory(), selectedMethodId: null, message: null, changeSession: null, lastChangeReport: null });
     },
   };
 });

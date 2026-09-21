@@ -62,6 +62,7 @@ export function StagePanel() {
   const redo = useGameStore((state) => state.redo);
   const startChangeRequests = useGameStore((state) => state.startChangeRequests);
   const investigating = useGameStore((state) => state.changeSession !== null);
+  const challenged = useGameStore((state) => state.lastChangeReport !== null);
   const canUndo = useGameStore((state) => state.history.past.length > 0);
   const canRedo = useGameStore((state) => state.history.future.length > 0);
   const score = useMemo(() => scoreCodebase(codebase, stage), [codebase, stage]);
@@ -82,7 +83,7 @@ export function StagePanel() {
       </div>
       <div className="stage-panel__actions">
         <button type="button" data-testid="change-request-start" onClick={startChangeRequests} disabled={investigating}>
-          変更依頼に挑戦
+          {challenged ? 'もう一度挑戦' : '変更依頼に挑戦'}
         </button>
         <button type="button" onClick={undo} disabled={!canUndo || investigating} title="Ctrl+Z">
           元に戻す

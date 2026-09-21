@@ -16,10 +16,12 @@ type MethodChipViewProps = {
   selected?: boolean;
   /** 変更依頼の調査で「変更が必要」と選ばれている。 */
   investigated?: boolean;
+  /** 直前の変更依頼で、このメソッドの変更が必要だった依頼の数。 */
+  changeCount?: number;
 };
 
 /** ドラッグ中のオーバーレイでも使う見た目だけのコンポーネント。 */
-export function MethodChipView({ method, overLimit, selected = false, investigated = false }: Readonly<MethodChipViewProps>) {
+export function MethodChipView({ method, overLimit, selected = false, investigated = false, changeCount = 0 }: Readonly<MethodChipViewProps>) {
   const classNames = ['method-chip', `method-chip--${method.visibility}`];
   if (overLimit) classNames.push('method-chip--over');
   if (selected) classNames.push('method-chip--selected');
@@ -28,6 +30,11 @@ export function MethodChipView({ method, overLimit, selected = false, investigat
     <div className={classNames.join(' ')}>
       <span className="method-chip__visibility">{VISIBILITY_MARK[method.visibility]}</span>
       <span className="method-chip__name">{method.name}()</span>
+      {changeCount > 0 ? (
+        <span className="method-chip__badge" data-testid="change-site-badge" title="直前の変更依頼で、変更が必要だったメソッド">
+          変更×{changeCount}
+        </span>
+      ) : null}
       <span className="method-chip__lines">{methodLines(method)}行</span>
     </div>
   );
@@ -45,6 +52,12 @@ export function MethodChip({ method }: Readonly<{ method: Method }>) {
   const investigated = useGameStore((state) => state.changeSession?.selected.includes(method.id) ?? false);
   const toggleInvestigated = useGameStore((state) => state.toggleInvestigated);
   const inspectMethod = useGameStore((state) => state.inspectMethod);
+  // 調査中に出すと答えが見えてしまうので、変更依頼に挑戦していないときだけ数える
+  const changeCount = useGameStore((state) =>
+    state.changeSession === null
+      ? (state.lastChangeReport?.outcomes.filter((outcome) => outcome.current.impact.sites.includes(method.id)).length ?? 0)
+      : 0,
+  );
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: methodDragId(method.id) });
   return (
     <button
@@ -67,7 +80,7 @@ export function MethodChip({ method }: Readonly<{ method: Method }>) {
       {...attributes}
       {...listeners}
     >
-      <MethodChipView method={method} overLimit={methodLines(method) > limit} selected={selected} investigated={investigated} />
+      <MethodChipView method={method} overLimit={methodLines(method) > limit} selected={selected} investigated={investigated} changeCount={changeCount} />
     </button>
   );
 }

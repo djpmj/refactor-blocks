@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { findClassOfMethod, findMethod, type Method } from '../../domain/codebase/Codebase';
 import { methodLines } from '../../domain/codebase/lineCount';
 import { suggestMethodName } from '../../domain/codebase/suggestMethodName';
+import { ChangeMemo } from '../change/ChangeMemo';
 import { useGameStore } from '../store/useGameStore';
 
 function toggle(selected: ReadonlySet<string>, id: string): Set<string> {
@@ -108,6 +109,7 @@ export function MethodEditor() {
       ) : (
         <MethodEditorBody key={method.id} method={method} />
       )}
+      <ChangeMemo />
       {message === null ? null : (
         <p className="method-editor__message" role="alert">
           {message}
