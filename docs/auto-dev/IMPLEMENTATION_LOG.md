@@ -28,6 +28,23 @@ diffは書かず、要約と確認観点だけを書く。
 
 ## ログ一覧
 
+## 2026-09-21 23:40 (JST) — 依存の矢印が途切れたり逆向きに回り込んだりするのを直す
+
+- 対応タスク: docs/auto-dev/TASKS.md の「依存の矢印が途切れたり逆向きに回り込んだりするのを直す」
+- コミット: 9455a3635f3983b91abf83bf45fddf6a311b455f
+- 実装内容:
+  - クラスノードの左右に source/target のハンドルを置き、`dependencyEdges` がファイルの並び順から向かい合う側(右→左、左→右、同一ファイルは右→右)を選ぶようにした
+  - source は上寄り・target は下寄りにずらし、双方向の依存が別々の線として見えるようにした
+  - 矢印に `zIndex` を付け、ファイルの箱より手前に描くようにした
+- 変更ファイル:
+  - src/presentation/canvas/layoutCodebase.ts
+  - src/presentation/canvas/layoutCodebase.test.ts(新規)
+  - src/presentation/canvas/ClassNode.tsx
+  - src/index.css
+- 確認してほしいこと:
+  - 中級1で、Order⇄Customer の2本の赤い矢印が交差する別の線になり、両端に矢じりが見えるか
+  - 同じファイル内のクラス間の矢印(右端どうし)の見た目が許容できるか(自動テストでは経路の見た目までは見ていない)
+
 ## 2026-09-21 21:51 (JST) — セマンティックズームを入れる
 
 - 対応タスク: docs/auto-dev/TASKS.md の「セマンティックズームを入れる」
