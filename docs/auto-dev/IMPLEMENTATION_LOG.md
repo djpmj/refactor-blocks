@@ -28,6 +28,26 @@ diffは書かず、要約と確認観点だけを書く。
 
 ## ログ一覧
 
+## 2026-09-21 21:49 (JST) — 責務の混在を採点する
+
+- 対応タスク: docs/auto-dev/TASKS.md の「責務の混在を採点する」
+- コミット: 6218e6fa5b30d22f445e7e65d9dfa949b894b3e3
+- 実装内容:
+  - クラスごとに、中の処理(Fragment)の `responsibility` が何種類あるかを数えるルールを採点に追加した。抽出で残る呼び出し行(`call`)は数えない
+  - ステージ定義に `responsibilityLimit`(1クラスあたりの責務の上限)を追加し、超えたクラス1つにつき10点減点する
+  - 画面上部の点数表示に「責務の混在 -10」の形で出す。どの責務が混ざっているか(`responsibility` の値)は表示しない
+  - チュートリアルは上限を4にした(初期の OrderService は5種類で減点。税の計算を TaxCalculator へ移すと4種類になり解消)
+- 変更ファイル:
+  - src/domain/scoring/responsibilities.ts / responsibilities.test.ts(新規)
+  - src/domain/scoring/score.ts / score.test.ts、src/domain/stage/Stage.ts
+  - src/infrastructure/samples/tutorialStage.ts
+  - src/presentation/stage/StagePanel.tsx
+  - e2e/refactor.spec.ts
+- 確認してほしいこと:
+  - 初期表示が「80点(行数 -10 / 責務の混在 -10)」になり、税の計算を抽出して TaxCalculator へ移すと責務の混在の減点が消えるか
+  - チュートリアルの上限4がゲームとして妥当か(3にすると、メール送信なども別クラスへ出す必要が出る)。上限値は実装者の判断で決めた
+  - 違反しているクラスがどれかは点数表示からは分からない。クラスノード側にも印を出すべきかは未対応
+
 ## 2026-09-21 21:47 (JST) — クラスの新規作成とファイルの新規作成をできるようにする
 
 - 対応タスク: docs/auto-dev/TASKS.md の「クラスの新規作成とファイルの新規作成をできるようにする」
