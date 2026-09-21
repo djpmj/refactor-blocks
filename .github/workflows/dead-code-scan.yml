@@ -1,0 +1,56 @@
+name: dead-code-scan
+
+# Unused-export / unused-file detection (knip), reported to the PR job summary.
+# The gap this fills: eslint's `no-unused-vars` only sees WITHIN a file; it doesn't
+# catch an export nobody imports, or a helper whose last caller was removed.
+#
+# Report-only — this workflow NEVER fails the build (continue-on-error), because:
+#   1. knip can't infer every entry point, so a few false positives are expected.
+#      Blocking on day one would just train people to add ignore comments reflexively.
+#   2. knip has no base-branch diffing, so the report is the FULL current inventory,
+#      not this PR's delta. It's a review aid, not a gate.
+#
+# Run it locally with `npm run dead-code-scan`.
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - "**/*.ts"
+      - "**/*.tsx"
+      - "**/tsconfig*.json"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/dead-code-scan.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dead-code-scan:
+    name: Dead Code Scan (knip)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - run: npm ci
+
+      - name: Run knip
+        run: |
+          set -uo pipefail
+          {
+            printf '## Dead code scan (knip)\n\n'
+            printf 'Unused exports / files below. Report-only — a human decides what is\n'
+            printf 'real. See .github/workflows/dead-code-scan.yml.\n\n'
+            printf '```\n'
+            npm run --silent dead-code-scan -- --reporter compact 2>&1 || true
+            printf '```\n'
+          } >> "$GITHUB_STEP_SUMMARY"

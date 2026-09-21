@@ -1,0 +1,77 @@
+:root {
+  --bg: #f6f7fb;
+  --surface: #ffffff;
+  --border: #d7dbe7;
+  --text: #1f2430;
+  --muted: #6b7285;
+  --accent: #4f6bed;
+  --public: #2e9e6a;
+  --private: #8a8fa3;
+  --protected: #c9861c;
+  --danger: #d64545;
+  --file-bg: #eef1fa;
+  color-scheme: light;
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #15171e;
+    --surface: #1f222c;
+    --border: #353a4a;
+    --text: #e6e8ef;
+    --muted: #9aa0b4;
+    --accent: #7c93ff;
+    --file-bg: #1a1d27;
+    color-scheme: dark;
+  }
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); }
+
+.app { display: flex; flex-direction: column; height: 100vh; }
+.app__body { display: flex; flex: 1; min-height: 0; }
+.app__canvas { flex: 1; min-width: 0; }
+
+.stage-panel { display: flex; align-items: center; gap: 24px; padding: 12px 20px; background: var(--surface); border-bottom: 1px solid var(--border); }
+.stage-panel__title { margin: 0; font-size: 18px; }
+.stage-panel__goal { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+.stage-panel__status { flex: 1; font-size: 13px; }
+.stage-panel__reset, .method-editor__extract button { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+
+.file-node { width: 100%; height: 100%; background: var(--file-bg); border: 2px dashed var(--border); border-radius: 12px; }
+.file-node__header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; font-size: 13px; font-family: ui-monospace, monospace; }
+.file-node__path { flex: 1; }
+
+.class-node { width: 100%; height: 100%; background: var(--surface); border: 2px solid var(--border); border-radius: 10px; transition: border-color 0.15s, box-shadow 0.15s; }
+.class-node--drop-target { border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent); }
+.class-node__header { display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid var(--border); font-weight: 700; }
+.class-node__methods { display: flex; flex-direction: column; gap: 6px; padding: 8px; }
+.class-node__empty { color: var(--muted); font-size: 12px; text-align: center; padding: 12px 0; }
+
+.method-chip-button { all: unset; display: block; cursor: grab; }
+.method-chip-button:focus-visible { outline: 2px solid var(--accent); border-radius: 6px; }
+.method-chip { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); font-family: ui-monospace, monospace; font-size: 13px; }
+.method-chip--public .method-chip__visibility { color: var(--public); }
+.method-chip--private .method-chip__visibility { color: var(--private); }
+.method-chip--protected .method-chip__visibility { color: var(--protected); }
+.method-chip--over { border-color: var(--danger); }
+.method-chip--selected { border-color: var(--accent); }
+.method-chip__visibility { font-weight: 700; }
+.method-chip__name { flex: 1; }
+.method-chip__lines { color: var(--muted); font-size: 12px; }
+
+.line-badge { font-size: 12px; font-weight: 400; color: var(--muted); }
+.line-badge--over { color: var(--danger); font-weight: 700; }
+
+.method-editor { width: 360px; padding: 16px; background: var(--surface); border-left: 1px solid var(--border); overflow-y: auto; }
+.method-editor__title { font-size: 15px; font-family: ui-monospace, monospace; }
+.method-editor__hint { color: var(--muted); font-size: 13px; }
+.method-editor__message { color: var(--danger); font-size: 13px; }
+.method-editor__extract { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.method-editor__extract input { padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); }
+.fragment-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.fragment-list__item label { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-size: 13px; }
+.fragment-list__label { flex: 1; }
+.fragment-list__lines { color: var(--muted); font-size: 12px; }

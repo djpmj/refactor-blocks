@@ -1,0 +1,45 @@
+name: duplication-scan
+
+on:
+  pull_request:
+    branches: [master]
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  duplication-scan:
+    name: Duplication Scan (jscpd)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      security-events: write # SARIFアップロードに必須
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - run: npm ci
+
+      # 閾値は設定しない。重複はブロックせず、SARIFで可視化するだけに留める。
+      - run: npm run duplication-scan
+
+      # このリポジトリはprivateなのでGitHub Advanced Securityが有効でないと
+      # Code Scanningへのアップロードが失敗しうる。その場合もジョブ全体は
+      # 失敗させない(continue-on-error)。
+      - name: Upload SARIF to Code Scanning
+        if: always()
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: report/jscpd-report.sarif
+          category: jscpd

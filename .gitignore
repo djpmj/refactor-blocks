@@ -1,0 +1,44 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Environment variables (Supabase URL/anon key etc.)
+.env
+.env.local
+
+# jscpd duplication-scan output
+report/
+.jscpd/
+
+# vitest coverage output
+coverage/
+
+# git worktrees created for isolated agent implementation (feature-harness)
+.claude/worktrees/
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Playwright output
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
