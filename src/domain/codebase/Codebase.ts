@@ -4,6 +4,7 @@ export type Visibility = 'public' | 'private' | 'protected';
  * メソッドの中の、切り出し可能な処理のまとまり。
  * responsibility は採点用の隠しタグで、プレイヤーには表示しない(例: 'validation' / 'tax' / 'io')。
  * uses はこの処理が呼び出すメソッドのID。クラス間の依存の元になる。
+ * suggestedName はこの処理だけを抽出したときのメソッド名の候補(例: 'calculateTax')。
  */
 export type Fragment = {
   readonly id: string;
@@ -11,6 +12,7 @@ export type Fragment = {
   readonly lines: number;
   readonly responsibility: string;
   readonly uses?: readonly string[];
+  readonly suggestedName?: string;
 };
 
 export type Method = {

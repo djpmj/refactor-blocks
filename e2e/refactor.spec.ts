@@ -14,6 +14,22 @@ test('メソッドを選んで処理を抽出すると、クラスに新しい�
   await expect(page.getByTestId('class-OrderService').getByTestId('method-calculateTax')).toBeVisible();
 });
 
+test('処理を選ぶと、選んだ処理に合わせてメソッド名が自動で入り、そのまま抽出できる', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await page.getByTestId('method-placeOrder').click();
+  const nameInput = page.getByLabel('新しいメソッド名');
+
+  // Act
+  await page.getByLabel('商品が空でないか検証する').check();
+  await expect(nameInput).toHaveValue('validateItems');
+  await page.getByLabel('在庫があるか検証する').check();
+  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+
+  // Assert
+  await expect(page.getByTestId('class-OrderService').getByTestId('method-validateItemsAndStock')).toBeVisible();
+});
+
 test('メソッドを別クラスへドラッグ&ドロップすると移動する', async ({ page }) => {
   // Arrange
   await page.goto('/');

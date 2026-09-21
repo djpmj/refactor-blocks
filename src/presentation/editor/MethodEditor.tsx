@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { findClassOfMethod, findMethod, type Method } from '../../domain/codebase/Codebase';
 import { methodLines } from '../../domain/codebase/lineCount';
+import { suggestMethodName } from '../../domain/codebase/suggestMethodName';
 import { useGameStore } from '../store/useGameStore';
 
 function toggle(selected: ReadonlySet<string>, id: string): Set<string> {
@@ -44,13 +45,20 @@ function MethodEditorBody({ method }: Readonly<{ method: Method }>) {
   const owner = useGameStore((state) => findClassOfMethod(state.codebase, method.id));
   const extractMethod = useGameStore((state) => state.extractMethod);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
-  const [newName, setNewName] = useState('');
+  // null のあいだは選んだ処理から名前を自動で考え、プレイヤーが入力したらその名前を優先する
+  const [customName, setCustomName] = useState<string | null>(null);
+  const newName =
+    customName ??
+    suggestMethodName(
+      method.fragments.filter((fragment) => selected.has(fragment.id)),
+      owner?.methods.map((ownerMethod) => ownerMethod.name) ?? [],
+    );
 
   const handleExtract = () => {
     const succeeded = extractMethod({ sourceMethodId: method.id, fragmentIds: [...selected], newMethodName: newName });
     if (succeeded) {
       setSelected(new Set());
-      setNewName('');
+      setCustomName(null);
     }
   };
 
@@ -63,10 +71,10 @@ function MethodEditorBody({ method }: Readonly<{ method: Method }>) {
       <div className="method-editor__extract">
         <input
           aria-label="新しいメソッド名"
-          placeholder="新しいメソッド名(例: validateOrder)"
+          placeholder="処理を選ぶと名前を自動で考えます"
           value={newName}
           onChange={(event) => {
-            setNewName(event.target.value);
+            setCustomName(event.target.value);
           }}
         />
         <button type="button" onClick={handleExtract}>
