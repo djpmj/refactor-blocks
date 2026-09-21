@@ -28,6 +28,25 @@ diffは書かず、要約と確認観点だけを書く。
 
 ## ログ一覧
 
+## 2026-09-22 01:40 (JST) — Ctrl+Z / Ctrl+Y で操作の取り消し・やり直しをできるようにする
+
+- 対応タスク: docs/auto-dev/TASKS.md の「Ctrl+Z / Ctrl+Y で操作の取り消し・やり直しをできるようにする」
+- コミット: df5e73f20bc93942b701b637b24fad3a7c765a08
+- 実装内容:
+  - `domain/codebase/history.ts` に、Codebase のスナップショットを過去・未来の2配列で持つ履歴(`recordChange` / `undoHistory` / `redoHistory`)を純粋関数で追加(テスト付き)
+  - ストアの `commit` を全操作の共通の入口にし、コードベースが実際に変わったときだけ1手として記録。失敗した操作・変わらない操作(同じクラスへの移動など)は積まない。新しい操作で「進める」側は捨て、ステージ切替で履歴を空にする
+  - 「最初に戻す」(旧「やり直す」)も1手として記録し、元に戻せる。取り消し後に選択中のメソッドがなければ選択を外す
+  - Ctrl/Cmd+Z で戻す、Ctrl+Y・Ctrl+Shift+Z で進める(`useUndoRedoShortcut`)。入力欄・選択欄にフォーカスがあるときはブラウザ標準に任せる
+  - 画面上部に「元に戻す」「やり直し」ボタンを追加(できないときは無効)
+- 変更ファイル:
+  - src/domain/codebase/history.ts、history.test.ts(新規)
+  - src/presentation/store/useGameStore.ts、useUndoRedoShortcut.ts(新規)、App.tsx、stage/StagePanel.tsx
+  - src/index.css、e2e/refactor.spec.ts
+- 確認してほしいこと:
+  - 抽出・移動・統合・追加・名前変更のそれぞれで Ctrl+Z / Ctrl+Y が効くか。Mac の Cmd でも動くか(Macでは未確認)
+  - 名前変更の入力欄・ステージ選択にフォーカスがあるときは、Codebase の取り消しが起きないか
+  - 履歴の長さに上限は設けていない(`// ponytail:` コメントあり)。長時間プレイで重くならないか
+
 ## 2026-09-22 01:10 (JST) — ファイルとクラスの名前を変更(Rename)できるようにする
 
 - 対応タスク: docs/auto-dev/TASKS.md の「ファイルとクラスの名前を変更(Rename)できるようにする」
