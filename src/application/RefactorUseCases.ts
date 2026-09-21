@@ -5,6 +5,8 @@ import { extractMethod, type ExtractMethodError } from '../domain/codebase/extra
 import { findCallerOf, inlineMethod, type InlineMethodError } from '../domain/codebase/inlineMethod';
 import { moveClass, type MoveClassError } from '../domain/codebase/moveClass';
 import { moveMethod, type MoveMethodError } from '../domain/codebase/moveMethod';
+import { renameClass, type RenameClassError } from '../domain/codebase/renameClass';
+import { renameFile, type RenameFileError } from '../domain/codebase/renameFile';
 import { err, ok, type Result } from '../domain/shared/Result';
 
 export type IdGenerator = () => string;
@@ -75,6 +77,28 @@ export function moveClassUseCase(
   return error === 'same-file' ? ok(codebase) : err(error);
 }
 
+/** プレイヤーの「クラス名を変更」操作。 */
+export function renameClassUseCase(codebase: Codebase, classId: string, newName: string): Result<Codebase, RenameClassError> {
+  return renameClass(codebase, classId, newName);
+}
+
+/** プレイヤーの「ファイルのパスを変更」操作。 */
+export function renameFileUseCase(codebase: Codebase, fileId: string, newPath: string): Result<Codebase, RenameFileError> {
+  return renameFile(codebase, fileId, newPath);
+}
+
+const RENAME_CLASS_ERROR_MESSAGES: Record<RenameClassError, string> = {
+  'class-not-found': '名前を変えるクラスが見つかりません',
+  'empty-class-name': 'クラス名を入力してください',
+  'duplicate-class-name': '同じ名前のクラスがすでにあります',
+};
+
+const RENAME_FILE_ERROR_MESSAGES: Record<RenameFileError, string> = {
+  'file-not-found': '名前を変えるファイルが見つかりません',
+  'empty-path': 'ファイルのパスを入力してください',
+  'duplicate-path': '同じパスのファイルがすでにあります',
+};
+
 const EXTRACT_ERROR_MESSAGES: Record<ExtractMethodError, string> = {
   'method-not-found': 'メソッドが見つかりません',
   'no-fragments-selected': '抽出する処理を1つ以上選んでください',
@@ -134,4 +158,12 @@ export function describeAddFileError(error: AddFileError): string {
 
 export function describeMoveClassError(error: Exclude<MoveClassError, 'same-file'>): string {
   return MOVE_CLASS_ERROR_MESSAGES[error];
+}
+
+export function describeRenameClassError(error: RenameClassError): string {
+  return RENAME_CLASS_ERROR_MESSAGES[error];
+}
+
+export function describeRenameFileError(error: RenameFileError): string {
+  return RENAME_FILE_ERROR_MESSAGES[error];
 }

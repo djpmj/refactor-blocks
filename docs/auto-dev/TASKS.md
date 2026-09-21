@@ -89,7 +89,7 @@ Claude Codeがこのファイルを上から順に読み、`### [ ]` の未完�
 - 関連ファイル: `src/infrastructure/stages/tutorialStages.ts`、`beginnerStages.ts`、`intermediateStages.ts`、
   `src/infrastructure/stages/stageCatalog.test.ts`、`e2e/`
 
-### [ ] ファイルとクラスの名前を変更(Rename)できるようにする
+### [x] ファイルとクラスの名前を変更(Rename)できるようにする
 
 - 背景・目的: 「クラスを追加」「ファイルを追加」で作った受け皿や、責務に合わない既存の名前を付け直せない。
   名前付けもリファクタリングの大事な一部なので、ファイルのパスとクラス名を変えられるようにしたい。

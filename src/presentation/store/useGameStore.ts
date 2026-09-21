@@ -10,12 +10,17 @@ import {
   describeExtractError,
   describeInlineError,
   describeMoveError,
+  describeRenameClassError,
+  describeRenameFileError,
   extractMethodUseCase,
   inlineMethodUseCase,
   moveClassUseCase,
   moveMethodUseCase,
+  renameClassUseCase,
+  renameFileUseCase,
   type ExtractMethodInput,
 } from '../../application/RefactorUseCases';
+import type { Result } from '../../domain/shared/Result';
 import { stages } from '../../infrastructure/stages/stageCatalog';
 
 type GameState = {
@@ -31,11 +36,18 @@ type GameState = {
   addClass: (fileId: string, className: string) => boolean;
   addFile: (path: string) => boolean;
   moveClass: (classId: string, targetFileId: string) => void;
+  renameClass: (classId: string, newName: string) => boolean;
+  renameFile: (fileId: string, newPath: string) => boolean;
   resetStage: () => void;
   selectStage: (stageId: string) => void;
 };
 
 const [firstStage] = stages;
+
+/** 操作の結果を状態の更新にする。成功したらコードベースを差し替え、失敗したら理由を出す。 */
+function applyResult<E>(result: Result<Codebase, E>, describe: (error: E) => string): Partial<GameState> {
+  return result.ok ? { codebase: result.value, message: null } : { message: describe(result.error) };
+}
 
 export const useGameStore = create<GameState>((set, get) => ({
   stages,
@@ -48,11 +60,11 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
   moveMethod: (methodId, targetClassId) => {
     const result = moveMethodUseCase(get().codebase, methodId, targetClassId);
-    set(result.ok ? { codebase: result.value, message: null } : { message: describeMoveError(result.error) });
+    set(applyResult(result, describeMoveError));
   },
   extractMethod: (input) => {
     const result = extractMethodUseCase(get().codebase, input, () => crypto.randomUUID());
-    set(result.ok ? { codebase: result.value, message: null } : { message: describeExtractError(result.error) });
+    set(applyResult(result, describeExtractError));
     return result.ok;
   },
   inlineMethod: (methodId) => {
@@ -65,17 +77,27 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
   addClass: (fileId, className) => {
     const result = addClassUseCase(get().codebase, fileId, className, () => crypto.randomUUID());
-    set(result.ok ? { codebase: result.value, message: null } : { message: describeAddClassError(result.error) });
+    set(applyResult(result, describeAddClassError));
     return result.ok;
   },
   addFile: (path) => {
     const result = addFileUseCase(get().codebase, path, () => crypto.randomUUID());
-    set(result.ok ? { codebase: result.value, message: null } : { message: describeAddFileError(result.error) });
+    set(applyResult(result, describeAddFileError));
     return result.ok;
   },
   moveClass: (classId, targetFileId) => {
     const result = moveClassUseCase(get().codebase, classId, targetFileId);
-    set(result.ok ? { codebase: result.value, message: null } : { message: describeMoveClassError(result.error) });
+    set(applyResult(result, describeMoveClassError));
+  },
+  renameClass: (classId, newName) => {
+    const result = renameClassUseCase(get().codebase, classId, newName);
+    set(applyResult(result, describeRenameClassError));
+    return result.ok;
+  },
+  renameFile: (fileId, newPath) => {
+    const result = renameFileUseCase(get().codebase, fileId, newPath);
+    set(applyResult(result, describeRenameFileError));
+    return result.ok;
   },
   resetStage: () => {
     set({ codebase: get().stage.codebase, selectedMethodId: null, message: null });

@@ -298,3 +298,58 @@ test('右クリックメニューはEscapeで閉じる', async ({ page }) => {
   // Assert
   await expect(menu).toHaveCount(0);
 });
+
+test('クラスを右クリックして名前を変更すると、キャンバスの表示が変わる', async ({ page }) => {
+  // Arrange
+  await openOrderStage(page);
+  await page.getByTestId('class-header-TaxCalculator').click({ button: 'right' });
+  const menu = page.getByTestId('context-menu');
+
+  // Act
+  await menu.getByRole('menuitem', { name: 'クラスの名前を変更' }).click();
+  const input = menu.getByLabel('新しいクラス名');
+  await expect(input).toHaveValue('TaxCalculator');
+  await input.fill('TaxPolicy');
+  await input.press('Enter');
+
+  // Assert
+  await expect(page.getByTestId('class-TaxPolicy')).toBeVisible();
+  await expect(page.getByTestId('class-TaxCalculator')).toHaveCount(0);
+  await expect(menu).toHaveCount(0);
+});
+
+test('ファイルを右クリックしてパスを変更すると、キャンバスの表示が変わる', async ({ page }) => {
+  // Arrange
+  await openOrderStage(page);
+  await page.getByTestId('file-src/tax/TaxCalculator.ts').click({ button: 'right', position: { x: 10, y: 10 } });
+  const menu = page.getByTestId('context-menu');
+
+  // Act
+  await menu.getByRole('menuitem', { name: 'ファイルの名前を変更' }).click();
+  const input = menu.getByLabel('新しいファイルのパス');
+  await input.fill('src/tax/TaxPolicy.ts');
+  await input.press('Enter');
+
+  // Assert
+  await expect(page.getByTestId('file-src/tax/TaxPolicy.ts')).toBeVisible();
+  await expect(page.getByTestId('file-src/tax/TaxCalculator.ts')).toHaveCount(0);
+});
+
+test('重複した名前には変更できず、理由が表示されて名前は変わらない。Escapeで取り消せる', async ({ page }) => {
+  // Arrange
+  await openOrderStage(page);
+  await page.getByTestId('class-header-TaxCalculator').click({ button: 'right' });
+  const menu = page.getByTestId('context-menu');
+  await menu.getByRole('menuitem', { name: 'クラスの名前を変更' }).click();
+  const input = menu.getByLabel('新しいクラス名');
+
+  // Act
+  await input.fill('OrderService');
+  await input.press('Enter');
+
+  // Assert
+  await expect(page.getByRole('alert')).toHaveText('同じ名前のクラスがすでにあります');
+  await expect(page.getByTestId('class-TaxCalculator')).toBeVisible();
+  await input.press('Escape');
+  await expect(menu).toHaveCount(0);
+});

@@ -1,7 +1,8 @@
-import { allClasses, type Codebase } from './Codebase';
+import type { Codebase } from './Codebase';
+import { validateClassName, type ClassNameError } from './naming';
 import { err, ok, type Result } from '../shared/Result';
 
-export type AddClassError = 'file-not-found' | 'empty-class-name' | 'duplicate-class-name';
+export type AddClassError = 'file-not-found' | ClassNameError;
 
 /** メソッドが空の新しいクラスを、指定したファイルの末尾に追加する。クラス名はコードベース全体で重複させない。 */
 export function addClass(
@@ -11,9 +12,9 @@ export function addClass(
   newClassId: string,
 ): Result<Codebase, AddClassError> {
   if (!codebase.files.some((file) => file.id === fileId)) return err('file-not-found');
-  const name = className.trim();
-  if (name === '') return err('empty-class-name');
-  if (allClasses(codebase).some((codeClass) => codeClass.name === name)) return err('duplicate-class-name');
+  const validated = validateClassName(codebase, className);
+  if (!validated.ok) return validated;
+  const name = validated.value;
   return ok({
     files: codebase.files.map((file) =>
       file.id === fileId ? { ...file, classes: [...file.classes, { id: newClassId, name, methods: [] }] } : file,

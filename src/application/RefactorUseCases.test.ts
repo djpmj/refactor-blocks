@@ -7,6 +7,8 @@ import {
   describeAddClassError,
   describeAddFileError,
   describeMoveClassError,
+  describeRenameClassError,
+  describeRenameFileError,
   describeExtractError,
   describeInlineError,
   describeMoveError,
@@ -14,6 +16,8 @@ import {
   inlineMethodUseCase,
   moveClassUseCase,
   moveMethodUseCase,
+  renameClassUseCase,
+  renameFileUseCase,
 } from './RefactorUseCases';
 
 describe('extractMethodUseCase', () => {
@@ -161,6 +165,32 @@ describe('moveClassUseCase', () => {
   });
 });
 
+describe('renameClassUseCase / renameFileUseCase', () => {
+  it('クラス名を付け替える', () => {
+    // Arrange
+    const codebase = sampleCodebase();
+
+    // Act
+    const result = renameClassUseCase(codebase, 'class-tax', 'TaxPolicy');
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    expect(result.value.files[1].classes[0].name).toBe('TaxPolicy');
+  });
+
+  it('ファイルのパスを付け替える', () => {
+    // Arrange
+    const codebase = sampleCodebase();
+
+    // Act
+    const result = renameFileUseCase(codebase, 'file-tax', 'src/tax/TaxPolicy.ts');
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    expect(result.value.files[1].path).toBe('src/tax/TaxPolicy.ts');
+  });
+});
+
 describe('エラーメッセージ', () => {
   it('エラーコードをプレイヤー向けの日本語に変換する', () => {
     // Arrange
@@ -176,6 +206,8 @@ describe('エラーメッセージ', () => {
       describeAddClassError('duplicate-class-name'),
       describeAddFileError('duplicate-path'),
       describeMoveClassError('file-not-found'),
+      describeRenameClassError('class-not-found'),
+      describeRenameFileError('file-not-found'),
     ];
 
     // Assert
@@ -186,6 +218,8 @@ describe('エラーメッセージ', () => {
       '同じ名前のクラスがすでにあります',
       '同じパスのファイルがすでにあります',
       '移動先のファイルが見つかりません',
+      '名前を変えるクラスが見つかりません',
+      '名前を変えるファイルが見つかりません',
     ]);
   });
 });
