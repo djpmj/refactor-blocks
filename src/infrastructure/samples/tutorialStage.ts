@@ -7,6 +7,8 @@ export const tutorialStage: Stage = {
   goal: 'メソッドは20行以内に。税の計算は TaxCalculator へ移そう',
   limits: { method: 20, class: 60, file: 80 },
   dependencyLimit: 2,
+  // 税の計算を TaxCalculator へ移せば OrderService の責務が4種類になり、上限を満たす
+  responsibilityLimit: 4,
   codebase: {
     files: [
       {

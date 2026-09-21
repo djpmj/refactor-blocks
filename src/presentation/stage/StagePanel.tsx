@@ -2,7 +2,12 @@ import { useMemo } from 'react';
 import { scoreCodebase, type Score, type ScoreRule } from '../../domain/scoring/score';
 import { useGameStore } from '../store/useGameStore';
 
-const RULE_LABEL: Record<ScoreRule, string> = { 'line-limit': '行数', coupling: '結合度', cycle: '循環依存' };
+const RULE_LABEL: Record<ScoreRule, string> = {
+  'line-limit': '行数',
+  coupling: '結合度',
+  cycle: '循環依存',
+  responsibility: '責務の混在',
+};
 
 function describeScore(score: Score): string {
   const details = score.deductions
@@ -11,7 +16,7 @@ function describeScore(score: Score): string {
   return details.length === 0 ? `✅ ${score.total}点` : `${score.total}点(${details.join(' / ')})`;
 }
 
-/** ステージの目標と、行数・結合度・循環依存から出した点数を表示する。 */
+/** ステージの目標と、行数・結合度・循環依存・責務の混在から出した点数を表示する。責務の中身(responsibility の値)は見せない。 */
 export function StagePanel() {
   const stage = useGameStore((state) => state.stage);
   const codebase = useGameStore((state) => state.codebase);

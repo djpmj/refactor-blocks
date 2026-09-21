@@ -8,5 +8,7 @@ export type Stage = {
   readonly limits: LineLimits;
   /** 1クラスが依存してよいクラス数の上限。 */
   readonly dependencyLimit: number;
+  /** 1クラスに混ぜてよい責務(Fragment の responsibility)の種類数の上限。 */
+  readonly responsibilityLimit: number;
   readonly codebase: Codebase;
 };

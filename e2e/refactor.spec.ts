@@ -98,13 +98,42 @@ test('抽出したメソッドを別クラスへ移すと、クラス間に依�
   await expect(edge).toHaveCount(1);
 });
 
-test('初期状態の点数は、上限を超えた placeOrder の分だけ減点されている', async ({ page }) => {
+test('初期状態の点数は、行数の上限を超えた placeOrder と責務が混ざった OrderService の分だけ減点されている', async ({
+  page,
+}) => {
   // Arrange & Act
   await page.goto('/');
 
   // Assert
-  await expect(page.getByTestId('score')).toContainText('90点');
+  await expect(page.getByTestId('score')).toContainText('80点');
   await expect(page.getByTestId('score')).toContainText('行数 -10');
+  await expect(page.getByTestId('score')).toContainText('責務の混在 -10');
+});
+
+test('税の計算を抽出して TaxCalculator へ移すと、責務の混在の減点が消える', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await page.getByTestId('method-placeOrder').click();
+  await page.getByLabel('消費税を計算する(軽減税率あり)').check();
+  await page.getByLabel('新しいメソッド名').fill('calculateTax');
+  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+  await expect(page.getByTestId('score')).toContainText('責務の混在 -10');
+  const source = page.getByTestId('method-calculateTax');
+  const target = page.getByTestId('class-TaxCalculator');
+
+  // Act
+  const from = await source.boundingBox();
+  const to = await target.boundingBox();
+  if (from === null || to === null) throw new Error('要素の位置を取得できません');
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(from.x + from.width / 2 + 20, from.y + from.height / 2, { steps: 5 });
+  await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 15 });
+  await page.mouse.up();
+
+  // Assert
+  await expect(target.getByTestId('method-calculateTax')).toBeVisible();
+  await expect(page.getByTestId('score')).not.toContainText('責務の混在');
 });
 
 test('クラスとファイルを追加し、クラスを新しいファイルへドラッグ&ドロップで移せる', async ({ page }) => {
