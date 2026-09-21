@@ -28,6 +28,25 @@ diffは書かず、要約と確認観点だけを書く。
 
 ## ログ一覧
 
+## 2026-09-22 00:10 (JST) — 修正が必要なファイルにエラーマーク・危険マークを付ける
+
+- 対応タスク: docs/auto-dev/TASKS.md の「修正が必要なファイルにエラーマーク・危険マークを付ける」
+- コミット: 53bab53dbbb46d703632c47444bd50a4148055c3
+- 実装内容:
+  - `fileDeductions`(`domain/scoring/fileScores.ts`)でファイルごとの減点を算出。行数・責務は持ち主のファイル、結合度・循環依存は依存元クラスのファイルに数え、合計が `scoreCodebase` の減点と一致することをテストで確認
+  - 結合度の判定を `findCouplingViolations` として切り出し、採点とファイル別減点で共用
+  - ファイルノードのヘッダーに、減点ありは ⚠️(修正が必要)、30点以上は ⛔(危険)を表示。`aria-label`/`title` 付きで、ズームで詳細を隠していても出る
+- 変更ファイル:
+  - src/domain/scoring/fileScores.ts(新規)、fileScores.test.ts(新規)
+  - src/domain/scoring/score.ts
+  - src/presentation/canvas/FileNode.tsx
+  - src/index.css
+  - e2e/refactor.spec.ts
+- 確認してほしいこと:
+  - 各ステージで、違反のあるファイルにだけ印が付き、分解して違反が消えると印が消える・軽くなるか
+  - 危険(30点以上)の見た目が、エラーと区別できるか。ズームアウト時にも印が見えるか
+  - 危険マークが出る状況はE2Eでは見ていない(ユニットテストのみ)
+
 ## 2026-09-21 23:40 (JST) — 依存の矢印が途切れたり逆向きに回り込んだりするのを直す
 
 - 対応タスク: docs/auto-dev/TASKS.md の「依存の矢印が途切れたり逆向きに回り込んだりするのを直す」
