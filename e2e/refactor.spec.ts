@@ -388,7 +388,11 @@ test('メソッドをドラッグで移したあと Ctrl+Z で元のクラスに
 
 /** 変更依頼の調査で、依頼ごとに選ぶメソッドを順にクリックして「調査を終える」を押す。 */
 async function investigateRequests(page: Page, methodNamesPerRequest: readonly (readonly string[])[]) {
-  await page.getByTestId('change-request-start').click();
+  // ドラッグ直後の1回目のクリックはdnd-kitに握りつぶされることがあるので、パネルが開くまで押し直す
+  await expect(async () => {
+    await page.getByTestId('change-request-start').click({ timeout: 1000 });
+    await expect(page.getByTestId('change-panel')).toBeVisible({ timeout: 1000 });
+  }).toPass();
   for (const methodNames of methodNamesPerRequest) {
     for (const name of methodNames) await page.getByTestId(`method-${name}`).click();
     await page.getByTestId('change-request-finish').click();

@@ -25,8 +25,8 @@ export function evaluateChangeRequestUseCase(
   selectedMethodIds: readonly string[],
 ): Result<ChangeOutcome, ChangeError> {
   const current = measureChange(codebase, request, stage.limits);
-  const initial = measureChange(stage.codebase, request, stage.limits);
   if (!current.ok) return err(current.error);
+  const initial = measureChange(stage.codebase, request, stage.limits);
   if (!initial.ok) return err(initial.error);
   const investigation = checkInvestigation(selectedMethodIds, current.value.sites);
   return ok({
