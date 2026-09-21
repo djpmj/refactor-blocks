@@ -2,11 +2,17 @@ import { describe, expect, it } from 'vitest';
 import { findMethod } from '../domain/codebase/Codebase';
 import { sampleCodebase } from '../domain/codebase/testFixtures';
 import {
+  addClassUseCase,
+  addFileUseCase,
+  describeAddClassError,
+  describeAddFileError,
+  describeMoveClassError,
   describeExtractError,
   describeInlineError,
   describeMoveError,
   extractMethodUseCase,
   inlineMethodUseCase,
+  moveClassUseCase,
   moveMethodUseCase,
 } from './RefactorUseCases';
 
@@ -93,6 +99,68 @@ describe('inlineMethodUseCase', () => {
   });
 });
 
+describe('addClassUseCase / addFileUseCase', () => {
+  it('注入されたIDで新しいクラスを作る', () => {
+    // Arrange
+    const codebase = sampleCodebase();
+
+    // Act
+    const result = addClassUseCase(codebase, 'file-tax', 'TaxRateTable', () => 'generated-class');
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    expect(result.value.files[1].classes[1]).toEqual({ id: 'generated-class', name: 'TaxRateTable', methods: [] });
+  });
+
+  it('注入されたIDで新しいファイルを作る', () => {
+    // Arrange
+    const codebase = sampleCodebase();
+
+    // Act
+    const result = addFileUseCase(codebase, 'src/mail/Mailer.ts', () => 'generated-file');
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    expect(result.value.files[2]).toEqual({ id: 'generated-file', path: 'src/mail/Mailer.ts', classes: [] });
+  });
+});
+
+describe('moveClassUseCase', () => {
+  it('同じファイルへのドロップは何も変えずに成功扱いにする', () => {
+    // Arrange
+    const codebase = sampleCodebase();
+
+    // Act
+    const result = moveClassUseCase(codebase, 'class-tax', 'file-tax');
+
+    // Assert
+    expect(result).toEqual({ ok: true, value: codebase });
+  });
+
+  it('別ファイルへのドロップでクラスを移動する', () => {
+    // Arrange
+    const codebase = sampleCodebase();
+
+    // Act
+    const result = moveClassUseCase(codebase, 'class-tax', 'file-order');
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    expect(result.value.files[1].classes).toEqual([]);
+  });
+
+  it('同じファイル以外のエラーはそのまま返す', () => {
+    // Arrange
+    const codebase = sampleCodebase();
+
+    // Act
+    const result = moveClassUseCase(codebase, 'class-tax', 'missing');
+
+    // Assert
+    expect(result).toEqual({ ok: false, error: 'file-not-found' });
+  });
+});
+
 describe('エラーメッセージ', () => {
   it('エラーコードをプレイヤー向けの日本語に変換する', () => {
     // Arrange
@@ -101,13 +169,23 @@ describe('エラーメッセージ', () => {
     const inlineError = 'not-private';
 
     // Act
-    const messages = [describeExtractError(extractError), describeMoveError(moveError), describeInlineError(inlineError)];
+    const messages = [
+      describeExtractError(extractError),
+      describeMoveError(moveError),
+      describeInlineError(inlineError),
+      describeAddClassError('duplicate-class-name'),
+      describeAddFileError('duplicate-path'),
+      describeMoveClassError('file-not-found'),
+    ];
 
     // Assert
     expect(messages).toEqual([
       '抽出する処理を1つ以上選んでください',
       '移動先のクラスに同じ名前のメソッドがあります',
       'publicメソッドは呼び出し元へ戻せません',
+      '同じ名前のクラスがすでにあります',
+      '同じパスのファイルがすでにあります',
+      '移動先のファイルが見つかりません',
     ]);
   });
 });

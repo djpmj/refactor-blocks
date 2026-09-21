@@ -16,6 +16,8 @@ const CLASS_GAP = 24;
 const METHOD_ROW = 34;
 const CLASS_HEADER = 44;
 const MIN_CLASS_HEIGHT = 110;
+/** クラスが空のファイルにもクラスをドロップできる広さを残す。 */
+const MIN_FILE_HEIGHT = 140;
 
 function classHeight(methodCount: number): number {
   return Math.max(MIN_CLASS_HEIGHT, CLASS_HEADER + methodCount * METHOD_ROW + 16);
@@ -49,7 +51,7 @@ export function layoutCodebase(codebase: Codebase): CodebaseFlowNode[] {
       id: file.id,
       type: 'fileNode',
       position: { x: fileX, y: 0 },
-      style: { width: fileWidth, height: classY - CLASS_GAP + FILE_PADDING },
+      style: { width: fileWidth, height: Math.max(MIN_FILE_HEIGHT, classY - CLASS_GAP + FILE_PADDING) },
       data: { fileId: file.id },
     });
     nodes.push(...classNodes);

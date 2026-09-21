@@ -1,6 +1,9 @@
+import { addClass, type AddClassError } from '../domain/codebase/addClass';
+import { addFile, type AddFileError } from '../domain/codebase/addFile';
 import type { Codebase } from '../domain/codebase/Codebase';
 import { extractMethod, type ExtractMethodError } from '../domain/codebase/extractMethod';
 import { findCallerOf, inlineMethod, type InlineMethodError } from '../domain/codebase/inlineMethod';
+import { moveClass, type MoveClassError } from '../domain/codebase/moveClass';
 import { moveMethod, type MoveMethodError } from '../domain/codebase/moveMethod';
 import { err, ok, type Result } from '../domain/shared/Result';
 
@@ -45,6 +48,33 @@ export function inlineMethodUseCase(
   return callerId === undefined ? err('call-not-found') : ok({ codebase: result.value, callerId });
 }
 
+/** プレイヤーの「クラスを追加」操作。新しいクラスのIDは注入されたジェネレーターで採番する。 */
+export function addClassUseCase(
+  codebase: Codebase,
+  fileId: string,
+  className: string,
+  generateId: IdGenerator,
+): Result<Codebase, AddClassError> {
+  return addClass(codebase, fileId, className, generateId());
+}
+
+/** プレイヤーの「ファイルを追加」操作。 */
+export function addFileUseCase(codebase: Codebase, path: string, generateId: IdGenerator): Result<Codebase, AddFileError> {
+  return addFile(codebase, path, generateId());
+}
+
+/** プレイヤーの「クラスを別ファイルへドロップ」操作。同じファイルへのドロップは何もしない操作として成功扱いにする。 */
+export function moveClassUseCase(
+  codebase: Codebase,
+  classId: string,
+  targetFileId: string,
+): Result<Codebase, Exclude<MoveClassError, 'same-file'>> {
+  const result = moveClass(codebase, classId, targetFileId);
+  if (result.ok) return ok(result.value);
+  const { error } = result;
+  return error === 'same-file' ? ok(codebase) : err(error);
+}
+
 const EXTRACT_ERROR_MESSAGES: Record<ExtractMethodError, string> = {
   'method-not-found': 'メソッドが見つかりません',
   'no-fragments-selected': '抽出する処理を1つ以上選んでください',
@@ -66,6 +96,22 @@ const INLINE_ERROR_MESSAGES: Record<InlineMethodError, string> = {
   'call-not-found': 'このメソッドの呼び出し元が見つかりません',
 };
 
+const ADD_CLASS_ERROR_MESSAGES: Record<AddClassError, string> = {
+  'file-not-found': '追加先のファイルが見つかりません',
+  'empty-class-name': 'クラス名を入力してください',
+  'duplicate-class-name': '同じ名前のクラスがすでにあります',
+};
+
+const ADD_FILE_ERROR_MESSAGES: Record<AddFileError, string> = {
+  'empty-path': 'ファイルのパスを入力してください',
+  'duplicate-path': '同じパスのファイルがすでにあります',
+};
+
+const MOVE_CLASS_ERROR_MESSAGES: Record<Exclude<MoveClassError, 'same-file'>, string> = {
+  'class-not-found': 'クラスが見つかりません',
+  'file-not-found': '移動先のファイルが見つかりません',
+};
+
 export function describeExtractError(error: ExtractMethodError): string {
   return EXTRACT_ERROR_MESSAGES[error];
 }
@@ -76,4 +122,16 @@ export function describeMoveError(error: Exclude<MoveMethodError, 'same-class'>)
 
 export function describeInlineError(error: InlineMethodError): string {
   return INLINE_ERROR_MESSAGES[error];
+}
+
+export function describeAddClassError(error: AddClassError): string {
+  return ADD_CLASS_ERROR_MESSAGES[error];
+}
+
+export function describeAddFileError(error: AddFileError): string {
+  return ADD_FILE_ERROR_MESSAGES[error];
+}
+
+export function describeMoveClassError(error: Exclude<MoveClassError, 'same-file'>): string {
+  return MOVE_CLASS_ERROR_MESSAGES[error];
 }

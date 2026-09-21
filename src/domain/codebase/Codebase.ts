@@ -56,6 +56,10 @@ export function findClass(codebase: Codebase, classId: string): CodeClass | unde
   return allClasses(codebase).find((codeClass) => codeClass.id === classId);
 }
 
+export function findFileOfClass(codebase: Codebase, classId: string): CodeFile | undefined {
+  return codebase.files.find((file) => file.classes.some((codeClass) => codeClass.id === classId));
+}
+
 /** 指定したクラスだけを置き換えた新しいCodebaseを返す(元のCodebaseは変更しない)。 */
 export function mapClasses(codebase: Codebase, transform: (codeClass: CodeClass) => CodeClass): Codebase {
   return {

@@ -2,6 +2,8 @@ import type { UniqueIdentifier } from '@dnd-kit/core';
 
 const METHOD_PREFIX = 'method:';
 const CLASS_PREFIX = 'class:';
+const CLASS_DRAG_PREFIX = 'class-drag:';
+const FILE_PREFIX = 'file:';
 
 export function methodDragId(methodId: string): string {
   return `${METHOD_PREFIX}${methodId}`;
@@ -9,6 +11,14 @@ export function methodDragId(methodId: string): string {
 
 export function classDropId(classId: string): string {
   return `${CLASS_PREFIX}${classId}`;
+}
+
+export function classDragId(classId: string): string {
+  return `${CLASS_DRAG_PREFIX}${classId}`;
+}
+
+export function fileDropId(fileId: string): string {
+  return `${FILE_PREFIX}${fileId}`;
 }
 
 function stripPrefix(id: UniqueIdentifier, prefix: string): string | null {
@@ -22,4 +32,12 @@ export function parseMethodDragId(id: UniqueIdentifier): string | null {
 
 export function parseClassDropId(id: UniqueIdentifier): string | null {
   return stripPrefix(id, CLASS_PREFIX);
+}
+
+export function parseClassDragId(id: UniqueIdentifier): string | null {
+  return stripPrefix(id, CLASS_DRAG_PREFIX);
+}
+
+export function parseFileDropId(id: UniqueIdentifier): string | null {
+  return stripPrefix(id, FILE_PREFIX);
 }

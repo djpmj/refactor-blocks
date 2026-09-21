@@ -106,3 +106,46 @@ test('初期状態の点数は、上限を超えた placeOrder の分だけ減�
   await expect(page.getByTestId('score')).toContainText('90点');
   await expect(page.getByTestId('score')).toContainText('行数 -10');
 });
+
+test('クラスとファイルを追加し、クラスを新しいファイルへドラッグ&ドロップで移せる', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await page.getByLabel('新しいファイルのパス').fill('src/mail/Mailer.ts');
+  await page.getByRole('button', { name: 'ファイルを追加' }).click();
+  await page.getByLabel('新しいクラス名').fill('Mailer');
+  await page.getByLabel('クラスの追加先ファイル').selectOption({ label: 'src/order/OrderService.ts' });
+  await page.getByRole('button', { name: 'クラスを追加' }).click();
+  // クラスノードはファイルノードのDOMの子にならないため、空ファイルの案内の有無で移動先を確かめる
+  const emptyFileHint = page.getByText('ここにクラスをドロップ');
+  await expect(emptyFileHint).toHaveCount(1);
+  const source = page.getByTestId('class-header-Mailer');
+  const target = page.getByTestId('file-src/mail/Mailer.ts');
+  await expect(source).toBeVisible();
+  await expect(target).toBeVisible();
+
+  // Act
+  const from = await source.boundingBox();
+  const to = await target.boundingBox();
+  if (from === null || to === null) throw new Error('要素の位置を取得できません');
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(from.x + from.width / 2 + 20, from.y + from.height / 2, { steps: 5 });
+  await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 15 });
+  await page.mouse.up();
+
+  // Assert
+  await expect(page.getByTestId('class-Mailer')).toHaveCount(1);
+  await expect(emptyFileHint).toHaveCount(0);
+});
+
+test('同じ名前のクラスは追加できず、理由が表示される', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+
+  // Act
+  await page.getByLabel('新しいクラス名').fill('TaxCalculator');
+  await page.getByRole('button', { name: 'クラスを追加' }).click();
+
+  // Assert
+  await expect(page.getByRole('alert')).toHaveText('同じ名前のクラスがすでにあります');
+});

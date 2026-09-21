@@ -2,11 +2,17 @@ import { create } from 'zustand';
 import type { Codebase } from '../../domain/codebase/Codebase';
 import type { Stage } from '../../domain/stage/Stage';
 import {
+  addClassUseCase,
+  addFileUseCase,
+  describeAddClassError,
+  describeAddFileError,
+  describeMoveClassError,
   describeExtractError,
   describeInlineError,
   describeMoveError,
   extractMethodUseCase,
   inlineMethodUseCase,
+  moveClassUseCase,
   moveMethodUseCase,
   type ExtractMethodInput,
 } from '../../application/RefactorUseCases';
@@ -21,6 +27,9 @@ type GameState = {
   moveMethod: (methodId: string, targetClassId: string) => void;
   extractMethod: (input: ExtractMethodInput) => boolean;
   inlineMethod: (methodId: string) => void;
+  addClass: (fileId: string, className: string) => boolean;
+  addFile: (path: string) => boolean;
+  moveClass: (classId: string, targetFileId: string) => void;
   resetStage: () => void;
 };
 
@@ -48,6 +57,20 @@ export const useGameStore = create<GameState>((set, get) => ({
         ? { codebase: result.value.codebase, selectedMethodId: result.value.callerId, message: null }
         : { message: describeInlineError(result.error) },
     );
+  },
+  addClass: (fileId, className) => {
+    const result = addClassUseCase(get().codebase, fileId, className, () => crypto.randomUUID());
+    set(result.ok ? { codebase: result.value, message: null } : { message: describeAddClassError(result.error) });
+    return result.ok;
+  },
+  addFile: (path) => {
+    const result = addFileUseCase(get().codebase, path, () => crypto.randomUUID());
+    set(result.ok ? { codebase: result.value, message: null } : { message: describeAddFileError(result.error) });
+    return result.ok;
+  },
+  moveClass: (classId, targetFileId) => {
+    const result = moveClassUseCase(get().codebase, classId, targetFileId);
+    set(result.ok ? { codebase: result.value, message: null } : { message: describeMoveClassError(result.error) });
   },
   resetStage: () => {
     set({ codebase: get().stage.codebase, selectedMethodId: null, message: null });
