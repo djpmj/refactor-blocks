@@ -9,6 +9,8 @@ export type Stage = {
   readonly level: StageLevel;
   readonly title: string;
   readonly goal: string;
+  /** どんなコードで、何が困っているのか。プレイヤーが題材を思い浮かべられるように書く。 */
+  readonly description: string;
   readonly limits: LineLimits;
   /** 1クラスが依存してよいクラス数の上限。 */
   readonly dependencyLimit: number;

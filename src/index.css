@@ -38,6 +38,9 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .stage-panel__heading { flex: 1 1 280px; }
 .stage-panel__title { margin: 0; font-size: 18px; }
 .stage-panel__goal { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+.stage-panel__description { margin-top: 6px; font-size: 13px; }
+.stage-panel__description summary { cursor: pointer; color: var(--accent); width: fit-content; }
+.stage-panel__description p { margin: 4px 0 0; max-width: 72ch; line-height: 1.6; }
 .stage-panel__status { flex: 1 1 160px; font-size: 13px; }
 .stage-panel__select { max-width: 100%; border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 8px; padding: 6px 8px; font-size: 13px; }
 .stage-panel__reset, .method-editor__extract button { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 8px; padding: 6px 12px; cursor: pointer; }

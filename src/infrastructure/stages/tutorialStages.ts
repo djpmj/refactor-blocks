@@ -5,6 +5,8 @@ const extractMethodStage: Stage = {
   id: 'tutorial-extract-method',
   level: 'tutorial',
   title: 'チュートリアル1: 長いメソッドを分ける',
+  description:
+    '月次の売上レポートを画面に出す ReportService。売上の集計・前月比の計算・表の組み立て・出力が、1つのメソッド printMonthlyReport に上から順に書かれている。',
   goal: 'メソッドは20行以内に。メソッドをクリックし、まとまった処理を選んで「メソッドとして抽出」しよう',
   limits: { method: 20, class: 60, file: 80 },
   dependencyLimit: 2,
@@ -44,6 +46,8 @@ const orderServiceStage: Stage = {
   id: 'tutorial-order-service',
   level: 'tutorial',
   title: 'チュートリアル2: 太った placeOrder',
+  description:
+    'ネットショップの注文を受け付ける OrderService。placeOrder の中に、入力と在庫の検証・小計と消費税(軽減税率あり)の計算・DBへの保存・確認メールの送信が全部入っている。税の計算を担当する TaxCalculator は用意されているが、まだ空っぽ。',
   goal: 'メソッドは20行以内に。税の計算は抽出してから TaxCalculator へドラッグで移そう',
   limits: { method: 20, class: 60, file: 80 },
   dependencyLimit: 2,

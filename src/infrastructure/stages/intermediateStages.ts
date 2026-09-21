@@ -9,6 +9,8 @@ const cyclicDependencyStage: Stage = {
   id: 'intermediate-cyclic-dependency',
   level: 'intermediate',
   title: '中級1: 循環依存を断ち切る',
+  description:
+    '注文(Order)と顧客(Customer)のクラス。注文の合計金額を求めるメソッドが Customer に、顧客の過去の注文数を数えるメソッドが Order に置かれているせいで、2つのクラスがお互いを呼び合っている。',
   goal: '赤い矢印(循環依存)をなくそう。メソッドが本来いるべきクラスはどこ? メソッドは15行以内、1クラスの責務は4種類まで',
   limits: { method: 15, class: 50, file: 60 },
   dependencyLimit: 2,
@@ -111,6 +113,8 @@ const godFileStage: Stage = {
   id: 'intermediate-god-file',
   level: 'intermediate',
   title: '中級2: 何でも入った services.ts',
+  description:
+    'カート(CartService)・配送(ShippingService)・ポイント(PointService)の3クラスが、1つのファイル services.ts に同居している。しかも CartService が、送料の計算とポイントの付与を private メソッドとして抱え込んでいる。',
   goal: 'ファイルは40行、クラスは30行以内、1クラスの責務は2種類まで。メソッドを持ち主へ返し、「ファイルを追加」してクラスを移そう',
   limits: { method: 15, class: 30, file: 40 },
   dependencyLimit: 2,

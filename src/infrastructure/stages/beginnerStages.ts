@@ -5,6 +5,8 @@ const userControllerStage: Stage = {
   id: 'beginner-user-controller',
   level: 'beginner',
   title: '初級1: 何でも屋の UserController',
+  description:
+    'Web APIでユーザー登録・削除のリクエストを受ける UserController。本来の仕事はリクエストの検証とレスポンスの組み立てなのに、DBへの保存・削除やメール送信まで自分でやっている。',
   goal: 'メソッドは15行・クラスは40行以内、1クラスの責務は1種類まで。DBとメールの処理は UserRepository と Mailer に任せよう',
   limits: { method: 15, class: 40, file: 50 },
   dependencyLimit: 2,
@@ -64,6 +66,8 @@ const invoiceServiceStage: Stage = {
   id: 'beginner-invoice-service',
   level: 'beginner',
   title: '初級2: クラスを自分で作る',
+  description:
+    '請求書を作って送る InvoiceService。金額の計算・PDFの描画・ストレージへの保存・メール送信・送信履歴の記録を1クラスで抱えている。今回は受け皿のクラスが用意されていない。',
   goal: 'メソッドは15行、クラスは30行以内、1クラスの責務は2種類まで。「クラスを追加」で受け皿を作ろう',
   limits: { method: 15, class: 30, file: 80 },
   dependencyLimit: 3,

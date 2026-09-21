@@ -184,6 +184,17 @@ describe('stageCatalog', () => {
       expect(unique.size).toBe(ids.length);
     });
 
+    it('どんなコードを表しているかの説明がある', () => {
+      // Arrange
+      const { description } = stage;
+
+      // Act
+      const trimmed = description.trim();
+
+      // Assert
+      expect(trimmed).not.toBe('');
+    });
+
     it('初期状態では減点がある', () => {
       // Arrange
       const { codebase } = stage;

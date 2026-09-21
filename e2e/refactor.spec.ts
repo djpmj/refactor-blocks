@@ -232,12 +232,14 @@ test('ステージを選ぶと、そのステージのコードベースと目�
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'チュートリアル1: 長いメソッドを分ける' })).toBeVisible();
   await expect(page.getByTestId('class-ReportService')).toBeVisible();
+  await expect(page.getByTestId('stage-description')).toContainText('月次の売上レポート');
 
   // Act
   await page.getByLabel('ステージ').selectOption({ label: '中級1: 循環依存を断ち切る' });
 
   // Assert
   await expect(page.getByRole('heading', { name: '中級1: 循環依存を断ち切る' })).toBeVisible();
+  await expect(page.getByTestId('stage-description')).toContainText('注文(Order)と顧客(Customer)');
   await expect(page.getByTestId('class-ReportService')).toHaveCount(0);
   await expect(page.getByTestId('class-Customer')).toBeVisible();
   await expect(page.getByTestId('score')).toContainText('循環依存 -20');

@@ -65,6 +65,11 @@ export function StagePanel() {
       <div className="stage-panel__heading">
         <h1 className="stage-panel__title">{stage.title}</h1>
         <p className="stage-panel__goal">{stage.goal}</p>
+        {/* ステージを切り替えたら畳んだ状態を戻して、新しい題材の説明を開いて見せる */}
+        <details key={stage.id} className="stage-panel__description" open>
+          <summary>どんなコード?</summary>
+          <p data-testid="stage-description">{stage.description}</p>
+        </details>
       </div>
       <div className="stage-panel__status" data-testid="score" aria-live="polite">
         {describeScore(score)}
