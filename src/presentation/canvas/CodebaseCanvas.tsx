@@ -50,17 +50,18 @@ function dropTargetFileId(codebase: Codebase, overId: UniqueIdentifier): string 
   return classId === null ? (parseFileDropId(overId) ?? undefined) : findFileOfClass(codebase, classId)?.id;
 }
 
-/** ファイルが増えたら、新しいファイルが画面外に出ないよう全体が収まるように表示し直す。 */
-function FitViewOnFileCountChange({ fileCount }: Readonly<{ fileCount: number }>) {
+/** ステージを切り替えたときやファイルが増えたとき、画面外に出ないよう全体が収まるように表示し直す。 */
+function FitViewOnLayoutChange({ stageId, fileCount }: Readonly<{ stageId: string; fileCount: number }>) {
   const { fitView } = useReactFlow();
   useEffect(() => {
     void fitView();
-  }, [fileCount, fitView]);
+  }, [stageId, fileCount, fitView]);
   return null;
 }
 
 export function CodebaseCanvas() {
   const codebase = useGameStore((state) => state.codebase);
+  const stageId = useGameStore((state) => state.stage.id);
   const moveMethod = useGameStore((state) => state.moveMethod);
   const moveClass = useGameStore((state) => state.moveClass);
   const nodes = useMemo(() => layoutCodebase(codebase), [codebase]);
@@ -103,7 +104,7 @@ export function CodebaseCanvas() {
         <Background gap={24} />
         <Controls showInteractive={false} />
         <CanvasToolbar />
-        <FitViewOnFileCountChange fileCount={codebase.files.length} />
+        <FitViewOnLayoutChange stageId={stageId} fileCount={codebase.files.length} />
       </ReactFlow>
       <DraggingOverlay activeId={activeId} />
     </DndContext>

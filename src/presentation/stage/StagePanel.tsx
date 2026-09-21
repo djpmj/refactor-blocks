@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { scoreCodebase, type Score, type ScoreRule } from '../../domain/scoring/score';
+import type { StageLevel } from '../../domain/stage/Stage';
 import { useGameStore } from '../store/useGameStore';
 
 const RULE_LABEL: Record<ScoreRule, string> = {
@@ -8,6 +9,42 @@ const RULE_LABEL: Record<ScoreRule, string> = {
   cycle: '循環依存',
   responsibility: '責務の混在',
 };
+
+const LEVEL_LABEL: Record<StageLevel, string> = {
+  tutorial: 'チュートリアル',
+  beginner: '初級',
+  intermediate: '中級',
+};
+
+function StageSelect() {
+  const stages = useGameStore((state) => state.stages);
+  // ステージは難易度順に並んでいるので、出てきた順に難易度をまとめる
+  const levels = [...new Set(stages.map((stage) => stage.level))];
+  const stageId = useGameStore((state) => state.stage.id);
+  const selectStage = useGameStore((state) => state.selectStage);
+  return (
+    <select
+      aria-label="ステージ"
+      className="stage-panel__select"
+      value={stageId}
+      onChange={(event) => {
+        selectStage(event.target.value);
+      }}
+    >
+      {levels.map((level) => (
+        <optgroup key={level} label={LEVEL_LABEL[level]}>
+          {stages
+            .filter((stage) => stage.level === level)
+            .map((stage) => (
+              <option key={stage.id} value={stage.id}>
+                {stage.title}
+              </option>
+            ))}
+        </optgroup>
+      ))}
+    </select>
+  );
+}
 
 function describeScore(score: Score): string {
   const details = score.deductions
@@ -24,7 +61,8 @@ export function StagePanel() {
   const score = useMemo(() => scoreCodebase(codebase, stage), [codebase, stage]);
   return (
     <header className="stage-panel">
-      <div>
+      <StageSelect />
+      <div className="stage-panel__heading">
         <h1 className="stage-panel__title">{stage.title}</h1>
         <p className="stage-panel__goal">{stage.goal}</p>
       </div>

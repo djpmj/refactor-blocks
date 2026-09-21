@@ -1,0 +1,109 @@
+import type { Stage } from '../../domain/stage/Stage';
+
+/** 初級1: 保存とメール送信まで抱えた UserController から、用意されたクラスへ処理を移す。 */
+const userControllerStage: Stage = {
+  id: 'beginner-user-controller',
+  level: 'beginner',
+  title: '初級1: 何でも屋の UserController',
+  goal: 'メソッドは15行・クラスは40行以内、1クラスの責務は1種類まで。DBとメールの処理は UserRepository と Mailer に任せよう',
+  limits: { method: 15, class: 40, file: 50 },
+  dependencyLimit: 2,
+  // 入力値の検証とレスポンスの組み立ては、どちらもHTTPの受け口としての責務に数える
+  responsibilityLimit: 1,
+  codebase: {
+    files: [
+      {
+        id: 'file-user-controller',
+        path: 'src/user/UserController.ts',
+        classes: [
+          {
+            id: 'class-user-controller',
+            name: 'UserController',
+            methods: [
+              {
+                id: 'method-register-user',
+                name: 'registerUser',
+                visibility: 'public',
+                fragments: [
+                  { id: 'frag-validate-input', label: '入力値を検証する', lines: 6, responsibility: 'http', suggestedName: 'validateInput' },
+                  { id: 'frag-save-user', label: 'ユーザーをDBに保存する', lines: 7, responsibility: 'persistence', suggestedName: 'saveUser' },
+                  { id: 'frag-welcome-mail', label: 'ようこそメールを送る', lines: 6, responsibility: 'notification', suggestedName: 'sendWelcomeMail' },
+                  { id: 'frag-register-response', label: 'レスポンスを組み立てる', lines: 4, responsibility: 'http', suggestedName: 'buildResponse' },
+                ],
+              },
+              {
+                id: 'method-delete-user',
+                name: 'deleteUser',
+                visibility: 'public',
+                fragments: [
+                  { id: 'frag-delete-user', label: 'ユーザーをDBから削除する', lines: 5, responsibility: 'persistence', suggestedName: 'removeUserRecord' },
+                  { id: 'frag-farewell-mail', label: 'お別れメールを送る', lines: 4, responsibility: 'notification', suggestedName: 'sendFarewellMail' },
+                  { id: 'frag-delete-response', label: 'レスポンスを組み立てる', lines: 3, responsibility: 'http', suggestedName: 'buildDeleteResponse' },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'file-user-repository',
+        path: 'src/user/UserRepository.ts',
+        classes: [{ id: 'class-user-repository', name: 'UserRepository', methods: [] }],
+      },
+      {
+        id: 'file-mailer',
+        path: 'src/mail/Mailer.ts',
+        classes: [{ id: 'class-mailer', name: 'Mailer', methods: [] }],
+      },
+    ],
+  },
+};
+
+/** 初級2: 移動先のクラスが用意されていない。責務ごとのクラスを自分で作ってから移す。 */
+const invoiceServiceStage: Stage = {
+  id: 'beginner-invoice-service',
+  level: 'beginner',
+  title: '初級2: クラスを自分で作る',
+  goal: 'メソッドは15行、クラスは30行以内、1クラスの責務は2種類まで。「クラスを追加」で受け皿を作ろう',
+  limits: { method: 15, class: 30, file: 80 },
+  dependencyLimit: 3,
+  responsibilityLimit: 2,
+  codebase: {
+    files: [
+      {
+        id: 'file-invoice-service',
+        path: 'src/invoice/InvoiceService.ts',
+        classes: [
+          {
+            id: 'class-invoice-service',
+            name: 'InvoiceService',
+            methods: [
+              {
+                id: 'method-issue-invoice',
+                name: 'issueInvoice',
+                visibility: 'public',
+                fragments: [
+                  { id: 'frag-sum-items', label: '明細の金額を合計する', lines: 6, responsibility: 'pricing', suggestedName: 'sumItems' },
+                  { id: 'frag-apply-discount', label: '割引を適用する', lines: 5, responsibility: 'pricing', suggestedName: 'applyDiscount' },
+                  { id: 'frag-render-pdf', label: '請求書のPDFを描画する', lines: 12, responsibility: 'rendering', suggestedName: 'renderPdf' },
+                  { id: 'frag-store-pdf', label: 'PDFをストレージに保存する', lines: 6, responsibility: 'storage', suggestedName: 'storePdf' },
+                ],
+              },
+              {
+                id: 'method-send-invoice',
+                name: 'sendInvoice',
+                visibility: 'public',
+                fragments: [
+                  { id: 'frag-attach-mail', label: '請求書をメールに添付して送る', lines: 5, responsibility: 'notification', suggestedName: 'mailInvoice' },
+                  { id: 'frag-record-history', label: '送信履歴を記録する', lines: 4, responsibility: 'storage', suggestedName: 'recordHistory' },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+};
+
+export const beginnerStages: readonly Stage[] = [userControllerStage, invoiceServiceStage];

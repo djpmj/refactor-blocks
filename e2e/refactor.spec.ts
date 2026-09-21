@@ -1,8 +1,14 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+
+/** 既存のテストは OrderService を分解するチュートリアル2を前提にしている。 */
+async function openOrderStage(page: Page) {
+  await page.goto('/');
+  await page.getByLabel('ステージ').selectOption({ label: 'チュートリアル2: 太った placeOrder' });
+}
 
 test('メソッドを選んで処理を抽出すると、クラスに新しいメソッドが増える', async ({ page }) => {
   // Arrange
-  await page.goto('/');
+  await openOrderStage(page);
   await page.getByTestId('method-placeOrder').click();
 
   // Act
@@ -16,7 +22,7 @@ test('メソッドを選んで処理を抽出すると、クラスに新しい�
 
 test('処理を選ぶと、選んだ処理に合わせてメソッド名が自動で入り、そのまま抽出できる', async ({ page }) => {
   // Arrange
-  await page.goto('/');
+  await openOrderStage(page);
   await page.getByTestId('method-placeOrder').click();
   const nameInput = page.getByLabel('新しいメソッド名');
 
@@ -32,7 +38,7 @@ test('処理を選ぶと、選んだ処理に合わせてメソッド名が自�
 
 test('抽出したメソッドを「呼び出し元へ戻す」と、処理が元のメソッドに戻りメソッドが消える', async ({ page }) => {
   // Arrange
-  await page.goto('/');
+  await openOrderStage(page);
   await page.getByTestId('method-placeOrder').click();
   await page.getByLabel('消費税を計算する(軽減税率あり)').check();
   await page.getByLabel('新しいメソッド名').fill('calculateTax');
@@ -50,7 +56,7 @@ test('抽出したメソッドを「呼び出し元へ戻す」と、処理が�
 
 test('メソッドを別クラスへドラッグ&ドロップすると移動する', async ({ page }) => {
   // Arrange
-  await page.goto('/');
+  await openOrderStage(page);
   await page.getByTestId('method-placeOrder').click();
   await page.getByLabel('消費税を計算する(軽減税率あり)').check();
   await page.getByLabel('新しいメソッド名').fill('calculateTax');
@@ -74,7 +80,7 @@ test('メソッドを別クラスへドラッグ&ドロップすると移動す�
 
 test('抽出したメソッドを別クラスへ移すと、クラス間に依存の矢印が引かれる', async ({ page }) => {
   // Arrange
-  await page.goto('/');
+  await openOrderStage(page);
   await page.getByTestId('method-placeOrder').click();
   await page.getByLabel('消費税を計算する(軽減税率あり)').check();
   await page.getByLabel('新しいメソッド名').fill('calculateTax');
@@ -100,7 +106,7 @@ test('抽出したメソッドを別クラスへ移すと、クラス間に依�
 
 test('ズームアウトするとファイル名とクラス名だけになり、ズームインするとメソッドと行数が戻る', async ({ page }) => {
   // Arrange
-  await page.goto('/');
+  await openOrderStage(page);
   const classNode = page.getByTestId('class-OrderService');
   const method = page.getByTestId('method-placeOrder');
   await expect(method).toBeVisible();
@@ -127,7 +133,7 @@ test('初期状態の点数は、行数の上限を超えた placeOrder と責�
   page,
 }) => {
   // Arrange & Act
-  await page.goto('/');
+  await openOrderStage(page);
 
   // Assert
   await expect(page.getByTestId('score')).toContainText('80点');
@@ -137,7 +143,7 @@ test('初期状態の点数は、行数の上限を超えた placeOrder と責�
 
 test('税の計算を抽出して TaxCalculator へ移すと、責務の混在の減点が消える', async ({ page }) => {
   // Arrange
-  await page.goto('/');
+  await openOrderStage(page);
   await page.getByTestId('method-placeOrder').click();
   await page.getByLabel('消費税を計算する(軽減税率あり)').check();
   await page.getByLabel('新しいメソッド名').fill('calculateTax');
@@ -163,7 +169,7 @@ test('税の計算を抽出して TaxCalculator へ移すと、責務の混在�
 
 test('クラスとファイルを追加し、クラスを新しいファイルへドラッグ&ドロップで移せる', async ({ page }) => {
   // Arrange
-  await page.goto('/');
+  await openOrderStage(page);
   await page.getByLabel('新しいファイルのパス').fill('src/mail/Mailer.ts');
   await page.getByRole('button', { name: 'ファイルを追加' }).click();
   await page.getByLabel('新しいクラス名').fill('Mailer');
@@ -194,7 +200,7 @@ test('クラスとファイルを追加し、クラスを新しいファイル�
 
 test('同じ名前のクラスは追加できず、理由が表示される', async ({ page }) => {
   // Arrange
-  await page.goto('/');
+  await openOrderStage(page);
 
   // Act
   await page.getByLabel('新しいクラス名').fill('TaxCalculator');
@@ -202,4 +208,20 @@ test('同じ名前のクラスは追加できず、理由が表示される', as
 
   // Assert
   await expect(page.getByRole('alert')).toHaveText('同じ名前のクラスがすでにあります');
+});
+
+test('ステージを選ぶと、そのステージのコードベースと目標に切り替わり、点数も付け直される', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: 'チュートリアル1: 長いメソッドを分ける' })).toBeVisible();
+  await expect(page.getByTestId('class-ReportService')).toBeVisible();
+
+  // Act
+  await page.getByLabel('ステージ').selectOption({ label: '中級1: 循環依存を断ち切る' });
+
+  // Assert
+  await expect(page.getByRole('heading', { name: '中級1: 循環依存を断ち切る' })).toBeVisible();
+  await expect(page.getByTestId('class-ReportService')).toHaveCount(0);
+  await expect(page.getByTestId('class-Customer')).toBeVisible();
+  await expect(page.getByTestId('score')).toContainText('循環依存 -20');
 });

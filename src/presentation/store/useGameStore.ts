@@ -16,9 +16,10 @@ import {
   moveMethodUseCase,
   type ExtractMethodInput,
 } from '../../application/RefactorUseCases';
-import { tutorialStage } from '../../infrastructure/samples/tutorialStage';
+import { stages } from '../../infrastructure/stages/stageCatalog';
 
 type GameState = {
+  stages: readonly Stage[];
   stage: Stage;
   codebase: Codebase;
   selectedMethodId: string | null;
@@ -31,11 +32,15 @@ type GameState = {
   addFile: (path: string) => boolean;
   moveClass: (classId: string, targetFileId: string) => void;
   resetStage: () => void;
+  selectStage: (stageId: string) => void;
 };
 
+const [firstStage] = stages;
+
 export const useGameStore = create<GameState>((set, get) => ({
-  stage: tutorialStage,
-  codebase: tutorialStage.codebase,
+  stages,
+  stage: firstStage,
+  codebase: firstStage.codebase,
   selectedMethodId: null,
   message: null,
   selectMethod: (methodId) => {
@@ -74,5 +79,9 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
   resetStage: () => {
     set({ codebase: get().stage.codebase, selectedMethodId: null, message: null });
+  },
+  selectStage: (stageId) => {
+    const stage = stages.find((candidate) => candidate.id === stageId);
+    if (stage !== undefined) set({ stage, codebase: stage.codebase, selectedMethodId: null, message: null });
   },
 }));
