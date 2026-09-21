@@ -6,6 +6,26 @@ async function openOrderStage(page: Page) {
   await page.getByLabel('ステージ').selectOption({ label: 'チュートリアル2: 太った placeOrder' });
 }
 
+/** キャンバスの余白を右クリックし、メニューからファイルを追加する。 */
+async function addFileFromMenu(page: Page, path: string) {
+  const pane = await page.locator('.react-flow__pane').boundingBox();
+  if (pane === null) throw new Error('キャンバスの位置を取得できません');
+  await page.mouse.click(pane.x + pane.width - 20, pane.y + pane.height - 20, { button: 'right' });
+  const menu = page.getByTestId('context-menu');
+  await menu.getByRole('menuitem', { name: 'ファイルを追加' }).click();
+  await menu.getByLabel('追加するファイルのパス').fill(path);
+  await menu.getByRole('button', { name: '追加' }).click();
+}
+
+/** メソッドを右クリックし、メニューからそのメソッドのファイルにクラスを追加する。 */
+async function addClassFromMenu(page: Page, methodName: string, className: string) {
+  await page.getByTestId(`method-${methodName}`).click({ button: 'right' });
+  const menu = page.getByTestId('context-menu');
+  await menu.getByRole('menuitem', { name: 'このファイルにクラスを追加' }).click();
+  await menu.getByLabel('追加するクラス名').fill(className);
+  await menu.getByRole('button', { name: '追加' }).click();
+}
+
 test('メソッドを選んで処理を抽出すると、クラスに新しいメソッドが増える', async ({ page }) => {
   // Arrange
   await openOrderStage(page);
@@ -170,11 +190,8 @@ test('税の計算を抽出して TaxCalculator へ移すと、責務の混在�
 test('クラスとファイルを追加し、クラスを新しいファイルへドラッグ&ドロップで移せる', async ({ page }) => {
   // Arrange
   await openOrderStage(page);
-  await page.getByLabel('新しいファイルのパス').fill('src/mail/Mailer.ts');
-  await page.getByRole('button', { name: 'ファイルを追加' }).click();
-  await page.getByLabel('新しいクラス名').fill('Mailer');
-  await page.getByLabel('クラスの追加先ファイル').selectOption({ label: 'src/order/OrderService.ts' });
-  await page.getByRole('button', { name: 'クラスを追加' }).click();
+  await addFileFromMenu(page, 'src/mail/Mailer.ts');
+  await addClassFromMenu(page, 'placeOrder', 'Mailer');
   // クラスノードはファイルノードのDOMの子にならないため、空ファイルの案内の有無で移動先を確かめる
   const emptyFileHint = page.getByText('ここにクラスをドロップ');
   await expect(emptyFileHint).toHaveCount(1);
@@ -203,11 +220,11 @@ test('同じ名前のクラスは追加できず、理由が表示される', as
   await openOrderStage(page);
 
   // Act
-  await page.getByLabel('新しいクラス名').fill('TaxCalculator');
-  await page.getByRole('button', { name: 'クラスを追加' }).click();
+  await addClassFromMenu(page, 'placeOrder', 'TaxCalculator');
 
   // Assert
   await expect(page.getByRole('alert')).toHaveText('同じ名前のクラスがすでにあります');
+  await expect(page.getByTestId('context-menu')).toBeVisible();
 });
 
 test('ステージを選ぶと、そのステージのコードベースと目標に切り替わり、点数も付け直される', async ({ page }) => {

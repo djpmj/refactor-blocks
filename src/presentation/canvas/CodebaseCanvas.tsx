@@ -16,7 +16,6 @@ import { findClass, findFileOfClass, findMethod, type Codebase } from '../../dom
 import { methodLines } from '../../domain/codebase/lineCount';
 import { useGameStore } from '../store/useGameStore';
 import { CanvasContextMenu } from './CanvasContextMenu';
-import { CanvasToolbar } from './CanvasToolbar';
 import { ClassNode } from './ClassNode';
 import { parseClassDragId, parseClassDropId, parseFileDropId, parseMethodDragId } from './dndIds';
 import { FileNode } from './FileNode';
@@ -109,7 +108,6 @@ export function CodebaseCanvas() {
       >
         <Background gap={24} />
         <Controls showInteractive={false} />
-        <CanvasToolbar />
         <FitViewOnLayoutChange stageId={stageId} fileCount={codebase.files.length} />
       </ReactFlow>
       <DraggingOverlay activeId={activeId} />

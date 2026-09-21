@@ -84,8 +84,6 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .file-node__empty { color: var(--muted); font-size: 12px; text-align: center; padding: 24px 0; }
 .class-node__header { cursor: grab; }
 .class-drag-preview { padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); font-weight: 700; box-shadow: 0 4px 12px rgb(0 0 0 / 20%); }
-.canvas-toolbar { display: flex; flex-wrap: wrap; gap: 8px; }
-.canvas-toolbar__form { display: flex; gap: 4px; padding: 6px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
 .context-menu { position: fixed; z-index: 1000; min-width: 200px; padding: 4px; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 6px 20px rgb(0 0 0 / 0.18); font-size: 13px; }
 .context-menu__caption { padding: 4px 8px; color: var(--muted); font-size: 12px; font-family: ui-monospace, monospace; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
 .context-menu [role="menuitem"] { display: block; width: 100%; padding: 6px 8px; border: 0; border-radius: 6px; background: transparent; color: inherit; text-align: left; cursor: pointer; font: inherit; }
