@@ -30,7 +30,7 @@ type CritiqueRequestBody = {
 
 /** リクエストの文字数の上限。想定より大きい・壊れた入力をここで弾く。 */
 const MAX_BODY_LENGTH = 20_000;
-const MODEL = 'claude-opus-5';
+const MODEL = 'claude-haiku-4-5-20251001';
 const MAX_OUTPUT_TOKENS = 1024;
 /** レート制限にかかったときに、次に試してよいまでの目安として返す秒数(wrangler.tomlのperiodと合わせる)。 */
 const RATE_LIMIT_RETRY_AFTER_SECONDS = 60;

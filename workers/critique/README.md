@@ -37,6 +37,12 @@ curl -X POST http://localhost:8787 \
 
 `{"critique":"..."}` が返ってくれば成功。
 
+## モデル
+
+`claude-haiku-4-5-20251001` を使う。認証なしで誰でも呼べるプロキシで、講評文も
+3〜5文程度の軽い生成タスクのため、Opusほどの能力は過剰でAPI費用がかさむ。
+Haikuに下げてコストを抑える。
+
 ## レート制限
 
 認証なしで誰でも呼べるプロキシなので、Cloudflare WorkersのRate Limiting APIで
