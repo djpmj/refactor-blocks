@@ -1,7 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { scoreCodebase, type Score, type ScoreRule } from '../../domain/scoring/score';
-import type { StageLevel } from '../../domain/stage/Stage';
+import { sampleAnswerCodebase, sampleAnswerSteps } from '../../domain/stage/sampleAnswer';
+import type { Stage, StageLevel } from '../../domain/stage/Stage';
 import { CritiquePanel } from '../critique/CritiquePanel';
+import { CodebasePreviewDialog } from '../preview/CodebasePreviewDialog';
 import { useGameStore } from '../store/useGameStore';
 
 const RULE_LABEL: Record<ScoreRule, string> = {
@@ -55,6 +57,30 @@ function describeScore(score: Score): string {
   return details.length === 0 ? `✅ ${score.total}点` : `${score.total}点(${details.join(' / ')})`;
 }
 
+type PreviewKind = 'before' | 'sample';
+
+/** 「変更前」「解答例」の図を読み取り専用で見せるボタン。呼び出し側で key={stage.id} を付け、ステージを切り替えたら閉じるようにする。 */
+function PreviewButtons({ stage, disabled }: Readonly<{ stage: Stage; disabled: boolean }>) {
+  const [preview, setPreview] = useState<PreviewKind | null>(null);
+  const hasSampleAnswer = sampleAnswerSteps[stage.id] !== undefined;
+  const codebase = useMemo(() => {
+    if (preview === 'before') return stage.codebase;
+    if (preview === 'sample' && hasSampleAnswer) return sampleAnswerCodebase(stage);
+    return null;
+  }, [preview, stage, hasSampleAnswer]);
+  return (
+    <>
+      <button type="button" onClick={() => setPreview('before')} disabled={disabled}>
+        変更前の図を見る
+      </button>
+      <button type="button" onClick={() => setPreview('sample')} disabled={disabled || !hasSampleAnswer} title={hasSampleAnswer ? undefined : 'このステージには解答例が未登録です'}>
+        解答例の図を見る
+      </button>
+      <CodebasePreviewDialog title={preview === 'sample' ? '解答例の図' : '変更前の図'} codebase={codebase} methodLimit={stage.limits.method} onClose={() => setPreview(null)} />
+    </>
+  );
+}
+
 /** ステージの目標と、行数・結合度・循環依存・責務の混在から出した点数を表示する。責務の中身(responsibility の値)は見せない。 */
 export function StagePanel() {
   const stage = useGameStore((state) => state.stage);
@@ -97,6 +123,7 @@ export function StagePanel() {
         <button type="button" className="stage-panel__reset" onClick={resetStage} disabled={investigating}>
           最初に戻す
         </button>
+        <PreviewButtons key={stage.id} stage={stage} disabled={investigating} />
       </div>
     </header>
   );
