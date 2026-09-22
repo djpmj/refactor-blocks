@@ -28,6 +28,32 @@ diffは書かず、要約と確認観点だけを書く。
 
 ## ログ一覧
 
+## 2026-09-22 12:50 (JST) — クラス・ファイルを右クリックメニューから削除できるようにする
+
+- 対応タスク: docs/auto-dev/TASKS.md の「クラス・ファイルを右クリックメニューから削除できるようにする」
+- コミット: 5d9e0bd33877a55d1155302dab153ed2da07e64d
+- 実装内容:
+  - `domain/codebase/deleteClass.ts` / `deleteFile.ts` を追加(TDD、`Result`型)。削除対象の中に
+    Extract Methodで切り出されたメソッド(呼び出し元がclass外にあるもの)が含まれる場合は、
+    既存の `findCallerOf`/`inlineMethod` を再利用して呼び出し元の元のメソッドへ戻してから削除する。
+    呼び出し元も同じ削除対象の中にあるならinlineせずそのまま消す
+  - ファイル削除は、最後の1ファイルを消そうとするとエラー(`last-file`)にする
+  - `RefactorUseCases.ts` にユースケース・エラーメッセージ、ストアに `deleteClass`/`deleteFile` を追加
+  - `CanvasContextMenu.tsx` に「クラスを削除」「ファイルを削除」を追加。確認ダイアログは出さず、
+    既存のCtrl+Zの取り消し履歴で戻せる前提にした(メニュー項目を「フォームを開く」と「即実行」の
+    2種類に対応できるよう `MenuItem` を判別可能なUnionに変更)
+  - E2Eを3件追加: 単純なクラス削除、ファイル削除、切り出したメソッドを含むクラスを削除→
+    呼び出し元に処理が戻る→Ctrl+Zで削除前に戻る
+- 変更ファイル:
+  - src/domain/codebase/deleteClass.ts、deleteClass.test.ts、deleteFile.ts、deleteFile.test.ts(すべて新規)
+  - src/application/RefactorUseCases.ts、src/presentation/store/useGameStore.ts
+  - src/presentation/canvas/CanvasContextMenu.tsx、e2e/refactor.spec.ts
+- 確認してほしいこと:
+  - 「削除」メニューが名前変更などと並んでいて紛らわしくないか、実際の画面で見てほしい
+    (押し間違えても取り消せるとはいえ、危険な操作の視覚的な区別はしていない)
+  - 削除した直後に選択中だったメソッドが消えても、選択は自動では外さない(MethodEditorは
+    存在しないIDならヒント表示に戻るだけで壊れないことは確認済み)。UXとして気になれば対応を検討してほしい
+
 ## 2026-09-22 12:36 (JST) — Cloudflare Workers経由でAI講評を呼び出し、画面に表示する
 
 - 対応タスク: docs/auto-dev/TASKS.md の「Cloudflare Workers経由でAI講評を呼び出し、画面に表示する」
