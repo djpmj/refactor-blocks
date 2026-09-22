@@ -216,4 +216,73 @@ const godFileStage: Stage = {
   },
 };
 
-export const intermediateStages: readonly Stage[] = [cyclicDependencyStage, godFileStage];
+/**
+ * 中級3: NotificationService が、TemplateEngine の private メソッド renderTemplate を直接呼んでいる。
+ * TemplateEngine 側は自分の中でしか使わないつもりで private にしたが、外から呼ばれてしまっている。
+ * renderTemplate を呼び出し元(NotificationService)へ Move Method して初めて越境呼び出しが消える。
+ */
+const misplacedPrivateStage: Stage = {
+  id: 'intermediate-misplaced-private',
+  level: 'intermediate',
+  title: '中級3: 越境する private メソッド',
+  description:
+    '配送完了を知らせる NotificationService。通知メールの文面を組み立てる処理の中で、実は TemplateEngine クラスに private として置かれた renderTemplate() を直接呼んでいる。TemplateEngine 側は自分の中でしか使わないつもりで private にしたはずなのに、外から呼ばれてしまっている。',
+  goal: 'メソッドは50行以内に。private なメソッドを他クラスから呼んでいる箇所(アクセス制御の違反)をなくそう。呼んでいる側と同じクラスへ Move Method で移動しよう',
+  limits: { method: 50, class: 200, file: 300 },
+  dependencyLimit: 2,
+  responsibilityLimit: 4,
+  visibilityEnforced: true,
+  changeRequests: [
+    { id: 'req-sms', title: '通知をSMSにも送れるようにして', description: '配送完了の通知を、メールだけでなくSMSでも送れるようにしたい。', responsibility: 'delivery', linesPerSite: 8 },
+    { id: 'req-log-format', title: '送信ログのフォーマットを見直して', description: '送信ログに記録する項目を増やし、書式を見直したい。', responsibility: 'logging', linesPerSite: 5 },
+  ],
+  codebase: {
+    files: [
+      {
+        id: 'file-notification-service',
+        path: 'src/notification/NotificationService.ts',
+        classes: [
+          {
+            id: 'class-notification-service',
+            name: 'NotificationService',
+            methods: [
+              {
+                id: 'method-notify-shipment',
+                name: 'notifyShipment',
+                visibility: 'public',
+                fragments: [
+                  { id: 'frag-gather-info', label: '通知に必要な情報を集める', lines: 26, responsibility: 'notification', suggestedName: 'gatherNotificationInfo' },
+                  { id: 'frag-render-template', label: 'テンプレートを描画する', lines: 6, responsibility: 'notification', uses: ['method-render-template'], suggestedName: 'renderNotification' },
+                  { id: 'frag-send-mail', label: 'メールを送信する', lines: 30, responsibility: 'delivery', suggestedName: 'sendMail' },
+                  { id: 'frag-log-delivery', label: '送信ログを記録する', lines: 20, responsibility: 'logging', suggestedName: 'logDelivery' },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'file-template-engine',
+        path: 'src/notification/TemplateEngine.ts',
+        classes: [
+          {
+            id: 'class-template-engine',
+            name: 'TemplateEngine',
+            methods: [
+              {
+                id: 'method-render-template',
+                name: 'renderTemplate',
+                visibility: 'private',
+                fragments: [
+                  { id: 'frag-embed-body', label: '本文のテンプレートを埋め込む', lines: 46, responsibility: 'rendering', suggestedName: 'embedBody' },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+};
+
+export const intermediateStages: readonly Stage[] = [cyclicDependencyStage, godFileStage, misplacedPrivateStage];

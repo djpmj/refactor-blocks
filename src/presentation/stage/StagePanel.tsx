@@ -8,6 +8,7 @@ const RULE_LABEL: Record<ScoreRule, string> = {
   coupling: '結合度',
   cycle: '循環依存',
   responsibility: '責務の混在',
+  visibility: 'アクセス制御',
 };
 
 const LEVEL_LABEL: Record<StageLevel, string> = {

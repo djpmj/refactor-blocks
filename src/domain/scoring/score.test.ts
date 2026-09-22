@@ -1,7 +1,46 @@
 import { describe, expect, it } from 'vitest';
 import type { CodeClass, Codebase } from '../codebase/Codebase';
+import { extractMethod } from '../codebase/extractMethod';
+import { moveMethod } from '../codebase/moveMethod';
 import { sampleCodebase } from '../codebase/testFixtures';
+import type { Result } from '../shared/Result';
 import { scoreCodebase } from './score';
+
+/** クラスAがクラスBのprivateメソッドを呼ぶだけの最小のコードベース。 */
+function codebaseWithPrivateCallAcrossClasses(): Codebase {
+  return {
+    files: [
+      {
+        id: 'file',
+        path: 'src/all.ts',
+        classes: [
+          {
+            id: 'class-A',
+            name: 'A',
+            methods: [
+              {
+                id: 'method-A',
+                name: 'run',
+                visibility: 'public',
+                fragments: [{ id: 'f-a', label: 'call', lines: 1, responsibility: 'call', uses: ['method-B'] }],
+              },
+            ],
+          },
+          {
+            id: 'class-B',
+            name: 'B',
+            methods: [{ id: 'method-B', name: 'helper', visibility: 'private', fragments: [] }],
+          },
+        ],
+      },
+    ],
+  };
+}
+
+function unwrap<T, E>(result: Result<T, E>): T {
+  if (!result.ok) throw new Error(`操作に失敗しました: ${String(result.error)}`);
+  return result.value;
+}
 
 const LOOSE = { limits: { method: 100, class: 100, file: 100 }, responsibilityLimit: 100 };
 
@@ -23,7 +62,7 @@ function codebaseOf(classes: Record<string, readonly string[]>): Codebase {
 }
 
 describe('scoreCodebase', () => {
-  it('違反がなければ100点で、4ルールとも減点0件を返す', () => {
+  it('違反がなければ100点で、5ルールとも減点0件を返す', () => {
     // Arrange
     const codebase = codebaseOf({ A: ['method-B'], B: [] });
 
@@ -38,6 +77,7 @@ describe('scoreCodebase', () => {
         { rule: 'coupling', count: 0, points: 0 },
         { rule: 'cycle', count: 0, points: 0 },
         { rule: 'responsibility', count: 0, points: 0 },
+        { rule: 'visibility', count: 0, points: 0 },
       ],
     });
   });
@@ -99,6 +139,69 @@ describe('scoreCodebase', () => {
     // Assert
     expect(score.total).toBe(90);
     expect(score.deductions[3]).toEqual({ rule: 'responsibility', count: 1, points: 10 });
+  });
+
+  it('visibilityEnforced が未指定なら、越境した private メソッド呼び出しがあっても減点しない', () => {
+    // Arrange
+    const codebase = codebaseWithPrivateCallAcrossClasses();
+
+    // Act
+    const score = scoreCodebase(codebase, { ...LOOSE, dependencyLimit: 1 });
+
+    // Assert
+    expect(score.deductions[4]).toEqual({ rule: 'visibility', count: 0, points: 0 });
+  });
+
+  it('visibilityEnforced: true のとき、越境した private メソッド呼び出し1件につき10点減点する', () => {
+    // Arrange
+    const codebase = codebaseWithPrivateCallAcrossClasses();
+
+    // Act
+    const score = scoreCodebase(codebase, { ...LOOSE, dependencyLimit: 1, visibilityEnforced: true });
+
+    // Assert
+    expect(score.total).toBe(90);
+    expect(score.deductions[4]).toEqual({ rule: 'visibility', count: 1, points: 10 });
+  });
+
+  it('Extract Method で作った private メソッドを Move Method で別クラスへ移すと、越境呼び出しとして検出される', () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [
+        {
+          id: 'file',
+          path: 'src/all.ts',
+          classes: [
+            {
+              id: 'class-A',
+              name: 'A',
+              methods: [
+                {
+                  id: 'method-A',
+                  name: 'run',
+                  visibility: 'public',
+                  fragments: [
+                    { id: 'f-a', label: 'do', lines: 1, responsibility: 'work' },
+                    { id: 'f-b', label: 'other', lines: 1, responsibility: 'other' },
+                  ],
+                },
+              ],
+            },
+            { id: 'class-B', name: 'B', methods: [] },
+          ],
+        },
+      ],
+    };
+    const extracted = unwrap(
+      extractMethod(codebase, { sourceMethodId: 'method-A', fragmentIds: ['f-a'], newMethodId: 'method-extracted', newMethodName: 'helper' }),
+    );
+    const moved = unwrap(moveMethod(extracted, 'method-extracted', 'class-B'));
+
+    // Act
+    const score = scoreCodebase(moved, { ...LOOSE, dependencyLimit: 1, visibilityEnforced: true });
+
+    // Assert
+    expect(score.deductions[4]).toEqual({ rule: 'visibility', count: 1, points: 10 });
   });
 
   it('減点の合計が100点を超えても0点で止まる', () => {

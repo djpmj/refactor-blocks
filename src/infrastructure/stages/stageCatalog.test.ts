@@ -67,6 +67,11 @@ const solutions: Record<string, readonly Step[]> = {
     { moveClass: { name: 'ShippingService', toFile: 'src/shipping/ShippingService.ts' } },
     { moveClass: { name: 'PointService', toFile: 'src/point/PointService.ts' } },
   ],
+  'intermediate-misplaced-private': [
+    { extract: { from: 'notifyShipment', fragmentIds: ['frag-send-mail'], name: 'sendMail' } },
+    { extract: { from: 'notifyShipment', fragmentIds: ['frag-log-delivery'], name: 'logDelivery' } },
+    { move: { method: 'renderTemplate', toClass: 'NotificationService' } },
+  ],
 };
 
 /** ステージの狙いを飛ばした手順。これで100点になってしまうなら、ステージの数値の作りが甘い。 */

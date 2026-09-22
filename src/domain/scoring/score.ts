@@ -3,8 +3,9 @@ import { classDependencies, type ClassDependency } from '../codebase/dependencie
 import type { Stage } from '../stage/Stage';
 import { findLineLimitViolations } from './lineLimits';
 import { findResponsibilityViolations } from './responsibilities';
+import { findVisibilityViolations } from './visibility';
 
-export type ScoreRule = 'line-limit' | 'coupling' | 'cycle' | 'responsibility';
+export type ScoreRule = 'line-limit' | 'coupling' | 'cycle' | 'responsibility' | 'visibility';
 
 export type ScoreDeduction = {
   readonly rule: ScoreRule;
@@ -30,7 +31,7 @@ export function findCouplingViolations(dependencies: readonly ClassDependency[],
 /** 行数・結合度・循環依存・責務の混在の違反1件につき10点を100点から引く。0点より下にはしない。 */
 export function scoreCodebase(
   codebase: Codebase,
-  stage: Pick<Stage, 'limits' | 'dependencyLimit' | 'responsibilityLimit'>,
+  stage: Pick<Stage, 'limits' | 'dependencyLimit' | 'responsibilityLimit' | 'visibilityEnforced'>,
 ): Score {
   const dependencies = classDependencies(codebase);
   const counts: Record<ScoreRule, number> = {
@@ -38,8 +39,9 @@ export function scoreCodebase(
     coupling: findCouplingViolations(dependencies, stage.dependencyLimit).length,
     cycle: dependencies.filter((dependency) => dependency.cyclic).length,
     responsibility: findResponsibilityViolations(codebase, stage.responsibilityLimit).length,
+    visibility: stage.visibilityEnforced === true ? findVisibilityViolations(codebase).length : 0,
   };
-  const deductions = (['line-limit', 'coupling', 'cycle', 'responsibility'] as const).map(
+  const deductions = (['line-limit', 'coupling', 'cycle', 'responsibility', 'visibility'] as const).map(
     (rule): ScoreDeduction => ({ rule, count: counts[rule], points: counts[rule] * POINTS_PER_VIOLATION }),
   );
   const deducted = deductions.reduce((sum, deduction) => sum + deduction.points, 0);

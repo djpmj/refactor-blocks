@@ -697,3 +697,39 @@ test('メソッドをファイルの枠外へドラッグすると、新しい�
   await expect(page.getByTestId('class-NewClass').getByTestId('method-calculateTax')).toBeVisible();
   await expect(page.getByTestId('file-src/NewClass.ts')).toBeVisible();
 });
+
+test('越境した private メソッドの呼び出しは減点され、呼び出し元のクラスへ Move Method すると解消する', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await page.getByLabel('ステージ').selectOption({ label: '中級3: 越境する private メソッド' });
+  await expect(page.getByRole('heading', { name: '中級3: 越境する private メソッド' })).toBeVisible();
+  await expect(page.getByTestId('score')).toContainText('80点');
+  await expect(page.getByTestId('score')).toContainText('行数 -10');
+  await expect(page.getByTestId('score')).toContainText('アクセス制御 -10');
+
+  // Act: notifyShipment からメール送信・ログ記録を抽出する
+  await page.getByTestId('method-notifyShipment').click();
+  await page.getByLabel('メールを送信する').check();
+  await page.getByLabel('新しいメソッド名').fill('sendMail');
+  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+  await page.getByTestId('method-notifyShipment').click();
+  await page.getByLabel('送信ログを記録する').check();
+  await page.getByLabel('新しいメソッド名').fill('logDelivery');
+  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+
+  // Act: renderTemplate を呼び出し元の NotificationService へドラッグで移す
+  const source = page.getByTestId('method-renderTemplate');
+  const target = page.getByTestId('class-NotificationService');
+  const from = await source.boundingBox();
+  const to = await target.boundingBox();
+  if (from === null || to === null) throw new Error('要素の位置を取得できません');
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(from.x + from.width / 2 + 20, from.y + from.height / 2, { steps: 5 });
+  await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 15 });
+  await page.mouse.up();
+
+  // Assert
+  await expect(target.getByTestId('method-renderTemplate')).toBeVisible();
+  await expect(page.getByTestId('score')).toContainText('100点');
+});

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { CodeClass, Codebase, Fragment } from './Codebase';
-import { classDependencies } from './dependencies';
+import { classDependencies, methodOwnerMap } from './dependencies';
 
 function callFragment(id: string, uses: readonly string[]): Fragment {
   return { id, label: id, lines: 1, responsibility: 'call', uses };
@@ -15,6 +15,31 @@ function codebaseOf(classes: Record<string, readonly string[]>): Codebase {
   }));
   return { files: [{ id: 'file', path: 'src/all.ts', classes: codeClasses }] };
 }
+
+describe('methodOwnerMap', () => {
+  it('各メソッドIDに正しい所属クラスIDが引ける', () => {
+    // Arrange
+    const codebase = codebaseOf({ A: ['method-B'], B: [] });
+
+    // Act
+    const map = methodOwnerMap(codebase);
+
+    // Assert
+    expect(map.get('method-A')).toBe('class-A');
+    expect(map.get('method-B')).toBe('class-B');
+  });
+
+  it('存在しないメソッドIDでは undefined になる', () => {
+    // Arrange
+    const codebase = codebaseOf({ A: [] });
+
+    // Act
+    const map = methodOwnerMap(codebase);
+
+    // Assert
+    expect(map.get('method-missing')).toBeUndefined();
+  });
+});
 
 describe('classDependencies', () => {
   it('別クラスのメソッドを呼ぶと、呼んだクラスから呼ばれたクラスへの依存になる', () => {

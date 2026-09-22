@@ -7,6 +7,13 @@ export type ClassDependency = {
   readonly cyclic: boolean;
 };
 
+/** 各メソッドIDから、それを持つクラスのIDを引けるMapを作る。 */
+export function methodOwnerMap(codebase: Codebase): ReadonlyMap<string, string> {
+  return new Map(
+    allClasses(codebase).flatMap((codeClass) => codeClass.methods.map((method) => [method.id, codeClass.id] as const)),
+  );
+}
+
 /** クラスが呼び出している別クラスのIDを、見つかった順に重複なく返す。 */
 function dependencyTargets(codeClass: CodeClass, classIdByMethodId: ReadonlyMap<string, string>): string[] {
   const targets = codeClass.methods
@@ -32,9 +39,7 @@ function canReach(graph: ReadonlyMap<string, readonly string[]>, start: string, 
 /** Fragment の uses からクラス間の依存を算出する。同じクラス内の呼び出しと存在しないメソッドIDは無視する。 */
 export function classDependencies(codebase: Codebase): ClassDependency[] {
   const classes = allClasses(codebase);
-  const classIdByMethodId = new Map(
-    classes.flatMap((codeClass) => codeClass.methods.map((method) => [method.id, codeClass.id] as const)),
-  );
+  const classIdByMethodId = methodOwnerMap(codebase);
   const graph = new Map(classes.map((codeClass) => [codeClass.id, dependencyTargets(codeClass, classIdByMethodId)]));
   // ponytail: 依存1本ごとに到達判定するので O(E·(V+E))。ステージが数百クラス規模になったら強連結成分分解に置き換える。
   return [...graph].flatMap(([from, targets]) => targets.map((to) => ({ from, to, cyclic: canReach(graph, to, from) })));
