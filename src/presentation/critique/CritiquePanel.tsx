@@ -15,9 +15,12 @@ export function CritiquePanel({ disabled }: Readonly<{ disabled: boolean }>) {
         </p>
       )}
       {critique.text !== null && (
-        <p className="critique-panel__text" data-testid="critique-text">
-          {critique.text}
-        </p>
+        <details className="critique-panel__details" open>
+          <summary>講評</summary>
+          <p className="critique-panel__text" data-testid="critique-text">
+            {critique.text}
+          </p>
+        </details>
       )}
     </div>
   );
