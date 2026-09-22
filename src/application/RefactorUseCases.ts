@@ -1,6 +1,8 @@
 import { addClass, type AddClassError } from '../domain/codebase/addClass';
 import { addFile, type AddFileError } from '../domain/codebase/addFile';
 import type { Codebase } from '../domain/codebase/Codebase';
+import { deleteClass, type DeleteClassError } from '../domain/codebase/deleteClass';
+import { deleteFile, type DeleteFileError } from '../domain/codebase/deleteFile';
 import { extractMethod, type ExtractMethodError } from '../domain/codebase/extractMethod';
 import { findCallerOf, inlineMethod, type InlineMethodError } from '../domain/codebase/inlineMethod';
 import { moveClass, type MoveClassError } from '../domain/codebase/moveClass';
@@ -106,6 +108,16 @@ export function renameFileUseCase(codebase: Codebase, fileId: string, newPath: s
   return renameFile(codebase, fileId, newPath);
 }
 
+/** プレイヤーの「クラスを削除」操作。 */
+export function deleteClassUseCase(codebase: Codebase, classId: string): Result<Codebase, DeleteClassError> {
+  return deleteClass(codebase, classId);
+}
+
+/** プレイヤーの「ファイルを削除」操作。 */
+export function deleteFileUseCase(codebase: Codebase, fileId: string): Result<Codebase, DeleteFileError> {
+  return deleteFile(codebase, fileId);
+}
+
 const RENAME_CLASS_ERROR_MESSAGES: Record<RenameClassError, string> = {
   'class-not-found': '名前を変えるクラスが見つかりません',
   'empty-class-name': 'クラス名を入力してください',
@@ -155,6 +167,15 @@ const MOVE_CLASS_ERROR_MESSAGES: Record<Exclude<MoveClassError, 'same-file'>, st
   'file-not-found': '移動先のファイルが見つかりません',
 };
 
+const DELETE_CLASS_ERROR_MESSAGES: Record<DeleteClassError, string> = {
+  'class-not-found': '削除するクラスが見つかりません',
+};
+
+const DELETE_FILE_ERROR_MESSAGES: Record<DeleteFileError, string> = {
+  'file-not-found': '削除するファイルが見つかりません',
+  'last-file': '最後の1ファイルは削除できません',
+};
+
 export function describeMoveOutError(error: MoveClassToNewFileError | MoveMethodToNewClassError): string {
   return error === 'class-not-found' ? 'クラスが見つかりません' : 'メソッドが見つかりません';
 }
@@ -189,4 +210,12 @@ export function describeRenameClassError(error: RenameClassError): string {
 
 export function describeRenameFileError(error: RenameFileError): string {
   return RENAME_FILE_ERROR_MESSAGES[error];
+}
+
+export function describeDeleteClassError(error: DeleteClassError): string {
+  return DELETE_CLASS_ERROR_MESSAGES[error];
+}
+
+export function describeDeleteFileError(error: DeleteFileError): string {
+  return DELETE_FILE_ERROR_MESSAGES[error];
 }

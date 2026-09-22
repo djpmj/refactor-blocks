@@ -58,31 +58,59 @@ function useCloseOnOutside(menuRef: RefObject<HTMLElement | null>, onClose: () =
   }, [menuRef, onClose]);
 }
 
-type MenuItem = { mode: FormMode; label: string };
+type MenuItem = { kind: 'form'; mode: FormMode; label: string } | { kind: 'action'; run: () => void; label: string };
 
 /** 右クリックした場所で使える項目。クラスの上ならクラス、ファイルの上ならファイルに対する項目が増える。 */
-function menuItemsFor(target: ContextMenuTarget): MenuItem[] {
+function menuItemsFor(target: ContextMenuTarget, onClose: () => void): MenuItem[] {
+  const { deleteClass, deleteFile } = useGameStore.getState();
+  const { classId, fileId } = target;
   return [
-    ...(target.fileId === null ? [] : [{ mode: 'class' as const, label: 'このファイルにクラスを追加' }]),
-    { mode: 'file', label: 'ファイルを追加' },
-    ...(target.classId === null ? [] : [{ mode: 'renameClass' as const, label: 'クラスの名前を変更' }]),
-    ...(target.fileId === null ? [] : [{ mode: 'renameFile' as const, label: 'ファイルの名前を変更' }]),
+    ...(fileId === null ? [] : [{ kind: 'form' as const, mode: 'class' as const, label: 'このファイルにクラスを追加' }]),
+    { kind: 'form', mode: 'file', label: 'ファイルを追加' },
+    ...(classId === null ? [] : [{ kind: 'form' as const, mode: 'renameClass' as const, label: 'クラスの名前を変更' }]),
+    ...(fileId === null ? [] : [{ kind: 'form' as const, mode: 'renameFile' as const, label: 'ファイルの名前を変更' }]),
+    // 確認ダイアログは出さない。誤って消してもCtrl+Zの取り消し履歴で戻せる
+    ...(classId === null
+      ? []
+      : [
+          {
+            kind: 'action' as const,
+            label: 'クラスを削除',
+            run: () => {
+              deleteClass(classId);
+              onClose();
+            },
+          },
+        ]),
+    ...(fileId === null
+      ? []
+      : [
+          {
+            kind: 'action' as const,
+            label: 'ファイルを削除',
+            run: () => {
+              deleteFile(fileId);
+              onClose();
+            },
+          },
+        ]),
   ];
 }
 
-type MenuItemsProps = { items: readonly MenuItem[]; onSelect: (mode: FormMode) => void };
+type MenuItemsProps = { items: readonly MenuItem[]; onSelectForm: (mode: FormMode) => void };
 
-function MenuItems({ items, onSelect }: Readonly<MenuItemsProps>) {
+function MenuItems({ items, onSelectForm }: Readonly<MenuItemsProps>) {
   return (
     <div role="menu" aria-label="キャンバスのメニュー">
       {items.map((item, index) => (
         <button
-          key={item.mode}
+          key={item.kind === 'form' ? item.mode : item.label}
           type="button"
           role="menuitem"
           autoFocus={index === 0}
           onClick={() => {
-            onSelect(item.mode);
+            if (item.kind === 'form') onSelectForm(item.mode);
+            else item.run();
           }}
         >
           {item.label}
@@ -159,7 +187,7 @@ export function CanvasContextMenu({ target, onClose }: Readonly<{ target: Contex
     <div ref={menuRef} className="context-menu" style={{ left: target.x, top: target.y }} data-testid="context-menu">
       {file === undefined ? null : <div className="context-menu__caption">{file.path}</div>}
       {mode === 'menu' ? (
-        <MenuItems items={menuItemsFor(target)} onSelect={setMode} />
+        <MenuItems items={menuItemsFor(target, onClose)} onSelectForm={setMode} />
       ) : (
         <MenuForm target={target} mode={mode} onDone={onClose} />
       )}

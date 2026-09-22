@@ -9,8 +9,12 @@ import { fetchCritique } from '../../infrastructure/critique/critiqueClient';
 import {
   addClassUseCase,
   addFileUseCase,
+  deleteClassUseCase,
+  deleteFileUseCase,
   describeAddClassError,
   describeAddFileError,
+  describeDeleteClassError,
+  describeDeleteFileError,
   describeMoveClassError,
   describeExtractError,
   describeInlineError,
@@ -80,6 +84,8 @@ type GameState = {
   moveMethodToNewClass: (methodId: string) => void;
   renameClass: (classId: string, newName: string) => boolean;
   renameFile: (fileId: string, newPath: string) => boolean;
+  deleteClass: (classId: string) => boolean;
+  deleteFile: (fileId: string) => boolean;
   undo: () => void;
   redo: () => void;
   startChangeRequests: () => void;
@@ -271,6 +277,12 @@ export const useGameStore = create<GameState>((set, get) => {
     },
     renameFile: (fileId, newPath) => {
       return apply(renameFileUseCase(get().codebase, fileId, newPath), describeRenameFileError);
+    },
+    deleteClass: (classId) => {
+      return apply(deleteClassUseCase(get().codebase, classId), describeDeleteClassError);
+    },
+    deleteFile: (fileId) => {
+      return apply(deleteFileUseCase(get().codebase, fileId), describeDeleteFileError);
     },
     ...moveActions(apply, get),
     ...historyActions(set, get),

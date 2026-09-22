@@ -354,6 +354,70 @@ test('重複した名前には変更できず、理由が表示されて名前�
   await expect(menu).toHaveCount(0);
 });
 
+test('クラスを右クリックして削除すると、キャンバスから消える', async ({ page }) => {
+  // Arrange
+  await openOrderStage(page);
+  await page.getByTestId('class-header-TaxCalculator').click({ button: 'right' });
+  const menu = page.getByTestId('context-menu');
+
+  // Act
+  await menu.getByRole('menuitem', { name: 'クラスを削除' }).click();
+
+  // Assert
+  await expect(page.getByTestId('class-TaxCalculator')).toHaveCount(0);
+  await expect(menu).toHaveCount(0);
+});
+
+test('ファイルを右クリックして削除すると、キャンバスから消える', async ({ page }) => {
+  // Arrange
+  await openOrderStage(page);
+  await page.getByTestId('file-src/tax/TaxCalculator.ts').click({ button: 'right', position: { x: 10, y: 10 } });
+  const menu = page.getByTestId('context-menu');
+
+  // Act
+  await menu.getByRole('menuitem', { name: 'ファイルを削除' }).click();
+
+  // Assert
+  await expect(page.getByTestId('file-src/tax/TaxCalculator.ts')).toHaveCount(0);
+});
+
+test('切り出したメソッドを含むクラスを削除すると、呼び出し元の元のメソッドに処理が戻ったうえでクラスが消える。Ctrl+Zで削除前の状態に戻せる', async ({ page }) => {
+  // Arrange: calculateTaxを抽出してTaxCalculatorへドラッグで移す
+  await openOrderStage(page);
+  await page.getByTestId('method-placeOrder').click();
+  await page.getByLabel('消費税を計算する(軽減税率あり)').check();
+  await page.getByLabel('新しいメソッド名').fill('calculateTax');
+  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+  const source = page.getByTestId('method-calculateTax');
+  const target = page.getByTestId('class-TaxCalculator');
+  const from = await source.boundingBox();
+  const to = await target.boundingBox();
+  if (from === null || to === null) throw new Error('要素の位置を取得できません');
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(from.x + from.width / 2 + 20, from.y + from.height / 2, { steps: 5 });
+  await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 15 });
+  await page.mouse.up();
+  await expect(target.getByTestId('method-calculateTax')).toBeVisible();
+
+  // Act
+  await page.getByTestId('class-header-TaxCalculator').click({ button: 'right' });
+  const menu = page.getByTestId('context-menu');
+  await menu.getByRole('menuitem', { name: 'クラスを削除' }).click();
+
+  // Assert
+  await expect(page.getByTestId('class-TaxCalculator')).toHaveCount(0);
+  await expect(page.getByTestId('method-calculateTax')).toHaveCount(0);
+  await page.getByTestId('method-placeOrder').click();
+  await expect(page.getByLabel('消費税を計算する(軽減税率あり)')).toBeVisible();
+
+  // Act: Ctrl+Zで削除前に戻す
+  await page.keyboard.press('Control+z');
+
+  // Assert
+  await expect(page.getByTestId('class-TaxCalculator').getByTestId('method-calculateTax')).toBeVisible();
+});
+
 test('メソッドをドラッグで移したあと Ctrl+Z で元のクラスに戻り、Ctrl+Y で移動先に戻る', async ({ page }) => {
   // Arrange
   await openOrderStage(page);
