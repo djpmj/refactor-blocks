@@ -1,7 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { allClasses, findClass, findSuperclass } from '../../domain/codebase/Codebase';
+import { allClasses, findClass, findSuperclass, type CodeClass, type Codebase } from '../../domain/codebase/Codebase';
 import { sampleAnswerCodebase } from '../../domain/stage/sampleAnswer';
 import { advancedStages } from './advancedStages';
+
+function classNamed(codebase: Codebase, name: string) {
+  const found = allClasses(codebase).find((codeClass) => codeClass.name === name);
+  if (found === undefined) throw new Error(`クラス ${name} がありません`);
+  return found;
+}
+
+function fragmentResponsibilities(codeClass: CodeClass): string[] {
+  return codeClass.methods.flatMap((method) => method.fragments.map((fragment) => fragment.responsibility));
+}
 
 /**
  * 採点(line-limit/coupling/cycle/responsibility)は継承の有無を見ないので、
@@ -95,5 +105,59 @@ describe('advanced-payment-gateway-interface', () => {
 
     // Assert
     expect(superclasses.every((superclass) => superclass === undefined)).toBe(true);
+  });
+});
+
+/**
+ * 採点(line-limit/coupling/cycle/responsibility)は実装関係の有無を見ないので、
+ * 「模範解答で100点になる」だけでは実装関係が実際に使われているかを確認できない。
+ * この上級ステージの狙いそのもの(if分岐をStrategyパターンへ組み替える)を別途確認する。
+ */
+describe('advanced-discount-strategy', () => {
+  const stage = advancedStages.find((candidate) => candidate.id === 'advanced-discount-strategy');
+  if (stage === undefined) throw new Error('advanced-discount-strategy ステージが見つかりません');
+
+  it('初期状態では、ランクごとの割引クラスが存在しない', () => {
+    // Arrange
+    const { codebase } = stage;
+
+    // Act
+    const classNames = allClasses(codebase).map((codeClass) => codeClass.name);
+
+    // Assert
+    expect(classNames).not.toContain('RegularDiscount');
+    expect(classNames).not.toContain('PremiumDiscount');
+    expect(classNames).not.toContain('VipDiscount');
+  });
+
+  it('模範解答では、RegularDiscount・PremiumDiscount・VipDiscountがすべてDiscountStrategyをimplementsする', () => {
+    // Arrange
+    const solved = sampleAnswerCodebase(stage);
+
+    // Act
+    const regular = classNamed(solved, 'RegularDiscount');
+    const premium = classNamed(solved, 'PremiumDiscount');
+    const vip = classNamed(solved, 'VipDiscount');
+
+    // Assert
+    expect(findSuperclass(solved, regular.id)?.name).toBe('DiscountStrategy');
+    expect(findSuperclass(solved, premium.id)?.name).toBe('DiscountStrategy');
+    expect(findSuperclass(solved, vip.id)?.name).toBe('DiscountStrategy');
+    expect(regular.superclassKind).toBe('implements');
+    expect(premium.superclassKind).toBe('implements');
+    expect(vip.superclassKind).toBe('implements');
+  });
+
+  it('模範解答では、DiscountServiceの中に割引ロジックの処理が残らない', () => {
+    // Arrange
+    const solved = sampleAnswerCodebase(stage);
+
+    // Act
+    const responsibilities = fragmentResponsibilities(classNamed(solved, 'DiscountService'));
+
+    // Assert
+    expect(responsibilities).not.toContain('discount-regular');
+    expect(responsibilities).not.toContain('discount-premium');
+    expect(responsibilities).not.toContain('discount-vip');
   });
 });

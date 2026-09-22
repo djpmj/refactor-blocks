@@ -145,6 +145,23 @@ export const sampleAnswerSteps: Partial<Record<string, readonly SolutionStep[]>>
     { setSuperclass: { class: 'StripeGateway', superclass: 'PaymentGateway', kind: 'implements' } },
     { setSuperclass: { class: 'PaypalGateway', superclass: 'PaymentGateway', kind: 'implements' } },
   ],
+  'advanced-discount-strategy': [
+    { extract: { from: 'calculateDiscount', fragmentIds: ['frag-branch-regular'], name: 'calculateRegularDiscount' } },
+    { extract: { from: 'calculateDiscount', fragmentIds: ['frag-branch-premium'], name: 'calculatePremiumDiscount' } },
+    { extract: { from: 'calculateDiscount', fragmentIds: ['frag-branch-vip'], name: 'calculateVipDiscount' } },
+    { addFile: 'src/pricing/RegularDiscount.ts' },
+    { addFile: 'src/pricing/PremiumDiscount.ts' },
+    { addFile: 'src/pricing/VipDiscount.ts' },
+    { addClass: { name: 'RegularDiscount', file: 'src/pricing/RegularDiscount.ts' } },
+    { addClass: { name: 'PremiumDiscount', file: 'src/pricing/PremiumDiscount.ts' } },
+    { addClass: { name: 'VipDiscount', file: 'src/pricing/VipDiscount.ts' } },
+    { move: { method: 'calculateRegularDiscount', toClass: 'RegularDiscount' } },
+    { move: { method: 'calculatePremiumDiscount', toClass: 'PremiumDiscount' } },
+    { move: { method: 'calculateVipDiscount', toClass: 'VipDiscount' } },
+    { setSuperclass: { class: 'RegularDiscount', superclass: 'DiscountStrategy', kind: 'implements' } },
+    { setSuperclass: { class: 'PremiumDiscount', superclass: 'DiscountStrategy', kind: 'implements' } },
+    { setSuperclass: { class: 'VipDiscount', superclass: 'DiscountStrategy', kind: 'implements' } },
+  ],
 };
 
 /** ステージの模範解答を適用した最終形のコードベース。「解答例の図」に使う。 */
