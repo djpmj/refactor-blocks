@@ -29,6 +29,67 @@ Claude Codeがこのファイルを上から順に読み、`### [ ]` の未完�
 
 ## タスク一覧
 
+### [ ] AI講評に渡すデータを採点結果からまとめる(ドメイン層)
+
+- 背景・目的: ルールベース採点(`scoreCodebase`)は点数と違反件数しか出せず、「なぜこの分け方が
+  良い/悪いのか」を言葉で説明できない。CLAUDE.mdの「採点はルールベースとAIによる講評の2段構え」の
+  うち、AI講評へ渡す入力をまず用意する。API呼び出し自体は次のタスクで行う
+- 実装してほしい内容(受け入れ条件):
+  - `src/domain/critique/` に `buildCritiqueRequest(codebase, stage, score)` という純粋関数を追加する(TDD)
+    - 出力はJSON化できるプレーンなデータ: ファイルごとの構成(パス・クラス名・メソッド名・行数)、
+      `scoreCodebase` の内訳(`ScoreDeduction[]`)、`fileScores`(どのファイルの何が悪いか)、
+      ステージの目標文(`stage.goal`)をまとめたもの
+    - 既存の `scoreCodebase`・`fileScores` の計算結果をそのまま使い、採点ロジックを重複させない
+    - メソッドの中の処理(Fragmentの中身・`uses`)は含めない。送信データを小さく保ち、講評は
+      構造(行数・責務・依存)についてのみ行わせる
+  - Vitestで、代表的なステージ(違反あり・なし)で期待した形のデータが組み立てられることを確認する
+- 関連ファイル: `src/domain/scoring/score.ts`、`src/domain/scoring/fileScores.ts`、`src/domain/stage/Stage.ts`
+
+### [ ] Cloudflare Workers経由でAI講評を呼び出し、画面に表示する
+
+- 背景・目的: 前タスクで組み立てたデータをClaude APIに渡し、講評文を画面に出す。このアプリは
+  Viteのみの静的SPAでサーバーを持たないため、ブラウザに`ANTHROPIC_API_KEY`を持たせられない。
+  Cloudflare Workersを1本挟み、鍵はWorkers側のシークレットに置く
+- 実装してほしい内容(受け入れ条件):
+  - リポジトリ直下に `workers/critique/` を作り、Cloudflare Workersのプロキシを1本追加する
+    - 受け取るのは前タスクの `buildCritiqueRequest` の出力(JSON)。Claude API(`@anthropic-ai/sdk`、
+      モデル `claude-opus-5`)を呼び、講評文(テキスト)だけを返す
+    - 信頼境界: 受け取ったJSONの形・サイズを検証してからClaude APIに渡す(想定外に大きい・
+      壊れたリクエストは400で弾く)
+    - `ANTHROPIC_API_KEY` はWorkersのシークレット(`wrangler secret put`)に置き、レスポンスにも
+      フロントにも一切出さない
+    - `wrangler.toml` とデプロイ手順(シークレットの設定コマンドなど)を `workers/critique/README.md`
+      に書く。CI・auto-devでは実際のデプロイは行わない(手動デプロイのままでよい)
+  - `src/infrastructure/critique/` に、上記Workersのエンドポイントを叩くだけのクライアントを追加する
+    (fetchするだけなのでユニットテスト対象外でよい)
+  - `application/` にユースケースを追加し、`src/presentation/stage/StagePanel.tsx` の採点結果の近くに
+    「AIの講評をもらう」ボタンと結果表示欄を追加する。呼び出し中はローディング表示、失敗時は
+    既存の操作と同じくエラーメッセージを出す
+- 関連ファイル: 新規 `workers/critique/`、`src/infrastructure/README.md`、
+  `src/presentation/stage/StagePanel.tsx`、前タスクの `src/domain/critique/`
+
+### [ ] クラス・ファイルを右クリックメニューから削除できるようにする
+
+- 背景・目的: 右クリックメニューでクラス・ファイルを追加できるようになったが、間違えて作った・
+  結局使わなかったクラスやファイルを消す手段がない。追加した受け皿を作り直せるようにしたい。
+- 実装してほしい内容(受け入れ条件):
+  - `src/domain/codebase/` に `deleteClass(codebase, classId)` と `deleteFile(codebase, fileId)` を
+    純粋関数として追加する(TDD、`Result`型)
+    - 削除するクラス(・ファイル内の全クラス)のメソッドの中に、Extract Methodで切り出された
+      private メソッド(=既存の `findCallerOf`/`inlineMethod`(`src/domain/codebase/inlineMethod.ts`)で
+      呼び出し元が見つかるメソッド)が含まれる場合は、削除する前に `inlineMethod` で呼び出し元の
+      元のメソッドへ戻す(呼び出し元も削除対象に含まれる場合はそのまま消してよい)
+    - 存在しないIDはエラーにする。ファイル削除でコードベースの最後の1ファイルが消えてしまう場合もエラーにする
+      (空のコードベースを作らせない)
+  - `application/RefactorUseCases.ts` にユースケースとエラーメッセージ(`describe...Error`)を追加し、ストアから呼ぶ
+  - 画面: `CanvasContextMenu.tsx` の `menuItemsFor` に、クラス・ファイルの項目として「削除」を追加する
+    (名前の変更と同じ並びでよい。確認ダイアログは追加しない。既存のCtrl+Zの取り消し履歴に積まれるのでそれで十分)
+  - キーボードだけでも操作できること(右クリックメニューを開いて項目を選べる)
+  - E2E: Extract Methodで切り出したメソッドを含むクラスを削除すると、その処理が呼び出し元の元のメソッドに
+    戻ったうえでクラスが消える。Ctrl+Zで削除前の状態に戻せる
+- 関連ファイル: `src/domain/codebase/addClass.ts`、`addFile.ts`、`inlineMethod.ts`、
+  `src/presentation/canvas/CanvasContextMenu.tsx`、`src/presentation/store/useGameStore.ts`
+
 ### [x] 依存の矢印が途切れたり逆向きに回り込んだりするのを直す
 
 - 背景・目的: 中級1「循環依存を断ち切る」などで、矢印がどこからどこへ向かっているのか読めない。
