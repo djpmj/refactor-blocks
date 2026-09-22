@@ -26,8 +26,10 @@ export type CodeClass = {
   readonly id: string;
   readonly name: string;
   readonly methods: readonly Method[];
-  /** 親クラスのID。継承なしなら省略する。 */
+  /** 親クラスのID。継承・実装なしなら省略する。 */
   readonly superclassId?: string;
+  /** superclassId との関係の種類。省略時は 'extends' 扱い。 */
+  readonly superclassKind?: 'extends' | 'implements';
 };
 
 export type CodeFile = {

@@ -4,7 +4,7 @@ import { findClass, findSuperclass } from '../../domain/codebase/Codebase';
 import { useGameStore } from '../store/useGameStore';
 import type { ContextMenuTarget } from './useCanvasContextMenu';
 
-type Mode = 'menu' | 'class' | 'file' | 'renameClass' | 'renameFile' | 'setSuperclass';
+type Mode = 'menu' | 'class' | 'file' | 'renameClass' | 'renameFile' | 'setSuperclass' | 'setInterface';
 type FormMode = Exclude<Mode, 'menu'>;
 
 type NameFormProps = {
@@ -70,6 +70,7 @@ function menuItemsFor(target: ContextMenuTarget, onClose: () => void): MenuItem[
     ...(classId === null ? [] : [{ kind: 'form' as const, mode: 'renameClass' as const, label: 'クラスの名前を変更' }]),
     ...(fileId === null ? [] : [{ kind: 'form' as const, mode: 'renameFile' as const, label: 'ファイルの名前を変更' }]),
     ...(classId === null ? [] : [{ kind: 'form' as const, mode: 'setSuperclass' as const, label: '継承元を設定' }]),
+    ...(classId === null ? [] : [{ kind: 'form' as const, mode: 'setInterface' as const, label: '実装するインターフェースを設定' }]),
     // 確認ダイアログは出さない。誤って消してもCtrl+Zの取り消し履歴で戻せる
     ...(classId === null
       ? []
@@ -146,7 +147,16 @@ function useFormConfig(target: ContextMenuTarget, mode: FormMode): FormConfig | 
         initialValue: findSuperclass(codebase, codeClass.id)?.name ?? '',
         placeholder: 'クラス名',
         submitLabel: '設定',
-        submit: (name) => setSuperclass(codeClass.id, name),
+        submit: (name) => setSuperclass(codeClass.id, name, 'extends'),
+      };
+    }
+    if (mode === 'setInterface' && codeClass !== undefined) {
+      return {
+        label: 'インターフェース名(空で解除)',
+        initialValue: findSuperclass(codebase, codeClass.id)?.name ?? '',
+        placeholder: 'クラス名',
+        submitLabel: '設定',
+        submit: (name) => setSuperclass(codeClass.id, name, 'implements'),
       };
     }
     return null;

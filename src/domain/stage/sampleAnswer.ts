@@ -15,7 +15,13 @@ export type SolutionStep =
   | { readonly addFile: string }
   | { readonly addClass: { readonly name: string; readonly file: string } }
   | { readonly moveClass: { readonly name: string; readonly toFile: string } }
-  | { readonly setSuperclass: { readonly class: string; readonly superclass: string } };
+  | {
+      readonly setSuperclass: {
+        readonly class: string;
+        readonly superclass: string;
+        readonly kind?: 'extends' | 'implements';
+      };
+    };
 
 function unwrap<T, E>(result: Result<T, E>): T {
   if (!result.ok) throw new Error(`模範解答の適用に失敗しました: ${String(result.error)}`);
@@ -59,8 +65,8 @@ function applyStep(codebase: Codebase, step: SolutionStep, newId: string): Codeb
     const { name, toFile } = step.moveClass;
     return unwrap(moveClass(codebase, classIdByName(codebase, name), fileIdByPath(codebase, toFile)));
   }
-  const { class: className, superclass } = step.setSuperclass;
-  return unwrap(setSuperclass(codebase, classIdByName(codebase, className), superclass));
+  const { class: className, superclass, kind } = step.setSuperclass;
+  return unwrap(setSuperclass(codebase, classIdByName(codebase, className), superclass, kind));
 }
 
 /** 手順を順番に適用する。新しく振るIDは呼び出し元のIDと衝突しないよう連番にする。 */
@@ -132,6 +138,12 @@ export const sampleAnswerSteps: Partial<Record<string, readonly SolutionStep[]>>
     { move: { method: 'buildSmsBody', toClass: 'NotifierBase' } },
     { move: { method: 'logSmsNotification', toClass: 'NotifierBase' } },
     { setSuperclass: { class: 'SmsNotifier', superclass: 'NotifierBase' } },
+  ],
+  'advanced-payment-gateway-interface': [
+    { move: { method: 'chargeStripe', toClass: 'PaymentGateway' } },
+    { move: { method: 'chargePaypal', toClass: 'PaymentGateway' } },
+    { setSuperclass: { class: 'StripeGateway', superclass: 'PaymentGateway', kind: 'implements' } },
+    { setSuperclass: { class: 'PaypalGateway', superclass: 'PaymentGateway', kind: 'implements' } },
   ],
 };
 

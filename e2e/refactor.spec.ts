@@ -12,11 +12,28 @@ async function openCyclicStage(page: Page) {
   await page.getByLabel('ステージ').selectOption({ label: '中級1: 循環依存を断ち切る' });
 }
 
+/**
+ * 直前の操作でキャンバスのレイアウトが再計算され続けている間に座標を読むと、
+ * 古い位置へドラッグしてしまい失敗することがある(連続でMove Methodするテストで発生)。
+ * 位置が2回連続で同じになるまで待ってから返す。
+ */
+async function stableBoundingBox(page: Page, testId: string) {
+  const deadline = Date.now() + 3000;
+  let previous = await page.getByTestId(testId).boundingBox();
+  while (Date.now() < deadline) {
+    await page.waitForTimeout(50);
+    const current = await page.getByTestId(testId).boundingBox();
+    if (previous !== null && current !== null && current.x === previous.x && current.y === previous.y) return current;
+    previous = current;
+  }
+  if (previous === null) throw new Error(`要素 ${testId} の位置を取得できません`);
+  return previous;
+}
+
 /** ドラッグ操作(Move Method)で、あるメソッドを別クラスへ移す。 */
 async function dragMethodToClass(page: Page, methodTestId: string, classTestId: string) {
-  const from = await page.getByTestId(methodTestId).boundingBox();
-  const to = await page.getByTestId(classTestId).boundingBox();
-  if (from === null || to === null) throw new Error('要素の位置を取得できません');
+  const from = await stableBoundingBox(page, methodTestId);
+  const to = await stableBoundingBox(page, classTestId);
   await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
   await page.mouse.down();
   await page.mouse.move(from.x + from.width / 2 + 20, from.y + from.height / 2, { steps: 5 });
@@ -412,6 +429,24 @@ test('クラスを右クリックして継承元を設定すると、継承の�
   await expect(edge).toHaveCount(1);
   await expect(edge).toHaveClass(/edge--inheritance/);
   await expect(page.getByTestId('class-TaxCalculator')).toContainText('extends OrderService');
+  await expect(menu).toHaveCount(0);
+});
+
+test('クラスを右クリックして実装するインターフェースを設定すると、"implements"の表示が出る', async ({ page }) => {
+  // Arrange
+  await openOrderStage(page);
+  await page.getByTestId('class-header-TaxCalculator').click({ button: 'right' });
+  const menu = page.getByTestId('context-menu');
+  await menu.getByRole('menuitem', { name: '実装するインターフェースを設定' }).click();
+  const input = menu.getByLabel('インターフェース名(空で解除)');
+
+  // Act
+  await input.fill('OrderService');
+  await input.press('Enter');
+
+  // Assert
+  await expect(page.getByTestId('class-TaxCalculator')).toContainText('implements OrderService');
+  await expect(page.getByTestId('class-TaxCalculator')).not.toContainText('extends OrderService');
   await expect(menu).toHaveCount(0);
 });
 

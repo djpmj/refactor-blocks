@@ -114,8 +114,9 @@ export function setSuperclassUseCase(
   codebase: Codebase,
   classId: string,
   superclassName: string | null,
+  kind: 'extends' | 'implements' = 'extends',
 ): Result<Codebase, SetSuperclassError> {
-  return setSuperclass(codebase, classId, superclassName);
+  return setSuperclass(codebase, classId, superclassName, kind);
 }
 
 /** プレイヤーの「クラスを削除」操作。 */

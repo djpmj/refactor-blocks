@@ -47,3 +47,53 @@ describe('advanced-notifier-hierarchy', () => {
     expect(superclasses.every((superclass) => superclass === undefined)).toBe(true);
   });
 });
+
+/**
+ * 採点(line-limit/coupling/cycle/responsibility)は実装関係の有無を見ないので、
+ * 「模範解答で100点になる」だけでは実装関係が実際に使われているかを確認できない。
+ * この上級ステージの狙いそのもの(実装先の設定)を別途確認する。
+ */
+describe('advanced-payment-gateway-interface', () => {
+  const stage = advancedStages.find((candidate) => candidate.id === 'advanced-payment-gateway-interface');
+  if (stage === undefined) throw new Error('advanced-payment-gateway-interface ステージが見つかりません');
+
+  it('模範解答では、StripeGateway・PaypalGatewayの実装先がどちらもPaymentGatewayになり、実装(implements)として記録される', () => {
+    // Arrange
+    const solved = sampleAnswerCodebase(stage);
+
+    // Act
+    const stripeSuperclass = findSuperclass(solved, 'class-stripe-gateway');
+    const paypalSuperclass = findSuperclass(solved, 'class-paypal-gateway');
+    const stripeClass = findClass(solved, 'class-stripe-gateway');
+    const paypalClass = findClass(solved, 'class-paypal-gateway');
+
+    // Assert
+    expect(stripeSuperclass?.name).toBe('PaymentGateway');
+    expect(paypalSuperclass?.name).toBe('PaymentGateway');
+    expect(stripeClass?.superclassKind).toBe('implements');
+    expect(paypalClass?.superclassKind).toBe('implements');
+  });
+
+  it('模範解答では、決済API呼び出しがPaymentGatewayに集まる', () => {
+    // Arrange
+    const solved = sampleAnswerCodebase(stage);
+
+    // Act
+    const paymentGateway = findClass(solved, 'class-payment-gateway');
+    const methodNames = paymentGateway?.methods.map((method) => method.name) ?? [];
+
+    // Assert
+    expect(methodNames).toEqual(['chargeStripe', 'chargePaypal']);
+  });
+
+  it('初期状態では、まだ実装関係が結ばれていない', () => {
+    // Arrange
+    const { codebase } = stage;
+
+    // Act
+    const superclasses = allClasses(codebase).map((codeClass) => findSuperclass(codebase, codeClass.id));
+
+    // Assert
+    expect(superclasses.every((superclass) => superclass === undefined)).toBe(true);
+  });
+});

@@ -114,6 +114,18 @@ describe('applySolutionSteps', () => {
     expect(classNamed(result, 'A').superclassId).toBe('class-b');
   });
 
+  it('setSuperclassステップにkind: implementsを指定すると、superclassKindに"implements"が入る', () => {
+    // Arrange
+    const codebase = twoClassCodebase();
+    const steps: SolutionStep[] = [{ setSuperclass: { class: 'A', superclass: 'B', kind: 'implements' } }];
+
+    // Act
+    const result = applySolutionSteps(codebase, steps);
+
+    // Assert
+    expect(classNamed(result, 'A').superclassKind).toBe('implements');
+  });
+
   it('手順を順番に適用する(前の手順の結果に次の手順を重ねる)', () => {
     // Arrange
     const codebase = twoClassCodebase();

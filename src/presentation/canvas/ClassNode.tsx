@@ -54,13 +54,19 @@ function classNodeClassName({ isOver, isCyclic }: Readonly<{ isOver: boolean; is
     .join(" ");
 }
 
-/** クラス名と、親クラスがあれば "extends 親クラス名" を添える。 */
+/** クラス名と、親クラス(継承元/実装先)があれば "extends 親クラス名" か "implements 親クラス名" を添える。 */
 function ClassNameLabel({ classId, name }: Readonly<{ classId: string; name: string }>) {
   const superclass = useGameStore((state) => findSuperclass(state.codebase, classId));
+  const kind = useGameStore((state) => findClass(state.codebase, classId)?.superclassKind ?? "extends");
   return (
     <span className="class-node__name">
       {name}
-      {superclass === undefined ? null : <span className="class-node__superclass"> extends {superclass.name}</span>}
+      {superclass === undefined ? null : (
+        <span className="class-node__superclass">
+          {" "}
+          {kind} {superclass.name}
+        </span>
+      )}
     </span>
   );
 }

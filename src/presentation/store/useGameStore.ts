@@ -86,7 +86,7 @@ type GameState = {
   moveMethodToNewClass: (methodId: string) => void;
   renameClass: (classId: string, newName: string) => boolean;
   renameFile: (fileId: string, newPath: string) => boolean;
-  setSuperclass: (classId: string, superclassName: string | null) => boolean;
+  setSuperclass: (classId: string, superclassName: string | null, kind?: 'extends' | 'implements') => boolean;
   deleteClass: (classId: string) => boolean;
   deleteFile: (fileId: string) => boolean;
   undo: () => void;
@@ -225,8 +225,8 @@ function renameActions(apply: Apply, get: () => GameState): Pick<GameState, 'ren
     renameFile: (fileId, newPath) => {
       return apply(renameFileUseCase(get().codebase, fileId, newPath), describeRenameFileError);
     },
-    setSuperclass: (classId, superclassName) => {
-      return apply(setSuperclassUseCase(get().codebase, classId, superclassName), describeSetSuperclassError);
+    setSuperclass: (classId, superclassName, kind) => {
+      return apply(setSuperclassUseCase(get().codebase, classId, superclassName, kind), describeSetSuperclassError);
     },
   };
 }

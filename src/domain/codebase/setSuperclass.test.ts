@@ -91,6 +91,72 @@ describe('setSuperclass', () => {
     expect(result).toEqual({ ok: true, value: codebase });
   });
 
+  it('kindにimplementsを指定すると、superclassKindに"implements"が入る', () => {
+    // Arrange
+    const codebase = sampleCodebase();
+
+    // Act
+    const result = setSuperclass(codebase, 'class-order', 'TaxCalculator', 'implements');
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    const changed = result.value.files[0].classes[0];
+    expect(changed.superclassKind).toBe('implements');
+  });
+
+  it('kindを省略すると、superclassKindは"extends"になる', () => {
+    // Arrange
+    const codebase = sampleCodebase();
+
+    // Act
+    const result = setSuperclass(codebase, 'class-order', 'TaxCalculator');
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    const changed = result.value.files[0].classes[0];
+    expect(changed.superclassKind).toBe('extends');
+  });
+
+  it('継承を解除すると、superclassKindも消える', () => {
+    // Arrange
+    const withInterface = setSuperclass(sampleCodebase(), 'class-order', 'TaxCalculator', 'implements');
+    if (!withInterface.ok) throw new Error(withInterface.error);
+
+    // Act
+    const result = setSuperclass(withInterface.value, 'class-order', null);
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    const changed = result.value.files[0].classes[0];
+    expect(changed.superclassKind).toBeUndefined();
+  });
+
+  it('同じ親クラスでもkindを変えると更新する', () => {
+    // Arrange
+    const withExtends = setSuperclass(sampleCodebase(), 'class-order', 'TaxCalculator');
+    if (!withExtends.ok) throw new Error(withExtends.error);
+
+    // Act
+    const result = setSuperclass(withExtends.value, 'class-order', 'TaxCalculator', 'implements');
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    const changed = result.value.files[0].classes[0];
+    expect(changed.superclassKind).toBe('implements');
+  });
+
+  it('同じ親クラス・同じkindを指定すると、エラーにせず元のままにする', () => {
+    // Arrange
+    const withInterface = setSuperclass(sampleCodebase(), 'class-order', 'TaxCalculator', 'implements');
+    if (!withInterface.ok) throw new Error(withInterface.error);
+
+    // Act
+    const result = setSuperclass(withInterface.value, 'class-order', 'TaxCalculator', 'implements');
+
+    // Assert
+    expect(result).toEqual({ ok: true, value: withInterface.value });
+  });
+
   it.each([
     ['存在しないクラスを変更しようとする', 'class-none', 'A', 'class-not-found'],
     ['存在しない名前を親に指定する', 'class-a', 'NoSuchClass', 'superclass-not-found'],

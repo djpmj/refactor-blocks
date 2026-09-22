@@ -78,4 +78,118 @@ const notifierHierarchyStage: Stage = {
   },
 };
 
-export const advancedStages: readonly Stage[] = [notifierHierarchyStage];
+/**
+ * 上級2: ネットショップの決済。PaymentService が Stripe 用・PayPal 用の決済クラスを名指しで直接呼んでいる
+ * (具象クラスへの直接依存)。空の PaymentGateway クラス(インターフェース役)は用意されているが、
+ * まだ誰にも使われていない。決済処理を PaymentGateway へ Move Method で移し、
+ * StripeGateway・PaypalGateway の実装先(implements)を PaymentGateway に設定すると、
+ * PaymentService の依存先が1つに集約される。
+ */
+const paymentGatewayInterfaceStage: Stage = {
+  id: 'advanced-payment-gateway-interface',
+  level: 'advanced',
+  title: '上級2: 決済ゲートウェイをインターフェース越しに呼ぶ',
+  description:
+    'PaymentService が、Stripe用の StripeGateway と PayPal用の PaypalGateway を名指しで直接呼び出している。' +
+    'どちらのゲートウェイクラスも「決済APIを呼び出す」処理と「決済ログを記録する」処理をコピーしたように自分の中に抱えていて、設定情報の違いは最後の一部だけ。' +
+    '空のクラス PaymentGateway は用意されているが、まだどちらのクラスとも実装関係で結ばれていない。',
+  goal: '決済APIの呼び出しを PaymentGateway へ Move Method で移し、StripeGateway・PaypalGateway が PaymentGateway を実装(implements)するよう設定しよう。メソッドは90行以内、1クラスの責務は2種類まで',
+  limits: { method: 90, class: 250, file: 400 },
+  dependencyLimit: 1,
+  responsibilityLimit: 2,
+  changeRequests: [
+    { id: 'req-payment-logging', title: '決済ログの記録方法を見直して', description: '決済ログに、失敗時のリトライ回数を残したい。', responsibility: 'payment-logging', linesPerSite: 6 },
+    { id: 'req-gateway-integration', title: '決済APIの呼び出し方を見直して', description: '決済API呼び出しに、共通のタイムアウト設定を追加したい。', responsibility: 'gateway-integration', linesPerSite: 5 },
+  ],
+  codebase: {
+    files: [
+      {
+        id: 'file-payment-service',
+        path: 'src/payment/PaymentService.ts',
+        classes: [
+          {
+            id: 'class-payment-service',
+            name: 'PaymentService',
+            methods: [
+              {
+                id: 'method-checkout',
+                name: 'checkout',
+                visibility: 'public',
+                fragments: [
+                  { id: 'frag-validate-payment', label: '注文内容とカード情報を検証する', lines: 60, responsibility: 'validation', suggestedName: 'validatePayment' },
+                  { id: 'frag-dispatch-stripe', label: 'Stripe決済ゲートウェイを直接呼び出す', lines: 12, responsibility: 'gateway-dispatch', uses: ['method-charge-stripe'], suggestedName: 'dispatchStripe' },
+                  { id: 'frag-dispatch-paypal', label: 'PayPal決済ゲートウェイを直接呼び出す', lines: 12, responsibility: 'gateway-dispatch', uses: ['method-charge-paypal'], suggestedName: 'dispatchPaypal' },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'file-stripe-gateway',
+        path: 'src/payment/StripeGateway.ts',
+        classes: [
+          {
+            id: 'class-stripe-gateway',
+            name: 'StripeGateway',
+            methods: [
+              {
+                id: 'method-charge-stripe',
+                name: 'chargeStripe',
+                visibility: 'public',
+                fragments: [
+                  { id: 'frag-stripe-api-call', label: 'Stripe APIを呼び出して決済する', lines: 30, responsibility: 'gateway-integration', suggestedName: 'callStripeApi' },
+                  { id: 'frag-log-payment-stripe', label: '決済ログを記録する(Stripe)', lines: 16, responsibility: 'payment-logging', suggestedName: 'logStripePayment' },
+                ],
+              },
+              {
+                id: 'method-configure-stripe',
+                name: 'configureStripeCredentials',
+                visibility: 'public',
+                fragments: [
+                  { id: 'frag-configure-stripe', label: 'Stripe APIキーを設定する', lines: 14, responsibility: 'stripe-config', suggestedName: 'configureStripe' },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'file-paypal-gateway',
+        path: 'src/payment/PaypalGateway.ts',
+        classes: [
+          {
+            id: 'class-paypal-gateway',
+            name: 'PaypalGateway',
+            methods: [
+              {
+                id: 'method-charge-paypal',
+                name: 'chargePaypal',
+                visibility: 'public',
+                fragments: [
+                  { id: 'frag-paypal-api-call', label: 'PayPal APIを呼び出して決済する', lines: 28, responsibility: 'gateway-integration', suggestedName: 'callPaypalApi' },
+                  { id: 'frag-log-payment-paypal', label: '決済ログを記録する(PayPal)', lines: 16, responsibility: 'payment-logging', suggestedName: 'logPaypalPayment' },
+                ],
+              },
+              {
+                id: 'method-configure-paypal',
+                name: 'configurePaypalCredentials',
+                visibility: 'public',
+                fragments: [
+                  { id: 'frag-configure-paypal', label: 'PayPal APIキーを設定する', lines: 14, responsibility: 'paypal-config', suggestedName: 'configurePaypal' },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'file-payment-gateway',
+        path: 'src/payment/PaymentGateway.ts',
+        classes: [{ id: 'class-payment-gateway', name: 'PaymentGateway', methods: [] }],
+      },
+    ],
+  },
+};
+
+export const advancedStages: readonly Stage[] = [notifierHierarchyStage, paymentGatewayInterfaceStage];

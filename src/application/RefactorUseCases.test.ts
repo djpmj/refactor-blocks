@@ -220,6 +220,18 @@ describe('setSuperclassUseCase', () => {
     if (!result.ok) throw new Error(result.error);
     expect(result.value.files[0].classes[0].superclassId).toBeUndefined();
   });
+
+  it('kindにimplementsを指定すると、superclassKindに"implements"が入る', () => {
+    // Arrange
+    const codebase = sampleCodebase();
+
+    // Act
+    const result = setSuperclassUseCase(codebase, 'class-order', 'TaxCalculator', 'implements');
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    expect(result.value.files[0].classes[0].superclassKind).toBe('implements');
+  });
 });
 
 describe('エラーメッセージ', () => {
