@@ -69,11 +69,18 @@ export function layoutCodebase(codebase: Codebase): CodebaseFlowNode[] {
 /** 矢印はファイルの箱(親ノード)より手前に描く。 */
 const EDGE_Z_INDEX = 1000;
 
-type Side = "left" | "right";
+type Side = "left" | "right" | "top";
 
-/** 依存元・依存先のファイルの並び順から、矢印をつなぐ(依存元の側, 依存先の側)を選ぶ。 */
+/** 間に他ファイルを挟む辺の数。1本以上挟むと、そのファイルのクラスの上に線が重なってしまう。 */
+const SKIPPED_FILE_THRESHOLD = 2;
+
+/**
+ * 依存元・依存先のファイルの並び順から、矢印をつなぐ(依存元の側, 依存先の側)を選ぶ。
+ * ファイルを1つ以上飛び越える辺は左右の辺ではなく上端どうしをつなぎ、間にあるファイルのクラスの上を線が通らないようにする。
+ */
 function handleSides(fromIndex: number, toIndex: number): [Side, Side] {
   if (toIndex === fromIndex) return ["right", "right"];
+  if (Math.abs(toIndex - fromIndex) >= SKIPPED_FILE_THRESHOLD) return ["top", "top"];
   return toIndex > fromIndex ? ["right", "left"] : ["left", "right"];
 }
 

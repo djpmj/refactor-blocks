@@ -100,6 +100,9 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 /* 双方向の依存が重ならないよう、出る点(上)と入る点(下)の高さをずらす */
 .class-node__handle--source { top: 35%; }
 .class-node__handle--target { top: 65%; }
+/* ファイルを1つ以上飛び越える辺の接続点。ファイルの箱(見出し+余白ぶん、layoutCodebase.ts の FILE_HEADER+FILE_PADDING=60px)より上まで引き上げ、間のファイルの上を線が通らないようにする。左右のずれで出る点と入る点も重ならない */
+.class-node__handle--source-top { left: 65%; top: -72px; }
+.class-node__handle--target-top { left: 35%; top: -72px; }
 .react-flow__edge.edge--cyclic .react-flow__edge-path { stroke: var(--danger); stroke-width: 2; }
 .react-flow__edge.edge--inheritance .react-flow__edge-path { stroke: var(--accent); stroke-width: 2; }
 .file-node--drop-target { border-color: var(--accent); }

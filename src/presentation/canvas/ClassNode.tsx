@@ -1,41 +1,15 @@
-import { Fragment } from "react";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
-import { Handle, Position, type NodeProps } from "@xyflow/react";
+import type { NodeProps } from "@xyflow/react";
 import { findClass, findSuperclass } from "../../domain/codebase/Codebase";
 import { classDependencies, cyclicClassIds } from "../../domain/codebase/dependencies";
 import { classLines } from "../../domain/codebase/lineCount";
 import { useGameStore } from "../store/useGameStore";
 import { classDragId, classDropId } from "./dndIds";
+import { DependencyHandles } from "./DependencyHandles";
 import type { ClassFlowNode } from "./layoutCodebase";
 import { MethodChip } from "./MethodChip";
 import { useShowDetails } from "./semanticZoom";
-
-const HANDLE_SIDES = [
-  { side: "left", position: Position.Left },
-  { side: "right", position: Position.Right },
-];
-
-/** 依存の矢印の向きに合わせて左右どちらにもつなげるよう、両側に source/target を置く。見た目には出さない。 */
-function DependencyHandles() {
-  return HANDLE_SIDES.map(({ side, position }) => (
-    <Fragment key={side}>
-      <Handle
-        id={`target-${side}`}
-        type="target"
-        position={position}
-        className="class-node__handle class-node__handle--target"
-        isConnectable={false}
-      />
-      <Handle
-        id={`source-${side}`}
-        type="source"
-        position={position}
-        className="class-node__handle class-node__handle--source"
-        isConnectable={false}
-      />
-    </Fragment>
-  ));
-}
+import { SuperclassLabel } from "./SuperclassLabel";
 
 /** 循環依存に関与しているクラスの印。色だけに頼らずアイコンとラベルでも伝える。ズームで詳細を隠していても出す。 */
 function CyclicMark() {
@@ -61,12 +35,7 @@ function ClassNameLabel({ classId, name }: Readonly<{ classId: string; name: str
   return (
     <span className="class-node__name">
       {name}
-      {superclass === undefined ? null : (
-        <span className="class-node__superclass">
-          {" "}
-          {kind} {superclass.name}
-        </span>
-      )}
+      {superclass === undefined ? null : <SuperclassLabel kind={kind} superclassName={superclass.name} />}
     </span>
   );
 }

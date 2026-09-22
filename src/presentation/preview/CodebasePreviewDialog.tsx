@@ -1,7 +1,7 @@
 import { Background, Controls, ReactFlow, type NodeTypes } from '@xyflow/react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import type { Codebase } from '../../domain/codebase/Codebase';
-import { dependencyEdges, layoutCodebase } from '../canvas/layoutCodebase';
+import { dependencyEdges, inheritanceEdges, layoutCodebase } from '../canvas/layoutCodebase';
 import { CodebasePreviewProvider } from './CodebasePreviewContext';
 import { PreviewClassNode } from './PreviewClassNode';
 import { PreviewFileNode } from './PreviewFileNode';
@@ -23,6 +23,7 @@ export function CodebasePreviewDialog({ title, codebase, methodLimit, onClose }:
     const dialog = ref.current;
     if (dialog !== null && !dialog.open) dialog.showModal();
   }, [codebase]);
+  const edges = useMemo(() => (codebase === null ? [] : [...dependencyEdges(codebase), ...inheritanceEdges(codebase)]), [codebase]);
   if (codebase === null) return null;
   return (
     <dialog ref={ref} className="codebase-preview" aria-labelledby={TITLE_ID} onClose={onClose} data-testid="codebase-preview">
@@ -36,7 +37,7 @@ export function CodebasePreviewDialog({ title, codebase, methodLimit, onClose }:
       </div>
       <div className="codebase-preview__canvas">
         <CodebasePreviewProvider value={{ codebase, methodLimit }}>
-          <ReactFlow nodes={layoutCodebase(codebase)} edges={dependencyEdges(codebase)} nodeTypes={nodeTypes} nodesDraggable={false} nodesConnectable={false} fitView minZoom={0.3}>
+          <ReactFlow nodes={layoutCodebase(codebase)} edges={edges} nodeTypes={nodeTypes} nodesDraggable={false} nodesConnectable={false} fitView minZoom={0.3}>
             <Background gap={24} />
             <Controls showInteractive={false} />
           </ReactFlow>
