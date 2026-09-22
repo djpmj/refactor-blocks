@@ -2,6 +2,7 @@ import { Fragment } from "react";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { findClass, findSuperclass } from "../../domain/codebase/Codebase";
+import { classDependencies, cyclicClassIds } from "../../domain/codebase/dependencies";
 import { classLines } from "../../domain/codebase/lineCount";
 import { useGameStore } from "../store/useGameStore";
 import { classDragId, classDropId } from "./dndIds";
@@ -36,6 +37,23 @@ function DependencyHandles() {
   ));
 }
 
+/** 循環依存に関与しているクラスの印。色だけに頼らずアイコンとラベルでも伝える。ズームで詳細を隠していても出す。 */
+function CyclicMark() {
+  const label = "循環依存にあります";
+  return (
+    <span className="cyclic-mark" role="img" aria-label={label} title={label} data-testid="cyclic-mark">
+      🔁
+    </span>
+  );
+}
+
+/** ドロップ先・循環依存の強調を両立できるよう、該当するクラス名だけを組み立てる。 */
+function classNodeClassName({ isOver, isCyclic }: Readonly<{ isOver: boolean; isCyclic: boolean }>): string {
+  return ["class-node", isOver ? "class-node--drop-target" : null, isCyclic ? "class-node--cyclic" : null]
+    .filter(Boolean)
+    .join(" ");
+}
+
 /** クラス名と、親クラスがあれば "extends 親クラス名" を添える。 */
 function ClassNameLabel({ classId, name }: Readonly<{ classId: string; name: string }>) {
   const superclass = useGameStore((state) => findSuperclass(state.codebase, classId));
@@ -50,6 +68,9 @@ function ClassNameLabel({ classId, name }: Readonly<{ classId: string; name: str
 export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
   const codeClass = useGameStore((state) =>
     findClass(state.codebase, data.classId),
+  );
+  const isCyclic = useGameStore((state) =>
+    cyclicClassIds(classDependencies(state.codebase)).has(data.classId),
   );
   const limit = useGameStore((state) => state.stage.limits.class);
   const showDetails = useShowDetails();
@@ -66,11 +87,7 @@ export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
   if (codeClass === undefined) return null;
   const lines = classLines(codeClass);
   return (
-    <div
-      ref={setNodeRef}
-      className={isOver ? "class-node class-node--drop-target" : "class-node"}
-      data-testid={`class-${codeClass.name}`}
-    >
+    <div ref={setNodeRef} className={classNodeClassName({ isOver, isCyclic })} data-testid={`class-${codeClass.name}`}>
       {/* 依存の矢印の接続点。つなぐ操作はさせないので見た目には出さない。 */}
       <DependencyHandles />
       <div
@@ -83,6 +100,7 @@ export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
         {...listeners}
       >
         <ClassNameLabel classId={data.classId} name={codeClass.name} />
+        {isCyclic ? <CyclicMark /> : null}
         {showDetails ? (
           <span
             className={

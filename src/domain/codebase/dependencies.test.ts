@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { CodeClass, Codebase, Fragment } from './Codebase';
-import { classDependencies, methodOwnerMap } from './dependencies';
+import { classDependencies, cyclicClassIds, methodOwnerMap } from './dependencies';
 
 function callFragment(id: string, uses: readonly string[]): Fragment {
   return { id, label: id, lines: 1, responsibility: 'call', uses };
@@ -179,5 +179,51 @@ describe('classDependencies', () => {
       { from: 'class-B', to: 'class-C', cyclic: true },
       { from: 'class-C', to: 'class-B', cyclic: true },
     ]);
+  });
+});
+
+describe('cyclicClassIds', () => {
+  it('循環している依存が1つもなければ、空の集合を返す', () => {
+    // Arrange
+    const dependencies = classDependencies(codebaseOf({ A: ['method-B'], B: [] }));
+
+    // Act
+    const ids = cyclicClassIds(dependencies);
+
+    // Assert
+    expect(ids).toEqual(new Set());
+  });
+
+  it('A→B→A の循環では、A・Bの両方のクラスIDが集合に含まれる', () => {
+    // Arrange
+    const dependencies = classDependencies(codebaseOf({ A: ['method-B'], B: ['method-A'] }));
+
+    // Act
+    const ids = cyclicClassIds(dependencies);
+
+    // Assert
+    expect(ids).toEqual(new Set(['class-A', 'class-B']));
+  });
+
+  it('3クラスの循環(A→B→C→A)に循環の外への依存(C→D)が付いていても、D は含まれない', () => {
+    // Arrange
+    const dependencies = classDependencies(codebaseOf({ A: ['method-B'], B: ['method-C'], C: ['method-A', 'method-D'], D: [] }));
+
+    // Act
+    const ids = cyclicClassIds(dependencies);
+
+    // Assert
+    expect(ids).toEqual(new Set(['class-A', 'class-B', 'class-C']));
+  });
+
+  it('依存が空配列なら、空の集合を返す', () => {
+    // Arrange
+    const dependencies: ReturnType<typeof classDependencies> = [];
+
+    // Act
+    const ids = cyclicClassIds(dependencies);
+
+    // Assert
+    expect(ids).toEqual(new Set());
   });
 });

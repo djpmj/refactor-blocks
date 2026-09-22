@@ -44,3 +44,9 @@ export function classDependencies(codebase: Codebase): ClassDependency[] {
   // ponytail: 依存1本ごとに到達判定するので O(E·(V+E))。ステージが数百クラス規模になったら強連結成分分解に置き換える。
   return [...graph].flatMap(([from, targets]) => targets.map((to) => ({ from, to, cyclic: canReach(graph, to, from) })));
 }
+
+/** 循環している依存の from/to に含まれるクラスIDの集合を返す。ノードの強調表示に使う。 */
+export function cyclicClassIds(dependencies: readonly ClassDependency[]): ReadonlySet<string> {
+  const cyclic = dependencies.filter((dependency) => dependency.cyclic);
+  return new Set(cyclic.flatMap((dependency) => [dependency.from, dependency.to]));
+}

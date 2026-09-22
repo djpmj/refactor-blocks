@@ -6,6 +6,25 @@ async function openOrderStage(page: Page) {
   await page.getByLabel('ステージ').selectOption({ label: 'チュートリアル2: 太った placeOrder' });
 }
 
+/** 循環依存を扱うテストは中級1を前提にしている。 */
+async function openCyclicStage(page: Page) {
+  await page.goto('/');
+  await page.getByLabel('ステージ').selectOption({ label: '中級1: 循環依存を断ち切る' });
+}
+
+/** ドラッグ操作(Move Method)で、あるメソッドを別クラスへ移す。 */
+async function dragMethodToClass(page: Page, methodTestId: string, classTestId: string) {
+  const from = await page.getByTestId(methodTestId).boundingBox();
+  const to = await page.getByTestId(classTestId).boundingBox();
+  if (from === null || to === null) throw new Error('要素の位置を取得できません');
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(from.x + from.width / 2 + 20, from.y + from.height / 2, { steps: 5 });
+  await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 15 });
+  await expect(page.getByTestId(classTestId)).toHaveClass(/class-node--drop-target/);
+  await page.mouse.up();
+}
+
 /** キャンバスの余白を右クリックし、メニューからファイルを追加する。 */
 async function addFileFromMenu(page: Page, path: string) {
   const pane = await page.locator('.react-flow__pane').boundingBox();
@@ -248,6 +267,28 @@ test('ステージを選ぶと、そのステージのコードベースと目�
   await expect(page.getByTestId('class-ReportService')).toHaveCount(0);
   await expect(page.getByTestId('class-Customer')).toBeVisible();
   await expect(page.getByTestId('score')).toContainText('循環依存 -20');
+  await expect(page.getByTestId('class-Order').getByTestId('cyclic-mark')).toBeVisible();
+  await expect(page.getByTestId('class-Customer').getByTestId('cyclic-mark')).toBeVisible();
+  await expect(page.getByTestId('class-Inventory').getByTestId('cyclic-mark')).toHaveCount(0);
+});
+
+test('循環依存を断ち切ると、循環依存の減点とクラスの印が消える', async ({ page }) => {
+  // Arrange
+  await openCyclicStage(page);
+  await expect(page.getByTestId('score')).toContainText('循環依存 -20');
+  await expect(page.getByTestId('class-Order').getByTestId('cyclic-mark')).toBeVisible();
+  await expect(page.getByTestId('class-Customer').getByTestId('cyclic-mark')).toBeVisible();
+
+  // Act(countOrdersOfをCustomerへ、calculateOrderTotalをOrderへ Move Method)
+  await dragMethodToClass(page, 'method-countOrdersOf', 'class-Customer');
+  await expect(page.getByTestId('class-Customer').getByTestId('method-countOrdersOf')).toBeVisible();
+  await dragMethodToClass(page, 'method-calculateOrderTotal', 'class-Order');
+  await expect(page.getByTestId('class-Order').getByTestId('method-calculateOrderTotal')).toBeVisible();
+
+  // Assert
+  await expect(page.getByTestId('score')).not.toContainText('循環依存');
+  await expect(page.getByTestId('class-Order').getByTestId('cyclic-mark')).toHaveCount(0);
+  await expect(page.getByTestId('class-Customer').getByTestId('cyclic-mark')).toHaveCount(0);
 });
 
 test('メソッドを右クリックしてメニューから、そのクラスのファイルにクラスを追加できる', async ({ page }) => {
