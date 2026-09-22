@@ -123,8 +123,8 @@ describe("dependencyEdges", () => {
     });
   });
 
-  it("同じファイルのクラス同士は、右端どうしでつなぐ", () => {
-    // Arrange
+  it("同じファイルのクラス同士は、縦に積まれた並びに沿って上のクラスの下端から下のクラスの上端へつなぐ", () => {
+    // Arrange: A・B は同じファイルで、Aが先(上)・Bが後(下)に積まれる
     const codebase = codebaseOf([
       ["a", "A", ["method-B"]],
       ["a", "B", []],
@@ -135,9 +135,44 @@ describe("dependencyEdges", () => {
 
     // Assert
     expect(edge).toMatchObject({
-      sourceHandle: "source-right",
-      targetHandle: "target-right",
+      sourceHandle: "source-bottom",
+      targetHandle: "target-top",
     });
+  });
+
+  it("同じファイルの逆向き(下のクラスから上のクラスへ)は、下のクラスの上端から上のクラスの下端へつなぐ", () => {
+    // Arrange: A・B は同じファイルで、Aが先(上)・Bが後(下)に積まれるが、依存は下→上(BがAを呼ぶ)
+    const codebase = codebaseOf([
+      ["a", "A", []],
+      ["a", "B", ["method-A"]],
+    ]);
+
+    // Act
+    const [edge] = dependencyEdges(codebase);
+
+    // Assert
+    expect(edge).toMatchObject({
+      sourceHandle: "source-top",
+      targetHandle: "target-bottom",
+    });
+  });
+
+  it("同じファイル内の1クラスから複数クラスへの依存(初級2のような形)は、右端どうしの重なりを避けて全て上下でつなぐ", () => {
+    // Arrange: A が同じファイルの B・C 両方に依存する(B・Cは呼ばれるだけで依存先を持たない)
+    const codebase = codebaseOf([
+      ["a", "A", ["method-B", "method-C"]],
+      ["a", "B", []],
+      ["a", "C", []],
+    ]);
+
+    // Act
+    const edges = dependencyEdges(codebase);
+
+    // Assert: 右端どうし(座標が一致し描画できない)にはならない
+    expect(edges).toHaveLength(2);
+    for (const edge of edges) {
+      expect(edge).toMatchObject({ sourceHandle: "source-bottom", targetHandle: "target-top" });
+    }
   });
 
   it("矢印はファイルの箱より手前に描く", () => {

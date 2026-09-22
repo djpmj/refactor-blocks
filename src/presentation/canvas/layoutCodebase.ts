@@ -177,19 +177,22 @@ export function layoutCodebase(codebase: Codebase): CodebaseFlowNode[] {
 const EDGE_Z_INDEX = 1000;
 
 type Side = "left" | "right" | "top" | "bottom" | "skip";
-type FilePosition = { row: number; col: number };
+type FilePosition = { row: number; col: number; classIndex: number };
 
 /** 同じ層(row)の中で、間に他ファイルを挟む辺の数。1本以上挟むと、そのファイルのクラスの上に線が重なってしまう。 */
 const SKIPPED_FILE_THRESHOLD = 2;
 
 /**
- * 依存元・依存先のファイルの位置(層row・層内の並びcol)から、矢印をつなぐ(依存元の側, 依存先の側)を選ぶ。
- * 層が違えば、浅い方の下端から深い方の上端へ(逆向きの辺は逆に)つなぐ。同じ層の中では、隣どうしは
- * 右端→左端(またはその逆)、同じファイルなら右端どうし、1つ以上飛び越えるときは skip(上端をずらしてつなぐ)を使う。
+ * 依存元・依存先のファイルの位置(層row・層内の並びcol・ファイル内でのクラスの並びclassIndex)から、
+ * 矢印をつなぐ(依存元の側, 依存先の側)を選ぶ。
+ * - 層が違えば、浅い方の下端から深い方の上端へ(逆向きの辺は逆に)つなぐ。
+ * - 同じファイルのクラス同士は、縦に積まれた並び(classIndex)に沿って上のクラスの下端から下のクラスの上端へつなぐ
+ *   (同じ右端どうしでは左右の座標が一致し、React Flowが辺を描けないため)。
+ * - 同じ層の別ファイルどうしは、隣なら右端→左端(またはその逆)、1つ以上飛び越えるときは skip(上端をずらしてつなぐ)。
  */
 function handleSides(from: FilePosition, to: FilePosition): [Side, Side] {
   if (from.row !== to.row) return from.row < to.row ? ["bottom", "top"] : ["top", "bottom"];
-  if (to.col === from.col) return ["right", "right"];
+  if (to.col === from.col) return from.classIndex < to.classIndex ? ["bottom", "top"] : ["top", "bottom"];
   if (Math.abs(to.col - from.col) >= SKIPPED_FILE_THRESHOLD) return ["skip", "skip"];
   return to.col > from.col ? ["right", "left"] : ["left", "right"];
 }
@@ -199,7 +202,7 @@ function filePositionByClassId(codebase: Codebase): Map<string, FilePosition> {
   const position = new Map<string, FilePosition>();
   rows.forEach((files, row) => {
     files.forEach((file, col) => {
-      for (const codeClass of file.classes) position.set(codeClass.id, { row, col });
+      file.classes.forEach((codeClass, classIndex) => position.set(codeClass.id, { row, col, classIndex }));
     });
   });
   return position;
@@ -235,7 +238,7 @@ function topLaneSpan(id: string, from: FilePosition, to: FilePosition): TopLaneS
 /** 依存・継承をまとめて1回でレーン分けする(片方ずつ割り当てると、両方が同じ高さを選んで重なるため)。 */
 function topLanesByEdgeId(codebase: Codebase): ReadonlyMap<string, number> {
   const positionByClassId = filePositionByClassId(codebase);
-  const at = (classId: string) => positionByClassId.get(classId) ?? { row: 0, col: 0 };
+  const at = (classId: string) => positionByClassId.get(classId) ?? { row: 0, col: 0, classIndex: 0 };
   const depSpans = classDependencies(codebase)
     .map(({ from, to }) => topLaneSpan(`dep-${from}-${to}`, at(from), at(to)))
     .filter((span): span is TopLaneSpan => span !== undefined);
@@ -254,8 +257,8 @@ export function dependencyEdges(codebase: Codebase): Edge[] {
   const positionByClassId = filePositionByClassId(codebase);
   const laneByEdgeId = topLanesByEdgeId(codebase);
   return classDependencies(codebase).map(({ from, to, cyclic }) => {
-    const fromPosition = positionByClassId.get(from) ?? { row: 0, col: 0 };
-    const toPosition = positionByClassId.get(to) ?? { row: 0, col: 0 };
+    const fromPosition = positionByClassId.get(from) ?? { row: 0, col: 0, classIndex: 0 };
+    const toPosition = positionByClassId.get(to) ?? { row: 0, col: 0, classIndex: 0 };
     const [sourceSide, targetSide] = handleSides(fromPosition, toPosition);
     const id = `dep-${from}-${to}`;
     const isSkip = sourceSide === "skip" && targetSide === "skip";
@@ -288,8 +291,8 @@ export function inheritanceEdges(codebase: Codebase): Edge[] {
   for (const codeClass of allClasses(codebase)) {
     const superclassId = codeClass.superclassId;
     if (superclassId === undefined || findClass(codebase, superclassId) === undefined) continue;
-    const fromPosition = positionByClassId.get(codeClass.id) ?? { row: 0, col: 0 };
-    const toPosition = positionByClassId.get(superclassId) ?? { row: 0, col: 0 };
+    const fromPosition = positionByClassId.get(codeClass.id) ?? { row: 0, col: 0, classIndex: 0 };
+    const toPosition = positionByClassId.get(superclassId) ?? { row: 0, col: 0, classIndex: 0 };
     const [sourceSide, targetSide] = handleSides(fromPosition, toPosition);
     const id = `inherit-${codeClass.id}-${superclassId}`;
     const isSkip = sourceSide === "skip" && targetSide === "skip";
