@@ -65,4 +65,57 @@ describe('buildCritiqueRequest', () => {
     expect(orderFile?.deductionPoints).toBe(10);
     expect(taxFile?.deductionPoints).toBe(0);
   });
+
+  it('継承元(extends)のクラス名を含める', () => {
+    // Arrange
+    const base = sampleCodebase();
+    const codebase = {
+      files: base.files.map((file, index) =>
+        index === 0 ? { ...file, classes: [{ ...file.classes[0], superclassId: 'class-tax' }] } : file,
+      ),
+    };
+    const score = scoreCodebase(codebase, LOOSE_STAGE);
+
+    // Act
+    const request = buildCritiqueRequest(codebase, LOOSE_STAGE, score);
+
+    // Assert
+    const orderClass = request.files.find((file) => file.path === 'src/OrderService.ts')?.classes[0];
+    expect(orderClass?.superclassName).toBe('TaxCalculator');
+    expect(orderClass?.superclassKind).toBeUndefined();
+  });
+
+  it('実装先(implements)のクラス名と種類を含める', () => {
+    // Arrange
+    const base = sampleCodebase();
+    const codebase = {
+      files: base.files.map((file, index) =>
+        index === 0
+          ? { ...file, classes: [{ ...file.classes[0], superclassId: 'class-tax', superclassKind: 'implements' as const }] }
+          : file,
+      ),
+    };
+    const score = scoreCodebase(codebase, LOOSE_STAGE);
+
+    // Act
+    const request = buildCritiqueRequest(codebase, LOOSE_STAGE, score);
+
+    // Assert
+    const orderClass = request.files.find((file) => file.path === 'src/OrderService.ts')?.classes[0];
+    expect(orderClass?.superclassName).toBe('TaxCalculator');
+    expect(orderClass?.superclassKind).toBe('implements');
+  });
+
+  it('継承元・実装先がなければ何も含めない', () => {
+    // Arrange
+    const codebase = sampleCodebase();
+    const score = scoreCodebase(codebase, LOOSE_STAGE);
+
+    // Act
+    const request = buildCritiqueRequest(codebase, LOOSE_STAGE, score);
+
+    // Assert
+    const orderClass = request.files.find((file) => file.path === 'src/OrderService.ts')?.classes[0];
+    expect(orderClass?.superclassName).toBeUndefined();
+  });
 });

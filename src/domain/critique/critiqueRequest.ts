@@ -1,4 +1,4 @@
-import type { Codebase, Visibility } from '../codebase/Codebase';
+import { findSuperclass, type Codebase, type Visibility } from '../codebase/Codebase';
 import { classLines, fileLines, methodLines } from '../codebase/lineCount';
 import { fileDeductions } from '../scoring/fileScores';
 import type { Score } from '../scoring/score';
@@ -14,6 +14,10 @@ export type CritiqueClassSummary = {
   readonly name: string;
   readonly lines: number;
   readonly methods: readonly CritiqueMethodSummary[];
+  /** 継承元・実装先のクラス名。無ければ継承・実装なし。 */
+  readonly superclassName?: string;
+  /** superclassName との関係の種類。省略時は 'extends' 扱い(Codebase の CodeClass と同じ規約)。 */
+  readonly superclassKind?: 'extends' | 'implements';
 };
 
 export type CritiqueFileSummary = {
@@ -46,6 +50,8 @@ export function buildCritiqueRequest(
         (codeClass): CritiqueClassSummary => ({
           name: codeClass.name,
           lines: classLines(codeClass),
+          superclassName: findSuperclass(codebase, codeClass.id)?.name,
+          superclassKind: codeClass.superclassKind,
           methods: codeClass.methods.map(
             (method): CritiqueMethodSummary => ({
               name: method.name,
