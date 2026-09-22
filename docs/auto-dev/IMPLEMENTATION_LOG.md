@@ -28,6 +28,24 @@ diffは書かず、要約と確認観点だけを書く。
 
 ## ログ一覧
 
+## 2026-09-22 12:21 (JST) — AI講評に渡すデータを採点結果からまとめる(ドメイン層)
+
+- 対応タスク: docs/auto-dev/TASKS.md の「AI講評に渡すデータを採点結果からまとめる(ドメイン層)」
+- コミット: 855b6197d28ed17f6937d365799ec000b5609de5
+- 実装内容:
+  - `src/domain/critique/critiqueRequest.ts` に `buildCritiqueRequest(codebase, stage, score)` を追加
+  - 出力(`CritiqueRequest`)は、ファイルごとのパス・行数・減点(`fileDeductions`を再利用)、
+    クラス名・行数、メソッド名・可視性・行数、`scoreCodebase`の結果(`score`)、ステージの目標文(`goal`)
+  - メソッドの中の処理(Fragmentの中身・`uses`)は出力に含めない(送信データを構造情報だけに絞る)
+  - Claude APIへの実際の送信・AI講評の呼び出しはまだ未実装(次のタスクで対応)
+- 変更ファイル:
+  - src/domain/critique/critiqueRequest.ts(新規)、critiqueRequest.test.ts(新規)
+- 確認してほしいこと:
+  - まだ画面には何も出ない(ドメイン層のデータ組み立てのみ)。次のタスク(Cloudflare Workers経由の
+    AI講評呼び出し)で、このデータが実際にAPIへ渡って講評文が返ってくることを確認する
+  - `CritiqueRequest`の形(特に`deductionPoints`の計算)が、実際にAI講評のプロンプトとして
+    十分な情報量か(責務の混在・循環依存の詳細までは含めていない)は要検討
+
 ## 2026-09-22 01:40 (JST) — Ctrl+Z / Ctrl+Y で操作の取り消し・やり直しをできるようにする
 
 - 対応タスク: docs/auto-dev/TASKS.md の「Ctrl+Z / Ctrl+Y で操作の取り消し・やり直しをできるようにする」
