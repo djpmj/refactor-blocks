@@ -53,6 +53,29 @@ function describeScore(score: Score): string {
   return details.length === 0 ? `✅ ${score.total}点` : `${score.total}点(${details.join(' / ')})`;
 }
 
+/** AIの講評をもらうボタンと、その結果(講評文・エラー)の表示。 */
+function CritiquePanel({ disabled }: Readonly<{ disabled: boolean }>) {
+  const critique = useGameStore((state) => state.critique);
+  const requestCritique = useGameStore((state) => state.requestCritique);
+  return (
+    <div className="stage-panel__critique">
+      <button type="button" onClick={requestCritique} disabled={disabled || critique.loading}>
+        {critique.loading ? 'AIが講評中…' : 'AIの講評をもらう'}
+      </button>
+      {critique.error !== null && (
+        <p className="stage-panel__critique-error" role="alert">
+          {critique.error}
+        </p>
+      )}
+      {critique.text !== null && (
+        <p className="stage-panel__critique-text" data-testid="critique-text">
+          {critique.text}
+        </p>
+      )}
+    </div>
+  );
+}
+
 /** ステージの目標と、行数・結合度・循環依存・責務の混在から出した点数を表示する。責務の中身(responsibility の値)は見せない。 */
 export function StagePanel() {
   const stage = useGameStore((state) => state.stage);
@@ -81,6 +104,7 @@ export function StagePanel() {
       <div className="stage-panel__status" data-testid="score" aria-live="polite">
         {describeScore(score)}
       </div>
+      <CritiquePanel disabled={investigating} />
       <div className="stage-panel__actions">
         <button type="button" data-testid="change-request-start" onClick={startChangeRequests} disabled={investigating}>
           {challenged ? 'もう一度挑戦' : '変更依頼に挑戦'}

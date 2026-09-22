@@ -45,7 +45,7 @@ Claude Codeがこのファイルを上から順に読み、`### [ ]` の未完�
   - Vitestで、代表的なステージ(違反あり・なし)で期待した形のデータが組み立てられることを確認する
 - 関連ファイル: `src/domain/scoring/score.ts`、`src/domain/scoring/fileScores.ts`、`src/domain/stage/Stage.ts`
 
-### [ ] Cloudflare Workers経由でAI講評を呼び出し、画面に表示する
+### [x] Cloudflare Workers経由でAI講評を呼び出し、画面に表示する
 
 - 背景・目的: 前タスクで組み立てたデータをClaude APIに渡し、講評文を画面に出す。このアプリは
   Viteのみの静的SPAでサーバーを持たないため、ブラウザに`ANTHROPIC_API_KEY`を持たせられない。

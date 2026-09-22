@@ -46,6 +46,11 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .stage-panel__actions button, .stage-panel__reset, .method-editor__extract button { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 8px; padding: 6px 12px; cursor: pointer; }
 .stage-panel__actions { display: flex; gap: 6px; flex-wrap: wrap; }
 .stage-panel__actions button:disabled { opacity: 0.4; cursor: default; }
+.stage-panel__critique { flex: 1 1 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.stage-panel__critique button { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+.stage-panel__critique button:disabled { opacity: 0.4; cursor: default; }
+.stage-panel__critique-text { margin: 0; max-width: 72ch; line-height: 1.6; white-space: pre-wrap; }
+.stage-panel__critique-error { margin: 0; color: var(--danger); }
 
 .file-node { width: 100%; height: 100%; background: var(--file-bg); border: 2px dashed var(--border); border-radius: 12px; }
 .file-node__header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; font-size: 13px; font-family: ui-monospace, monospace; }

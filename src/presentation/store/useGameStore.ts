@@ -1,8 +1,11 @@
 import { create } from 'zustand';
 import { evaluateChangeRequestUseCase, type ChangeOutcome } from '../../application/ChangeRequestUseCases';
+import { describeCritiqueError, requestCritiqueUseCase } from '../../application/CritiqueUseCases';
 import { findMethod, type Codebase } from '../../domain/codebase/Codebase';
 import { emptyHistory, recordChange, redoHistory, undoHistory, type History, type Travel } from '../../domain/codebase/history';
+import { scoreCodebase } from '../../domain/scoring/score';
 import type { Stage } from '../../domain/stage/Stage';
+import { fetchCritique } from '../../infrastructure/critique/critiqueClient';
 import {
   addClassUseCase,
   addFileUseCase,
@@ -46,6 +49,15 @@ export type ChangeReport = {
   readonly codebase: Codebase;
 };
 
+/** AI講評の状態。ステージを切り替えたら空に戻す(別ステージの講評が残らないようにする)。 */
+export type CritiqueState = {
+  readonly text: string | null;
+  readonly loading: boolean;
+  readonly error: string | null;
+};
+
+const EMPTY_CRITIQUE: CritiqueState = { text: null, loading: false, error: null };
+
 type GameState = {
   stages: readonly Stage[];
   stage: Stage;
@@ -55,6 +67,8 @@ type GameState = {
   message: string | null;
   changeSession: ChangeSession | null;
   lastChangeReport: ChangeReport | null;
+  critique: CritiqueState;
+  requestCritique: () => void;
   selectMethod: (methodId: string | null) => void;
   moveMethod: (methodId: string, targetClassId: string) => void;
   extractMethod: (input: ExtractMethodInput) => boolean;
@@ -156,6 +170,41 @@ function changeSessionActions(
   };
 }
 
+/** AI講評をもらう操作。通信は注入されたinfrastructure層の関数(fetchCritique)が行う。 */
+function critiqueActions(set: (partial: Partial<GameState>) => void, get: () => GameState): Pick<GameState, 'requestCritique'> {
+  return {
+    // ponytail: 講評取得後にコードベースを編集しても、講評は自動では消えない。古い講評だと分かるよう再度ボタンを押してもらう前提
+    requestCritique: () => {
+      const { codebase, stage } = get();
+      const score = scoreCodebase(codebase, stage);
+      set({ critique: { text: null, loading: true, error: null } });
+      void requestCritiqueUseCase(codebase, stage, score, fetchCritique).then((result) => {
+        set({
+          critique: result.ok
+            ? { text: result.value, loading: false, error: null }
+            : { text: null, loading: false, error: describeCritiqueError(result.error) },
+        });
+      });
+    },
+  };
+}
+
+/** ステージを切り替えたときの状態。見つからないステージIDなら何もしない。 */
+function selectStageState(allStages: readonly Stage[], stageId: string): Partial<GameState> | null {
+  const stage = allStages.find((candidate) => candidate.id === stageId);
+  if (stage === undefined) return null;
+  return {
+    stage,
+    codebase: stage.codebase,
+    history: emptyHistory(),
+    selectedMethodId: null,
+    message: null,
+    changeSession: null,
+    lastChangeReport: null,
+    critique: EMPTY_CRITIQUE,
+  };
+}
+
 type Apply = <E>(result: Result<Codebase, E>, describe: (error: E) => string) => boolean;
 
 /** ドラッグ&ドロップによる移動系の操作。 */
@@ -195,6 +244,8 @@ export const useGameStore = create<GameState>((set, get) => {
     message: null,
     changeSession: null,
     lastChangeReport: null,
+    critique: EMPTY_CRITIQUE,
+    ...critiqueActions(set, get),
     selectMethod: (methodId) => {
       set({ selectedMethodId: methodId, message: null });
     },
@@ -229,8 +280,8 @@ export const useGameStore = create<GameState>((set, get) => {
       set({ ...commit(get(), get().stage.codebase), selectedMethodId: null, message: null });
     },
     selectStage: (stageId) => {
-      const stage = stages.find((candidate) => candidate.id === stageId);
-      if (stage !== undefined) set({ stage, codebase: stage.codebase, history: emptyHistory(), selectedMethodId: null, message: null, changeSession: null, lastChangeReport: null });
+      const next = selectStageState(stages, stageId);
+      if (next !== null) set(next);
     },
   };
 });

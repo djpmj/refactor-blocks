@@ -14,7 +14,8 @@ export default defineConfig({
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
-    command: `npm run dev -- --port ${PORT} --strictPort`,
+    // --mode test で .env.test を読み込み、AI講評の呼び出し先をPlaywrightがモックできる同一オリジンのURLにする
+    command: `npm run dev -- --port ${PORT} --strictPort --mode test`,
     url: `http://localhost:${PORT}`,
     reuseExistingServer: !process.env.CI,
   },
