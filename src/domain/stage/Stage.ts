@@ -3,7 +3,7 @@ import type { Codebase } from '../codebase/Codebase';
 import type { LineLimits } from '../scoring/lineLimits';
 
 /** ステージの難易度。ステージ選択ではこの順に並べる。 */
-export type StageLevel = 'tutorial' | 'beginner' | 'intermediate';
+export type StageLevel = 'tutorial' | 'beginner' | 'intermediate' | 'advanced';
 
 export type Stage = {
   readonly id: string;

@@ -76,9 +76,9 @@ function allIds(stage: Stage): string[] {
 }
 
 describe('stageCatalog', () => {
-  it('チュートリアル・初級・中級の順に、それぞれ1つ以上のステージが並んでいる', () => {
+  it('チュートリアル・初級・中級・上級の順に、それぞれ1つ以上のステージが並んでいる', () => {
     // Arrange
-    const expectedOrder = ['tutorial', 'beginner', 'intermediate'];
+    const expectedOrder = ['tutorial', 'beginner', 'intermediate', 'advanced'];
 
     // Act
     const levels = [...new Set(stages.map((stage) => stage.level))];

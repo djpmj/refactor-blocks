@@ -102,6 +102,18 @@ describe('applySolutionSteps', () => {
     expect(file?.classes.map((codeClass) => codeClass.name)).toEqual(['B']);
   });
 
+  it('setSuperclassステップで、クラスの継承元を名前で設定する', () => {
+    // Arrange
+    const codebase = twoClassCodebase();
+    const steps: SolutionStep[] = [{ setSuperclass: { class: 'A', superclass: 'B' } }];
+
+    // Act
+    const result = applySolutionSteps(codebase, steps);
+
+    // Assert
+    expect(classNamed(result, 'A').superclassId).toBe('class-b');
+  });
+
   it('手順を順番に適用する(前の手順の結果に次の手順を重ねる)', () => {
     // Arrange
     const codebase = twoClassCodebase();

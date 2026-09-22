@@ -775,3 +775,35 @@ test('越境した private メソッドの呼び出しは減点され、呼び�
   await expect(target.getByTestId('method-renderTemplate')).toBeVisible();
   await expect(page.getByTestId('score')).toContainText('100点');
 });
+
+test('上級ステージ: 共通処理を基底クラスへ移してから継承元を設定すると、継承の矢印が引かれる', async ({ page }) => {
+  // Arrange: 通知文を組み立てる処理を EmailNotifier から抽出する
+  await page.goto('/');
+  await page.getByLabel('ステージ').selectOption({ label: '上級1: 通知クラスの共通処理を基底クラスへ集める' });
+  await page.getByTestId('method-notifyByEmail').click();
+  await page.getByLabel('通知文を組み立てる').check();
+  await page.getByLabel('新しいメソッド名').fill('buildEmailBody');
+  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+
+  // Act: 抽出したメソッドを NotifierBase へドラッグで移し、EmailNotifier の継承元を NotifierBase にする
+  const source = page.getByTestId('method-buildEmailBody');
+  const target = page.getByTestId('class-NotifierBase');
+  const from = await source.boundingBox();
+  const to = await target.boundingBox();
+  if (from === null || to === null) throw new Error('要素の位置を取得できません');
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(from.x + from.width / 2 + 20, from.y + from.height / 2, { steps: 5 });
+  await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 15 });
+  await page.mouse.up();
+  await page.getByTestId('class-header-EmailNotifier').click({ button: 'right' });
+  await page.getByTestId('context-menu').getByRole('menuitem', { name: '継承元を設定' }).click();
+  await page.getByLabel('親クラス名(空で解除)').fill('NotifierBase');
+  await page.getByLabel('親クラス名(空で解除)').press('Enter');
+
+  // Assert
+  await expect(target.getByTestId('method-buildEmailBody')).toBeVisible();
+  const edge = page.getByTestId('rf__edge-inherit-class-email-notifier-class-notifier-base');
+  await expect(edge).toHaveCount(1);
+  await expect(page.getByTestId('class-EmailNotifier')).toContainText('extends NotifierBase');
+});

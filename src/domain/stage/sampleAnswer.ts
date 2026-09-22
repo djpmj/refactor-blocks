@@ -4,6 +4,7 @@ import { allClasses, type Codebase } from '../codebase/Codebase';
 import { extractMethod } from '../codebase/extractMethod';
 import { moveClass } from '../codebase/moveClass';
 import { moveMethod } from '../codebase/moveMethod';
+import { setSuperclass } from '../codebase/setSuperclass';
 import type { Result } from '../shared/Result';
 import type { Stage } from './Stage';
 
@@ -13,7 +14,8 @@ export type SolutionStep =
   | { readonly move: { readonly method: string; readonly toClass: string } }
   | { readonly addFile: string }
   | { readonly addClass: { readonly name: string; readonly file: string } }
-  | { readonly moveClass: { readonly name: string; readonly toFile: string } };
+  | { readonly moveClass: { readonly name: string; readonly toFile: string } }
+  | { readonly setSuperclass: { readonly class: string; readonly superclass: string } };
 
 function unwrap<T, E>(result: Result<T, E>): T {
   if (!result.ok) throw new Error(`模範解答の適用に失敗しました: ${String(result.error)}`);
@@ -53,8 +55,12 @@ function applyStep(codebase: Codebase, step: SolutionStep, newId: string): Codeb
   if ('addClass' in step) {
     return unwrap(addClass(codebase, fileIdByPath(codebase, step.addClass.file), step.addClass.name, newId));
   }
-  const { name, toFile } = step.moveClass;
-  return unwrap(moveClass(codebase, classIdByName(codebase, name), fileIdByPath(codebase, toFile)));
+  if ('moveClass' in step) {
+    const { name, toFile } = step.moveClass;
+    return unwrap(moveClass(codebase, classIdByName(codebase, name), fileIdByPath(codebase, toFile)));
+  }
+  const { class: className, superclass } = step.setSuperclass;
+  return unwrap(setSuperclass(codebase, classIdByName(codebase, className), superclass));
 }
 
 /** 手順を順番に適用する。新しく振るIDは呼び出し元のIDと衝突しないよう連番にする。 */
@@ -114,6 +120,18 @@ export const sampleAnswerSteps: Partial<Record<string, readonly SolutionStep[]>>
     { extract: { from: 'notifyShipment', fragmentIds: ['frag-send-mail'], name: 'sendMail' } },
     { extract: { from: 'notifyShipment', fragmentIds: ['frag-log-delivery'], name: 'logDelivery' } },
     { move: { method: 'renderTemplate', toClass: 'NotificationService' } },
+  ],
+  'advanced-notifier-hierarchy': [
+    { extract: { from: 'notifyByEmail', fragmentIds: ['frag-build-body-email'], name: 'buildEmailBody' } },
+    { extract: { from: 'notifyByEmail', fragmentIds: ['frag-log-email'], name: 'logEmailNotification' } },
+    { move: { method: 'buildEmailBody', toClass: 'NotifierBase' } },
+    { move: { method: 'logEmailNotification', toClass: 'NotifierBase' } },
+    { setSuperclass: { class: 'EmailNotifier', superclass: 'NotifierBase' } },
+    { extract: { from: 'notifyBySms', fragmentIds: ['frag-build-body-sms'], name: 'buildSmsBody' } },
+    { extract: { from: 'notifyBySms', fragmentIds: ['frag-log-sms'], name: 'logSmsNotification' } },
+    { move: { method: 'buildSmsBody', toClass: 'NotifierBase' } },
+    { move: { method: 'logSmsNotification', toClass: 'NotifierBase' } },
+    { setSuperclass: { class: 'SmsNotifier', superclass: 'NotifierBase' } },
   ],
 };
 
