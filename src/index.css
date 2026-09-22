@@ -97,12 +97,15 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .critique-panel__error { margin: 0; color: var(--danger); }
 
 .class-node__handle { opacity: 0; pointer-events: none; }
-/* 双方向の依存が重ならないよう、出る点(上)と入る点(下)の高さをずらす */
-.class-node__handle--source { top: 35%; }
-.class-node__handle--target { top: 65%; }
-/* ファイルを1つ以上飛び越える辺の接続点。ファイルの箱(見出し+余白ぶん、layoutCodebase.ts の FILE_HEADER+FILE_PADDING=60px)より上まで引き上げ、間のファイルの上を線が通らないようにする。左右のずれで出る点と入る点も重ならない */
-.class-node__handle--source-top { left: 65%; top: -72px; }
-.class-node__handle--target-top { left: 35%; top: -72px; }
+/* 同じ層(row)の隣どうしをつなぐ左右の接続点。双方向の辺が重ならないよう、出る点と入る点の高さをずらす */
+.class-node__handle--source-left, .class-node__handle--source-right { top: 35%; }
+.class-node__handle--target-left, .class-node__handle--target-right { top: 65%; }
+/* 層をまたぐ辺の接続点(呼ぶ側の下端→呼ばれる側の上端)。横にずらし、出る点と入る点が重ならないようにする */
+.class-node__handle--source-top, .class-node__handle--source-bottom { left: 65%; }
+.class-node__handle--target-top, .class-node__handle--target-bottom { left: 35%; }
+/* 同じ層でファイルを1つ以上飛び越える辺の接続点。ファイルの箱(見出し+余白ぶん、layoutCodebase.ts の FILE_HEADER+FILE_PADDING=60px)より上まで引き上げ、間のファイルの上を線が通らないようにする。左右のずれで出る点と入る点も重ならない */
+.class-node__handle--source-skip { left: 65%; top: -72px; }
+.class-node__handle--target-skip { left: 35%; top: -72px; }
 .react-flow__edge.edge--cyclic .react-flow__edge-path { stroke: var(--danger); stroke-width: 2; }
 .react-flow__edge.edge--inheritance .react-flow__edge-path { stroke: var(--accent); stroke-width: 2; }
 .file-node--drop-target { border-color: var(--accent); }

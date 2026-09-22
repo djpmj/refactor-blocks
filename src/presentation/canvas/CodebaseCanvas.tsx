@@ -9,7 +9,7 @@ import {
   type DragStartEvent,
   type UniqueIdentifier,
 } from '@dnd-kit/core';
-import { Background, Controls, ReactFlow, useReactFlow, type NodeChange, type NodeTypes, type XYPosition } from '@xyflow/react';
+import { Background, Controls, ReactFlow, useReactFlow, type EdgeTypes, type NodeChange, type NodeTypes, type XYPosition } from '@xyflow/react';
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { findClass, findFileOfClass, findMethod, type Codebase } from '../../domain/codebase/Codebase';
@@ -21,9 +21,11 @@ import { parseClassDragId, parseClassDropId, parseFileDropId, parseMethodDragId 
 import { FileNode } from './FileNode';
 import { dependencyEdges, inheritanceEdges, layoutCodebase, type CodebaseFlowNode } from './layoutCodebase';
 import { MethodChipView } from './MethodChip';
+import { TopRouteEdge } from './TopRouteEdge';
 import { useCanvasContextMenu } from './useCanvasContextMenu';
 
 const nodeTypes: NodeTypes = { fileNode: FileNode, classNode: ClassNode };
+const edgeTypes: EdgeTypes = { topRoute: TopRouteEdge };
 
 /** クリックでの選択とドラッグを区別するため、5px以上動かしたときだけドラッグを開始する。 */
 const POINTER_ACTIVATION = { activationConstraint: { distance: 5 } };
@@ -143,6 +145,7 @@ export function CodebaseCanvas() {
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         onNodesChange={handleNodesChange}
         nodesConnectable={false}
         fitView
