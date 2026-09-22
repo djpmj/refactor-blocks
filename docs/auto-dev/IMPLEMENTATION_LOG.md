@@ -28,6 +28,40 @@ diffは書かず、要約と確認観点だけを書く。
 
 ## ログ一覧
 
+## 2026-09-22 12:36 (JST) — Cloudflare Workers経由でAI講評を呼び出し、画面に表示する
+
+- 対応タスク: docs/auto-dev/TASKS.md の「Cloudflare Workers経由でAI講評を呼び出し、画面に表示する」
+- コミット: e3163271892e8552feb74141e92591d50092775e
+- 実装内容:
+  - `workers/critique/` にCloudflare Workersのプロキシを新規追加(アプリ本体とは別デプロイ、
+    ルートのeslint・npm run checkの対象外)。受け取ったJSONの形・サイズ(20,000文字)を検証してから
+    Claude API(`claude-opus-5`、`@anthropic-ai/sdk`)を呼び、講評文だけを返す。`ANTHROPIC_API_KEY`は
+    Workersのシークレットに置き、ブラウザには渡らない
+  - `src/infrastructure/critique/critiqueClient.ts`(`fetchCritique`)が上記Workersを叩く。呼び出し先は
+    環境変数 `VITE_CRITIQUE_ENDPOINT`
+  - `src/application/CritiqueUseCases.ts` に `requestCritiqueUseCase` を追加。通信の実処理(infrastructure層)
+    を注入し、成否を`Result`にする(TDD)
+  - `useGameStore` に `critique`(text/loading/error)状態と `requestCritique` アクションを追加。
+    ステージ切替で講評をリセットする
+  - `StagePanel.tsx` に「AIの講評をもらう」ボタンと結果表示欄(`data-testid="critique-text"`)を追加
+  - E2E(`e2e/critique.spec.ts`)を追加。`.env.test` でPlaywrightが同一オリジンでモックできる
+    エンドポイントを指定し、`playwright.config.ts` のdevサーバー起動に `--mode test` を追加
+- 変更ファイル:
+  - workers/critique/(新規: index.ts、package.json、tsconfig.json、wrangler.toml、README.md)
+  - src/infrastructure/critique/critiqueClient.ts(新規)、src/infrastructure/README.md
+  - src/application/CritiqueUseCases.ts、CritiqueUseCases.test.ts(新規)
+  - src/presentation/store/useGameStore.ts、src/presentation/stage/StagePanel.tsx、src/index.css
+  - src/vite-env.d.ts、eslint.config.js、playwright.config.ts、.env.test(新規)、e2e/critique.spec.ts(新規)
+- 確認してほしいこと:
+  - `workers/critique/`は実際にはまだデプロイされていない(手動デプロイが必要。README参照)。
+    デプロイ後、本番の`VITE_CRITIQUE_ENDPOINT`をアプリのビルド環境に設定しないと講評ボタンはエラーになる
+  - Cloudflare Workersの`@anthropic-ai/sdk`呼び出し・入力検証は自動テスト対象外(I/O層)なので、
+    実際にデプロイしたうえで`workers/critique/README.md`のcurlコマンドで動作確認してほしい
+  - E2Eはこの環境で他セッションのdevサーバーがポート5174を使っていたため、一時的に別ポートで
+    動作確認した(3件とも成功)。CI・auto-dev環境では毎回新しいサーバーが立つので問題ない想定
+  - 講評取得後にコードベースを編集しても講評は自動で消えない(`// ponytail:`コメントあり)。
+    プレイヤーが混乱しないか実際の画面で確認してほしい
+
 ## 2026-09-22 12:21 (JST) — AI講評に渡すデータを採点結果からまとめる(ドメイン層)
 
 - 対応タスク: docs/auto-dev/TASKS.md の「AI講評に渡すデータを採点結果からまとめる(ドメイン層)」
