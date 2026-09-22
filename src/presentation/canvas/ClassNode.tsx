@@ -1,7 +1,7 @@
 import { Fragment } from "react";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
-import { findClass } from "../../domain/codebase/Codebase";
+import { findClass, findSuperclass } from "../../domain/codebase/Codebase";
 import { classLines } from "../../domain/codebase/lineCount";
 import { useGameStore } from "../store/useGameStore";
 import { classDragId, classDropId } from "./dndIds";
@@ -34,6 +34,17 @@ function DependencyHandles() {
       />
     </Fragment>
   ));
+}
+
+/** クラス名と、親クラスがあれば "extends 親クラス名" を添える。 */
+function ClassNameLabel({ classId, name }: Readonly<{ classId: string; name: string }>) {
+  const superclass = useGameStore((state) => findSuperclass(state.codebase, classId));
+  return (
+    <span className="class-node__name">
+      {name}
+      {superclass === undefined ? null : <span className="class-node__superclass"> extends {superclass.name}</span>}
+    </span>
+  );
 }
 
 export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
@@ -71,7 +82,7 @@ export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
         {...attributes}
         {...listeners}
       >
-        <span className="class-node__name">{codeClass.name}</span>
+        <ClassNameLabel classId={data.classId} name={codeClass.name} />
         {showDetails ? (
           <span
             className={

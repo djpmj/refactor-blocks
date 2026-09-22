@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Codebase, Fragment } from "../../domain/codebase/Codebase";
-import { dependencyEdges } from "./layoutCodebase";
+import { dependencyEdges, inheritanceEdges } from "./layoutCodebase";
 
 function callFragment(id: string, uses: readonly string[]): Fragment {
   return { id, label: id, lines: 1, responsibility: "call", uses };
@@ -101,5 +101,89 @@ describe("dependencyEdges", () => {
 
     // Assert
     expect(edge.zIndex).toBeGreaterThan(0);
+  });
+});
+
+describe("inheritanceEdges", () => {
+  function codebaseWithInheritance(superclassId?: string): Codebase {
+    return {
+      files: [
+        {
+          id: "file-a",
+          path: "a",
+          classes: [{ id: "class-B", name: "B", methods: [], superclassId }],
+        },
+        {
+          id: "file-b",
+          path: "b",
+          classes: [{ id: "class-A", name: "A", methods: [] }],
+        },
+      ],
+    };
+  }
+
+  it("子クラスから親クラスへ、依存の矢印とは別のクラス名の辺を作る", () => {
+    // Arrange
+    const codebase = codebaseWithInheritance("class-A");
+
+    // Act
+    const [edge] = inheritanceEdges(codebase);
+
+    // Assert
+    expect(edge).toMatchObject({
+      source: "class-B",
+      target: "class-A",
+      className: "edge--inheritance",
+    });
+  });
+
+  it("継承がないクラスだけなら辺を作らない", () => {
+    // Arrange
+    const codebase = codebaseWithInheritance();
+
+    // Act
+    const edges = inheritanceEdges(codebase);
+
+    // Assert
+    expect(edges).toHaveLength(0);
+  });
+
+  it("親クラスが削除されて存在しないIDを指しているときは辺を作らない", () => {
+    // Arrange
+    const codebase = codebaseWithInheritance("class-deleted");
+
+    // Act
+    const edges = inheritanceEdges(codebase);
+
+    // Assert
+    expect(edges).toHaveLength(0);
+  });
+
+  it("有効な継承と、親が削除済みの継承が混在するときは、有効な方の辺だけ作る", () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [
+        {
+          id: "file-a",
+          path: "a",
+          classes: [
+            { id: "class-B", name: "B", methods: [], superclassId: "class-A" },
+            { id: "class-C", name: "C", methods: [], superclassId: "class-deleted" },
+          ],
+        },
+        {
+          id: "file-b",
+          path: "b",
+          classes: [{ id: "class-A", name: "A", methods: [] }],
+        },
+      ],
+    };
+
+    // Act
+    const edges = inheritanceEdges(codebase);
+
+    // Assert
+    expect(edges).toHaveLength(1);
+    expect(edges[0]).toMatchObject({ source: "class-B", target: "class-A" });
   });
 });

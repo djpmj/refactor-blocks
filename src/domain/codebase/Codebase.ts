@@ -26,6 +26,8 @@ export type CodeClass = {
   readonly id: string;
   readonly name: string;
   readonly methods: readonly Method[];
+  /** 親クラスのID。継承なしなら省略する。 */
+  readonly superclassId?: string;
 };
 
 export type CodeFile = {
@@ -58,6 +60,12 @@ export function findClass(codebase: Codebase, classId: string): CodeClass | unde
 
 export function findFileOfClass(codebase: Codebase, classId: string): CodeFile | undefined {
   return codebase.files.find((file) => file.classes.some((codeClass) => codeClass.id === classId));
+}
+
+/** 親クラスを引く。継承なし、または親が削除済みで見つからないときは undefined。 */
+export function findSuperclass(codebase: Codebase, classId: string): CodeClass | undefined {
+  const superclassId = findClass(codebase, classId)?.superclassId;
+  return superclassId === undefined ? undefined : findClass(codebase, superclassId);
 }
 
 /** 指定したクラスだけを置き換えた新しいCodebaseを返す(元のCodebaseは変更しない)。 */

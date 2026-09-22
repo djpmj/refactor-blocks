@@ -12,6 +12,7 @@ import {
   describeExtractError,
   describeInlineError,
   describeMoveError,
+  describeSetSuperclassError,
   extractMethodUseCase,
   inlineMethodUseCase,
   moveClassUseCase,
@@ -20,6 +21,7 @@ import {
   moveMethodUseCase,
   renameClassUseCase,
   renameFileUseCase,
+  setSuperclassUseCase,
 } from './RefactorUseCases';
 
 describe('extractMethodUseCase', () => {
@@ -193,6 +195,33 @@ describe('renameClassUseCase / renameFileUseCase', () => {
   });
 });
 
+describe('setSuperclassUseCase', () => {
+  it('親クラス名からIDを解決してsuperclassIdに設定する', () => {
+    // Arrange
+    const codebase = sampleCodebase();
+
+    // Act
+    const result = setSuperclassUseCase(codebase, 'class-order', 'TaxCalculator');
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    expect(result.value.files[0].classes[0].superclassId).toBe('class-tax');
+  });
+
+  it('空文字を指定すると継承を解除する', () => {
+    // Arrange
+    const withSuperclass = setSuperclassUseCase(sampleCodebase(), 'class-order', 'TaxCalculator');
+    if (!withSuperclass.ok) throw new Error(withSuperclass.error);
+
+    // Act
+    const result = setSuperclassUseCase(withSuperclass.value, 'class-order', '');
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    expect(result.value.files[0].classes[0].superclassId).toBeUndefined();
+  });
+});
+
 describe('エラーメッセージ', () => {
   it('エラーコードをプレイヤー向けの日本語に変換する', () => {
     // Arrange
@@ -210,6 +239,7 @@ describe('エラーメッセージ', () => {
       describeMoveClassError('file-not-found'),
       describeRenameClassError('class-not-found'),
       describeRenameFileError('file-not-found'),
+      describeSetSuperclassError('inheritance-cycle'),
     ];
 
     // Assert
@@ -222,6 +252,7 @@ describe('エラーメッセージ', () => {
       '移動先のファイルが見つかりません',
       '名前を変えるクラスが見つかりません',
       '名前を変えるファイルが見つかりません',
+      '継承の輪ができてしまいます',
     ]);
   });
 });

@@ -1,5 +1,5 @@
 import { MarkerType, type Edge, type Node } from "@xyflow/react";
-import type { Codebase } from "../../domain/codebase/Codebase";
+import { allClasses, findClass, type Codebase } from "../../domain/codebase/Codebase";
 import { classDependencies } from "../../domain/codebase/dependencies";
 
 export type FileNodeData = { fileId: string };
@@ -77,20 +77,24 @@ function handleSides(fromIndex: number, toIndex: number): [Side, Side] {
   return toIndex > fromIndex ? ["right", "left"] : ["left", "right"];
 }
 
+function fileIndexByClassId(codebase: Codebase): Map<string, number> {
+  return new Map(
+    codebase.files.flatMap((file, index) =>
+      file.classes.map((codeClass) => [codeClass.id, index] as const),
+    ),
+  );
+}
+
 /**
  * クラス間の依存を矢印にする。循環している依存は赤で描く。
  * 相手が右のファイルなら右端→左端、左なら左端→右端、同じファイルなら右端どうしでつなぐ。
  * 双方向の依存はハンドルの高さ(CSS)が source と target で違うので、2本が重ならない。
  */
 export function dependencyEdges(codebase: Codebase): Edge[] {
-  const fileIndexByClassId = new Map(
-    codebase.files.flatMap((file, index) =>
-      file.classes.map((codeClass) => [codeClass.id, index] as const),
-    ),
-  );
+  const indexByClassId = fileIndexByClassId(codebase);
   return classDependencies(codebase).map(({ from, to, cyclic }) => {
-    const fromIndex = fileIndexByClassId.get(from) ?? 0;
-    const toIndex = fileIndexByClassId.get(to) ?? 0;
+    const fromIndex = indexByClassId.get(from) ?? 0;
+    const toIndex = indexByClassId.get(to) ?? 0;
     const [sourceSide, targetSide] = handleSides(fromIndex, toIndex);
     return {
       id: `dep-${from}-${to}`,
@@ -106,4 +110,31 @@ export function dependencyEdges(codebase: Codebase): Edge[] {
       },
     };
   });
+}
+
+/**
+ * 継承(子→親)を矢印にする。依存の矢印(塗りつぶし矢印、循環時のみ赤)と区別できるよう、
+ * 輪郭だけの矢印・アクセント色の専用クラスにする。親が削除されて見つからないクラスは辺を作らない。
+ */
+export function inheritanceEdges(codebase: Codebase): Edge[] {
+  const indexByClassId = fileIndexByClassId(codebase);
+  const edges: Edge[] = [];
+  for (const codeClass of allClasses(codebase)) {
+    const superclassId = codeClass.superclassId;
+    if (superclassId === undefined || findClass(codebase, superclassId) === undefined) continue;
+    const fromIndex = indexByClassId.get(codeClass.id) ?? 0;
+    const toIndex = indexByClassId.get(superclassId) ?? 0;
+    const [sourceSide, targetSide] = handleSides(fromIndex, toIndex);
+    edges.push({
+      id: `inherit-${codeClass.id}-${superclassId}`,
+      source: codeClass.id,
+      target: superclassId,
+      sourceHandle: `source-${sourceSide}`,
+      targetHandle: `target-${targetSide}`,
+      zIndex: EDGE_Z_INDEX,
+      className: "edge--inheritance",
+      markerEnd: { type: MarkerType.Arrow },
+    });
+  }
+  return edges;
 }

@@ -354,6 +354,48 @@ test('重複した名前には変更できず、理由が表示されて名前�
   await expect(menu).toHaveCount(0);
 });
 
+test('クラスを右クリックして継承元を設定すると、継承の矢印と"extends"の表示が出る', async ({ page }) => {
+  // Arrange
+  await openOrderStage(page);
+  await page.getByTestId('class-header-TaxCalculator').click({ button: 'right' });
+  const menu = page.getByTestId('context-menu');
+  await menu.getByRole('menuitem', { name: '継承元を設定' }).click();
+  const input = menu.getByLabel('親クラス名(空で解除)');
+
+  // Act
+  await input.fill('OrderService');
+  await input.press('Enter');
+
+  // Assert
+  const edge = page.getByTestId('rf__edge-inherit-class-tax-calculator-class-order-service');
+  await expect(edge).toHaveCount(1);
+  await expect(edge).toHaveClass(/edge--inheritance/);
+  await expect(page.getByTestId('class-TaxCalculator')).toContainText('extends OrderService');
+  await expect(menu).toHaveCount(0);
+});
+
+test('継承の輪ができる親クラス名を指定すると、エラーが表示され継承は設定されない', async ({ page }) => {
+  // Arrange: TaxCalculator が OrderService を継承した状態を作る
+  await openOrderStage(page);
+  await page.getByTestId('class-header-TaxCalculator').click({ button: 'right' });
+  await page.getByTestId('context-menu').getByRole('menuitem', { name: '継承元を設定' }).click();
+  await page.getByLabel('親クラス名(空で解除)').fill('OrderService');
+  await page.getByLabel('親クラス名(空で解除)').press('Enter');
+  await page.getByTestId('class-header-OrderService').click({ button: 'right' });
+  const menu = page.getByTestId('context-menu');
+  await menu.getByRole('menuitem', { name: '継承元を設定' }).click();
+  const input = menu.getByLabel('親クラス名(空で解除)');
+
+  // Act: OrderService の親を TaxCalculator にしようとする(輪ができる)
+  await input.fill('TaxCalculator');
+  await input.press('Enter');
+
+  // Assert
+  await expect(page.getByRole('alert')).toHaveText('継承の輪ができてしまいます');
+  await expect(page.getByTestId('class-OrderService')).not.toContainText('extends');
+  await input.press('Escape');
+});
+
 test('クラスを右クリックして削除すると、キャンバスから消える', async ({ page }) => {
   // Arrange
   await openOrderStage(page);

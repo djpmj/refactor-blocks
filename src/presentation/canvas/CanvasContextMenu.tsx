@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState, type RefObject, type SubmitEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { findClass } from '../../domain/codebase/Codebase';
+import { findClass, findSuperclass } from '../../domain/codebase/Codebase';
 import { useGameStore } from '../store/useGameStore';
 import type { ContextMenuTarget } from './useCanvasContextMenu';
 
-type Mode = 'menu' | 'class' | 'file' | 'renameClass' | 'renameFile';
+type Mode = 'menu' | 'class' | 'file' | 'renameClass' | 'renameFile' | 'setSuperclass';
 type FormMode = Exclude<Mode, 'menu'>;
 
 type NameFormProps = {
@@ -69,6 +69,7 @@ function menuItemsFor(target: ContextMenuTarget, onClose: () => void): MenuItem[
     { kind: 'form', mode: 'file', label: 'ファイルを追加' },
     ...(classId === null ? [] : [{ kind: 'form' as const, mode: 'renameClass' as const, label: 'クラスの名前を変更' }]),
     ...(fileId === null ? [] : [{ kind: 'form' as const, mode: 'renameFile' as const, label: 'ファイルの名前を変更' }]),
+    ...(classId === null ? [] : [{ kind: 'form' as const, mode: 'setSuperclass' as const, label: '継承元を設定' }]),
     // 確認ダイアログは出さない。誤って消してもCtrl+Zの取り消し履歴で戻せる
     ...(classId === null
       ? []
@@ -125,34 +126,52 @@ type FormConfig = Omit<NameFormProps, 'onSubmit'> & { submit: (name: string) => 
 /** 選んだ項目の入力欄。名前の変更では今の名前を入れておく。 */
 function useFormConfig(target: ContextMenuTarget, mode: FormMode): FormConfig | null {
   const codebase = useGameStore((state) => state.codebase);
-  const { addClass, addFile, renameClass, renameFile } = useGameStore.getState();
+  const { addClass, addFile, renameClass, renameFile, setSuperclass } = useGameStore.getState();
   const file = codebase.files.find((candidate) => candidate.id === target.fileId);
   const codeClass = findClass(codebase, target.classId ?? '');
-  if (mode === 'file') {
-    return { label: '追加するファイルのパス', placeholder: 'src/foo/Foo.ts', submitLabel: '追加', submit: addFile };
+
+  function classFormConfig(): FormConfig | null {
+    if (mode === 'renameClass' && codeClass !== undefined) {
+      return {
+        label: '新しいクラス名',
+        initialValue: codeClass.name,
+        placeholder: 'クラス名',
+        submitLabel: '変更',
+        submit: (name) => renameClass(codeClass.id, name),
+      };
+    }
+    if (mode === 'setSuperclass' && codeClass !== undefined) {
+      return {
+        label: '親クラス名(空で解除)',
+        initialValue: findSuperclass(codebase, codeClass.id)?.name ?? '',
+        placeholder: 'クラス名',
+        submitLabel: '設定',
+        submit: (name) => setSuperclass(codeClass.id, name),
+      };
+    }
+    return null;
   }
-  if (mode === 'class' && file !== undefined) {
-    return { label: '追加するクラス名', placeholder: 'クラス名', submitLabel: '追加', submit: (name) => addClass(file.id, name) };
+
+  function fileFormConfig(): FormConfig | null {
+    if (mode === 'file') {
+      return { label: '追加するファイルのパス', placeholder: 'src/foo/Foo.ts', submitLabel: '追加', submit: addFile };
+    }
+    if (mode === 'class' && file !== undefined) {
+      return { label: '追加するクラス名', placeholder: 'クラス名', submitLabel: '追加', submit: (name) => addClass(file.id, name) };
+    }
+    if (mode === 'renameFile' && file !== undefined) {
+      return {
+        label: '新しいファイルのパス',
+        initialValue: file.path,
+        placeholder: 'src/foo/Foo.ts',
+        submitLabel: '変更',
+        submit: (path) => renameFile(file.id, path),
+      };
+    }
+    return null;
   }
-  if (mode === 'renameClass' && codeClass !== undefined) {
-    return {
-      label: '新しいクラス名',
-      initialValue: codeClass.name,
-      placeholder: 'クラス名',
-      submitLabel: '変更',
-      submit: (name) => renameClass(codeClass.id, name),
-    };
-  }
-  if (mode === 'renameFile' && file !== undefined) {
-    return {
-      label: '新しいファイルのパス',
-      initialValue: file.path,
-      placeholder: 'src/foo/Foo.ts',
-      submitLabel: '変更',
-      submit: (path) => renameFile(file.id, path),
-    };
-  }
-  return null;
+
+  return classFormConfig() ?? fileFormConfig();
 }
 
 type MenuFormProps = { target: ContextMenuTarget; mode: FormMode; onDone: () => void };

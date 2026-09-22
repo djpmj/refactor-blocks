@@ -30,6 +30,8 @@ import {
   moveMethodUseCase,
   renameClassUseCase,
   renameFileUseCase,
+  describeSetSuperclassError,
+  setSuperclassUseCase,
   type ExtractMethodInput,
 } from '../../application/RefactorUseCases';
 import type { Result } from '../../domain/shared/Result';
@@ -84,6 +86,7 @@ type GameState = {
   moveMethodToNewClass: (methodId: string) => void;
   renameClass: (classId: string, newName: string) => boolean;
   renameFile: (fileId: string, newPath: string) => boolean;
+  setSuperclass: (classId: string, superclassName: string | null) => boolean;
   deleteClass: (classId: string) => boolean;
   deleteFile: (fileId: string) => boolean;
   undo: () => void;
@@ -213,6 +216,21 @@ function selectStageState(allStages: readonly Stage[], stageId: string): Partial
 
 type Apply = <E>(result: Result<Codebase, E>, describe: (error: E) => string) => boolean;
 
+/** クラス・ファイルの名前や継承元を付け替える操作。 */
+function renameActions(apply: Apply, get: () => GameState): Pick<GameState, 'renameClass' | 'renameFile' | 'setSuperclass'> {
+  return {
+    renameClass: (classId, newName) => {
+      return apply(renameClassUseCase(get().codebase, classId, newName), describeRenameClassError);
+    },
+    renameFile: (fileId, newPath) => {
+      return apply(renameFileUseCase(get().codebase, fileId, newPath), describeRenameFileError);
+    },
+    setSuperclass: (classId, superclassName) => {
+      return apply(setSuperclassUseCase(get().codebase, classId, superclassName), describeSetSuperclassError);
+    },
+  };
+}
+
 /** ドラッグ&ドロップによる移動系の操作。 */
 function moveActions(
   apply: Apply,
@@ -272,12 +290,7 @@ export const useGameStore = create<GameState>((set, get) => {
     addFile: (path) => {
       return apply(addFileUseCase(get().codebase, path, () => crypto.randomUUID()), describeAddFileError);
     },
-    renameClass: (classId, newName) => {
-      return apply(renameClassUseCase(get().codebase, classId, newName), describeRenameClassError);
-    },
-    renameFile: (fileId, newPath) => {
-      return apply(renameFileUseCase(get().codebase, fileId, newPath), describeRenameFileError);
-    },
+    ...renameActions(apply, get),
     deleteClass: (classId) => {
       return apply(deleteClassUseCase(get().codebase, classId), describeDeleteClassError);
     },

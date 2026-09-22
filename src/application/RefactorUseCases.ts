@@ -10,6 +10,7 @@ import { moveClassToNewFile, moveMethodToNewClass, type MoveClassToNewFileError,
 import { moveMethod, type MoveMethodError } from '../domain/codebase/moveMethod';
 import { renameClass, type RenameClassError } from '../domain/codebase/renameClass';
 import { renameFile, type RenameFileError } from '../domain/codebase/renameFile';
+import { setSuperclass, type SetSuperclassError } from '../domain/codebase/setSuperclass';
 import { err, ok, type Result } from '../domain/shared/Result';
 
 export type IdGenerator = () => string;
@@ -108,6 +109,15 @@ export function renameFileUseCase(codebase: Codebase, fileId: string, newPath: s
   return renameFile(codebase, fileId, newPath);
 }
 
+/** プレイヤーの「継承元を設定」操作。空文字/nullは継承の解除。 */
+export function setSuperclassUseCase(
+  codebase: Codebase,
+  classId: string,
+  superclassName: string | null,
+): Result<Codebase, SetSuperclassError> {
+  return setSuperclass(codebase, classId, superclassName);
+}
+
 /** プレイヤーの「クラスを削除」操作。 */
 export function deleteClassUseCase(codebase: Codebase, classId: string): Result<Codebase, DeleteClassError> {
   return deleteClass(codebase, classId);
@@ -167,6 +177,13 @@ const MOVE_CLASS_ERROR_MESSAGES: Record<Exclude<MoveClassError, 'same-file'>, st
   'file-not-found': '移動先のファイルが見つかりません',
 };
 
+const SET_SUPERCLASS_ERROR_MESSAGES: Record<SetSuperclassError, string> = {
+  'class-not-found': '継承元を設定するクラスが見つかりません',
+  'superclass-not-found': 'その名前のクラスが見つかりません',
+  'self-inheritance': '自分自身を継承元にはできません',
+  'inheritance-cycle': '継承の輪ができてしまいます',
+};
+
 const DELETE_CLASS_ERROR_MESSAGES: Record<DeleteClassError, string> = {
   'class-not-found': '削除するクラスが見つかりません',
 };
@@ -210,6 +227,10 @@ export function describeRenameClassError(error: RenameClassError): string {
 
 export function describeRenameFileError(error: RenameFileError): string {
   return RENAME_FILE_ERROR_MESSAGES[error];
+}
+
+export function describeSetSuperclassError(error: SetSuperclassError): string {
+  return SET_SUPERCLASS_ERROR_MESSAGES[error];
 }
 
 export function describeDeleteClassError(error: DeleteClassError): string {
