@@ -45,6 +45,13 @@ export function setSuperclass(
   return ok(replaceSuperclass(codebase, classId, superclass.id, kind));
 }
 
+/** 親クラス・実装インターフェースとして選べるクラス一覧(自分自身・循環になる相手を除く)。 */
+export function availableSuperclasses(codebase: Codebase, classId: string): CodeClass[] {
+  return allClasses(codebase).filter(
+    (codeClass) => codeClass.id !== classId && !reachesSelf(codebase, codeClass.id, classId),
+  );
+}
+
 function replaceSuperclass(
   codebase: Codebase,
   classId: string,

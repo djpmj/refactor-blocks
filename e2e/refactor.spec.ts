@@ -418,11 +418,11 @@ test('クラスを右クリックして継承元を設定すると、継承の�
   await page.getByTestId('class-header-TaxCalculator').click({ button: 'right' });
   const menu = page.getByTestId('context-menu');
   await menu.getByRole('menuitem', { name: '継承元を設定' }).click();
-  const input = menu.getByLabel('親クラス名(空で解除)');
+  const select = menu.getByLabel('親クラス名(空で解除)');
 
   // Act
-  await input.fill('OrderService');
-  await input.press('Enter');
+  await select.selectOption('OrderService');
+  await menu.getByRole('button', { name: '設定' }).click();
 
   // Assert
   const edge = page.getByTestId('rf__edge-inherit-class-tax-calculator-class-order-service');
@@ -438,11 +438,11 @@ test('クラスを右クリックして実装するインターフェースを�
   await page.getByTestId('class-header-TaxCalculator').click({ button: 'right' });
   const menu = page.getByTestId('context-menu');
   await menu.getByRole('menuitem', { name: '実装するインターフェースを設定' }).click();
-  const input = menu.getByLabel('インターフェース名(空で解除)');
+  const select = menu.getByLabel('インターフェース名(空で解除)');
 
   // Act
-  await input.fill('OrderService');
-  await input.press('Enter');
+  await select.selectOption('OrderService');
+  await menu.getByRole('button', { name: '設定' }).click();
 
   // Assert
   await expect(page.getByTestId('class-TaxCalculator')).toContainText('implements OrderService');
@@ -450,26 +450,21 @@ test('クラスを右クリックして実装するインターフェースを�
   await expect(menu).toHaveCount(0);
 });
 
-test('継承の輪ができる親クラス名を指定すると、エラーが表示され継承は設定されない', async ({ page }) => {
+test('継承の輪ができる相手は、継承元の候補一覧から外れる', async ({ page }) => {
   // Arrange: TaxCalculator が OrderService を継承した状態を作る
   await openOrderStage(page);
   await page.getByTestId('class-header-TaxCalculator').click({ button: 'right' });
   await page.getByTestId('context-menu').getByRole('menuitem', { name: '継承元を設定' }).click();
-  await page.getByLabel('親クラス名(空で解除)').fill('OrderService');
-  await page.getByLabel('親クラス名(空で解除)').press('Enter');
+  await page.getByLabel('親クラス名(空で解除)').selectOption('OrderService');
+  await page.getByTestId('context-menu').getByRole('button', { name: '設定' }).click();
   await page.getByTestId('class-header-OrderService').click({ button: 'right' });
   const menu = page.getByTestId('context-menu');
   await menu.getByRole('menuitem', { name: '継承元を設定' }).click();
-  const input = menu.getByLabel('親クラス名(空で解除)');
+  const select = menu.getByLabel('親クラス名(空で解除)');
 
-  // Act: OrderService の親を TaxCalculator にしようとする(輪ができる)
-  await input.fill('TaxCalculator');
-  await input.press('Enter');
-
-  // Assert
-  await expect(page.getByRole('alert')).toHaveText('継承の輪ができてしまいます');
-  await expect(page.getByTestId('class-OrderService')).not.toContainText('extends');
-  await input.press('Escape');
+  // Act & Assert: OrderService の候補一覧には、輪ができる TaxCalculator が出てこない((解除)だけになる)
+  await expect(select.locator('option')).toHaveText(['(解除)']);
+  await select.press('Escape');
 });
 
 test('クラスを右クリックして削除すると、キャンバスから消える', async ({ page }) => {
@@ -880,8 +875,8 @@ test('上級ステージ: 共通処理を基底クラスへ移してから継承
   await page.mouse.up();
   await page.getByTestId('class-header-EmailNotifier').click({ button: 'right' });
   await page.getByTestId('context-menu').getByRole('menuitem', { name: '継承元を設定' }).click();
-  await page.getByLabel('親クラス名(空で解除)').fill('NotifierBase');
-  await page.getByLabel('親クラス名(空で解除)').press('Enter');
+  await page.getByLabel('親クラス名(空で解除)').selectOption('NotifierBase');
+  await page.getByTestId('context-menu').getByRole('button', { name: '設定' }).click();
 
   // Assert
   await expect(target.getByTestId('method-buildEmailBody')).toBeVisible();

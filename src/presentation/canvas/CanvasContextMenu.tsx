@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type RefObject, type SubmitEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { findClass, findSuperclass } from '../../domain/codebase/Codebase';
+import { availableSuperclasses } from '../../domain/codebase/setSuperclass';
 import { useGameStore } from '../store/useGameStore';
 import type { ContextMenuTarget } from './useCanvasContextMenu';
 
@@ -12,10 +13,33 @@ type NameFormProps = {
   initialValue?: string;
   placeholder: string;
   submitLabel: string;
+  /** 指定すると自由入力欄の代わりに、この候補だけを選べるセレクトボックスにする。 */
+  options?: readonly string[];
   onSubmit: (name: string) => boolean;
 };
 
-function NameForm({ label, initialValue = '', placeholder, submitLabel, onSubmit }: Readonly<NameFormProps>) {
+/** 継承元・実装インターフェースの選択欄。循環にならない相手だけが候補として渡ってくる。 */
+function NameSelect({ label, initialValue = '', options, onChange }: Readonly<{ label: string; initialValue?: string; options: readonly string[]; onChange: (name: string) => void }>) {
+  return (
+    <select
+      aria-label={label}
+      value={initialValue}
+      autoFocus
+      onChange={(event) => {
+        onChange(event.target.value);
+      }}
+    >
+      <option value="">(解除)</option>
+      {options.map((option) => (
+        <option key={option} value={option}>
+          {option}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function NameForm({ label, initialValue = '', placeholder, submitLabel, options, onSubmit }: Readonly<NameFormProps>) {
   const [name, setName] = useState(initialValue);
   const handleSubmit = (event: SubmitEvent) => {
     event.preventDefault();
@@ -23,18 +47,22 @@ function NameForm({ label, initialValue = '', placeholder, submitLabel, onSubmit
   };
   return (
     <form className="context-menu__form" onSubmit={handleSubmit}>
-      <input
-        aria-label={label}
-        placeholder={placeholder}
-        value={name}
-        autoFocus
-        onFocus={(event) => {
-          event.target.select();
-        }}
-        onChange={(event) => {
-          setName(event.target.value);
-        }}
-      />
+      {options === undefined ? (
+        <input
+          aria-label={label}
+          placeholder={placeholder}
+          value={name}
+          autoFocus
+          onFocus={(event) => {
+            event.target.select();
+          }}
+          onChange={(event) => {
+            setName(event.target.value);
+          }}
+        />
+      ) : (
+        <NameSelect label={label} initialValue={initialValue} options={options} onChange={setName} />
+      )}
       <button type="submit">{submitLabel}</button>
     </form>
   );
@@ -147,6 +175,7 @@ function useFormConfig(target: ContextMenuTarget, mode: FormMode): FormConfig | 
         initialValue: findSuperclass(codebase, codeClass.id)?.name ?? '',
         placeholder: 'クラス名',
         submitLabel: '設定',
+        options: availableSuperclasses(codebase, codeClass.id).map((candidate) => candidate.name),
         submit: (name) => setSuperclass(codeClass.id, name, 'extends'),
       };
     }
@@ -156,6 +185,7 @@ function useFormConfig(target: ContextMenuTarget, mode: FormMode): FormConfig | 
         initialValue: findSuperclass(codebase, codeClass.id)?.name ?? '',
         placeholder: 'クラス名',
         submitLabel: '設定',
+        options: availableSuperclasses(codebase, codeClass.id).map((candidate) => candidate.name),
         submit: (name) => setSuperclass(codeClass.id, name, 'implements'),
       };
     }

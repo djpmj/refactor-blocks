@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Codebase } from './Codebase';
-import { setSuperclass } from './setSuperclass';
+import { availableSuperclasses, setSuperclass } from './setSuperclass';
 import { sampleCodebase } from './testFixtures';
 
 /** A → B → C の継承チェーンを組めるよう、3クラスを1ファイルに置く。 */
@@ -172,5 +172,51 @@ describe('setSuperclass', () => {
 
     // Assert
     expect(result).toEqual({ ok: false, error: expected });
+  });
+});
+
+describe('availableSuperclasses', () => {
+  it('関係がなければ、自分以外の全クラスを返す', () => {
+    // Arrange
+    const codebase = sampleCodebase();
+
+    // Act
+    const result = availableSuperclasses(codebase, 'class-order');
+
+    // Assert
+    expect(result.map((codeClass) => codeClass.name)).toEqual(['TaxCalculator']);
+  });
+
+  it('循環になる相手は候補から除く(A→B→Cのとき、AにはB・Cとも選べない)', () => {
+    // Arrange
+    const codebase = threeClassCodebase();
+
+    // Act
+    const result = availableSuperclasses(codebase, 'class-a');
+
+    // Assert
+    expect(result).toEqual([]);
+  });
+
+  it('間接の循環になる相手だけを除く(A→B→CのBには、循環しないAだけ選べる)', () => {
+    // Arrange
+    const codebase = threeClassCodebase();
+
+    // Act
+    const result = availableSuperclasses(codebase, 'class-b');
+
+    // Assert
+    expect(result.map((codeClass) => codeClass.name)).toEqual(['A']);
+  });
+
+  it('循環にならない相手はすべて選べる(A→B→CのCには、A・Bとも選べる)', () => {
+    // Arrange
+    const codebase = threeClassCodebase();
+
+    // Act
+    const result = availableSuperclasses(codebase, 'class-c');
+
+    // Assert
+    expect(result.map((codeClass) => codeClass.name)).toEqual(['A', 'B']);
   });
 });
