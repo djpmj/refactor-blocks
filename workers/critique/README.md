@@ -36,3 +36,10 @@ curl -X POST http://localhost:8787 \
 ```
 
 `{"critique":"..."}` が返ってくれば成功。
+
+## レート制限
+
+認証なしで誰でも呼べるプロキシなので、Cloudflare WorkersのRate Limiting APIで
+IPごとに1分間10回までに制限している(`wrangler.toml` の `[[ratelimits]]`)。
+上限に達すると `429`(`{"error":"rate-limited"}`)を返す。人数や利用状況に応じて
+`wrangler.toml` の `simple.limit` / `simple.period`(10または60秒のみ)を調整する。

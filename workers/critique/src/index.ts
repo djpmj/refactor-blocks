@@ -2,6 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 
 export interface Env {
   readonly ANTHROPIC_API_KEY: string;
+  readonly CRITIQUE_RATE_LIMITER: RateLimit;
 }
 
 /**
@@ -31,6 +32,8 @@ type CritiqueRequestBody = {
 const MAX_BODY_LENGTH = 20_000;
 const MODEL = 'claude-opus-5';
 const MAX_OUTPUT_TOKENS = 1024;
+/** レート制限にかかったときに、次に試してよいまでの目安として返す秒数(wrangler.tomlのperiodと合わせる)。 */
+const RATE_LIMIT_RETRY_AFTER_SECONDS = 60;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -96,10 +99,10 @@ async function handleCritique(body: unknown, apiKey: string): Promise<Response> 
   }
 }
 
-function jsonResponse(body: unknown, status: number): Response {
+function jsonResponse(body: unknown, status: number, extraHeaders?: Record<string, string>): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', ...extraHeaders },
   });
 }
 
@@ -115,6 +118,12 @@ export default {
       });
     }
     if (request.method !== 'POST') return jsonResponse({ error: 'method-not-allowed' }, 405);
+    // 認証なしで誰でも呼べるプロキシなので、IPごとにレート制限してAPI費用の乱用を防ぐ
+    const clientIp = request.headers.get('CF-Connecting-IP') ?? 'unknown';
+    const { success } = await env.CRITIQUE_RATE_LIMITER.limit({ key: clientIp });
+    if (!success) {
+      return jsonResponse({ error: 'rate-limited' }, 429, { 'Retry-After': String(RATE_LIMIT_RETRY_AFTER_SECONDS) });
+    }
     const raw = await request.text();
     if (raw.length > MAX_BODY_LENGTH) return jsonResponse({ error: 'request-too-large' }, 413);
     let body: unknown;
