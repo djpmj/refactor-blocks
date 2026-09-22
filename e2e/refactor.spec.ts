@@ -603,6 +603,12 @@ test('変更依頼の調査中にメソッドへカーソルを合わせると�
   await expect(inspect).toContainText('消費税を計算する(軽減税率あり)');
   await expect(inspect).toContainText('確認メールを送る');
   await expect(page.getByTestId('method-placeOrder')).not.toHaveAttribute('data-investigated', 'true');
+
+  // Act(選んでいないメソッドからカーソルを外す)
+  await page.getByTestId('class-OrderService').hover({ position: { x: 5, y: 5 } });
+
+  // Assert(選んでいないので消える)
+  await expect(inspect).not.toContainText('消費税を計算する');
 });
 
 test('変更依頼の調査で複数のメソッドを選ぶと、選んだメソッドすべての中身が右側に並ぶ', async ({ page }) => {

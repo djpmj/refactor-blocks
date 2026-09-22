@@ -52,6 +52,7 @@ export function MethodChip({ method }: Readonly<{ method: Method }>) {
   const investigated = useGameStore((state) => state.changeSession?.selected.includes(method.id) ?? false);
   const toggleInvestigated = useGameStore((state) => state.toggleInvestigated);
   const inspectMethod = useGameStore((state) => state.inspectMethod);
+  const inspected = useGameStore((state) => state.changeSession?.inspected === method.id);
   // 調査中に出すと答えが見えてしまうので、変更依頼に挑戦していないときだけ数える
   const changeCount = useGameStore((state) =>
     state.changeSession === null
@@ -70,8 +71,14 @@ export function MethodChip({ method }: Readonly<{ method: Method }>) {
       onMouseEnter={() => {
         inspectMethod(method.id);
       }}
+      onMouseLeave={() => {
+        if (inspected) inspectMethod(null);
+      }}
       onFocus={() => {
         inspectMethod(method.id);
+      }}
+      onBlur={() => {
+        if (inspected) inspectMethod(null);
       }}
       onClick={() => {
         if (investigating) toggleInvestigated(method.id);
