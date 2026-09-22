@@ -160,4 +160,31 @@ describe('advanced-discount-strategy', () => {
     expect(responsibilities).not.toContain('discount-premium');
     expect(responsibilities).not.toContain('discount-vip');
   });
+
+  it('初期状態では、DiscountStrategyが実装すべきメソッド calculate を1つ宣言している(処理本体はない)', () => {
+    // Arrange
+    const { codebase } = stage;
+
+    // Act
+    const discountStrategy = classNamed(codebase, 'DiscountStrategy');
+
+    // Assert
+    expect(discountStrategy.methods.map((method) => method.name)).toEqual(['calculate']);
+    expect(discountStrategy.methods[0]?.fragments).toEqual([]);
+  });
+
+  it('模範解答では、RegularDiscount・PremiumDiscount・VipDiscountが同じメソッド名(calculate)でDiscountStrategyを実装する', () => {
+    // Arrange
+    const solved = sampleAnswerCodebase(stage);
+
+    // Act
+    const regular = classNamed(solved, 'RegularDiscount');
+    const premium = classNamed(solved, 'PremiumDiscount');
+    const vip = classNamed(solved, 'VipDiscount');
+
+    // Assert
+    expect(regular.methods.map((method) => method.name)).toEqual(['calculate']);
+    expect(premium.methods.map((method) => method.name)).toEqual(['calculate']);
+    expect(vip.methods.map((method) => method.name)).toEqual(['calculate']);
+  });
 });

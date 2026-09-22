@@ -196,8 +196,8 @@ const paymentGatewayInterfaceStage: Stage = {
  * 上級3: ネットショップの注文合計金額の計算。DiscountService.calculateDiscount が、
  * 会員ランク(通常/プレミアム/VIP)によって割引の計算方法をif分岐で切り替えている
  * (分岐に相当する3つの処理が1つのメソッドの中に埋め込まれている)。
- * 共通のインターフェース役 DiscountStrategy(空クラス)は用意されているが、
- * ランクごとの計算クラスはまだ存在しない(プレイヤーが作る)。
+ * 共通のインターフェース役 DiscountStrategy(calculateメソッドの型だけを宣言し、処理本体は持たない)は
+ * 用意されているが、ランクごとの計算クラスはまだ存在しない(プレイヤーが作る)。
  * 上級1・2と違い、受け皿を1つに集約せず、方針の数だけ具象クラスを残す
  * (Strategyパターン本来の「方針を増やしても既存クラスに触らずに済む」形)。
  */
@@ -208,7 +208,7 @@ const discountStrategyStage: Stage = {
   description:
     'DiscountService の calculateDiscount が、会員ランク(通常/プレミアム/VIP)によって割引の計算方法をif分岐で切り替えている。' +
     '3つの分岐処理が1つの長いメソッドに同居していて、ランクごとの割引ルールを変えるたびにこのメソッドを触ることになる。' +
-    '空のクラス DiscountStrategy は用意されているが、まだどのクラスとも実装関係で結ばれていない。',
+    'calculateメソッドの型だけを宣言した DiscountStrategy は用意されているが、まだどのクラスとも実装関係で結ばれていない。',
   goal:
     '3つの割引ロジックを、それぞれ新しく作るクラス(RegularDiscount/PremiumDiscount/VipDiscount)へ切り出し、' +
     'どのクラスも DiscountStrategy を実装(implements)するよう設定しよう。上級1・2とは違い、受け皿は1つに集約せず3つに分ける。メソッドは90行以内、1クラスの責務は2種類まで',
@@ -236,9 +236,9 @@ const discountStrategyStage: Stage = {
                 visibility: 'public',
                 fragments: [
                   { id: 'frag-validate-order', label: '注文内容と会員ランクを検証する', lines: 60, responsibility: 'validation', suggestedName: 'validateOrder' },
-                  { id: 'frag-branch-regular', label: '会員ランクが「通常」なら、割引なしで合計する', lines: 14, responsibility: 'discount-regular', suggestedName: 'calculateRegularDiscount' },
-                  { id: 'frag-branch-premium', label: '会員ランクが「プレミアム」なら、一律10%引きで合計する', lines: 16, responsibility: 'discount-premium', suggestedName: 'calculatePremiumDiscount' },
-                  { id: 'frag-branch-vip', label: '会員ランクが「VIP」なら、送料無料込みで合計する', lines: 18, responsibility: 'discount-vip', suggestedName: 'calculateVipDiscount' },
+                  { id: 'frag-branch-regular', label: '会員ランクが「通常」なら、割引なしで合計する', lines: 14, responsibility: 'discount-regular', suggestedName: 'calculate' },
+                  { id: 'frag-branch-premium', label: '会員ランクが「プレミアム」なら、一律10%引きで合計する', lines: 16, responsibility: 'discount-premium', suggestedName: 'calculate' },
+                  { id: 'frag-branch-vip', label: '会員ランクが「VIP」なら、送料無料込みで合計する', lines: 18, responsibility: 'discount-vip', suggestedName: 'calculate' },
                 ],
               },
             ],
@@ -248,7 +248,13 @@ const discountStrategyStage: Stage = {
       {
         id: 'file-discount-strategy',
         path: 'src/pricing/DiscountStrategy.ts',
-        classes: [{ id: 'class-discount-strategy', name: 'DiscountStrategy', methods: [] }],
+        classes: [
+          {
+            id: 'class-discount-strategy',
+            name: 'DiscountStrategy',
+            methods: [{ id: 'method-discount-strategy-calculate', name: 'calculate', visibility: 'public', fragments: [] }],
+          },
+        ],
       },
     ],
   },
