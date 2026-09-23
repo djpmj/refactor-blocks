@@ -35,16 +35,32 @@ describe('advanced-notifier-hierarchy', () => {
     expect(smsSuperclass?.name).toBe('NotifierBase');
   });
 
-  it('模範解答では、共通処理(通知文の組み立て・ログ記録)がNotifierBaseに集まる', () => {
+  it('模範解答では、統合された送信ログ記録処理だけがNotifierBaseに集まる(通知文の組み立ては各クラスに残る)', () => {
     // Arrange
     const solved = sampleAnswerCodebase(stage);
 
     // Act
     const notifierBase = findClass(solved, 'class-notifier-base');
     const methodNames = notifierBase?.methods.map((method) => method.name) ?? [];
+    const emailMethodNames = classNamed(solved, 'EmailNotifier').methods.map((method) => method.name);
+    const smsMethodNames = classNamed(solved, 'SmsNotifier').methods.map((method) => method.name);
 
     // Assert
-    expect(methodNames).toEqual(['buildEmailBody', 'logEmailNotification', 'buildSmsBody', 'logSmsNotification']);
+    expect(methodNames).toEqual(['logNotification']);
+    expect(emailMethodNames).toContain('buildEmailBody');
+    expect(smsMethodNames).toContain('buildSmsBody');
+  });
+
+  it('模範解答では、NotifierBaseに移した処理はprivateのままにならず、継承した子クラスから呼べるprotectedになる', () => {
+    // Arrange
+    const solved = sampleAnswerCodebase(stage);
+
+    // Act
+    const notifierBase = findClass(solved, 'class-notifier-base');
+    const visibilities = notifierBase?.methods.map((method) => method.visibility) ?? [];
+
+    // Assert
+    expect(visibilities).toEqual(['protected']);
   });
 
   it('初期状態では、まだ継承関係が結ばれていない', () => {

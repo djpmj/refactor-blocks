@@ -2,6 +2,7 @@ import { addClass } from '../codebase/addClass';
 import { addFile } from '../codebase/addFile';
 import { allClasses, type Codebase } from '../codebase/Codebase';
 import { extractMethod } from '../codebase/extractMethod';
+import { mergeMethods } from '../codebase/mergeMethods';
 import { moveClass } from '../codebase/moveClass';
 import { moveMethod } from '../codebase/moveMethod';
 import { setSuperclass } from '../codebase/setSuperclass';
@@ -20,6 +21,15 @@ export type SolutionStep =
       };
     }
   | { readonly move: { readonly method: string; readonly toClass: string } }
+  | {
+      readonly merge: {
+        readonly methodA: string;
+        readonly methodAClass?: string;
+        readonly methodB: string;
+        readonly methodBClass?: string;
+        readonly name: string;
+      };
+    }
   | { readonly addFile: string }
   | { readonly addClass: { readonly name: string; readonly file: string } }
   | { readonly moveClass: { readonly name: string; readonly toFile: string } }
@@ -65,6 +75,12 @@ function applyStep(codebase: Codebase, step: SolutionStep, newId: string): Codeb
   }
   if ('move' in step) {
     return unwrap(moveMethod(codebase, methodIdByName(codebase, step.move.method), classIdByName(codebase, step.move.toClass)));
+  }
+  if ('merge' in step) {
+    const { methodA, methodAClass, methodB, methodBClass, name } = step.merge;
+    const methodAId = methodIdByName(codebase, methodA, methodAClass);
+    const methodBId = methodIdByName(codebase, methodB, methodBClass);
+    return unwrap(mergeMethods(codebase, { methodAId, methodBId, newMethodId: newId, newMethodName: name }));
   }
   if ('addFile' in step) return unwrap(addFile(codebase, step.addFile, newId));
   if ('addClass' in step) {
@@ -139,13 +155,11 @@ export const sampleAnswerSteps: Partial<Record<string, readonly SolutionStep[]>>
   'advanced-notifier-hierarchy': [
     { extract: { from: 'notifyByEmail', fragmentIds: ['frag-build-body-email'], name: 'buildEmailBody' } },
     { extract: { from: 'notifyByEmail', fragmentIds: ['frag-log-email'], name: 'logEmailNotification' } },
-    { move: { method: 'buildEmailBody', toClass: 'NotifierBase' } },
-    { move: { method: 'logEmailNotification', toClass: 'NotifierBase' } },
-    { setSuperclass: { class: 'EmailNotifier', superclass: 'NotifierBase' } },
     { extract: { from: 'notifyBySms', fragmentIds: ['frag-build-body-sms'], name: 'buildSmsBody' } },
     { extract: { from: 'notifyBySms', fragmentIds: ['frag-log-sms'], name: 'logSmsNotification' } },
-    { move: { method: 'buildSmsBody', toClass: 'NotifierBase' } },
-    { move: { method: 'logSmsNotification', toClass: 'NotifierBase' } },
+    { merge: { methodA: 'logEmailNotification', methodB: 'logSmsNotification', name: 'logNotification' } },
+    { move: { method: 'logNotification', toClass: 'NotifierBase' } },
+    { setSuperclass: { class: 'EmailNotifier', superclass: 'NotifierBase' } },
     { setSuperclass: { class: 'SmsNotifier', superclass: 'NotifierBase' } },
   ],
   'advanced-payment-gateway-interface': [

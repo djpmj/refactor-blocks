@@ -13,6 +13,12 @@ export type Fragment = {
   readonly responsibility: string;
   readonly uses?: readonly string[];
   readonly suggestedName?: string;
+  /**
+   * この処理が、別クラスの処理と文字通り同じ実装(コピペによる重複)であることを示す隠しタグ。
+   * 同じ値を持つ処理同士だけが Merge Methods で統合できる。responsibility と同じくプレイヤーには表示しない。
+   * 省略時はどの処理とも統合できない(既存ステージはこのタグを使わないため影響しない)。
+   */
+  readonly duplicateGroup?: string;
 };
 
 export type Method = {

@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { findClassOfMethod, findMethod, type Method } from '../../domain/codebase/Codebase';
+import { useMemo, useState } from 'react';
+import { findClass, findClassOfMethod, findMethod, type Method } from '../../domain/codebase/Codebase';
+import { findMergeCandidates, type MergeCandidate } from '../../domain/codebase/mergeMethods';
 import { methodLines } from '../../domain/codebase/lineCount';
 import { suggestMethodName } from '../../domain/codebase/suggestMethodName';
 import { ChangeMemo } from '../change/ChangeMemo';
@@ -41,9 +42,47 @@ function FragmentList({
   );
 }
 
+/** 選択中のメソッドと形が一致する、別クラスのprivateメソッドへのボタンを並べ、Merge Methodsを実行する。 */
+function MergeSection({ method, candidates }: Readonly<{ method: Method; candidates: readonly MergeCandidate[] }>) {
+  const codebase = useGameStore((state) => state.codebase);
+  const mergeMethods = useGameStore((state) => state.mergeMethods);
+  const [name, setName] = useState(method.name);
+
+  return (
+    <div className="method-editor__merge">
+      <h3 className="method-editor__merge-title">似た処理を持つメソッド</h3>
+      <input
+        aria-label="統合後のメソッド名"
+        value={name}
+        onChange={(event) => {
+          setName(event.target.value);
+        }}
+      />
+      <ul className="merge-candidate-list">
+        {candidates.map((candidate) => (
+          <li key={candidate.method.id} className="merge-candidate-list__item">
+            <button
+              type="button"
+              data-testid={`merge-candidate-${candidate.method.name}`}
+              onClick={() => {
+                mergeMethods(method.id, candidate.method.id, name);
+              }}
+            >
+              {findClass(codebase, candidate.ownerClassId)?.name ?? '?'}.{candidate.method.name}()
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 /** 選択中のメソッドの中身を表示し、処理のまとまりを選んで Extract Method する。 */
 function MethodEditorBody({ method }: Readonly<{ method: Method }>) {
-  const owner = useGameStore((state) => findClassOfMethod(state.codebase, method.id));
+  const codebase = useGameStore((state) => state.codebase);
+  const owner = findClassOfMethod(codebase, method.id);
+  // codebaseが変わらない限り同じ配列参照を保つ(毎レンダー新しい配列を作るとZustandの購読が無限ループする)
+  const mergeCandidates = useMemo(() => findMergeCandidates(codebase, method.id), [codebase, method.id]);
   const extractMethod = useGameStore((state) => state.extractMethod);
   const inlineMethod = useGameStore((state) => state.inlineMethod);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
@@ -83,6 +122,7 @@ function MethodEditorBody({ method }: Readonly<{ method: Method }>) {
           選んだ処理をメソッドとして抽出
         </button>
       </div>
+      {mergeCandidates.length > 0 ? <MergeSection method={method} candidates={mergeCandidates} /> : null}
       {method.visibility === 'private' ? (
         <button
           type="button"

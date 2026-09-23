@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { findClassOfMethod, findFileOfClass, findMethod } from '../domain/codebase/Codebase';
+import { findClassOfMethod, findFileOfClass, findMethod, type Codebase } from '../domain/codebase/Codebase';
 import { sampleCodebase } from '../domain/codebase/testFixtures';
 import {
   addClassUseCase,
   addFileUseCase,
   describeAddClassError,
   describeAddFileError,
+  describeMergeError,
   describeMoveClassError,
   describeRenameClassError,
   describeRenameFileError,
@@ -15,6 +16,7 @@ import {
   describeSetSuperclassError,
   extractMethodUseCase,
   inlineMethodUseCase,
+  mergeMethodsUseCase,
   moveClassUseCase,
   moveClassToNewFileUseCase,
   moveMethodToNewClassUseCase,
@@ -23,6 +25,34 @@ import {
   renameFileUseCase,
   setSuperclassUseCase,
 } from './RefactorUseCases';
+
+/** mergeMethodsUseCase用: A・Bとも別クラスのprivateメソッドで、duplicateGroupが一致した処理を1つ持つ。 */
+function codebaseWithMergeableMethods(): Codebase {
+  return {
+    files: [
+      {
+        id: 'file',
+        path: 'src/all.ts',
+        classes: [
+          {
+            id: 'class-a',
+            name: 'ClassA',
+            methods: [
+              { id: 'method-a', name: 'logA', visibility: 'private', fragments: [{ id: 'fa', label: 'ログを記録する', lines: 10, responsibility: 'logging', duplicateGroup: 'log' }] },
+            ],
+          },
+          {
+            id: 'class-b',
+            name: 'ClassB',
+            methods: [
+              { id: 'method-b', name: 'logB', visibility: 'private', fragments: [{ id: 'fb', label: 'ログを記録する', lines: 8, responsibility: 'logging', duplicateGroup: 'log' }] },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+}
 
 describe('extractMethodUseCase', () => {
   it('注入されたIDで新しいメソッドを作る', () => {
@@ -39,6 +69,25 @@ describe('extractMethodUseCase', () => {
     // Assert
     if (!result.ok) throw new Error(result.error);
     expect(findMethod(result.value, 'generated-id')?.name).toBe('calculateTax');
+  });
+});
+
+describe('mergeMethodsUseCase', () => {
+  it('注入されたIDで統合後のメソッドを作る', () => {
+    // Arrange
+    const codebase = codebaseWithMergeableMethods();
+
+    // Act
+    const result = mergeMethodsUseCase(
+      codebase,
+      { methodAId: 'method-a', methodBId: 'method-b', newMethodName: 'logNotification' },
+      () => 'generated-id',
+    );
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    expect(result.value.newMethodId).toBe('generated-id');
+    expect(findMethod(result.value.codebase, 'generated-id')?.name).toBe('logNotification');
   });
 });
 
@@ -240,12 +289,14 @@ describe('エラーメッセージ', () => {
     const extractError = 'no-fragments-selected';
     const moveError = 'duplicate-method-name';
     const inlineError = 'not-private';
+    const mergeError = 'shape-mismatch';
 
     // Act
     const messages = [
       describeExtractError(extractError),
       describeMoveError(moveError),
       describeInlineError(inlineError),
+      describeMergeError(mergeError),
       describeAddClassError('duplicate-class-name'),
       describeAddFileError('duplicate-path'),
       describeMoveClassError('file-not-found'),
@@ -259,6 +310,7 @@ describe('エラーメッセージ', () => {
       '抽出する処理を1つ以上選んでください',
       '移動先のクラスに同じ名前のメソッドがあります',
       'publicメソッドは呼び出し元へ戻せません',
+      '処理の形が一致しないため統合できません',
       '同じ名前のクラスがすでにあります',
       '同じパスのファイルがすでにあります',
       '移動先のファイルが見つかりません',

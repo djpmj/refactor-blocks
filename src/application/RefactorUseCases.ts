@@ -5,6 +5,7 @@ import { deleteClass, type DeleteClassError } from '../domain/codebase/deleteCla
 import { deleteFile, type DeleteFileError } from '../domain/codebase/deleteFile';
 import { extractMethod, type ExtractMethodError } from '../domain/codebase/extractMethod';
 import { findCallerOf, inlineMethod, type InlineMethodError } from '../domain/codebase/inlineMethod';
+import { mergeMethods, type MergeMethodsError } from '../domain/codebase/mergeMethods';
 import { moveClass, type MoveClassError } from '../domain/codebase/moveClass';
 import { moveClassToNewFile, moveMethodToNewClass, type MoveClassToNewFileError, type MoveMethodToNewClassError } from '../domain/codebase/moveToNewHome';
 import { moveMethod, type MoveMethodError } from '../domain/codebase/moveMethod';
@@ -28,6 +29,23 @@ export function extractMethodUseCase(
   generateId: IdGenerator,
 ): Result<Codebase, ExtractMethodError> {
   return extractMethod(codebase, { ...input, newMethodId: generateId() });
+}
+
+export type MergeMethodsInput = {
+  readonly methodAId: string;
+  readonly methodBId: string;
+  readonly newMethodName: string;
+};
+
+/** プレイヤーの「似た処理を持つメソッドを統合」操作。新しいメソッドのIDは注入されたジェネレーターで採番する。 */
+export function mergeMethodsUseCase(
+  codebase: Codebase,
+  input: MergeMethodsInput,
+  generateId: IdGenerator,
+): Result<{ codebase: Codebase; newMethodId: string }, MergeMethodsError> {
+  const newMethodId = generateId();
+  const result = mergeMethods(codebase, { ...input, newMethodId });
+  return result.ok ? ok({ codebase: result.value, newMethodId }) : result;
 }
 
 /** プレイヤーの「メソッドを別クラスへドロップ」操作。同じクラスへのドロップは何もしない操作として成功扱いにする。 */
@@ -150,6 +168,16 @@ const EXTRACT_ERROR_MESSAGES: Record<ExtractMethodError, string> = {
   'duplicate-method-name': '同じクラスに同じ名前のメソッドがあります',
 };
 
+const MERGE_ERROR_MESSAGES: Record<MergeMethodsError, string> = {
+  'method-not-found': 'メソッドが見つかりません',
+  'same-method': '同じメソッド同士は統合できません',
+  'same-class': '同じクラスの中のメソッド同士は統合できません',
+  'not-private': 'privateメソッド同士でないと統合できません',
+  'shape-mismatch': '処理の形が一致しないため統合できません',
+  'empty-method-name': '統合後のメソッド名を入力してください',
+  'duplicate-method-name': '統合先のクラスに同じ名前のメソッドがあります',
+};
+
 const MOVE_ERROR_MESSAGES: Record<Exclude<MoveMethodError, 'same-class'>, string> = {
   'method-not-found': 'メソッドが見つかりません',
   'class-not-found': '移動先のクラスが見つかりません',
@@ -204,6 +232,10 @@ export function describeExtractError(error: ExtractMethodError): string {
 
 export function describeMoveError(error: Exclude<MoveMethodError, 'same-class'>): string {
   return MOVE_ERROR_MESSAGES[error];
+}
+
+export function describeMergeError(error: MergeMethodsError): string {
+  return MERGE_ERROR_MESSAGES[error];
 }
 
 export function describeInlineError(error: InlineMethodError): string {

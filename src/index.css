@@ -83,6 +83,11 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .method-editor__message { color: var(--danger); font-size: 13px; }
 .method-editor__extract { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
 .method-editor__extract input { padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); }
+.method-editor__merge { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.method-editor__merge-title { font-size: 13px; margin: 0; }
+.method-editor__merge input { padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); }
+.merge-candidate-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.merge-candidate-list button { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 8px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
 .fragment-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .fragment-list__item label { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-size: 13px; }
 .fragment-list__label { flex: 1; }

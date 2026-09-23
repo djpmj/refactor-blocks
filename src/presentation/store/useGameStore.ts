@@ -18,11 +18,13 @@ import {
   describeMoveClassError,
   describeExtractError,
   describeInlineError,
+  describeMergeError,
   describeMoveError,
   describeRenameClassError,
   describeRenameFileError,
   extractMethodUseCase,
   inlineMethodUseCase,
+  mergeMethodsUseCase,
   describeMoveOutError,
   moveClassToNewFileUseCase,
   moveClassUseCase,
@@ -33,6 +35,7 @@ import {
   describeSetSuperclassError,
   setSuperclassUseCase,
   type ExtractMethodInput,
+  type MergeMethodsInput,
 } from '../../application/RefactorUseCases';
 import type { Result } from '../../domain/shared/Result';
 import { stages } from '../../infrastructure/stages/stageCatalog';
@@ -78,6 +81,7 @@ type GameState = {
   selectMethod: (methodId: string | null) => void;
   moveMethod: (methodId: string, targetClassId: string) => void;
   extractMethod: (input: ExtractMethodInput) => boolean;
+  mergeMethods: (methodAId: string, methodBId: string, newMethodName: string) => boolean;
   inlineMethod: (methodId: string) => void;
   addClass: (fileId: string, className: string) => boolean;
   addFile: (path: string) => boolean;
@@ -253,6 +257,33 @@ function moveActions(
   };
 }
 
+/** 統合・インライン化など、成功時に選択中メソッドを結果側の別メソッドへ付け替える操作。 */
+function replaceMethodActions(
+  set: (partial: Partial<GameState>) => void,
+  get: () => GameState,
+): Pick<GameState, 'mergeMethods' | 'inlineMethod'> {
+  return {
+    mergeMethods: (methodAId, methodBId, newMethodName) => {
+      const input: MergeMethodsInput = { methodAId, methodBId, newMethodName };
+      const result = mergeMethodsUseCase(get().codebase, input, () => crypto.randomUUID());
+      set(
+        result.ok
+          ? { ...commit(get(), result.value.codebase), selectedMethodId: result.value.newMethodId, message: null }
+          : { message: describeMergeError(result.error) },
+      );
+      return result.ok;
+    },
+    inlineMethod: (methodId) => {
+      const result = inlineMethodUseCase(get().codebase, methodId);
+      set(
+        result.ok
+          ? { ...commit(get(), result.value.codebase), selectedMethodId: result.value.callerId, message: null }
+          : { message: describeInlineError(result.error) },
+      );
+    },
+  };
+}
+
 export const useGameStore = create<GameState>((set, get) => {
   /** 操作の結果を反映し、成功したかを返す。 */
   const apply = <E>(result: Result<Codebase, E>, describe: (error: E) => string): boolean => {
@@ -276,14 +307,7 @@ export const useGameStore = create<GameState>((set, get) => {
     extractMethod: (input) => {
       return apply(extractMethodUseCase(get().codebase, input, () => crypto.randomUUID()), describeExtractError);
     },
-    inlineMethod: (methodId) => {
-      const result = inlineMethodUseCase(get().codebase, methodId);
-      set(
-        result.ok
-          ? { ...commit(get(), result.value.codebase), selectedMethodId: result.value.callerId, message: null }
-          : { message: describeInlineError(result.error) },
-      );
-    },
+    ...replaceMethodActions(set, get),
     addClass: (fileId, className) => {
       return apply(addClassUseCase(get().codebase, fileId, className, () => crypto.randomUUID()), describeAddClassError);
     },

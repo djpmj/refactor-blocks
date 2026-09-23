@@ -853,6 +853,32 @@ test('越境した private メソッドの呼び出しは減点され、呼び�
   await expect(page.getByTestId('score')).toContainText('100点');
 });
 
+test('上級1ステージ: 重複した送信ログ記録処理をExtract Methodで取り出し統合すると、メソッドが1つになる', async ({ page }) => {
+  // Arrange: EmailNotifier・SmsNotifierそれぞれから「送信ログを記録する」処理を抽出する
+  await page.goto('/');
+  await page.getByLabel('ステージ').selectOption({ label: '上級1: 通知クラスの共通処理を基底クラスへ集める' });
+  await page.getByTestId('method-notifyByEmail').click();
+  await page.getByLabel('送信ログを記録する').check();
+  await page.getByLabel('新しいメソッド名').fill('logEmailNotification');
+  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+  await page.getByTestId('method-notifyBySms').click();
+  await page.getByLabel('送信ログを記録する').check();
+  await page.getByLabel('新しいメソッド名').fill('logSmsNotification');
+  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+
+  // Act: logEmailNotificationを選び、統合候補としてlogSmsNotificationが出るので統合する
+  await page.getByTestId('method-logEmailNotification').click();
+  const candidate = page.getByTestId('merge-candidate-logSmsNotification');
+  await expect(candidate).toBeVisible();
+  await page.getByLabel('統合後のメソッド名').fill('logNotification');
+  await candidate.click();
+
+  // Assert
+  await expect(page.getByTestId('method-logEmailNotification')).toHaveCount(0);
+  await expect(page.getByTestId('method-logSmsNotification')).toHaveCount(0);
+  await expect(page.getByTestId('class-EmailNotifier').getByTestId('method-logNotification')).toBeVisible();
+});
+
 test('上級ステージ: 共通処理を基底クラスへ移してから継承元を設定すると、継承の矢印が引かれる', async ({ page }) => {
   // Arrange: 通知文を組み立てる処理を EmailNotifier から抽出する
   await page.goto('/');
