@@ -256,3 +256,77 @@ describe('advanced-discount-strategy', () => {
     expect(vip.methods.map((method) => method.name)).toEqual(['calculate']);
   });
 });
+
+/**
+ * 採点(line-limit/coupling/cycle/responsibility)は継承の有無を見ないので、
+ * 「模範解答で100点になる」だけでは継承を使わずに解けているかを確認できない。
+ * この上級ステージの狙いそのもの(重複した生成処理をFactoryへ委譲でまとめる、継承は使わない)を別途確認する。
+ */
+describe('advanced-report-factory', () => {
+  const stage = advancedStages.find((candidate) => candidate.id === 'advanced-report-factory');
+  if (stage === undefined) throw new Error('advanced-report-factory ステージが見つかりません');
+
+  it('初期状態では、ReportFactoryにまだ何も移されていない', () => {
+    // Arrange
+    const { codebase } = stage;
+
+    // Act
+    const reportFactory = classNamed(codebase, 'ReportFactory');
+
+    // Assert
+    expect(reportFactory.methods).toEqual([]);
+  });
+
+  it('初期状態では、レポートを組み立てる処理がWeeklyReportController・MonthlyReportControllerの両方に重複している', () => {
+    // Arrange
+    const { codebase } = stage;
+
+    // Act
+    const weeklyResponsibilities = fragmentResponsibilities(classNamed(codebase, 'WeeklyReportController'));
+    const monthlyResponsibilities = fragmentResponsibilities(classNamed(codebase, 'MonthlyReportController'));
+
+    // Assert
+    expect(weeklyResponsibilities).toContain('report-building');
+    expect(monthlyResponsibilities).toContain('report-building');
+  });
+
+  it('模範解答では、統合されたレポート組み立て処理だけがReportFactoryに集まる', () => {
+    // Arrange
+    const solved = sampleAnswerCodebase(stage);
+
+    // Act
+    const reportFactory = classNamed(solved, 'ReportFactory');
+    const weeklyResponsibilities = fragmentResponsibilities(classNamed(solved, 'WeeklyReportController'));
+    const monthlyResponsibilities = fragmentResponsibilities(classNamed(solved, 'MonthlyReportController'));
+
+    // Assert
+    expect(reportFactory.methods.map((method) => method.name)).toEqual(['buildReport']);
+    expect(weeklyResponsibilities).not.toContain('report-building');
+    expect(monthlyResponsibilities).not.toContain('report-building');
+  });
+
+  it('模範解答を適用しても、継承・実装関係は一切結ばれない(委譲だけで解ける)', () => {
+    // Arrange
+    const solved = sampleAnswerCodebase(stage);
+
+    // Act
+    const superclasses = allClasses(solved).map((codeClass) => findSuperclass(solved, codeClass.id));
+
+    // Assert
+    expect(superclasses.every((superclass) => superclass === undefined)).toBe(true);
+  });
+
+  it('模範解答では、WeeklyReportController・MonthlyReportControllerがどちらもReportFactoryへ依存する', () => {
+    // Arrange
+    const solved = sampleAnswerCodebase(stage);
+
+    // Act
+    const dependencies = classDependencies(solved);
+    const targets = dependencies.map((dependency) => dependency.to);
+
+    // Assert
+    const reportFactoryId = classNamed(solved, 'ReportFactory').id;
+    expect(dependencies).toHaveLength(2);
+    expect(targets.every((target) => target === reportFactoryId)).toBe(true);
+  });
+});

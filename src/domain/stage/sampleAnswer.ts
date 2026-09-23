@@ -189,6 +189,12 @@ export const sampleAnswerSteps: Partial<Record<string, readonly SolutionStep[]>>
     { setSuperclass: { class: 'PremiumDiscount', superclass: 'DiscountStrategy', kind: 'implements' } },
     { setSuperclass: { class: 'VipDiscount', superclass: 'DiscountStrategy', kind: 'implements' } },
   ],
+  'advanced-report-factory': [
+    { extract: { from: 'exportWeeklyReport', fragmentIds: ['frag-build-report-weekly'], name: 'buildWeeklyReport' } },
+    { extract: { from: 'exportMonthlyReport', fragmentIds: ['frag-build-report-monthly'], name: 'buildMonthlyReport' } },
+    { merge: { methodA: 'buildWeeklyReport', methodB: 'buildMonthlyReport', name: 'buildReport' } },
+    { move: { method: 'buildReport', toClass: 'ReportFactory' } },
+  ],
 };
 
 /** ステージの模範解答を適用した最終形のコードベース。「解答例の図」に使う。 */

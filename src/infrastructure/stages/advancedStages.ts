@@ -275,4 +275,91 @@ const discountStrategyStage: Stage = {
   },
 };
 
-export const advancedStages: readonly Stage[] = [notifierHierarchyStage, paymentGatewayInterfaceStage, discountStrategyStage];
+/**
+ * 上級4: 週次レポート(WeeklyReportController)と月次レポート(MonthlyReportController)が、
+ * 「データを集計する」「レポートオブジェクトを組み立てる」「レポートを送信する」の3処理を1つのメソッドに
+ * 詰め込んでいる。「レポートオブジェクトを組み立てる」だけは2クラスで内容が完全に同じ(コピペの重複、
+ * duplicateGroupを付与済み)。空のクラス ReportFactory は用意されているが、まだ何も移されていない。
+ * 上級1(継承で共通処理をまとめる)と違い、このステージは継承を一切使わない。Merge Methodsで重複を
+ * 統合し、Move Methodで別クラス(Factory)へ委譲するだけで解ける、という対比になる。
+ */
+const reportFactoryStage: Stage = {
+  id: 'advanced-report-factory',
+  level: 'advanced',
+  title: '上級4: レポート生成処理をFactoryへ集約する',
+  description:
+    'WeeklyReportController と MonthlyReportController は、どちらも「データを集計する」「レポートオブジェクトを組み立てる」' +
+    '「レポートを送信する」の3処理を1つのメソッドに詰め込んでいる。' +
+    '「レポートオブジェクトを組み立てる」処理はコピペしたように全く同じ内容で、2クラスに重複している。' +
+    '空のクラス ReportFactory は用意されているが、まだどちらのクラスからも使われていない。',
+  goal:
+    '重複した「レポートオブジェクトを組み立てる」処理をExtract Methodで取り出し、メソッドエディタの「似た処理を持つメソッド」から統合してReportFactoryへ移そう。' +
+    '上級1と違い、継承(継承元の設定)は使わない。別クラスへ処理を任せる(委譲)だけで解けるはず。メソッドは70行以内、1クラスの責務は2種類まで',
+  limits: { method: 70, class: 230, file: 380 },
+  dependencyLimit: 1,
+  responsibilityLimit: 2,
+  changeRequests: [
+    { id: 'req-report-building', title: '帳票のタイトルの付け方を見直して', description: '週次・月次のレポートのタイトルに、出力日時を含めたい。', responsibility: 'report-building', linesPerSite: 6 },
+    { id: 'req-report-delivery', title: 'レポートの送信方法を見直して', description: 'レポート送信に、失敗時の再送処理を追加したい。', responsibility: 'report-delivery', linesPerSite: 5 },
+  ],
+  codebase: {
+    files: [
+      {
+        id: 'file-weekly-report-controller',
+        path: 'src/report/WeeklyReportController.ts',
+        classes: [
+          {
+            id: 'class-weekly-report-controller',
+            name: 'WeeklyReportController',
+            methods: [
+              {
+                id: 'method-export-weekly-report',
+                name: 'exportWeeklyReport',
+                visibility: 'public',
+                fragments: [
+                  { id: 'frag-gather-weekly-data', label: '週次データを集計する', lines: 42, responsibility: 'data-aggregation', suggestedName: 'gatherWeeklyData' },
+                  { id: 'frag-build-report-weekly', label: 'レポートオブジェクトを組み立てる', lines: 28, responsibility: 'report-building', suggestedName: 'buildReport', duplicateGroup: 'report-building' },
+                  { id: 'frag-send-weekly', label: 'レポートを送信する', lines: 22, responsibility: 'report-delivery', suggestedName: 'sendReport' },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'file-monthly-report-controller',
+        path: 'src/report/MonthlyReportController.ts',
+        classes: [
+          {
+            id: 'class-monthly-report-controller',
+            name: 'MonthlyReportController',
+            methods: [
+              {
+                id: 'method-export-monthly-report',
+                name: 'exportMonthlyReport',
+                visibility: 'public',
+                fragments: [
+                  { id: 'frag-gather-monthly-data', label: '月次データを集計する', lines: 44, responsibility: 'data-aggregation', suggestedName: 'gatherMonthlyData' },
+                  { id: 'frag-build-report-monthly', label: 'レポートオブジェクトを組み立てる', lines: 26, responsibility: 'report-building', suggestedName: 'buildReport', duplicateGroup: 'report-building' },
+                  { id: 'frag-send-monthly', label: 'レポートを送信する', lines: 22, responsibility: 'report-delivery', suggestedName: 'sendReport' },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'file-report-factory',
+        path: 'src/report/ReportFactory.ts',
+        classes: [{ id: 'class-report-factory', name: 'ReportFactory', methods: [] }],
+      },
+    ],
+  },
+};
+
+export const advancedStages: readonly Stage[] = [
+  notifierHierarchyStage,
+  paymentGatewayInterfaceStage,
+  discountStrategyStage,
+  reportFactoryStage,
+];
