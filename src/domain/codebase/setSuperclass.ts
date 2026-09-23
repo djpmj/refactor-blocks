@@ -1,4 +1,4 @@
-import { allClasses, findClass, mapClasses, type CodeClass, type Codebase } from './Codebase';
+import { allClasses, findClass, mapClasses, type CodeClass, type Codebase, type Method } from './Codebase';
 import { err, ok, type Result } from '../shared/Result';
 
 export type SetSuperclassError = 'class-not-found' | 'superclass-not-found' | 'self-inheritance' | 'inheritance-cycle';
@@ -18,6 +18,27 @@ function reachesSelf(codebase: Codebase, fromClassId: string, classId: string): 
     current = findClass(codebase, current)?.superclassId;
   }
   return false;
+}
+
+/**
+ * 新しく親になったクラスのprivateメソッドのうち、子クラス自身がすでに呼んでいるものをprotectedへ広げる。
+ * Move Methodは可視性を変えないので、privateメソッドを先に親クラスへ移してから継承関係を結ぶと、
+ * privateのままでは子クラスから届かない(実際のコードではコンパイルが通らない)状態が残ってしまう。
+ * implementsは実装を継承しないので対象外。
+ */
+function promoteCalledPrivateMethods(codebase: Codebase, subclassId: string, superclassId: string): Codebase {
+  const subclass = findClass(codebase, subclassId);
+  if (subclass === undefined) return codebase;
+  const calledMethodIds = new Set(subclass.methods.flatMap((method) => method.fragments).flatMap((fragment) => fragment.uses ?? []));
+  return mapClasses(codebase, (codeClass) => {
+    if (codeClass.id !== superclassId) return codeClass;
+    return {
+      ...codeClass,
+      methods: codeClass.methods.map((method): Method =>
+        method.visibility === 'private' && calledMethodIds.has(method.id) ? { ...method, visibility: 'protected' } : method,
+      ),
+    };
+  });
 }
 
 /** クラスの親クラスを設定・解除する。相手はIDではなくクラス名で指定する(名前の変更・追加と同じ規則)。 */
@@ -42,7 +63,8 @@ export function setSuperclass(
   if (matchesCurrent(target, superclass.id, kind)) return ok(codebase);
   if (reachesSelf(codebase, superclass.id, classId)) return err('inheritance-cycle');
 
-  return ok(replaceSuperclass(codebase, classId, superclass.id, kind));
+  const withSuperclass = replaceSuperclass(codebase, classId, superclass.id, kind);
+  return ok(kind === 'extends' ? promoteCalledPrivateMethods(withSuperclass, classId, superclass.id) : withSuperclass);
 }
 
 /** 親クラス・実装インターフェースとして選べるクラス一覧(自分自身・循環になる相手を除く)。 */

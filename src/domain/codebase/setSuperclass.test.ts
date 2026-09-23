@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Codebase } from './Codebase';
+import { findMethod, type Codebase } from './Codebase';
 import { availableSuperclasses, setSuperclass } from './setSuperclass';
 import { sampleCodebase } from './testFixtures';
 
@@ -172,6 +172,82 @@ describe('setSuperclass', () => {
 
     // Assert
     expect(result).toEqual({ ok: false, error: expected });
+  });
+
+  describe('継承元のprivateメソッドへの可視性の広がり', () => {
+    /**
+     * NotifierBase を Move Method で先に private メソッドを持たせておき、
+     * EmailNotifier 側にその呼び出し(Fragment.uses)だけが残っている状態
+     * (Extract Method → Move Method の直後、まだ継承関係を結ぶ前)を模す。
+     */
+    function codebaseWithMovedPrivateMethod(): Codebase {
+      return {
+        files: [
+          {
+            id: 'file',
+            path: 'src/all.ts',
+            classes: [
+              {
+                id: 'class-email',
+                name: 'EmailNotifier',
+                methods: [
+                  {
+                    id: 'method-notify',
+                    name: 'notifyByEmail',
+                    visibility: 'public',
+                    fragments: [{ id: 'f-call', label: 'call', lines: 1, responsibility: 'call', uses: ['method-build-body'] }],
+                  },
+                ],
+              },
+              {
+                id: 'class-base',
+                name: 'NotifierBase',
+                methods: [{ id: 'method-build-body', name: 'buildEmailBody', visibility: 'private', fragments: [] }],
+              },
+            ],
+          },
+        ],
+      };
+    }
+
+    it('extendsを設定すると、子クラス自身が呼んでいる親のprivateメソッドはprotectedになる', () => {
+      // Arrange
+      const codebase = codebaseWithMovedPrivateMethod();
+
+      // Act
+      const result = setSuperclass(codebase, 'class-email', 'NotifierBase');
+
+      // Assert
+      if (!result.ok) throw new Error(result.error);
+      expect(findMethod(result.value, 'method-build-body')?.visibility).toBe('protected');
+    });
+
+    it('子クラスが呼んでいないprivateメソッドは、extendsを設定してもprivateのまま', () => {
+      // Arrange
+      const codebase = codebaseWithMovedPrivateMethod();
+      const withoutCall: Codebase = {
+        files: [{ ...codebase.files[0], classes: [{ ...codebase.files[0].classes[0], methods: [] }, codebase.files[0].classes[1]] }],
+      };
+
+      // Act
+      const result = setSuperclass(withoutCall, 'class-email', 'NotifierBase');
+
+      // Assert
+      if (!result.ok) throw new Error(result.error);
+      expect(findMethod(result.value, 'method-build-body')?.visibility).toBe('private');
+    });
+
+    it('implementsを設定しても、privateメソッドの可視性は変えない(インターフェースに実装は乗らない)', () => {
+      // Arrange
+      const codebase = codebaseWithMovedPrivateMethod();
+
+      // Act
+      const result = setSuperclass(codebase, 'class-email', 'NotifierBase', 'implements');
+
+      // Assert
+      if (!result.ok) throw new Error(result.error);
+      expect(findMethod(result.value, 'method-build-body')?.visibility).toBe('private');
+    });
   });
 });
 
