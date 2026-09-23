@@ -5,6 +5,7 @@ import type { Stage, StageLevel } from '../../domain/stage/Stage';
 import { CritiquePanel } from '../critique/CritiquePanel';
 import { CodebasePreviewDialog } from '../preview/CodebasePreviewDialog';
 import { useGameStore } from '../store/useGameStore';
+import { HintPanel } from './HintPanel';
 
 const RULE_LABEL: Record<ScoreRule, string> = {
   'line-limit': '行数',
@@ -117,6 +118,7 @@ export function StagePanel() {
         {describeScore(score)}
       </div>
       <CritiquePanel disabled={investigating} />
+      <HintPanel key={stage.id} stage={stage} disabled={investigating} />
       <div className="stage-panel__actions">
         <button type="button" data-testid="change-request-start" onClick={startChangeRequests} disabled={investigating}>
           {challenged ? 'もう一度挑戦' : '変更依頼に挑戦'}
