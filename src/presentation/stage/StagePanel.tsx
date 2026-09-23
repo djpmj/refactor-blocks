@@ -86,6 +86,7 @@ export function StagePanel() {
   const canRedo = useGameStore((state) => state.history.future.length > 0);
   const recordProgress = useGameStore((state) => state.recordProgress);
   const score = useMemo(() => scoreCodebase(codebase, stage), [codebase, stage]);
+  const isPerfect = score.total >= 100;
   useEffect(() => {
     recordProgress(stage.id, score.total);
   }, [stage.id, score.total, recordProgress]);
@@ -107,7 +108,13 @@ export function StagePanel() {
       <CritiquePanel disabled={investigating} />
       <HintPanel key={stage.id} stage={stage} disabled={investigating} />
       <div className="stage-panel__actions">
-        <button type="button" data-testid="change-request-start" onClick={startChangeRequests} disabled={investigating}>
+        <button
+          type="button"
+          data-testid="change-request-start"
+          onClick={startChangeRequests}
+          disabled={investigating || !isPerfect}
+          title={isPerfect ? undefined : '点数が100点になると挑戦できます'}
+        >
           {challenged ? 'もう一度挑戦' : '変更依頼に挑戦'}
         </button>
         <button type="button" onClick={undo} disabled={!canUndo} title="Ctrl+Z">

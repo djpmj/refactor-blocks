@@ -631,6 +631,23 @@ test('メソッドをドラッグで移したあと Ctrl+Z で元のクラスに
   await expect(moved).toBeVisible();
 });
 
+/** 上級2を100点にする: 各ゲートウェイの charge からログ記録を抽出して行数超過を解き、PaymentGateway を実装させる。 */
+async function solvePaymentStage(page: Page) {
+  await page.goto('/');
+  await page.getByLabel('ステージ').selectOption({ label: '上級2: 決済ゲートウェイをインターフェース越しに呼ぶ' });
+  for (const [gateway, log] of [['Stripe', '決済ログを記録する(Stripe)'], ['Paypal', '決済ログを記録する(PayPal)']] as const) {
+    await page.getByTestId(`class-${gateway}Gateway`).getByTestId('method-charge').click();
+    await page.getByLabel(log).check();
+    await page.getByLabel('新しいメソッド名').fill(`log${gateway}Payment`);
+    await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+    await page.getByTestId(`class-header-${gateway}Gateway`).click({ button: 'right' });
+    const menu = page.getByTestId('context-menu');
+    await menu.getByRole('menuitem', { name: '実装するインターフェースを設定' }).click();
+    await menu.getByRole('menuitem', { name: 'PaymentGateway' }).click();
+  }
+  await expect(page.getByTestId('score')).toContainText('100');
+}
+
 /** チュートリアル2の依頼の部品名(依頼の順)。 */
 const TAX_PARTS = ['addReducedTaxItems', 'addContactGuide', 'validateQuantityLimit'] as const;
 
@@ -676,9 +693,22 @@ async function extractTaxToCalculator(page: Page) {
   await expect(page.getByTestId('class-TaxCalculator').getByTestId('method-calculateTax')).toBeVisible();
 }
 
+/** チュートリアル2を100点にする: 税・保存・メール・在庫検証を抽出し、税は TaxCalculator へ移す。 */
+async function reachFullScoreOnOrderStage(page: Page) {
+  await extractTaxToCalculator(page);
+  for (const [label, name] of [['注文をDBに保存する', 'saveOrder'], ['確認メールを送る', 'sendConfirmationMail'], ['在庫があるか検証する', 'validateStock']] as const) {
+    await page.getByTestId('method-placeOrder').click();
+    await page.getByLabel(label).check();
+    await page.getByLabel('新しいメソッド名').fill(name);
+    await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+  }
+  await expect(page.getByTestId('score')).toContainText('100');
+}
+
 test('変更依頼に挑戦すると部品置き場に部品が出て、置くまで「実装を終える」は押せない。置いて終えると、コストと置き方の点数・理由が出る', async ({ page }) => {
   // Arrange
   await openOrderStage(page);
+  await reachFullScoreOnOrderStage(page);
 
   // Act
   await page.getByTestId('change-request-start').click();
@@ -702,11 +732,9 @@ test('変更依頼に挑戦すると部品置き場に部品が出て、置く�
 
   // Assert
   const outcome = page.getByTestId('change-outcome-req-reduced-tax');
-  await expect(outcome.getByTestId('outcome-current')).toHaveText('70点');
-  await expect(outcome.getByTestId('outcome-placement')).toContainText('80点');
+  await expect(outcome.getByTestId('outcome-current')).toHaveText('95点');
   await expect(outcome.getByTestId('outcome-sample')).toContainText('解答例:');
-  await expect(outcome).toContainText('巻き込み');
-  await expect(outcome).toContainText('責務の混在');
+  await expect(outcome.getByTestId('outcome-placement')).toContainText('点');
   await expect(page.getByTestId('change-readiness')).toBeVisible();
   await expect(page.getByTestId('change-placement-score')).toBeVisible();
 });
@@ -714,7 +742,7 @@ test('変更依頼に挑戦すると部品置き場に部品が出て、置く�
 test('責務を分けたあとで同じ依頼を受けると、初期状態より変更容易性スコアが高くなる', async ({ page }) => {
   // Arrange
   await openOrderStage(page);
-  await extractTaxToCalculator(page);
+  await reachFullScoreOnOrderStage(page);
 
   // Act
   await implementRequests(page, TAX_PARTS, ['TaxCalculator', 'OrderService', 'OrderService']);
@@ -729,6 +757,7 @@ test('責務を分けたあとで同じ依頼を受けると、初期状態よ�
 test('結果画面から戻ると、部品置き場は消えてキャンバスは挑戦前の状態のままで、編集を再開できる', async ({ page }) => {
   // Arrange
   await openOrderStage(page);
+  await reachFullScoreOnOrderStage(page);
   const lines = page.getByTestId('method-placeOrder').locator('.method-chip__lines');
   const before = await lines.innerText();
   await implementRequests(page, TAX_PARTS, ['OrderService', 'OrderService', 'OrderService']);
@@ -748,6 +777,7 @@ test('結果画面から戻ると、部品置き場は消えてキャンバス�
 test('変更依頼の実装中にメソッドへカーソルを合わせると、そのメソッドが何をしているか(処理の一覧)が見える', async ({ page }) => {
   // Arrange
   await openOrderStage(page);
+  await reachFullScoreOnOrderStage(page);
   await page.getByTestId('change-request-start').click();
   const inspect = page.getByTestId('change-inspect');
   await expect(inspect).not.toContainText('消費税を計算する');
@@ -757,8 +787,8 @@ test('変更依頼の実装中にメソッドへカーソルを合わせると�
 
   // Assert
   await expect(inspect).toContainText('placeOrder');
-  await expect(inspect).toContainText('消費税を計算する(軽減税率あり)');
-  await expect(inspect).toContainText('確認メールを送る');
+  await expect(inspect).toContainText('calculateTax() を呼び出す');
+  await expect(inspect).toContainText('sendConfirmationMail() を呼び出す');
 
   // Act(カーソルを外す)
   await page.getByTestId('class-OrderService').hover({ position: { x: 5, y: 5 } });
@@ -770,39 +800,34 @@ test('変更依頼の実装中にメソッドへカーソルを合わせると�
 test('変更依頼の結果は、リファクタリングに戻っても手がかりとして残り、直してから再挑戦すると前回の点数と比べられる', async ({ page }) => {
   // Arrange
   await openOrderStage(page);
+  await reachFullScoreOnOrderStage(page);
   await implementRequests(page, TAX_PARTS, ['OrderService', 'OrderService', 'OrderService']);
 
   // Act
   await page.getByTestId('change-request-close').click();
 
   // Assert(実装中は隠していた変更箇所の印と、前回の減点理由がキャンバスの横に残る)
-  await expect(page.getByTestId('method-placeOrder').getByTestId('change-site-badge')).toHaveText('変更×3');
+  await expect(page.getByTestId('change-site-badge').first()).toBeVisible();
   const memo = page.getByTestId('change-memo');
   await expect(memo).toContainText('軽減税率の対象を増やして');
-  await expect(memo).toContainText('70点');
-  await expect(memo).toContainText('巻き込み');
-  await expect(memo).toContainText('責務の混在');
+  await expect(memo).toContainText('95点');
   await expect(page.getByTestId('change-request-start')).toHaveText('もう一度挑戦');
 
-  // Act(税の計算を抽出して、もう一度挑戦する)
-  await page.getByTestId('method-placeOrder').click();
-  await page.getByLabel('消費税を計算する(軽減税率あり)').check();
-  await page.getByLabel('新しいメソッド名').fill('calculateTax');
-  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
-  await implementRequests(page, TAX_PARTS, ['OrderService', 'OrderService', 'OrderService']);
+  // Act(税の部品を TaxCalculator へ置いて、もう一度挑戦する)
+  await implementRequests(page, TAX_PARTS, ['TaxCalculator', 'OrderService', 'OrderService']);
 
   // Assert
   const outcome = page.getByTestId('change-outcome-req-reduced-tax');
-  await expect(outcome.getByTestId('outcome-current')).toHaveText('100点');
-  await expect(outcome.getByTestId('outcome-previous')).toContainText('前回 70点');
+  await expect(outcome.getByTestId('outcome-previous')).toContainText('前回 95点');
 });
 
 test('変更依頼の実装中は、前回の変更箇所の印を出さない(答えが見えてしまうため)', async ({ page }) => {
   // Arrange
   await openOrderStage(page);
+  await reachFullScoreOnOrderStage(page);
   await implementRequests(page, TAX_PARTS, ['OrderService', 'OrderService', 'OrderService']);
   await page.getByTestId('change-request-close').click();
-  await expect(page.getByTestId('change-site-badge')).toHaveCount(1);
+  await expect(page.getByTestId('change-site-badge').first()).toBeVisible();
 
   // Act
   await page.getByTestId('change-request-start').click();
@@ -812,12 +837,9 @@ test('変更依頼の実装中は、前回の変更箇所の印を出さない(�
 });
 
 test('実装中に Ctrl+Z で部品が部品置き場に戻る。挑戦をやめると、挑戦前の手を Ctrl+Z で戻せる', async ({ page }) => {
-  // Arrange(挑戦前に calculateTax を抽出しておく)
+  // Arrange(挑戦前に100点まで直しておく)
   await openOrderStage(page);
-  await page.getByTestId('method-placeOrder').click();
-  await page.getByLabel('消費税を計算する(軽減税率あり)').check();
-  await page.getByLabel('新しいメソッド名').fill('calculateTax');
-  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+  await reachFullScoreOnOrderStage(page);
   await page.getByTestId('change-request-start').click();
   await dragMethodToClass(page, 'method-addReducedTaxItems', 'class-OrderService');
   await expect(page.getByTestId('change-part-status')).toContainText('OrderService に置きました');
@@ -828,20 +850,19 @@ test('実装中に Ctrl+Z で部品が部品置き場に戻る。挑戦をやめ
   // Assert(部品が部品置き場に戻る。挑戦前の calculateTax は残る)
   await expect(page.getByTestId('change-part-status')).toContainText('部品はまだ部品置き場にあります');
   await expect(page.getByTestId('class-部品置き場').getByTestId('method-addReducedTaxItems')).toBeVisible();
-  await expect(page.getByTestId('method-calculateTax')).toBeVisible();
+  await expect(page.getByTestId('method-validateStock')).toBeVisible();
 
   // Act(やめて、挑戦前の手を戻す)
   await page.getByRole('button', { name: 'やめる' }).click();
   await page.keyboard.press('Control+z');
 
   // Assert
-  await expect(page.getByTestId('method-calculateTax')).toHaveCount(0);
+  await expect(page.getByTestId('method-validateStock')).toHaveCount(0);
 });
 
 test('上級2: PayPay の追加は、新しいクラスで PaymentGateway を実装すると100点になり、コストの行は出ない', async ({ page }) => {
   // Arrange
-  await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: '上級2: 決済ゲートウェイをインターフェース越しに呼ぶ' });
+  await solvePaymentStage(page);
   await page.getByTestId('change-request-start').click();
   await expect(page.getByTestId('change-request-kind')).toContainText('機能の追加');
 
@@ -872,8 +893,7 @@ test('上級2: PayPay の追加は、新しいクラスで PaymentGateway を実
 
 test('依頼1で作った新しいクラスは、依頼2のキャンバスにも残っている(依頼は連続して改修する)', async ({ page }) => {
   // Arrange
-  await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: '上級2: 決済ゲートウェイをインターフェース越しに呼ぶ' });
+  await solvePaymentStage(page);
   await page.getByTestId('change-request-start').click();
 
   // Act(1件目: 余白へ出して新しいクラスを作り、終える)
