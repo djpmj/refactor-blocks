@@ -6,6 +6,7 @@ import { classLines } from "../../domain/codebase/lineCount";
 import { useGameStore } from "../store/useGameStore";
 import { classDragId, classDropId } from "./dndIds";
 import { DependencyHandles } from "./DependencyHandles";
+import { InlineEditableLabel } from "./InlineEditableLabel";
 import type { ClassFlowNode } from "./layoutCodebase";
 import { MethodChip } from "./MethodChip";
 import { useShowDetails } from "./semanticZoom";
@@ -32,9 +33,15 @@ function classNodeClassName({ isOver, isCyclic }: Readonly<{ isOver: boolean; is
 function ClassNameLabel({ classId, name }: Readonly<{ classId: string; name: string }>) {
   const superclass = useGameStore((state) => findSuperclass(state.codebase, classId));
   const kind = useGameStore((state) => findClass(state.codebase, classId)?.superclassKind ?? "extends");
+  const renameClass = useGameStore((state) => state.renameClass);
   return (
-    <span className="class-node__name">
-      {name}
+    <span className="class-node__name-group">
+      <InlineEditableLabel
+        value={name}
+        ariaLabel="クラス名"
+        className="class-node__name"
+        onSubmit={(newName) => renameClass(classId, newName)}
+      />
       {superclass === undefined ? null : <SuperclassLabel kind={kind} superclassName={superclass.name} />}
     </span>
   );

@@ -84,7 +84,19 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .class-node--cyclic { border-color: var(--danger); box-shadow: 0 0 0 4px color-mix(in srgb, var(--danger) 25%, transparent); }
 .cyclic-mark { font-size: 14px; margin-right: 6px; }
 .class-node__header { display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid var(--border); font-weight: 700; }
+.class-node__name-group { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
 .class-node__superclass { font-weight: 400; font-size: 12px; color: var(--accent); }
+input.file-node__path, input.class-node__name, .method-chip__name-input {
+  font: inherit;
+  color: inherit;
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  padding: 0 4px;
+  box-sizing: border-box;
+}
+input.class-node__name { width: 14ch; }
+.method-chip__name-input { flex: 1; }
 .class-node__methods { display: flex; flex-direction: column; gap: 6px; padding: 8px; }
 .class-node__empty { color: var(--muted); font-size: 12px; text-align: center; padding: 12px 0; }
 
@@ -150,6 +162,9 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .context-menu [role="menuitem"] { display: block; width: 100%; padding: 6px 8px; border: 0; border-radius: 6px; background: transparent; color: inherit; text-align: left; cursor: pointer; font: inherit; }
 .context-menu [role="menuitem"]:hover, .context-menu [role="menuitem"]:focus-visible { background: color-mix(in srgb, var(--accent) 15%, transparent); outline: none; }
 .context-menu__form { display: flex; gap: 4px; padding: 4px; }
+.context-menu__submenu-wrapper [role="menuitem"][aria-haspopup] { display: flex; justify-content: space-between; align-items: center; }
+.context-menu__submenu-wrapper [role="menuitem"][aria-haspopup]::after { content: '▸'; margin-left: 8px; color: var(--muted); }
+.context-menu__submenu [role="menuitem"][aria-current="true"] { font-weight: 700; color: var(--accent); }
 .change-panel { display: flex; flex-direction: column; gap: 8px; }
 .change-panel button { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 8px; padding: 6px 12px; cursor: pointer; }
 .change-outcomes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }

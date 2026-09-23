@@ -10,6 +10,7 @@ import {
   describeMoveClassError,
   describeRenameClassError,
   describeRenameFileError,
+  describeRenameMethodError,
   describeExtractError,
   describeInlineError,
   describeMoveError,
@@ -23,6 +24,7 @@ import {
   moveMethodUseCase,
   renameClassUseCase,
   renameFileUseCase,
+  renameMethodUseCase,
   setSuperclassUseCase,
 } from './RefactorUseCases';
 
@@ -242,6 +244,18 @@ describe('renameClassUseCase / renameFileUseCase', () => {
     if (!result.ok) throw new Error(result.error);
     expect(result.value.files[1].path).toBe('src/tax/TaxPolicy.ts');
   });
+
+  it('メソッド名を付け替える', () => {
+    // Arrange
+    const codebase = sampleCodebase();
+
+    // Act
+    const result = renameMethodUseCase(codebase, 'method-place', 'placeNewOrder');
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    expect(result.value.files[0].classes[0].methods[0].name).toBe('placeNewOrder');
+  });
 });
 
 describe('setSuperclassUseCase', () => {
@@ -302,6 +316,7 @@ describe('エラーメッセージ', () => {
       describeMoveClassError('file-not-found'),
       describeRenameClassError('class-not-found'),
       describeRenameFileError('file-not-found'),
+      describeRenameMethodError('duplicate-method-name'),
       describeSetSuperclassError('inheritance-cycle'),
     ];
 
@@ -316,6 +331,7 @@ describe('エラーメッセージ', () => {
       '移動先のファイルが見つかりません',
       '名前を変えるクラスが見つかりません',
       '名前を変えるファイルが見つかりません',
+      '同じクラスに同じ名前のメソッドがあります',
       '継承の輪ができてしまいます',
     ]);
   });

@@ -3,6 +3,7 @@ import type { Method } from '../../domain/codebase/Codebase';
 import { methodLines } from '../../domain/codebase/lineCount';
 import { useGameStore } from '../store/useGameStore';
 import { methodDragId } from './dndIds';
+import { useInlineEdit } from './useInlineEdit';
 
 const VISIBILITY_MARK: Record<Method['visibility'], string> = {
   public: '+',
@@ -53,6 +54,7 @@ export function MethodChip({ method }: Readonly<{ method: Method }>) {
   const toggleInvestigated = useGameStore((state) => state.toggleInvestigated);
   const inspectMethod = useGameStore((state) => state.inspectMethod);
   const inspected = useGameStore((state) => state.changeSession?.inspected === method.id);
+  const renameMethod = useGameStore((state) => state.renameMethod);
   // 調査中に出すと答えが見えてしまうので、変更依頼に挑戦していないときだけ数える
   const changeCount = useGameStore((state) =>
     state.changeSession === null
@@ -60,6 +62,17 @@ export function MethodChip({ method }: Readonly<{ method: Method }>) {
       : 0,
   );
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: methodDragId(method.id) });
+  const { editing, startEditing, inputProps } = useInlineEdit(method.name, (name) => renameMethod(method.id, name));
+
+  // buttonの中にinputを入れると無効なHTMLになるため、編集中は draggable なボタンごと入力欄に差し替える
+  if (editing) {
+    return (
+      <div className="method-chip nodrag nopan" data-testid={`method-${method.name}`}>
+        <input {...inputProps} aria-label="メソッド名" className="method-chip__name-input" />
+      </div>
+    );
+  }
+
   return (
     <button
       ref={setNodeRef}
@@ -83,6 +96,10 @@ export function MethodChip({ method }: Readonly<{ method: Method }>) {
       onClick={() => {
         if (investigating) toggleInvestigated(method.id);
         else selectMethod(method.id);
+      }}
+      onDoubleClick={(event) => {
+        event.stopPropagation();
+        startEditing();
       }}
       {...attributes}
       {...listeners}

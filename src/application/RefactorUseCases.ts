@@ -11,6 +11,7 @@ import { moveClassToNewFile, moveMethodToNewClass, type MoveClassToNewFileError,
 import { moveMethod, type MoveMethodError } from '../domain/codebase/moveMethod';
 import { renameClass, type RenameClassError } from '../domain/codebase/renameClass';
 import { renameFile, type RenameFileError } from '../domain/codebase/renameFile';
+import { renameMethod, type RenameMethodError } from '../domain/codebase/renameMethod';
 import { setSuperclass, type SetSuperclassError } from '../domain/codebase/setSuperclass';
 import { err, ok, type Result } from '../domain/shared/Result';
 
@@ -127,6 +128,11 @@ export function renameFileUseCase(codebase: Codebase, fileId: string, newPath: s
   return renameFile(codebase, fileId, newPath);
 }
 
+/** プレイヤーの「メソッド名を変更」操作。 */
+export function renameMethodUseCase(codebase: Codebase, methodId: string, newName: string): Result<Codebase, RenameMethodError> {
+  return renameMethod(codebase, methodId, newName);
+}
+
 /** プレイヤーの「継承元を設定」操作。空文字/nullは継承の解除。 */
 export function setSuperclassUseCase(
   codebase: Codebase,
@@ -157,6 +163,12 @@ const RENAME_FILE_ERROR_MESSAGES: Record<RenameFileError, string> = {
   'file-not-found': '名前を変えるファイルが見つかりません',
   'empty-path': 'ファイルのパスを入力してください',
   'duplicate-path': '同じパスのファイルがすでにあります',
+};
+
+const RENAME_METHOD_ERROR_MESSAGES: Record<RenameMethodError, string> = {
+  'method-not-found': '名前を変えるメソッドが見つかりません',
+  'empty-method-name': 'メソッド名を入力してください',
+  'duplicate-method-name': '同じクラスに同じ名前のメソッドがあります',
 };
 
 const EXTRACT_ERROR_MESSAGES: Record<ExtractMethodError, string> = {
@@ -260,6 +272,10 @@ export function describeRenameClassError(error: RenameClassError): string {
 
 export function describeRenameFileError(error: RenameFileError): string {
   return RENAME_FILE_ERROR_MESSAGES[error];
+}
+
+export function describeRenameMethodError(error: RenameMethodError): string {
+  return RENAME_METHOD_ERROR_MESSAGES[error];
 }
 
 export function describeSetSuperclassError(error: SetSuperclassError): string {

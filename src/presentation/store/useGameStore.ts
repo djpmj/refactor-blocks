@@ -23,6 +23,7 @@ import {
   describeMoveError,
   describeRenameClassError,
   describeRenameFileError,
+  describeRenameMethodError,
   extractMethodUseCase,
   inlineMethodUseCase,
   mergeMethodsUseCase,
@@ -33,6 +34,7 @@ import {
   moveMethodUseCase,
   renameClassUseCase,
   renameFileUseCase,
+  renameMethodUseCase,
   describeSetSuperclassError,
   setSuperclassUseCase,
   type ExtractMethodInput,
@@ -94,6 +96,7 @@ type GameState = {
   moveMethodToNewClass: (methodId: string) => void;
   renameClass: (classId: string, newName: string) => boolean;
   renameFile: (fileId: string, newPath: string) => boolean;
+  renameMethod: (methodId: string, newName: string) => boolean;
   setSuperclass: (classId: string, superclassName: string | null, kind?: 'extends' | 'implements') => boolean;
   deleteClass: (classId: string) => boolean;
   deleteFile: (fileId: string) => boolean;
@@ -225,13 +228,16 @@ function selectStageState(allStages: readonly Stage[], stageId: string): Partial
 type Apply = <E>(result: Result<Codebase, E>, describe: (error: E) => string) => boolean;
 
 /** クラス・ファイルの名前や継承元を付け替える操作。 */
-function renameActions(apply: Apply, get: () => GameState): Pick<GameState, 'renameClass' | 'renameFile' | 'setSuperclass'> {
+function renameActions(apply: Apply, get: () => GameState): Pick<GameState, 'renameClass' | 'renameFile' | 'renameMethod' | 'setSuperclass'> {
   return {
     renameClass: (classId, newName) => {
       return apply(renameClassUseCase(get().codebase, classId, newName), describeRenameClassError);
     },
     renameFile: (fileId, newPath) => {
       return apply(renameFileUseCase(get().codebase, fileId, newPath), describeRenameFileError);
+    },
+    renameMethod: (methodId, newName) => {
+      return apply(renameMethodUseCase(get().codebase, methodId, newName), describeRenameMethodError);
     },
     setSuperclass: (classId, superclassName, kind) => {
       return apply(setSuperclassUseCase(get().codebase, classId, superclassName, kind), describeSetSuperclassError);
