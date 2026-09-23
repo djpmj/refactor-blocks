@@ -102,6 +102,14 @@ export function applySolutionSteps(codebase: Codebase, steps: readonly SolutionS
   return steps.reduce((current, step, index) => applyStep(current, step, `solution-${String(index)}`), codebase);
 }
 
+/** 中級4・中級5の共通の前半。税と整形の両方をメソッドへ抽出する(どちらを別クラスへ出すかだけが違う)。 */
+const salesReportExtractions: readonly SolutionStep[] = [
+  { extract: { from: 'generateMonthlyReport', fragmentIds: ['frag-monthly-tax'], name: 'calculateMonthlyTax' } },
+  { extract: { from: 'generateMonthlyReport', fragmentIds: ['frag-monthly-format'], name: 'formatMonthlyReport' } },
+  { extract: { from: 'generateQuarterlyReport', fragmentIds: ['frag-quarterly-tax'], name: 'calculateQuarterlyTax' } },
+  { extract: { from: 'generateQuarterlyReport', fragmentIds: ['frag-quarterly-format'], name: 'formatQuarterlyReport' } },
+];
+
 /**
  * ステージを100点にできる模範解答の手順。キーは Stage['id']。
  * ステージの数値(行数上限など)を変えて解けなくなったら stageCatalog.test.ts が落ちる。
@@ -155,6 +163,18 @@ export const sampleAnswerSteps: Partial<Record<string, readonly SolutionStep[]>>
     { extract: { from: 'notifyShipment', fragmentIds: ['frag-log-delivery'], name: 'logDelivery' } },
     { move: { method: 'renderTemplate', toClass: 'NotificationService' } },
     { deleteFile: 'src/notification/TemplateEngine.ts' },
+  ],
+  'intermediate-volatile-tax': [
+    ...salesReportExtractions,
+    { addClass: { name: 'TaxCalculator', file: 'src/report/SalesReportService.ts' } },
+    { move: { method: 'calculateMonthlyTax', toClass: 'TaxCalculator' } },
+    { move: { method: 'calculateQuarterlyTax', toClass: 'TaxCalculator' } },
+  ],
+  'intermediate-volatile-format': [
+    ...salesReportExtractions,
+    { addClass: { name: 'ReportFormatter', file: 'src/report/SalesReportService.ts' } },
+    { move: { method: 'formatMonthlyReport', toClass: 'ReportFormatter' } },
+    { move: { method: 'formatQuarterlyReport', toClass: 'ReportFormatter' } },
   ],
   'advanced-notifier-hierarchy': [
     { extract: { from: 'notifyByEmail', fragmentIds: ['frag-build-body-email'], name: 'buildEmailBody' } },

@@ -285,4 +285,115 @@ const misplacedPrivateStage: Stage = {
   },
 };
 
-export const intermediateStages: readonly Stage[] = [cyclicDependencyStage, godFileStage, misplacedPrivateStage];
+/**
+ * 中級4・中級5で共有する初期コード。税の計算と帳票の整形は、どちらを残しても SalesReportService の
+ * 大きさが同じになるよう、行数をそろえている(構造の採点だけでは正解が決まらないようにするため)。
+ */
+const salesReportCodebase: Stage['codebase'] = {
+  files: [
+    {
+      id: 'file-sales-report-service',
+      path: 'src/report/SalesReportService.ts',
+      classes: [
+        {
+          id: 'class-sales-report-service',
+          name: 'SalesReportService',
+          methods: [
+            {
+              id: 'method-generate-monthly-report',
+              name: 'generateMonthlyReport',
+              visibility: 'public',
+              fragments: [
+                { id: 'frag-monthly-aggregate', label: '月次の売上を集計する', lines: 40, responsibility: 'aggregation', suggestedName: 'aggregateMonthlySales' },
+                { id: 'frag-monthly-tax', label: '税額を計算する', lines: 30, responsibility: 'tax', suggestedName: 'calculateMonthlyTax' },
+                { id: 'frag-monthly-format', label: '帳票の形式に整形する', lines: 30, responsibility: 'formatting', suggestedName: 'formatMonthlyReport' },
+              ],
+            },
+            {
+              id: 'method-generate-quarterly-report',
+              name: 'generateQuarterlyReport',
+              visibility: 'public',
+              fragments: [
+                { id: 'frag-quarterly-aggregate', label: '四半期の売上を集計する', lines: 36, responsibility: 'aggregation', suggestedName: 'aggregateQuarterlySales' },
+                { id: 'frag-quarterly-tax', label: '税額を計算する', lines: 28, responsibility: 'tax', suggestedName: 'calculateQuarterlyTax' },
+                { id: 'frag-quarterly-format', label: '帳票の形式に整形する', lines: 28, responsibility: 'formatting', suggestedName: 'formatQuarterlyReport' },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    {
+      // 呼び出し元。波及の減点は「呼ばれている側」にしか付かないので、誰からも呼ばれないクラスによく変わる処理を置くと満点になってしまう。
+      // それを防ぐため、ここは上限60行近くまで大きくしてあり、税や整形のメソッドを持ち込むと変更で上限を超える
+      id: 'file-report-controller',
+      path: 'src/report/ReportController.ts',
+      classes: [
+        {
+          id: 'class-report-controller',
+          name: 'ReportController',
+          methods: [
+            {
+              id: 'method-download-report',
+              name: 'downloadReport',
+              visibility: 'public',
+              fragments: [
+                {
+                  id: 'frag-dispatch-report',
+                  label: '期間に応じて月次・四半期の帳票を作って返す',
+                  lines: 55,
+                  responsibility: 'http',
+                  uses: ['method-generate-monthly-report', 'method-generate-quarterly-report'],
+                  suggestedName: 'dispatchReport',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  ],
+};
+
+/** 中級4・中級5で共通の数値。依存1本・責務2種類なので、税と整形のうち片方だけを別クラスへ出すことになる。 */
+const salesReportRules = {
+  limits: { method: 60, class: 150, file: 300 },
+  dependencyLimit: 1,
+  responsibilityLimit: 2,
+} satisfies Pick<Stage, 'limits' | 'dependencyLimit' | 'responsibilityLimit'>;
+
+const salesReportGoal = 'メソッドは60行・クラスは150行以内、1クラスの責務は2種類まで、依存先は1クラスまで。よく変わる所を1つのクラスに閉じ込めよう';
+
+/** 中級4: 税の計算がよく変わる。税の計算を別クラスへ出すのが正解。 */
+const volatileTaxStage: Stage = {
+  id: 'intermediate-volatile-tax',
+  level: 'intermediate',
+  title: '中級4: 変わるのは税の計算',
+  description:
+    '画面の ReportController から呼ばれ、月次・四半期の売上帳票を作る SalesReportService。経理からは「税の計算ルールは法改正や社内規定で毎月のように変わる」と聞いている。一方、帳票の見た目はここ3年変わっていない。',
+  goal: salesReportGoal,
+  ...salesReportRules,
+  changeRequests: [
+    { id: 'req-reduced-tax-items', title: '軽減税率の対象品目を増やして', description: '新しく扱い始めた定期購読の新聞を、軽減税率の対象として計算する。', responsibility: 'tax', linesPerSite: 14 },
+    { id: 'req-tax-rounding', title: '税額の端数処理を変えて', description: '税額の端数を、明細ごとではなく請求単位でまとめて切り捨てる。', responsibility: 'tax', linesPerSite: 14 },
+  ],
+  codebase: salesReportCodebase,
+};
+
+/** 中級5: 中級4と同じコードで、帳票の形式がよく変わる。整形を別クラスへ出すのが正解。 */
+const volatileFormatStage: Stage = {
+  id: 'intermediate-volatile-format',
+  level: 'intermediate',
+  title: '中級5: 変わるのは帳票の形式',
+  description:
+    '中級4とまったく同じ、ReportController から呼ばれる SalesReportService。ただし今回は、営業から「取引先ごとに帳票の形式(列の並び・PDF/CSV)を変えてほしいという依頼が毎月来る」と聞いている。税の計算はここ数年変わっていない。',
+  goal: salesReportGoal,
+  ...salesReportRules,
+  changeRequests: [
+    { id: 'req-column-order', title: '取引先向けに列の並びを変えて', description: '大口の取引先向けに、商品コードを先頭の列に移した帳票を出す。', responsibility: 'formatting', linesPerSite: 14 },
+    { id: 'req-pdf-output', title: 'PDFでも出せるようにして', description: 'これまでのCSVに加えて、PDFの帳票も出せるようにする。', responsibility: 'formatting', linesPerSite: 14 },
+  ],
+  codebase: salesReportCodebase,
+};
+
+export const intermediateStages: readonly Stage[] = [cyclicDependencyStage, godFileStage, misplacedPrivateStage, volatileTaxStage, volatileFormatStage];
