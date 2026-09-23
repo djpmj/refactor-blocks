@@ -6,9 +6,10 @@ function isEditingText(target: EventTarget | null): boolean {
   return target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
 }
 
-/** Ctrl(Macは Cmd)+Z で1手戻し、Ctrl+Y または Ctrl+Shift+Z で1手進める。 */
-export function useUndoRedoShortcut() {
+/** Ctrl(Macは Cmd)+Z で1手戻し、Ctrl+Y または Ctrl+Shift+Z で1手進める。enabled が false の間(設計くらべ中など)は何もしない。 */
+export function useUndoRedoShortcut(enabled: boolean) {
   useEffect(() => {
+    if (!enabled) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (!(event.ctrlKey || event.metaKey) || isEditingText(event.target)) return;
       const key = event.key.toLowerCase();
@@ -22,5 +23,5 @@ export function useUndoRedoShortcut() {
     return () => {
       document.removeEventListener('keydown', onKeyDown);
     };
-  }, []);
+  }, [enabled]);
 }

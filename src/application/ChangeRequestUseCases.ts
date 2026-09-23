@@ -1,12 +1,10 @@
 import type { ChangeError, ChangeRequest } from '../domain/change/ChangeRequest';
 import { checkInvestigation, type InvestigationResult } from '../domain/change/checkInvestigation';
-import { measureChange, type ChangeImpact } from '../domain/change/measureChange';
-import { scoreChange, type ChangeScore } from '../domain/change/scoreChange';
+import { measureChange } from '../domain/change/measureChange';
+import { scoreChange, type ChangeAssessment } from '../domain/change/scoreChange';
 import type { Codebase } from '../domain/codebase/Codebase';
 import { err, ok, type Result } from '../domain/shared/Result';
 import type { Stage } from '../domain/stage/Stage';
-
-export type ChangeAssessment = { readonly impact: ChangeImpact; readonly score: ChangeScore };
 
 export type ChangeOutcome = {
   readonly request: ChangeRequest;

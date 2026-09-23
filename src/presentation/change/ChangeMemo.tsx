@@ -16,7 +16,7 @@ export function ChangeMemo() {
           <li key={outcome.request.id}>
             <strong>{outcome.request.title}</strong> {outcome.current.score.total}点
             <ul>
-              {describeDeductions(outcome, report.codebase).map((reason) => (
+              {describeDeductions(outcome.current, report.codebase).map((reason) => (
                 <li key={reason}>{reason}</li>
               ))}
             </ul>

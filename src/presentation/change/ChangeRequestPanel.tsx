@@ -7,7 +7,7 @@ import { describeDeductions, siteNames } from './describeChange';
 
 function OutcomeCard({ outcome, codebase, previous }: Readonly<{ outcome: ChangeOutcome; codebase: Codebase; previous?: number }>) {
   const { current, initial, request } = outcome;
-  const reasons = describeDeductions(outcome, codebase);
+  const reasons = describeDeductions(current, codebase);
   return (
     <li className="change-outcome" data-testid={`change-outcome-${request.id}`}>
       <h3 className="change-outcome__title">{request.title}</h3>
@@ -16,7 +16,7 @@ function OutcomeCard({ outcome, codebase, previous }: Readonly<{ outcome: Change
         {previous === undefined ? null : <span data-testid="outcome-previous"> / 前回 {previous}点</span>}
       </p>
       <p className="change-outcome__facts">
-        変更が必要: {siteNames(outcome, codebase)}({current.impact.classesTouched}クラス・{current.impact.filesTouched}ファイル・+{current.impact.linesAdded}行)
+        変更が必要: {siteNames(current, codebase)}({current.impact.classesTouched}クラス・{current.impact.filesTouched}ファイル・+{current.impact.linesAdded}行)
       </p>
       {reasons.length === 0 ? (
         <p className="change-outcome__good">減点なし。この変更は1か所で済み、影響も小さい設計です</p>

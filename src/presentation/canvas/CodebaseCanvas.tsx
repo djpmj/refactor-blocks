@@ -114,7 +114,8 @@ function useDropHandler(codebase: Codebase, onEnd: () => void) {
   };
 }
 
-export function CodebaseCanvas() {
+/** active が false の間(設計くらべで隠れている間)は、開いていた右クリックメニューを閉じる。 */
+export function CodebaseCanvas({ active }: Readonly<{ active: boolean }>) {
   const codebase = useGameStore((state) => state.codebase);
   const stageId = useGameStore((state) => state.stage.id);
   const { overrides, handleNodesChange } = useFlowOverrides(stageId);
@@ -123,6 +124,11 @@ export function CodebaseCanvas() {
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, POINTER_ACTIVATION), useSensor(KeyboardSensor));
   const contextMenu = useCanvasContextMenu();
+  const closeContextMenu = contextMenu.close;
+  // メニューは document.body へのポータルなので、画面を隠しただけでは消えない(隠れたコードベースを操作できてしまう)
+  useEffect(() => {
+    if (!active) closeContextMenu();
+  }, [active, closeContextMenu]);
 
 
   const handleDragStart = (event: DragStartEvent) => {

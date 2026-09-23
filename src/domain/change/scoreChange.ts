@@ -14,6 +14,9 @@ export type ChangeScore = {
   readonly deductions: readonly ChangeDeduction[];
 };
 
+/** 変更依頼を1つのコードに当てた影響と、その点数。 */
+export type ChangeAssessment = { readonly impact: ChangeImpact; readonly score: ChangeScore };
+
 const FULL_SCORE = 100;
 
 const POINTS: Record<ChangeRule, number> = {

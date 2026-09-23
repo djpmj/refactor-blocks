@@ -1,5 +1,4 @@
-import type { ChangeOutcome } from '../../application/ChangeRequestUseCases';
-import type { ChangeRule } from '../../domain/change/scoreChange';
+import type { ChangeAssessment, ChangeRule } from '../../domain/change/scoreChange';
 import { allClasses, findMethod, type Codebase } from '../../domain/codebase/Codebase';
 
 export const CHANGE_RULE_LABEL: Record<ChangeRule, string> = {
@@ -20,8 +19,7 @@ function names(codebase: Codebase, ids: readonly string[], kind: 'class' | 'meth
 }
 
 /** 減点のあるルールごとに、実務でなぜそれが困るのかを1文で説明する。 */
-export function describeDeductions(outcome: ChangeOutcome, codebase: Codebase): string[] {
-  const { impact, score } = outcome.current;
+export function describeDeductions({ impact, score }: ChangeAssessment, codebase: Codebase): string[] {
   const count = (rule: ChangeRule): number => score.deductions.find((deduction) => deduction.rule === rule)?.count ?? 0;
   const reasons: Record<ChangeRule, string> = {
     shotgun: `変更が${String(impact.classesTouched)}つのクラスに散らばっていて、それぞれを直す必要があった`,
@@ -35,6 +33,6 @@ export function describeDeductions(outcome: ChangeOutcome, codebase: Codebase): 
 }
 
 /** 変更が必要だったメソッドの名前(表示用)。 */
-export function siteNames(outcome: ChangeOutcome, codebase: Codebase): string {
-  return names(codebase, outcome.current.impact.sites, 'method');
+export function siteNames({ impact }: ChangeAssessment, codebase: Codebase): string {
+  return names(codebase, impact.sites, 'method');
 }
