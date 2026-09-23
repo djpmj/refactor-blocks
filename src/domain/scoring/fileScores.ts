@@ -1,6 +1,7 @@
 import type { Codebase } from "../codebase/Codebase";
 import { classDependencies } from "../codebase/dependencies";
 import type { Stage } from "../stage/Stage";
+import { findEmptyContainers, findUnusedPrivateMethods } from "./leftovers";
 import { findLineLimitViolations } from "./lineLimits";
 import { findResponsibilityViolations } from "./responsibilities";
 import { findCouplingViolations, POINTS_PER_VIOLATION } from "./score";
@@ -20,7 +21,7 @@ function fileIdByTargetId(codebase: Codebase): Map<string, string> {
 
 /**
  * ファイルごとの減点(点)。違反は持ち主のファイルに数え、結合度と循環依存は依存元のクラスがあるファイルに数える。
- * 全ファイルの合計は `scoreCodebase` の減点の合計と一致する。
+ * 全ファイルの合計は、アクセス制御を除いた `scoreCodebase` の減点の合計と一致する。
  */
 export function fileDeductions(
   codebase: Codebase,
@@ -38,6 +39,8 @@ export function fileDeductions(
     ...dependencies
       .filter((dependency) => dependency.cyclic)
       .map((dependency) => dependency.from),
+    ...findEmptyContainers(codebase),
+    ...findUnusedPrivateMethods(codebase),
   ];
   const owners = fileIdByTargetId(codebase);
   const points = new Map(

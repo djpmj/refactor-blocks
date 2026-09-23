@@ -28,6 +28,7 @@ export function describeSolutionStep(codebase: Codebase, step: SolutionStep): st
     return `${sideA} と ${sideB} は同じ処理なので、Merge Methodsで ${name} という名前に統合しよう`;
   }
   if ('addFile' in step) return `ファイル ${step.addFile} を追加しよう`;
+  if ('deleteFile' in step) return `空になったファイル ${step.deleteFile} を右クリックで削除しよう`;
   if ('addClass' in step) return `${step.addClass.file} に ${step.addClass.name} クラスを追加しよう`;
   if ('moveClass' in step) return `${step.moveClass.name} クラスを ${step.moveClass.toFile} へ移そう`;
   const { class: className, superclass, kind } = step.setSuperclass;

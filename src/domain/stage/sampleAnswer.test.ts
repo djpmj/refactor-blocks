@@ -102,6 +102,18 @@ describe('applySolutionSteps', () => {
     expect(file?.classes.map((codeClass) => codeClass.name)).toEqual(['B']);
   });
 
+  it('deleteFileステップで、指定したパスのファイルを削除する', () => {
+    // Arrange
+    const codebase = twoClassCodebase();
+    const steps: SolutionStep[] = [{ addFile: 'src/b.ts' }, { deleteFile: 'src/b.ts' }];
+
+    // Act
+    const result = applySolutionSteps(codebase, steps);
+
+    // Assert
+    expect(result.files.map((file) => file.path)).not.toContain('src/b.ts');
+  });
+
   it('setSuperclassステップで、クラスの継承元を名前で設定する', () => {
     // Arrange
     const codebase = twoClassCodebase();

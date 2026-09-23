@@ -1,6 +1,7 @@
 import { addClass } from '../codebase/addClass';
 import { addFile } from '../codebase/addFile';
 import { allClasses, type Codebase } from '../codebase/Codebase';
+import { deleteFile } from '../codebase/deleteFile';
 import { extractMethod } from '../codebase/extractMethod';
 import { mergeMethods } from '../codebase/mergeMethods';
 import { moveClass } from '../codebase/moveClass';
@@ -31,6 +32,7 @@ export type SolutionStep =
       };
     }
   | { readonly addFile: string }
+  | { readonly deleteFile: string }
   | { readonly addClass: { readonly name: string; readonly file: string } }
   | { readonly moveClass: { readonly name: string; readonly toFile: string } }
   | {
@@ -83,6 +85,7 @@ function applyStep(codebase: Codebase, step: SolutionStep, newId: string): Codeb
     return unwrap(mergeMethods(codebase, { methodAId, methodBId, newMethodId: newId, newMethodName: name }));
   }
   if ('addFile' in step) return unwrap(addFile(codebase, step.addFile, newId));
+  if ('deleteFile' in step) return unwrap(deleteFile(codebase, fileIdByPath(codebase, step.deleteFile)));
   if ('addClass' in step) {
     return unwrap(addClass(codebase, fileIdByPath(codebase, step.addClass.file), step.addClass.name, newId));
   }
@@ -151,6 +154,7 @@ export const sampleAnswerSteps: Partial<Record<string, readonly SolutionStep[]>>
     { extract: { from: 'notifyShipment', fragmentIds: ['frag-send-mail'], name: 'sendMail' } },
     { extract: { from: 'notifyShipment', fragmentIds: ['frag-log-delivery'], name: 'logDelivery' } },
     { move: { method: 'renderTemplate', toClass: 'NotificationService' } },
+    { deleteFile: 'src/notification/TemplateEngine.ts' },
   ],
   'advanced-notifier-hierarchy': [
     { extract: { from: 'notifyByEmail', fragmentIds: ['frag-build-body-email'], name: 'buildEmailBody' } },

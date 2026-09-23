@@ -227,7 +227,7 @@ const misplacedPrivateStage: Stage = {
   title: '中級3: 越境する private メソッド',
   description:
     '配送完了を知らせる NotificationService。通知メールの文面を組み立てる処理の中で、実は TemplateEngine クラスに private として置かれた renderTemplate() を直接呼んでいる。TemplateEngine 側は自分の中でしか使わないつもりで private にしたはずなのに、外から呼ばれてしまっている。',
-  goal: 'メソッドは50行以内に。private なメソッドを他クラスから呼んでいる箇所(アクセス制御の違反)をなくそう。呼んでいる側と同じクラスへ Move Method で移動しよう',
+  goal: 'メソッドは50行以内に。private なメソッドを他クラスから呼んでいる箇所(アクセス制御の違反)をなくそう。呼んでいる側と同じクラスへ Move Method で移動し、空になったクラスやファイルは片付けよう',
   limits: { method: 50, class: 200, file: 300 },
   dependencyLimit: 2,
   responsibilityLimit: 4,

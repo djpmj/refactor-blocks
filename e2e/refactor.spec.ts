@@ -185,18 +185,19 @@ test('ズームアウトするとファイル名とクラス名だけになり�
   await expect(classNode).toContainText('行');
 });
 
-test('初期状態の点数は、行数の上限を超えた placeOrder と責務が混ざった OrderService の分だけ減点されている', async ({
+test('初期状態の点数は、行数の上限を超えた placeOrder・責務が混ざった OrderService・空の TaxCalculator の分だけ減点されている', async ({
   page,
 }) => {
   // Arrange & Act
   await openOrderStage(page);
 
   // Assert
-  await expect(page.getByTestId('score')).toContainText('80点');
+  await expect(page.getByTestId('score')).toContainText('70点');
   await expect(page.getByTestId('score')).toContainText('行数 -10');
   await expect(page.getByTestId('score')).toContainText('責務の混在 -10');
-  await expect(page.getByTestId('file-src/order/OrderService.ts').getByTestId('file-mark')).toBeVisible();
-  await expect(page.getByTestId('file-src/tax/TaxCalculator.ts').getByTestId('file-mark')).toHaveCount(0);
+  await expect(page.getByTestId('score')).toContainText('空のクラス・ファイル -10');
+  await expect(page.getByTestId('file-src/order/OrderService.ts').getByTestId('file-mark')).toHaveAttribute('aria-label', /-20点/);
+  await expect(page.getByTestId('file-src/tax/TaxCalculator.ts').getByTestId('file-mark')).toHaveAttribute('aria-label', /-10点/);
 });
 
 test('税の計算を抽出して TaxCalculator へ移すと、責務の混在の減点が消える', async ({ page }) => {
@@ -848,8 +849,16 @@ test('越境した private メソッドの呼び出しは減点され、呼び�
   await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 15 });
   await page.mouse.up();
 
-  // Assert
+  // Assert: 移し終えた TemplateEngine は空のクラスとして減点される
   await expect(target.getByTestId('method-renderTemplate')).toBeVisible();
+  await expect(page.getByTestId('score')).toContainText('90点');
+  await expect(page.getByTestId('score')).toContainText('空のクラス・ファイル -10');
+
+  // Act: 空になった TemplateEngine.ts を右クリックで削除する
+  await page.getByTestId('file-src/notification/TemplateEngine.ts').click({ button: 'right', position: { x: 10, y: 10 } });
+  await page.getByTestId('context-menu').getByRole('menuitem', { name: 'ファイルを削除' }).click();
+
+  // Assert
   await expect(page.getByTestId('score')).toContainText('100点');
 });
 

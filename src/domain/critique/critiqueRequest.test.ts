@@ -63,7 +63,8 @@ describe('buildCritiqueRequest', () => {
     const orderFile = request.files.find((file) => file.path === 'src/OrderService.ts');
     const taxFile = request.files.find((file) => file.path === 'src/TaxCalculator.ts');
     expect(orderFile?.deductionPoints).toBe(10);
-    expect(taxFile?.deductionPoints).toBe(0);
+    // TaxCalculator には行数の減点は入らず、空のクラスの10点だけが入る
+    expect(taxFile?.deductionPoints).toBe(10);
   });
 
   it('継承元(extends)のクラス名を含める', () => {

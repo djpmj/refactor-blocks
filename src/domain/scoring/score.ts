@@ -1,11 +1,12 @@
 import type { Codebase } from '../codebase/Codebase';
 import { classDependencies, type ClassDependency } from '../codebase/dependencies';
 import type { Stage } from '../stage/Stage';
+import { findEmptyContainers, findUnusedPrivateMethods } from './leftovers';
 import { findLineLimitViolations } from './lineLimits';
 import { findResponsibilityViolations } from './responsibilities';
 import { findVisibilityViolations } from './visibility';
 
-export type ScoreRule = 'line-limit' | 'coupling' | 'cycle' | 'responsibility' | 'visibility';
+export type ScoreRule = 'line-limit' | 'coupling' | 'cycle' | 'responsibility' | 'visibility' | 'empty' | 'unused';
 
 export type ScoreDeduction = {
   readonly rule: ScoreRule;
@@ -28,7 +29,10 @@ export function findCouplingViolations(dependencies: readonly ClassDependency[],
   return [...countByClass].filter(([, count]) => count > dependencyLimit).map(([classId]) => classId);
 }
 
-/** 行数・結合度・循環依存・責務の混在の違反1件につき10点を100点から引く。0点より下にはしない。 */
+/**
+ * 行数・結合度・循環依存・責務の混在・アクセス制御・空の入れ物・使われていないprivateメソッドの
+ * 違反1件につき10点を100点から引く。0点より下にはしない。
+ */
 export function scoreCodebase(
   codebase: Codebase,
   stage: Pick<Stage, 'limits' | 'dependencyLimit' | 'responsibilityLimit' | 'visibilityEnforced'>,
@@ -40,8 +44,10 @@ export function scoreCodebase(
     cycle: dependencies.filter((dependency) => dependency.cyclic).length,
     responsibility: findResponsibilityViolations(codebase, stage.responsibilityLimit).length,
     visibility: stage.visibilityEnforced === true ? findVisibilityViolations(codebase).length : 0,
+    empty: findEmptyContainers(codebase).length,
+    unused: findUnusedPrivateMethods(codebase).length,
   };
-  const deductions = (['line-limit', 'coupling', 'cycle', 'responsibility', 'visibility'] as const).map(
+  const deductions = (['line-limit', 'coupling', 'cycle', 'responsibility', 'visibility', 'empty', 'unused'] as const).map(
     (rule): ScoreDeduction => ({ rule, count: counts[rule], points: counts[rule] * POINTS_PER_VIOLATION }),
   );
   const deducted = deductions.reduce((sum, deduction) => sum + deduction.points, 0);

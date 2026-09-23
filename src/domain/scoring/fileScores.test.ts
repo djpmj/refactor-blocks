@@ -40,7 +40,8 @@ describe("fileDeductions", () => {
 
     // Assert
     expect(deductions.get("file-order")).toBe(10);
-    expect(deductions.get("file-tax")).toBe(0);
+    // TaxCalculator には行数の減点は入らず、空のクラスの10点だけが入る
+    expect(deductions.get("file-tax")).toBe(10);
   });
 
   it("責務の混在は、そのクラスのあるファイルの減点になる", () => {
@@ -75,6 +76,18 @@ describe("fileDeductions", () => {
     // Assert
     expect(deductions.get("file-a")).toBe(20);
     expect(deductions.get("file-b")).toBe(20);
+  });
+
+  it("空のクラスは、そのクラスのあるファイルの減点になる", () => {
+    // Arrange
+    const codebase = sampleCodebase();
+
+    // Act
+    const deductions = fileDeductions(codebase, LOOSE);
+
+    // Assert
+    expect(deductions.get("file-tax")).toBe(10);
+    expect(deductions.get("file-order")).toBe(0);
   });
 
   it("全ファイルの減点を足すと、採点の減点の合計と一致する", () => {

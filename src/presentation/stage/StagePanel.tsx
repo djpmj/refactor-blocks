@@ -13,6 +13,8 @@ const RULE_LABEL: Record<ScoreRule, string> = {
   cycle: '循環依存',
   responsibility: '責務の混在',
   visibility: 'アクセス制御',
+  empty: '空のクラス・ファイル',
+  unused: '未使用のprivateメソッド',
 };
 
 const LEVEL_LABEL: Record<StageLevel, string> = {

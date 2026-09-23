@@ -62,7 +62,7 @@ function codebaseOf(classes: Record<string, readonly string[]>): Codebase {
 }
 
 describe('scoreCodebase', () => {
-  it('違反がなければ100点で、5ルールとも減点0件を返す', () => {
+  it('違反がなければ100点で、7ルールとも減点0件を返す', () => {
     // Arrange
     const codebase = codebaseOf({ A: ['method-B'], B: [] });
 
@@ -78,6 +78,8 @@ describe('scoreCodebase', () => {
         { rule: 'cycle', count: 0, points: 0 },
         { rule: 'responsibility', count: 0, points: 0 },
         { rule: 'visibility', count: 0, points: 0 },
+        { rule: 'empty', count: 0, points: 0 },
+        { rule: 'unused', count: 0, points: 0 },
       ],
     });
   });
@@ -89,8 +91,8 @@ describe('scoreCodebase', () => {
     // Act
     const score = scoreCodebase(codebase, { ...LOOSE, limits: { method: 20, class: 100, file: 27 }, dependencyLimit: 1 });
 
-    // Assert
-    expect(score.total).toBe(80);
+    // Assert(空の TaxCalculator の10点も引かれる)
+    expect(score.total).toBe(70);
     expect(score.deductions[0]).toEqual({ rule: 'line-limit', count: 2, points: 20 });
   });
 
@@ -136,8 +138,8 @@ describe('scoreCodebase', () => {
     // Act
     const score = scoreCodebase(codebase, { ...LOOSE, dependencyLimit: 1, responsibilityLimit: 2 });
 
-    // Assert
-    expect(score.total).toBe(90);
+    // Assert(空の TaxCalculator の10点も引かれる)
+    expect(score.total).toBe(80);
     expect(score.deductions[3]).toEqual({ rule: 'responsibility', count: 1, points: 10 });
   });
 
@@ -202,6 +204,52 @@ describe('scoreCodebase', () => {
 
     // Assert
     expect(score.deductions[4]).toEqual({ rule: 'visibility', count: 1, points: 10 });
+  });
+
+  it('メソッドのないクラス・クラスのないファイル1つにつき10点減点する', () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [
+        { id: 'file', path: 'src/all.ts', classes: [{ id: 'class-empty', name: 'Empty', methods: [] }] },
+        { id: 'file-empty', path: 'src/empty.ts', classes: [] },
+      ],
+    };
+
+    // Act
+    const score = scoreCodebase(codebase, { ...LOOSE, dependencyLimit: 1 });
+
+    // Assert
+    expect(score.total).toBe(80);
+    expect(score.deductions[5]).toEqual({ rule: 'empty', count: 2, points: 20 });
+  });
+
+  it('どこからも呼ばれていない private メソッド1つにつき10点減点する', () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [
+        {
+          id: 'file',
+          path: 'src/all.ts',
+          classes: [
+            {
+              id: 'class-A',
+              name: 'A',
+              methods: [
+                { id: 'method-run', name: 'run', visibility: 'public', fragments: [] },
+                { id: 'method-dead', name: 'dead', visibility: 'private', fragments: [] },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    // Act
+    const score = scoreCodebase(codebase, { ...LOOSE, dependencyLimit: 1 });
+
+    // Assert
+    expect(score.total).toBe(90);
+    expect(score.deductions[6]).toEqual({ rule: 'unused', count: 1, points: 10 });
   });
 
   it('減点の合計が100点を超えても0点で止まる', () => {
