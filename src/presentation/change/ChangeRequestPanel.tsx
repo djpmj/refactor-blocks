@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import type { ChangeOutcome } from '../../application/ChangeRequestUseCases';
 import { changeKindOf, type ChangeKind, type ChangeRequest } from '../../domain/change/ChangeRequest';
 import { changePart, isChangePartPlaced } from '../../domain/change/changePart';
+import type { SampleImplementation } from '../../domain/change/sampleImplementation';
 import { averageScore, type ChangeAssessment } from '../../domain/change/scoreChange';
 import { findClassOfMethod, findMethod, type Codebase, type Method } from '../../domain/codebase/Codebase';
 import { methodLines } from '../../domain/codebase/lineCount';
+import { CodebasePreviewDialog } from '../preview/CodebasePreviewDialog';
 import { useGameStore } from '../store/useGameStore';
 import { describeDeductions, describePlacement, siteNames } from './describeChange';
 
@@ -23,9 +26,27 @@ function CostRows({ current, initial, codebase, previous }: Readonly<{ current: 
   );
 }
 
+/** 解答例: どこに置くのが最も点が高いか。 */
+function SampleAnswer({ sample }: Readonly<{ sample: SampleImplementation | undefined }>) {
+  const [open, setOpen] = useState(false);
+  const methodLimit = useGameStore((state) => state.stage.limits.method);
+  if (sample === undefined) return null;
+  const { target, score } = sample;
+  const where = target.kind === 'existing-class' ? `既存の ${target.className} に置く` : `${target.implementing} を実装する新しいクラスを作って置く`;
+  return (
+    <div className="change-outcome__facts" data-testid="outcome-sample">
+      解答例: {where}({score}点){' '}
+      <button type="button" data-testid="outcome-sample-preview" onClick={() => setOpen(true)}>
+        解答例の図を見る
+      </button>
+      <CodebasePreviewDialog title="解答例の図" codebase={open ? sample.codebase : null} methodLimit={methodLimit} onClose={() => setOpen(false)} />
+    </div>
+  );
+}
+
 /** 機能の追加(current が null)では、コストの行は出さず置き方だけで採点する。 */
 function OutcomeCard({ outcome, codebase, previous }: Readonly<{ outcome: ChangeOutcome; codebase: Codebase; previous?: number }>) {
-  const { current, initial, request, placement } = outcome;
+  const { current, initial, request, placement, sample } = outcome;
   const reasons = [...(current === null ? [] : describeDeductions(current, codebase)), ...describePlacement(outcome, codebase)];
   return (
     <li className="change-outcome" data-testid={`change-outcome-${request.id}`}>
@@ -38,6 +59,7 @@ function OutcomeCard({ outcome, codebase, previous }: Readonly<{ outcome: Change
       <p className="change-outcome__scores" data-testid="outcome-placement">
         置き方 {placement.score.total}点(置いた先: {placement.placement.partClassName})
       </p>
+      <SampleAnswer sample={sample} />
       {reasons.length === 0 ? (
         <p className="change-outcome__good">減点なし。既存のコードを触らず、自然な場所に置けています</p>
       ) : (

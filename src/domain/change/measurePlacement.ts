@@ -87,7 +87,7 @@ function existingAncestors(base: Codebase, design: Codebase, start: CodeClass): 
 }
 
 /** インターフェース役 = メソッドが1つ以上あり、すべて中身(Fragment)がない。 */
-function isInterfaceLike(codeClass: CodeClass): boolean {
+export function isInterfaceLike(codeClass: CodeClass): boolean {
   return codeClass.methods.length > 0 && codeClass.methods.every((method) => method.fragments.length === 0);
 }
 

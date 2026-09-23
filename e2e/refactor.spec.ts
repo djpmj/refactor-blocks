@@ -704,6 +704,7 @@ test('変更依頼に挑戦すると部品置き場に部品が出て、置く�
   const outcome = page.getByTestId('change-outcome-req-reduced-tax');
   await expect(outcome.getByTestId('outcome-current')).toHaveText('70点');
   await expect(outcome.getByTestId('outcome-placement')).toContainText('80点');
+  await expect(outcome.getByTestId('outcome-sample')).toContainText('解答例:');
   await expect(outcome).toContainText('巻き込み');
   await expect(outcome).toContainText('責務の混在');
   await expect(page.getByTestId('change-readiness')).toBeVisible();
@@ -863,6 +864,9 @@ test('上級2: PayPay の追加は、新しいクラスで PaymentGateway を実
   const paypay = page.getByTestId('change-outcome-req-add-paypay');
   await expect(paypay.getByTestId('outcome-placement')).toContainText('100点');
   await expect(paypay.getByTestId('outcome-current')).toHaveCount(0);
+  await expect(paypay.getByTestId('outcome-sample')).toContainText('PaymentGateway を実装する新しいクラス');
+  await paypay.getByTestId('outcome-sample-preview').click();
+  await expect(page.getByTestId('codebase-preview')).toContainText('解答例の図');
   await expect(page.getByTestId('change-outcome-req-payment-logging')).toContainText('未接続');
 });
 

@@ -1,6 +1,7 @@
 import { changeKindOf, type ChangeError, type ChangeRequest } from '../domain/change/ChangeRequest';
 import { measureChange } from '../domain/change/measureChange';
 import { measurePlacement, type PlacementError } from '../domain/change/measurePlacement';
+import { sampleImplementation, type SampleImplementation } from '../domain/change/sampleImplementation';
 import { scoreChange, type ChangeAssessment } from '../domain/change/scoreChange';
 import { scorePlacement, type PlacementAssessment } from '../domain/change/scorePlacement';
 import type { Codebase } from '../domain/codebase/Codebase';
@@ -11,6 +12,8 @@ export type ChangeOutcome = {
   readonly request: ChangeRequest;
   /** プレイヤーの実装(置き方)の採点。 */
   readonly placement: PlacementAssessment;
+  /** 挑戦前のコードでの解答例(置き先と点数)。置き先の候補がなければ undefined。 */
+  readonly sample: SampleImplementation | undefined;
   /** 挑戦前のコードに依頼を当てたときの変更コスト。'extend' の依頼では null(追加で済むかは placement で測るため)。 */
   readonly current: ChangeAssessment | null;
   /** 初期状態のコードでの変更コスト(比較用)。'extend' では null。 */
@@ -49,6 +52,7 @@ export function evaluateImplementationUseCase(
   return ok({
     request,
     placement: { placement: placement.value, score: scorePlacement(placement.value, changeKindOf(request)) },
+    sample: sampleImplementation(base, request),
     ...costs.value,
   });
 }
