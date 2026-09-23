@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState, type RefObject, type SubmitEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type RefObject, type SubmitEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { findClass, findSuperclass } from '../../domain/codebase/Codebase';
 import { availableSuperclasses } from '../../domain/codebase/setSuperclass';
 import { useGameStore } from '../store/useGameStore';
+import { clampMenuPosition, type Point } from './clampMenuPosition';
 import type { ContextMenuTarget } from './useCanvasContextMenu';
 
 type Mode = 'menu' | 'class' | 'file' | 'renameClass' | 'renameFile' | 'setSuperclass' | 'setInterface';
@@ -84,6 +85,18 @@ function useCloseOnOutside(menuRef: RefObject<HTMLElement | null>, onClose: () =
       document.removeEventListener('keydown', closeOnEscape);
     };
   }, [menuRef, onClose]);
+}
+
+/** クリック位置に描画したあと、実際の大きさを測ってビューポートからはみ出さない位置へ補正する。ペイント前に補正するのでちらつかない。 */
+function usePositionWithinViewport(menuRef: RefObject<HTMLElement | null>, x: number, y: number, watch: unknown) {
+  const [position, setPosition] = useState<Point>({ x, y });
+  useLayoutEffect(() => {
+    const menu = menuRef.current;
+    if (menu === null) return;
+    const { width, height } = menu.getBoundingClientRect();
+    setPosition(clampMenuPosition({ x, y }, { width, height }, { width: window.innerWidth, height: window.innerHeight }));
+  }, [menuRef, x, y, watch]);
+  return position;
 }
 
 type MenuItem = { kind: 'form'; mode: FormMode; label: string } | { kind: 'action'; run: () => void; label: string };
@@ -240,10 +253,10 @@ export function CanvasContextMenu({ target, onClose }: Readonly<{ target: Contex
   const menuRef = useRef<HTMLDivElement>(null);
 
   useCloseOnOutside(menuRef, onClose);
+  const position = usePositionWithinViewport(menuRef, target.x, target.y, mode);
 
-  // ponytail: 画面端での位置補正はしていない。右下端ではみ出すと分かったらビューポートに収める
   return createPortal(
-    <div ref={menuRef} className="context-menu" style={{ left: target.x, top: target.y }} data-testid="context-menu">
+    <div ref={menuRef} className="context-menu" style={{ left: position.x, top: position.y }} data-testid="context-menu">
       {file === undefined ? null : <div className="context-menu__caption">{file.path}</div>}
       {mode === 'menu' ? (
         <MenuItems items={menuItemsFor(target, onClose)} onSelectForm={setMode} />
