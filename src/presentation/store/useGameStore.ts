@@ -39,6 +39,9 @@ import {
 } from '../../application/RefactorUseCases';
 import type { Result } from '../../domain/shared/Result';
 import { stages } from '../../infrastructure/stages/stageCatalog';
+import type { Progress } from '../../domain/progress/Progress';
+import { updateProgress } from '../../domain/progress/updateProgress';
+import { loadProgress, saveProgress } from '../../infrastructure/progress/progressStorage';
 
 /** 変更依頼に挑戦中の状態。調査中はコードベースを編集できず、依頼を1件ずつ片付ける。 */
 export type ChangeSession = {
@@ -102,6 +105,8 @@ type GameState = {
   endChangeRequests: () => void;
   resetStage: () => void;
   selectStage: (stageId: string) => void;
+  progress: Progress;
+  recordProgress: (stageId: string, score: number) => void;
 };
 
 const [firstStage] = stages;
@@ -331,6 +336,13 @@ export const useGameStore = create<GameState>((set, get) => {
     selectStage: (stageId) => {
       const next = selectStageState(stages, stageId);
       if (next !== null) set(next);
+    },
+    progress: loadProgress(),
+    recordProgress: (stageId, score) => {
+      const next = updateProgress(get().progress, stageId, score);
+      if (next === get().progress) return;
+      saveProgress(next);
+      set({ progress: next });
     },
   };
 });

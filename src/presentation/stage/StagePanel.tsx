@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { scoreCodebase, type Score, type ScoreRule } from '../../domain/scoring/score';
 import { sampleAnswerCodebase, sampleAnswerSteps } from '../../domain/stage/sampleAnswer';
 import type { Stage, StageLevel } from '../../domain/stage/Stage';
@@ -27,6 +27,7 @@ function StageSelect() {
   const levels = [...new Set(stages.map((stage) => stage.level))];
   const stageId = useGameStore((state) => state.stage.id);
   const selectStage = useGameStore((state) => state.selectStage);
+  const progress = useGameStore((state) => state.progress);
   return (
     <select
       aria-label="ステージ"
@@ -42,6 +43,7 @@ function StageSelect() {
             .filter((stage) => stage.level === level)
             .map((stage) => (
               <option key={stage.id} value={stage.id}>
+                {progress[stage.id] === 100 ? '✅ ' : ''}
                 {stage.title}
               </option>
             ))}
@@ -94,7 +96,11 @@ export function StagePanel() {
   const challenged = useGameStore((state) => state.lastChangeReport !== null);
   const canUndo = useGameStore((state) => state.history.past.length > 0);
   const canRedo = useGameStore((state) => state.history.future.length > 0);
+  const recordProgress = useGameStore((state) => state.recordProgress);
   const score = useMemo(() => scoreCodebase(codebase, stage), [codebase, stage]);
+  useEffect(() => {
+    recordProgress(stage.id, score.total);
+  }, [stage.id, score.total, recordProgress]);
   return (
     <header className="stage-panel">
       <StageSelect />
