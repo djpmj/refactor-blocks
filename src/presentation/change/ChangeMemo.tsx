@@ -1,5 +1,5 @@
 import { useGameStore } from '../store/useGameStore';
-import { describeDeductions } from './describeChange';
+import { describeDeductions, describePlacement } from './describeChange';
 
 /** 直前の変更依頼の結果を、リファクタリングの手がかりとして編集パネルに残す。 */
 export function ChangeMemo() {
@@ -14,9 +14,9 @@ export function ChangeMemo() {
       <ul className="change-memo__list">
         {report.outcomes.map((outcome) => (
           <li key={outcome.request.id}>
-            <strong>{outcome.request.title}</strong> {outcome.current.score.total}点
+            <strong>{outcome.request.title}</strong> {outcome.current === null ? '' : `${String(outcome.current.score.total)}点 / `}置き方 {outcome.placement.score.total}点
             <ul>
-              {describeDeductions(outcome.current, report.codebase).map((reason) => (
+              {[...(outcome.current === null ? [] : describeDeductions(outcome.current, report.codebase)), ...describePlacement(outcome, report.codebase)].map((reason) => (
                 <li key={reason}>{reason}</li>
               ))}
             </ul>

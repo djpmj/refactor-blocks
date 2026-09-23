@@ -13,8 +13,8 @@ const userControllerStage: Stage = {
   // 入力値の検証とレスポンスの組み立ては、どちらもHTTPの受け口としての責務に数える
   responsibilityLimit: 1,
   changeRequests: [
-    { id: 'req-mail-footer', title: 'メールに配信停止の案内を付けて', description: 'ユーザーに送るメールすべての末尾に、配信停止の案内を入れる必要がある。', responsibility: 'notification', linesPerSite: 4 },
-    { id: 'req-soft-delete', title: 'ユーザー削除を論理削除にして', description: 'ユーザーを物理的には消さず、削除日時を記録する方式に変える。', responsibility: 'persistence', linesPerSite: 6 },
+    { id: 'req-mail-footer', title: 'メールに配信停止の案内を付けて', description: 'ユーザーに送るメールすべての末尾に、配信停止の案内を入れる必要がある。', responsibility: 'notification', linesPerSite: 4, partName: 'appendUnsubscribeGuide' },
+    { id: 'req-soft-delete', title: 'ユーザー削除を論理削除にして', description: 'ユーザーを物理的には消さず、削除日時を記録する方式に変える。', responsibility: 'persistence', linesPerSite: 6, partName: 'markUserDeleted' },
   ],
   codebase: {
     files: [
@@ -77,8 +77,8 @@ const invoiceServiceStage: Stage = {
   dependencyLimit: 3,
   responsibilityLimit: 2,
   changeRequests: [
-    { id: 'req-pdf-layout', title: '請求書PDFのレイアウトを変えて', description: 'ロゴの位置と明細表の列幅を変更したい。', responsibility: 'rendering', linesPerSite: 10 },
-    { id: 'req-rounding', title: '金額の端数処理を変えて', description: '請求金額の端数を、切り捨てから四捨五入にする。', responsibility: 'pricing', linesPerSite: 6 },
+    { id: 'req-pdf-layout', title: '請求書PDFのレイアウトを変えて', description: 'ロゴの位置と明細表の列幅を変更したい。', responsibility: 'rendering', linesPerSite: 10, partName: 'adjustPdfLayout' },
+    { id: 'req-rounding', title: '金額の端数処理を変えて', description: '請求金額の端数を、切り捨てから四捨五入にする。', responsibility: 'pricing', linesPerSite: 6, partName: 'roundHalfUp' },
   ],
   codebase: {
     files: [

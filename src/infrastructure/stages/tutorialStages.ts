@@ -12,8 +12,8 @@ const extractMethodStage: Stage = {
   dependencyLimit: 2,
   responsibilityLimit: 3,
   changeRequests: [
-    { id: 'req-report-yoy', title: '前年同月比も出して', description: '経営会議用に、前月比だけでなく前年同月比もレポートに出したい。', responsibility: 'aggregation', linesPerSite: 10 },
-    { id: 'req-report-share', title: '表に「構成比」列を追加して', description: '売上の表に、全体に占める割合の列を足したい。', responsibility: 'formatting', linesPerSite: 8 },
+    { id: 'req-report-yoy', title: '前年同月比も出して', description: '経営会議用に、前月比だけでなく前年同月比もレポートに出したい。', responsibility: 'aggregation', linesPerSite: 10, partName: 'compareWithLastYear' },
+    { id: 'req-report-share', title: '表に「構成比」列を追加して', description: '売上の表に、全体に占める割合の列を足したい。', responsibility: 'formatting', linesPerSite: 8, partName: 'buildShareColumn' },
   ],
   codebase: {
     files: [
@@ -58,9 +58,9 @@ const orderServiceStage: Stage = {
   // 税の計算を TaxCalculator へ移せば OrderService の責務が4種類になり、上限を満たす
   responsibilityLimit: 4,
   changeRequests: [
-    { id: 'req-reduced-tax', title: '軽減税率の対象を増やして', description: '来月から、持ち帰り用の総菜も軽減税率(8%)の対象になる。', responsibility: 'tax', linesPerSite: 8 },
-    { id: 'req-mail-text', title: '確認メールの文面を変えて', description: '確認メールに、お問い合わせ窓口の案内を入れたい。', responsibility: 'notification', linesPerSite: 6 },
-    { id: 'req-stock-rule', title: '在庫の検証ルールを足して', description: '1回の注文で買える数量に上限を設けたい。', responsibility: 'validation', linesPerSite: 5 },
+    { id: 'req-reduced-tax', title: '軽減税率の対象を増やして', description: '来月から、持ち帰り用の総菜も軽減税率(8%)の対象になる。', responsibility: 'tax', linesPerSite: 8, partName: 'addReducedTaxItems' },
+    { id: 'req-mail-text', title: '確認メールの文面を変えて', description: '確認メールに、お問い合わせ窓口の案内を入れたい。', responsibility: 'notification', linesPerSite: 6, partName: 'addContactGuide' },
+    { id: 'req-stock-rule', title: '在庫の検証ルールを足して', description: '1回の注文で買える数量に上限を設けたい。', responsibility: 'validation', linesPerSite: 5, partName: 'validateQuantityLimit' },
   ],
   codebase: {
     files: [

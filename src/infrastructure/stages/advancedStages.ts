@@ -24,8 +24,8 @@ const notifierHierarchyStage: Stage = {
   dependencyLimit: 2,
   responsibilityLimit: 2,
   changeRequests: [
-    { id: 'req-notification-format', title: '通知文の書式を見直して', description: '通知文に、問い合わせ番号を差し込めるようにしたい。', responsibility: 'formatting', linesPerSite: 8 },
-    { id: 'req-notification-log', title: '送信ログの記録方法を見直して', description: '送信ログに、再送かどうかのフラグを追加したい。', responsibility: 'logging', linesPerSite: 6 },
+    { id: 'req-notification-format', title: '通知文の書式を見直して', description: '通知文に、問い合わせ番号を差し込めるようにしたい。', responsibility: 'formatting', linesPerSite: 8, partName: 'insertInquiryNumber' },
+    { id: 'req-notification-log', title: '送信ログの記録方法を見直して', description: '送信ログに、再送かどうかのフラグを追加したい。', responsibility: 'logging', linesPerSite: 6, partName: 'logResendFlag' },
   ],
   codebase: {
     files: [
@@ -108,8 +108,17 @@ const paymentGatewayInterfaceStage: Stage = {
   // stripe-config/paypal-configは各ゲートウェイに残る正当な3つ目の責務(このステージの狙いと無関係なため違反にしない)。
   responsibilityLimit: 3,
   changeRequests: [
-    { id: 'req-payment-logging', title: '決済ログの記録方法を見直して', description: '決済ログに、失敗時のリトライ回数を残したい。', responsibility: 'payment-logging', linesPerSite: 6 },
-    { id: 'req-gateway-integration', title: '決済APIの呼び出し方を見直して', description: '決済API呼び出しに、共通のタイムアウト設定を追加したい。', responsibility: 'gateway-integration', linesPerSite: 5 },
+    {
+      id: 'req-add-paypay',
+      title: 'PayPayでも払えるようにして',
+      description: '決済手段にPayPayを追加したい。Stripe・PayPalの決済はこれまでどおり使う。',
+      responsibility: 'gateway-integration',
+      linesPerSite: 30,
+      kind: 'extend',
+      partName: 'chargeWithPaypay',
+    },
+    { id: 'req-payment-logging', title: '決済ログの記録方法を見直して', description: '決済ログに、失敗時のリトライ回数を残したい。', responsibility: 'payment-logging', linesPerSite: 6, partName: 'logRetryCount' },
+    { id: 'req-gateway-integration', title: '決済APIの呼び出し方を見直して', description: '決済API呼び出しに、共通のタイムアウト設定を追加したい。', responsibility: 'gateway-integration', linesPerSite: 5, partName: 'applyGatewayTimeout' },
   ],
   codebase: {
     files: [
@@ -232,8 +241,8 @@ const discountStrategyStage: Stage = {
   dependencyLimit: 3,
   responsibilityLimit: 2,
   changeRequests: [
-    { id: 'req-premium-discount', title: 'プレミアム会員の割引率を変えて', description: 'プレミアム会員の割引率を12%に変えたい。', responsibility: 'discount-premium', linesPerSite: 5 },
-    { id: 'req-vip-discount', title: 'VIP会員の割引条件を変えて', description: 'VIP会員には送料無料に加えてポイント還元率も上げたい。', responsibility: 'discount-vip', linesPerSite: 6 },
+    { id: 'req-premium-discount', title: 'プレミアム会員の割引率を変えて', description: 'プレミアム会員の割引率を12%に変えたい。', responsibility: 'discount-premium', linesPerSite: 5, partName: 'revisePremiumRate' },
+    { id: 'req-vip-discount', title: 'VIP会員の割引条件を変えて', description: 'VIP会員には送料無料に加えてポイント還元率も上げたい。', responsibility: 'discount-vip', linesPerSite: 6, partName: 'raiseVipPointRate' },
   ],
   codebase: {
     files: [
@@ -299,8 +308,8 @@ const reportFactoryStage: Stage = {
   dependencyLimit: 1,
   responsibilityLimit: 2,
   changeRequests: [
-    { id: 'req-report-building', title: '帳票のタイトルの付け方を見直して', description: '週次・月次のレポートのタイトルに、出力日時を含めたい。', responsibility: 'report-building', linesPerSite: 6 },
-    { id: 'req-report-delivery', title: 'レポートの送信方法を見直して', description: 'レポート送信に、失敗時の再送処理を追加したい。', responsibility: 'report-delivery', linesPerSite: 5 },
+    { id: 'req-report-building', title: '帳票のタイトルの付け方を見直して', description: '週次・月次のレポートのタイトルに、出力日時を含めたい。', responsibility: 'report-building', linesPerSite: 6, partName: 'addExportedAtToTitle' },
+    { id: 'req-report-delivery', title: 'レポートの送信方法を見直して', description: 'レポート送信に、失敗時の再送処理を追加したい。', responsibility: 'report-delivery', linesPerSite: 5, partName: 'retryReportDelivery' },
   ],
   codebase: {
     files: [
@@ -379,8 +388,8 @@ const collapseHierarchyStage: Stage = {
   dependencyLimit: 1,
   responsibilityLimit: 2,
   changeRequests: [
-    { id: 'req-tab-delimiter', title: '区切り文字をタブにも切り替えられるようにして', description: 'Excelで開きやすいよう、タブ区切りのファイルも出せるようにする。', responsibility: 'csv-format', linesPerSite: 6 },
-    { id: 'req-fiscal-year', title: '集計期間を会計年度で指定できるようにして', description: '4月始まりの会計年度で、売上の集計期間を指定できるようにする。', responsibility: 'query', linesPerSite: 4 },
+    { id: 'req-tab-delimiter', title: '区切り文字をタブにも切り替えられるようにして', description: 'Excelで開きやすいよう、タブ区切りのファイルも出せるようにする。', responsibility: 'csv-format', linesPerSite: 6, partName: 'switchToTabDelimiter' },
+    { id: 'req-fiscal-year', title: '集計期間を会計年度で指定できるようにして', description: '4月始まりの会計年度で、売上の集計期間を指定できるようにする。', responsibility: 'query', linesPerSite: 4, partName: 'filterByFiscalYear' },
   ],
   codebase: {
     files: [

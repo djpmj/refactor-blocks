@@ -74,7 +74,8 @@ function PreviewButtons({ stage, disabled }: Readonly<{ stage: Stage; disabled: 
 /** ステージの目標と、行数・結合度・循環依存・責務の混在から出した点数を表示する。責務の中身(responsibility の値)は見せない。 */
 export function StagePanel() {
   const stage = useGameStore((state) => state.stage);
-  const codebase = useGameStore((state) => state.codebase);
+  // 実装中は部品置き場入りのコードなので、点数と進捗は挑戦前のコードで数える
+  const codebase = useGameStore((state) => state.changeSession?.base ?? state.codebase);
   const resetStage = useGameStore((state) => state.resetStage);
   const undo = useGameStore((state) => state.undo);
   const redo = useGameStore((state) => state.redo);
@@ -109,10 +110,10 @@ export function StagePanel() {
         <button type="button" data-testid="change-request-start" onClick={startChangeRequests} disabled={investigating}>
           {challenged ? 'もう一度挑戦' : '変更依頼に挑戦'}
         </button>
-        <button type="button" onClick={undo} disabled={!canUndo || investigating} title="Ctrl+Z">
+        <button type="button" onClick={undo} disabled={!canUndo} title="Ctrl+Z">
           元に戻す
         </button>
-        <button type="button" onClick={redo} disabled={!canRedo || investigating} title="Ctrl+Y">
+        <button type="button" onClick={redo} disabled={!canRedo} title="Ctrl+Y">
           やり直し
         </button>
         <button type="button" className="stage-panel__reset" onClick={resetStage} disabled={investigating}>

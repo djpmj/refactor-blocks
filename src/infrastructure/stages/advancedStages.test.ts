@@ -1,9 +1,26 @@
 import { describe, expect, it } from 'vitest';
+import { changeKindOf } from '../../domain/change/ChangeRequest';
+import { withChangePart } from '../../domain/change/changePart';
+import { measurePlacement } from '../../domain/change/measurePlacement';
+import { scorePlacement, type PlacementScore } from '../../domain/change/scorePlacement';
+import { moveMethod } from '../../domain/codebase/moveMethod';
+import { moveMethodToNewClass } from '../../domain/codebase/moveToNewHome';
+import { setSuperclass } from '../../domain/codebase/setSuperclass';
 import { allClasses, findClass, findSuperclass, type CodeClass, type Codebase } from '../../domain/codebase/Codebase';
 import { classDependencies } from '../../domain/codebase/dependencies';
 import { scoreCodebase } from '../../domain/scoring/score';
 import { sampleAnswerCodebase } from '../../domain/stage/sampleAnswer';
+import type { Result } from '../../domain/shared/Result';
 import { advancedStages } from './advancedStages';
+
+function openClosedCount(score: PlacementScore): number | undefined {
+  return score.deductions.find((deduction) => deduction.rule === 'open-closed')?.count;
+}
+
+function unwrap<T, E>(result: Result<T, E>): T {
+  if (!result.ok) throw new Error(`操作に失敗しました: ${String(result.error)}`);
+  return result.value;
+}
 
 function classNamed(codebase: Codebase, name: string) {
   const found = allClasses(codebase).find((codeClass) => codeClass.name === name);
@@ -174,6 +191,48 @@ describe('advanced-payment-gateway-interface', () => {
 
     // Assert
     expect(dependencies).toEqual([{ from: 'class-payment-service', to: 'class-payment-gateway', cyclic: false }]);
+  });
+
+  describe('req-add-paypay(機能の追加)', () => {
+    const request = stage.changeRequests.find((candidate) => candidate.id === 'req-add-paypay');
+    if (request === undefined) throw new Error('req-add-paypay がありません');
+    const partId = 'method-part-req-add-paypay';
+    const starts = [
+      ['初期状態', stage.codebase],
+      ['模範解答のあと', sampleAnswerCodebase(stage)],
+    ] as const;
+
+    it('kind は extend', () => {
+      // Arrange / Act
+      const kind = changeKindOf(request);
+
+      // Assert
+      expect(kind).toBe('extend');
+    });
+
+    it.each(starts)('%s: 新しいクラスで PaymentGateway を実装すると100点になる', (_name, base) => {
+      // Arrange
+      const moved = unwrap(moveMethodToNewClass(withChangePart(base, request), partId, { classId: 'class-paypay', fileId: 'file-paypay' }));
+      const implemented = unwrap(setSuperclass(moved, 'class-paypay', 'PaymentGateway', 'implements'));
+
+      // Act
+      const placement = unwrap(measurePlacement(base, implemented, request));
+
+      // Assert
+      expect(scorePlacement(placement, 'extend').total).toBe(100);
+    });
+
+    it.each(starts)('%s: StripeGateway へ置くと100点未満で、既存クラスの修正が1つ数えられる', (_name, base) => {
+      // Arrange
+      const implemented = unwrap(moveMethod(withChangePart(base, request), partId, 'class-stripe-gateway'));
+
+      // Act
+      const score = scorePlacement(unwrap(measurePlacement(base, implemented, request)), 'extend');
+
+      // Assert
+      expect(score.total).toBeLessThan(100);
+      expect(openClosedCount(score)).toBe(1);
+    });
   });
 });
 

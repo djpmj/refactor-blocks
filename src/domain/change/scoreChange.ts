@@ -1,7 +1,6 @@
-import type { InvestigationResult } from './checkInvestigation';
 import type { ChangeImpact } from './measureChange';
 
-export type ChangeRule = 'shotgun' | 'ripple' | 'entangled' | 'limit-break' | 'missed' | 'extra';
+export type ChangeRule = 'shotgun' | 'ripple' | 'entangled' | 'limit-break';
 
 export type ChangeDeduction = {
   readonly rule: ChangeRule;
@@ -24,24 +23,19 @@ const POINTS: Record<ChangeRule, number> = {
   ripple: 5,
   entangled: 5,
   'limit-break': 10,
-  missed: 10,
-  extra: 5,
 };
 
 /**
- * 変更依頼1件のコスト点数。100点から、散らばり・波及・巻き込み・上限超え・調査の漏れと余計な選択を引く。
- * 調査を省略したとき(初期状態との比較用)は、調査の減点なしとして扱う。
+ * 変更依頼1件のコスト点数。100点から、散らばり・波及・巻き込み・上限超えを引く。
  */
-export function scoreChange(impact: ChangeImpact, investigation: InvestigationResult = { missed: [], extra: [] }): ChangeScore {
+export function scoreChange(impact: ChangeImpact): ChangeScore {
   const counts: Record<ChangeRule, number> = {
     shotgun: Math.max(0, impact.classesTouched - 1),
     ripple: impact.rippleClasses.length,
     entangled: impact.mixedResponsibilities,
     'limit-break': impact.overLimitTouched,
-    missed: investigation.missed.length,
-    extra: investigation.extra.length,
   };
-  const deductions = (['shotgun', 'ripple', 'entangled', 'limit-break', 'missed', 'extra'] as const).map(
+  const deductions = (['shotgun', 'ripple', 'entangled', 'limit-break'] as const).map(
     (rule): ChangeDeduction => ({ rule, count: counts[rule], points: counts[rule] * POINTS[rule] }),
   );
   const deducted = deductions.reduce((sum, deduction) => sum + deduction.points, 0);
@@ -49,7 +43,7 @@ export function scoreChange(impact: ChangeImpact, investigation: InvestigationRe
 }
 
 /** 全依頼の点数の平均(四捨五入)。ステージの変更容易性スコアになる。 */
-export function averageScore(scores: readonly ChangeScore[]): number {
+export function averageScore(scores: readonly Pick<ChangeScore, 'total'>[]): number {
   if (scores.length === 0) return FULL_SCORE;
   return Math.round(scores.reduce((sum, score) => sum + score.total, 0) / scores.length);
 }

@@ -15,18 +15,15 @@ type MethodChipViewProps = {
   method: Method;
   overLimit: boolean;
   selected?: boolean;
-  /** 変更依頼の調査で「変更が必要」と選ばれている。 */
-  investigated?: boolean;
   /** 直前の変更依頼で、このメソッドの変更が必要だった依頼の数。 */
   changeCount?: number;
 };
 
 /** ドラッグ中のオーバーレイでも使う見た目だけのコンポーネント。 */
-export function MethodChipView({ method, overLimit, selected = false, investigated = false, changeCount = 0 }: Readonly<MethodChipViewProps>) {
+export function MethodChipView({ method, overLimit, selected = false, changeCount = 0 }: Readonly<MethodChipViewProps>) {
   const classNames = ['method-chip', `method-chip--${method.visibility}`];
   if (overLimit) classNames.push('method-chip--over');
   if (selected) classNames.push('method-chip--selected');
-  if (investigated) classNames.push('method-chip--investigated');
   return (
     <div className={classNames.join(' ')}>
       <span className="method-chip__visibility">{VISIBILITY_MARK[method.visibility]}</span>
@@ -49,16 +46,13 @@ export function MethodChip({ method }: Readonly<{ method: Method }>) {
   const limit = useGameStore((state) => state.stage.limits.method);
   const selected = useGameStore((state) => state.selectedMethodId === method.id);
   const selectMethod = useGameStore((state) => state.selectMethod);
-  const investigating = useGameStore((state) => state.changeSession !== null);
-  const investigated = useGameStore((state) => state.changeSession?.selected.includes(method.id) ?? false);
-  const toggleInvestigated = useGameStore((state) => state.toggleInvestigated);
   const inspectMethod = useGameStore((state) => state.inspectMethod);
   const inspected = useGameStore((state) => state.changeSession?.inspected === method.id);
   const renameMethod = useGameStore((state) => state.renameMethod);
-  // 調査中に出すと答えが見えてしまうので、変更依頼に挑戦していないときだけ数える
+  // 実装中に出すと答えが見えてしまうので、変更依頼に挑戦していないときだけ数える
   const changeCount = useGameStore((state) =>
     state.changeSession === null
-      ? (state.lastChangeReport?.outcomes.filter((outcome) => outcome.current.impact.sites.includes(method.id)).length ?? 0)
+      ? (state.lastChangeReport?.outcomes.filter((outcome) => outcome.current?.impact.sites.includes(method.id)).length ?? 0)
       : 0,
   );
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: methodDragId(method.id) });
@@ -80,7 +74,6 @@ export function MethodChip({ method }: Readonly<{ method: Method }>) {
       className="method-chip-button nodrag nopan"
       style={{ opacity: isDragging ? 0.3 : 1 }}
       data-testid={`method-${method.name}`}
-      data-investigated={investigating ? investigated : undefined}
       onMouseEnter={() => {
         inspectMethod(method.id);
       }}
@@ -94,8 +87,7 @@ export function MethodChip({ method }: Readonly<{ method: Method }>) {
         if (inspected) inspectMethod(null);
       }}
       onClick={() => {
-        if (investigating) toggleInvestigated(method.id);
-        else selectMethod(method.id);
+        selectMethod(method.id);
       }}
       onDoubleClick={(event) => {
         event.stopPropagation();
@@ -104,7 +96,7 @@ export function MethodChip({ method }: Readonly<{ method: Method }>) {
       {...attributes}
       {...listeners}
     >
-      <MethodChipView method={method} overLimit={methodLines(method) > limit} selected={selected} investigated={investigated} changeCount={changeCount} />
+      <MethodChipView method={method} overLimit={methodLines(method) > limit} selected={selected} changeCount={changeCount} />
     </button>
   );
 }

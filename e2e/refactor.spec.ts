@@ -631,16 +631,33 @@ test('メソッドをドラッグで移したあと Ctrl+Z で元のクラスに
   await expect(moved).toBeVisible();
 });
 
-/** 変更依頼の調査で、依頼ごとに選ぶメソッドを順にクリックして「調査を終える」を押す。 */
-async function investigateRequests(page: Page, methodNamesPerRequest: readonly (readonly string[])[]) {
+/** チュートリアル2の依頼の部品名(依頼の順)。 */
+const TAX_PARTS = ['addReducedTaxItems', 'addContactGuide', 'validateQuantityLimit'] as const;
+
+/** 部品を置いたあとの「実装を終える」。ドラッグ直後の1回目のクリックはdnd-kitに握りつぶされることがあるので、次の依頼(か結果)に進むまで押し直す。 */
+async function finishRequest(page: Page) {
+  await expect(async () => {
+    await page.getByTestId('change-request-finish').click({ timeout: 1000 });
+    await expect(page.getByTestId('change-part-status').filter({ hasText: 'に置きました' })).toHaveCount(0, { timeout: 1000 });
+  }).toPass();
+}
+
+/**
+ * 変更依頼に挑戦し、依頼ごとに部品を置き先のクラス名(または余白へ出す 'new')へドラッグして「実装を終える」を押す。
+ * 挑戦の開始から結果画面までを進める。
+ */
+async function implementRequests(page: Page, parts: readonly string[], targets: readonly string[]) {
   // ドラッグ直後の1回目のクリックはdnd-kitに握りつぶされることがあるので、パネルが開くまで押し直す
   await expect(async () => {
     await page.getByTestId('change-request-start').click({ timeout: 1000 });
     await expect(page.getByTestId('change-panel')).toBeVisible({ timeout: 1000 });
   }).toPass();
-  for (const methodNames of methodNamesPerRequest) {
-    for (const name of methodNames) await page.getByTestId(`method-${name}`).click();
-    await page.getByTestId('change-request-finish').click();
+  for (const [index, target] of targets.entries()) {
+    const part = `method-${parts[index]}`;
+    if (target === 'new') await dragToEmptyCanvas(page, part);
+    else await dragMethodToClass(page, part, `class-${target}`);
+    await expect(page.getByTestId('change-part-status')).toContainText('に置きました');
+    await finishRequest(page);
   }
 }
 
@@ -649,85 +666,85 @@ async function readinessOf(page: Page, kind: 'current' | 'initial'): Promise<num
   return Number.parseInt(text, 10);
 }
 
-test('変更依頼に挑戦し、変更が必要なメソッドを選んで調査を終えると、点数と理由が出る', async ({ page }) => {
+/** 税の計算を抽出して TaxCalculator へ移す(チュートリアル2)。 */
+async function extractTaxToCalculator(page: Page) {
+  await page.getByTestId('method-placeOrder').click();
+  await page.getByLabel('消費税を計算する(軽減税率あり)').check();
+  await page.getByLabel('新しいメソッド名').fill('calculateTax');
+  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+  await dragMethodToClass(page, 'method-calculateTax', 'class-TaxCalculator');
+  await expect(page.getByTestId('class-TaxCalculator').getByTestId('method-calculateTax')).toBeVisible();
+}
+
+test('変更依頼に挑戦すると部品置き場に部品が出て、置くまで「実装を終える」は押せない。置いて終えると、コストと置き方の点数・理由が出る', async ({ page }) => {
   // Arrange
   await openOrderStage(page);
 
   // Act
   await page.getByTestId('change-request-start').click();
+
+  // Assert(部品は部品置き場にあり、置くまで終えられない)
   await expect(page.getByTestId('change-request-title')).toHaveText('軽減税率の対象を増やして');
-  await page.getByTestId('method-placeOrder').click();
-  await expect(page.getByTestId('method-placeOrder')).toHaveAttribute('data-investigated', 'true');
-  await page.getByTestId('change-request-finish').click();
-  await page.getByTestId('method-placeOrder').click();
-  await page.getByTestId('change-request-finish').click();
-  await page.getByTestId('method-placeOrder').click();
-  await page.getByTestId('change-request-finish').click();
+  await expect(page.getByTestId('change-request-kind')).toContainText('ルールの変更');
+  await expect(page.getByTestId('class-部品置き場').getByTestId('method-addReducedTaxItems')).toBeVisible();
+  await expect(page.getByTestId('change-request-finish')).toBeDisabled();
+  await expect(page.getByTestId('change-part-status')).toContainText('部品はまだ部品置き場にあります');
+
+  // Act(3件とも OrderService へ置く)
+  await dragMethodToClass(page, 'method-addReducedTaxItems', 'class-OrderService');
+  await expect(page.getByTestId('change-part-status')).toContainText('OrderService に置きました');
+  await expect(page.getByTestId('change-request-finish')).toBeEnabled();
+  await finishRequest(page);
+  await dragMethodToClass(page, 'method-addContactGuide', 'class-OrderService');
+  await finishRequest(page);
+  await dragMethodToClass(page, 'method-validateQuantityLimit', 'class-OrderService');
+  await finishRequest(page);
 
   // Assert
   const outcome = page.getByTestId('change-outcome-req-reduced-tax');
   await expect(outcome.getByTestId('outcome-current')).toHaveText('70点');
+  await expect(outcome.getByTestId('outcome-placement')).toContainText('80点');
   await expect(outcome).toContainText('巻き込み');
-  await expect(outcome).toContainText('上限超え');
+  await expect(outcome).toContainText('責務の混在');
   await expect(page.getByTestId('change-readiness')).toBeVisible();
-});
-
-test('調査で変更が必要なメソッドを選び漏らすと、修正漏れとして減点される', async ({ page }) => {
-  // Arrange
-  await openOrderStage(page);
-
-  // Act(何も選ばずに終える)
-  await investigateRequests(page, [[], ['placeOrder'], ['placeOrder']]);
-
-  // Assert
-  const outcome = page.getByTestId('change-outcome-req-reduced-tax');
-  await expect(outcome.getByTestId('outcome-current')).toHaveText('60点');
-  await expect(outcome).toContainText('修正漏れ');
+  await expect(page.getByTestId('change-placement-score')).toBeVisible();
 });
 
 test('責務を分けたあとで同じ依頼を受けると、初期状態より変更容易性スコアが高くなる', async ({ page }) => {
   // Arrange
   await openOrderStage(page);
-  await page.getByTestId('method-placeOrder').click();
-  await page.getByLabel('消費税を計算する(軽減税率あり)').check();
-  await page.getByLabel('新しいメソッド名').fill('calculateTax');
-  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
-  const from = await page.getByTestId('method-calculateTax').boundingBox();
-  const to = await page.getByTestId('class-TaxCalculator').boundingBox();
-  if (from === null || to === null) throw new Error('要素の位置を取得できません');
-  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(from.x + from.width / 2 + 20, from.y + from.height / 2, { steps: 5 });
-  await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 15 });
-  await page.mouse.up();
-  await expect(page.getByTestId('class-TaxCalculator').getByTestId('method-calculateTax')).toBeVisible();
+  await extractTaxToCalculator(page);
 
   // Act
-  await investigateRequests(page, [['calculateTax'], ['placeOrder'], ['placeOrder']]);
+  await implementRequests(page, TAX_PARTS, ['TaxCalculator', 'OrderService', 'OrderService']);
 
   // Assert
-  await expect(page.getByTestId('change-outcome-req-reduced-tax').getByTestId('outcome-current')).toHaveText('95点');
+  const outcome = page.getByTestId('change-outcome-req-reduced-tax');
+  await expect(outcome.getByTestId('outcome-current')).toHaveText('95点');
+  await expect(outcome.getByTestId('outcome-placement')).toContainText('100点');
   expect(await readinessOf(page, 'current')).toBeGreaterThan(await readinessOf(page, 'initial'));
 });
 
-test('結果画面から戻ると、キャンバスは変更依頼を当てる前の状態のままで、編集を再開できる', async ({ page }) => {
+test('結果画面から戻ると、部品置き場は消えてキャンバスは挑戦前の状態のままで、編集を再開できる', async ({ page }) => {
   // Arrange
   await openOrderStage(page);
   const lines = page.getByTestId('method-placeOrder').locator('.method-chip__lines');
   const before = await lines.innerText();
-  await investigateRequests(page, [['placeOrder'], ['placeOrder'], ['placeOrder']]);
+  await implementRequests(page, TAX_PARTS, ['OrderService', 'OrderService', 'OrderService']);
 
   // Act
   await page.getByTestId('change-request-close').click();
 
   // Assert
   await expect(page.getByTestId('change-panel')).toHaveCount(0);
+  await expect(page.getByTestId('class-部品置き場')).toHaveCount(0);
+  await expect(page.getByTestId('method-addReducedTaxItems')).toHaveCount(0);
   expect(await lines.innerText()).toBe(before);
   await page.getByTestId('method-placeOrder').click();
   await expect(page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' })).toBeVisible();
 });
 
-test('変更依頼の調査中にメソッドへカーソルを合わせると、そのメソッドが何をしているか(処理の一覧)が見える', async ({ page }) => {
+test('変更依頼の実装中にメソッドへカーソルを合わせると、そのメソッドが何をしているか(処理の一覧)が見える', async ({ page }) => {
   // Arrange
   await openOrderStage(page);
   await page.getByTestId('change-request-start').click();
@@ -741,57 +758,29 @@ test('変更依頼の調査中にメソッドへカーソルを合わせると�
   await expect(inspect).toContainText('placeOrder');
   await expect(inspect).toContainText('消費税を計算する(軽減税率あり)');
   await expect(inspect).toContainText('確認メールを送る');
-  await expect(page.getByTestId('method-placeOrder')).not.toHaveAttribute('data-investigated', 'true');
 
-  // Act(選んでいないメソッドからカーソルを外す)
+  // Act(カーソルを外す)
   await page.getByTestId('class-OrderService').hover({ position: { x: 5, y: 5 } });
 
-  // Assert(選んでいないので消える)
+  // Assert(消える)
   await expect(inspect).not.toContainText('消費税を計算する');
-});
-
-test('変更依頼の調査で複数のメソッドを選ぶと、選んだメソッドすべての中身が右側に並ぶ', async ({ page }) => {
-  // Arrange
-  await openOrderStage(page);
-  await page.getByTestId('method-placeOrder').click();
-  await page.getByLabel('消費税を計算する(軽減税率あり)').check();
-  await page.getByLabel('新しいメソッド名').fill('calculateTax');
-  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
-  await page.getByTestId('change-request-start').click();
-  const inspect = page.getByTestId('change-inspect');
-
-  // Act
-  await page.getByTestId('method-placeOrder').click();
-  await page.getByTestId('method-calculateTax').hover();
-
-  // Assert(選んだものに加えて、カーソルを合わせたものが「確認中」で出る)
-  await expect(inspect.getByTestId('change-inspect-placeOrder')).not.toContainText('確認中');
-  await expect(inspect.getByTestId('change-inspect-calculateTax')).toContainText('確認中');
-
-  // Act(2つ目も選ぶ。カーソルを外しても両方残る)
-  await page.getByTestId('method-calculateTax').click();
-  await page.getByTestId('class-TaxCalculator').hover({ position: { x: 5, y: 5 } });
-
-  // Assert
-  await expect(inspect.getByTestId('change-inspect-placeOrder')).toBeVisible();
-  await expect(inspect.getByTestId('change-inspect-calculateTax')).not.toContainText('確認中');
-  await expect(inspect.getByTestId('change-inspect-calculateTax')).toContainText('消費税を計算する(軽減税率あり)');
 });
 
 test('変更依頼の結果は、リファクタリングに戻っても手がかりとして残り、直してから再挑戦すると前回の点数と比べられる', async ({ page }) => {
   // Arrange
   await openOrderStage(page);
-  await investigateRequests(page, [['placeOrder'], ['placeOrder'], ['placeOrder']]);
+  await implementRequests(page, TAX_PARTS, ['OrderService', 'OrderService', 'OrderService']);
 
   // Act
   await page.getByTestId('change-request-close').click();
 
-  // Assert(調査中は隠していた変更箇所の印と、前回の減点理由がキャンバスの横に残る)
+  // Assert(実装中は隠していた変更箇所の印と、前回の減点理由がキャンバスの横に残る)
   await expect(page.getByTestId('method-placeOrder').getByTestId('change-site-badge')).toHaveText('変更×3');
   const memo = page.getByTestId('change-memo');
   await expect(memo).toContainText('軽減税率の対象を増やして');
   await expect(memo).toContainText('70点');
   await expect(memo).toContainText('巻き込み');
+  await expect(memo).toContainText('責務の混在');
   await expect(page.getByTestId('change-request-start')).toHaveText('もう一度挑戦');
 
   // Act(税の計算を抽出して、もう一度挑戦する)
@@ -799,7 +788,7 @@ test('変更依頼の結果は、リファクタリングに戻っても手が�
   await page.getByLabel('消費税を計算する(軽減税率あり)').check();
   await page.getByLabel('新しいメソッド名').fill('calculateTax');
   await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
-  await investigateRequests(page, [['calculateTax'], ['placeOrder'], ['placeOrder']]);
+  await implementRequests(page, TAX_PARTS, ['OrderService', 'OrderService', 'OrderService']);
 
   // Assert
   const outcome = page.getByTestId('change-outcome-req-reduced-tax');
@@ -807,10 +796,10 @@ test('変更依頼の結果は、リファクタリングに戻っても手が�
   await expect(outcome.getByTestId('outcome-previous')).toContainText('前回 70点');
 });
 
-test('変更依頼の調査中は、前回の変更箇所の印を出さない(答えが見えてしまうため)', async ({ page }) => {
+test('変更依頼の実装中は、前回の変更箇所の印を出さない(答えが見えてしまうため)', async ({ page }) => {
   // Arrange
   await openOrderStage(page);
-  await investigateRequests(page, [['placeOrder'], ['placeOrder'], ['placeOrder']]);
+  await implementRequests(page, TAX_PARTS, ['OrderService', 'OrderService', 'OrderService']);
   await page.getByTestId('change-request-close').click();
   await expect(page.getByTestId('change-site-badge')).toHaveCount(1);
 
@@ -819,6 +808,78 @@ test('変更依頼の調査中は、前回の変更箇所の印を出さない(�
 
   // Assert
   await expect(page.getByTestId('change-site-badge')).toHaveCount(0);
+});
+
+test('実装中に Ctrl+Z で部品が部品置き場に戻る。挑戦をやめると、挑戦前の手を Ctrl+Z で戻せる', async ({ page }) => {
+  // Arrange(挑戦前に calculateTax を抽出しておく)
+  await openOrderStage(page);
+  await page.getByTestId('method-placeOrder').click();
+  await page.getByLabel('消費税を計算する(軽減税率あり)').check();
+  await page.getByLabel('新しいメソッド名').fill('calculateTax');
+  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+  await page.getByTestId('change-request-start').click();
+  await dragMethodToClass(page, 'method-addReducedTaxItems', 'class-OrderService');
+  await expect(page.getByTestId('change-part-status')).toContainText('OrderService に置きました');
+
+  // Act
+  await page.keyboard.press('Control+z');
+
+  // Assert(部品が部品置き場に戻る。挑戦前の calculateTax は残る)
+  await expect(page.getByTestId('change-part-status')).toContainText('部品はまだ部品置き場にあります');
+  await expect(page.getByTestId('class-部品置き場').getByTestId('method-addReducedTaxItems')).toBeVisible();
+  await expect(page.getByTestId('method-calculateTax')).toBeVisible();
+
+  // Act(やめて、挑戦前の手を戻す)
+  await page.getByRole('button', { name: 'やめる' }).click();
+  await page.keyboard.press('Control+z');
+
+  // Assert
+  await expect(page.getByTestId('method-calculateTax')).toHaveCount(0);
+});
+
+test('上級2: PayPay の追加は、新しいクラスで PaymentGateway を実装すると100点になり、コストの行は出ない', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await page.getByLabel('ステージ').selectOption({ label: '上級2: 決済ゲートウェイをインターフェース越しに呼ぶ' });
+  await page.getByTestId('change-request-start').click();
+  await expect(page.getByTestId('change-request-kind')).toContainText('機能の追加');
+
+  // Act(1件目: 余白へ出して PaymentGateway を実装する)
+  await dragToEmptyCanvas(page, 'method-chargeWithPaypay');
+  await page.getByTestId('class-header-NewClass').click({ button: 'right' });
+  const menu = page.getByTestId('context-menu');
+  await menu.getByRole('menuitem', { name: '実装するインターフェースを設定' }).click();
+  await menu.getByRole('menuitem', { name: 'PaymentGateway' }).click();
+  await expect(page.getByTestId('class-NewClass')).toContainText('implements PaymentGateway');
+  await finishRequest(page);
+  // 2件目: 余白へ出すだけ(どこからも呼ばれない)
+  await dragToEmptyCanvas(page, 'method-logRetryCount');
+  await finishRequest(page);
+  // 3件目: StripeGateway へ足す
+  await dragMethodToClass(page, 'method-applyGatewayTimeout', 'class-StripeGateway');
+  await finishRequest(page);
+
+  // Assert
+  const paypay = page.getByTestId('change-outcome-req-add-paypay');
+  await expect(paypay.getByTestId('outcome-placement')).toContainText('100点');
+  await expect(paypay.getByTestId('outcome-current')).toHaveCount(0);
+  await expect(page.getByTestId('change-outcome-req-payment-logging')).toContainText('未接続');
+});
+
+test('依頼1で作った新しいクラスは、依頼2のキャンバスにも残っている(依頼は連続して改修する)', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await page.getByLabel('ステージ').selectOption({ label: '上級2: 決済ゲートウェイをインターフェース越しに呼ぶ' });
+  await page.getByTestId('change-request-start').click();
+
+  // Act(1件目: 余白へ出して新しいクラスを作り、終える)
+  await dragToEmptyCanvas(page, 'method-chargeWithPaypay');
+  await expect(page.getByTestId('class-NewClass')).toBeVisible();
+  await finishRequest(page);
+
+  // Assert(2件目のキャンバスに、1件目で作ったクラスとメソッドが残っている)
+  await expect(page.getByTestId('change-request-title')).not.toHaveText('PayPayでも払えるようにして');
+  await expect(page.getByTestId('class-NewClass').getByTestId('method-chargeWithPaypay')).toBeVisible();
 });
 
 test('ファイルの箱をドラッグして位置をずらせる', async ({ page }) => {

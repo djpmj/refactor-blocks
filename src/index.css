@@ -108,7 +108,6 @@ input.class-node__name { width: 14ch; }
 .method-chip--protected .method-chip__visibility { color: var(--protected); }
 .method-chip--over { border-color: var(--danger); }
 .method-chip--selected { border-color: var(--accent); }
-.method-chip--investigated { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 20%, var(--bg)); }
 .method-chip__visibility { font-weight: 700; }
 .method-chip__name { flex: 1; }
 .method-chip__lines { color: var(--muted); font-size: 12px; }

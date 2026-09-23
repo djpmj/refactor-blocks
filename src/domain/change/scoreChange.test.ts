@@ -13,7 +13,7 @@ const cleanImpact: ChangeImpact = {
 };
 
 describe('scoreChange', () => {
-  it('減点がなければ100点で、内訳は6ルールを常に同じ順で返す', () => {
+  it('減点がなければ100点で、内訳は4ルールを常に同じ順で返す', () => {
     // Arrange / Act
     const score = scoreChange(cleanImpact);
 
@@ -24,12 +24,10 @@ describe('scoreChange', () => {
       'ripple',
       'entangled',
       'limit-break',
-      'missed',
-      'extra',
     ]);
   });
 
-  it('散らばり・波及・巻き込み・上限超え・調査の漏れと余計な選択を、表のとおりに減点する', () => {
+  it('散らばり・波及・巻き込み・上限超えを、表のとおりに減点する', () => {
     // Arrange
     const impact: ChangeImpact = {
       ...cleanImpact,
@@ -38,15 +36,14 @@ describe('scoreChange', () => {
       mixedResponsibilities: 2,
       overLimitTouched: 1,
     };
-    const investigation = { missed: ['x'], extra: ['y', 'z'] };
 
     // Act
-    const score = scoreChange(impact, investigation);
+    const score = scoreChange(impact);
 
     // Assert
-    // 散らばり(3-1)*10 + 波及2*5 + 巻き込み2*5 + 上限超え10 + 漏れ10 + 余計2*5 = 70
-    expect(score.total).toBe(30);
-    expect(score.deductions.map((deduction) => deduction.points)).toEqual([20, 10, 10, 10, 10, 10]);
+    // 散らばり(3-1)*10 + 波及2*5 + 巻き込み2*5 + 上限超え10 = 50
+    expect(score.total).toBe(50);
+    expect(score.deductions.map((deduction) => deduction.points)).toEqual([20, 10, 10, 10]);
   });
 
   it('0点より下にはしない', () => {

@@ -23,7 +23,7 @@ export type ChangeImpact = {
 };
 
 /** 抽出で入る呼び出し行は処理そのものではないので、責務としては数えない。 */
-const CALL_RESPONSIBILITY = 'call';
+export const CALL_RESPONSIBILITY = 'call';
 
 function unrelatedResponsibilities(method: Method, request: ChangeRequest): number {
   const others = method.fragments

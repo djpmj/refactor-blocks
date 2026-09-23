@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { changeKindOf, type ChangeRequest } from '../../domain/change/ChangeRequest';
 import { findChangeSites } from '../../domain/change/findChangeSites';
 import { measureChange } from '../../domain/change/measureChange';
 import { averageScore, scoreChange } from '../../domain/change/scoreChange';
@@ -80,13 +81,18 @@ function longestMethodLines(codebase: Codebase): number {
   return Math.max(...methods.map((method) => methodLines(method)));
 }
 
+/** コストで測るのは「ルールの変更」だけ。「機能の追加」は置き方で測る。 */
+function modifyRequests(stage: Stage): ChangeRequest[] {
+  return stage.changeRequests.filter((request) => changeKindOf(request) === 'modify');
+}
+
 function changeReadiness(stage: Stage, codebase: Codebase): number {
-  const scores = stage.changeRequests.map((request) => scoreChange(unwrap(measureChange(codebase, request, stage.limits))));
+  const scores = modifyRequests(stage).map((request) => scoreChange(unwrap(measureChange(codebase, request, stage.limits))));
   return averageScore(scores);
 }
 
 function classesTouchedPerRequest(stage: Stage, codebase: Codebase): number[] {
-  return stage.changeRequests.map((request) => unwrap(measureChange(codebase, request, stage.limits)).classesTouched);
+  return modifyRequests(stage).map((request) => unwrap(measureChange(codebase, request, stage.limits)).classesTouched);
 }
 
 function isNoWorse(before: readonly number[], after: readonly number[]): boolean {
@@ -94,7 +100,20 @@ function isNoWorse(before: readonly number[], after: readonly number[]): boolean
 }
 
 function allRequestsHaveSites(stage: Stage): boolean {
-  return stage.changeRequests.every((request) => findChangeSites(stage.codebase, request).length > 0);
+  return modifyRequests(stage).every((request) => findChangeSites(stage.codebase, request).length > 0);
+}
+
+function partNames(stage: Stage): string[] {
+  return stage.changeRequests.map((request) => request.partName ?? '');
+}
+
+function blankPartNames(stage: Stage): string[] {
+  return partNames(stage).filter((name) => name.trim() === '');
+}
+
+function clashingPartNames(stage: Stage): string[] {
+  const methodNames = allClasses(stage.codebase).flatMap((codeClass) => codeClass.methods.map((method) => method.name));
+  return partNames(stage).filter((name) => methodNames.includes(name));
 }
 
 function allIds(stage: Stage): string[] {
@@ -197,7 +216,7 @@ describe('stageCatalog', () => {
 
     it('変更依頼が2件以上あり、どれも初期のコードに変更箇所がある', () => {
       // Arrange
-      const { changeRequests } = stage;
+      const changeRequests = modifyRequests(stage);
 
       // Act
       const everyRequestHasSites = allRequestsHaveSites(stage);
@@ -205,6 +224,22 @@ describe('stageCatalog', () => {
       // Assert
       expect(changeRequests.length).toBeGreaterThanOrEqual(2);
       expect(everyRequestHasSites).toBe(true);
+    });
+
+    it('全依頼に、空でない partName がある', () => {
+      // Arrange / Act
+      const blanks = blankPartNames(stage);
+
+      // Assert
+      expect(blanks).toEqual([]);
+    });
+
+    it('全依頼の partName が、初期コードのメソッド名と重ならない', () => {
+      // Arrange / Act
+      const clashes = clashingPartNames(stage);
+
+      // Assert
+      expect(clashes).toEqual([]);
     });
 
     it('模範解答にすると、変更依頼のコストが初期状態より下がる(変更容易性スコアが上がる)', () => {

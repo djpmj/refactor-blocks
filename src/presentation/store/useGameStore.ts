@@ -1,7 +1,9 @@
 import { createContext, useContext, type Context } from 'react';
 import { createStore, useStore, type StoreApi } from 'zustand';
-import { evaluateChangeRequestUseCase, type ChangeOutcome } from '../../application/ChangeRequestUseCases';
+import { evaluateImplementationUseCase, type ChangeOutcome } from '../../application/ChangeRequestUseCases';
 import { describeCritiqueError, requestCritiqueUseCase } from '../../application/CritiqueUseCases';
+import { withoutTray } from '../../domain/blank/tray';
+import { withChangePart } from '../../domain/change/changePart';
 import { findMethod, type Codebase } from '../../domain/codebase/Codebase';
 import { emptyHistory, recordChange, redoHistory, undoHistory, type History, type Travel } from '../../domain/codebase/history';
 import { scoreCodebase } from '../../domain/scoring/score';
@@ -46,21 +48,25 @@ import type { Progress } from '../../domain/progress/Progress';
 import { updateProgress } from '../../domain/progress/updateProgress';
 import { loadProgress, saveProgress } from '../../infrastructure/progress/progressStorage';
 
-/** 変更依頼に挑戦中の状態。調査中はコードベースを編集できず、依頼を1件ずつ片付ける。 */
+/** 変更依頼に挑戦中の状態。依頼ごとに部品を足したコードで実装し、依頼を1件ずつ片付ける。 */
 export type ChangeSession = {
   /** 今の依頼の番号(0始まり)。 */
   readonly index: number;
-  /** 今の依頼で「変更が必要」と選んだメソッドのID。 */
-  readonly selected: readonly string[];
   /** 何をするメソッドか確かめるために、カーソルを合わせた(フォーカスした)メソッドのID。 */
   readonly inspected: string | null;
   readonly outcomes: readonly ChangeOutcome[];
+  /** 挑戦前のコード。挑戦を終えたらここへ戻す(依頼の実装は積み重ねるが、挑戦後には持ち越さない)。 */
+  readonly base: Codebase;
+  /** 今の依頼を始める前のコード。base に、前の依頼までの実装(部品置き場は除く)を積み重ねたもの。次の依頼はここへ部品置き場を足して始める。 */
+  readonly carried: Codebase;
+  /** 挑戦前の取り消し履歴。挑戦を終えたら戻す。 */
+  readonly baseHistory: History;
 };
 
 /** 直前に終えた変更依頼の結果。リファクタリングに戻ったあとも、どこを直せばよいかの手がかりとして残す。 */
 export type ChangeReport = {
   readonly outcomes: readonly ChangeOutcome[];
-  /** 減点の理由(波及したクラスの名前など)を組み立てるための、挑戦した時点のコードベース。 */
+  /** 減点の理由(波及したクラスの名前など)を組み立てるための、挑戦の最後の時点のコードベース(前の依頼で作ったクラスの名前も引けるよう、実装を積み重ねたもの)。 */
   readonly codebase: Codebase;
 };
 
@@ -103,9 +109,8 @@ type GameState = {
   undo: () => void;
   redo: () => void;
   startChangeRequests: () => void;
-  toggleInvestigated: (methodId: string) => void;
   inspectMethod: (methodId: string | null) => void;
-  finishInvestigation: () => void;
+  finishImplementation: () => void;
   endChangeRequests: () => void;
   resetStage: () => void;
   selectStage: (stageId: string) => void;
@@ -115,42 +120,41 @@ type GameState = {
 
 /** コードベースが変わったときだけ、変更前のものを履歴に積んで差し替える。何も変わらない操作は1手に数えない。 */
 function commit(state: GameState, codebase: Codebase): Partial<GameState> {
-  // 変更依頼の調査中は、調べているコードが変わらないよう編集を受け付けない
-  if (codebase === state.codebase || state.changeSession !== null) return {};
+  if (codebase === state.codebase) return {};
   return { codebase, history: recordChange(state.history, state.codebase) };
 }
 
 /** 操作の結果を状態の更新にする。成功したらコードベースを差し替え、失敗したら理由を出す。 */
 function applyResult<E>(state: GameState, result: Result<Codebase, E>, describe: (error: E) => string): Partial<GameState> {
-  if (state.changeSession !== null) return { message: '変更依頼の調査中は編集できません' };
   return result.ok ? { ...commit(state, result.value), message: null } : { message: describe(result.error) };
 }
 
 /** 取り消し・やり直しの結果を状態にする。選択中のメソッドがなくなっていたら選択を外す。 */
 function travelTo(state: GameState, travel: Travel | undefined): Partial<GameState> {
-  if (travel === undefined || state.changeSession !== null) return {};
+  if (travel === undefined) return {};
   const { codebase, history } = travel;
   const stillThere = state.selectedMethodId !== null && findMethod(codebase, state.selectedMethodId) !== undefined;
   return { codebase, history, selectedMethodId: stillThere ? state.selectedMethodId : null, message: null };
 }
 
-function toggleInvestigated(state: GameState, methodId: string): Partial<GameState> {
-  const session = state.changeSession;
-  if (session === null) return {};
-  const selected = session.selected.includes(methodId)
-    ? session.selected.filter((id) => id !== methodId)
-    : [...session.selected, methodId];
-  return { changeSession: { ...session, selected } };
-}
+const UNPLACED_MESSAGE = '部品がまだ部品置き場にあります。置き場所へドラッグしてください';
 
-/** 今の依頼を評価して結果に積み、次の依頼へ進む。 */
-function finishInvestigation(state: GameState): Partial<GameState> {
+/** 今の依頼の実装を評価して結果に積み、次の依頼(部品を足した挑戦前のコード)へ進む。全件終えたら挑戦前のコードに戻す。 */
+function finishImplementation(state: GameState): Partial<GameState> {
   const session = state.changeSession;
   const request = session === null ? undefined : state.stage.changeRequests[session.index];
   if (session === null || request === undefined) return {};
-  const result = evaluateChangeRequestUseCase(state.stage, state.codebase, request, session.selected);
-  if (!result.ok) return { message: 'この依頼で変更が必要な場所が見つかりません' };
-  return { changeSession: { index: session.index + 1, selected: [], inspected: null, outcomes: [...session.outcomes, result.value] }, message: null };
+  const result = evaluateImplementationUseCase(state.stage, session.carried, state.codebase, request);
+  if (!result.ok) return { message: result.error === 'unplaced-part' ? UNPLACED_MESSAGE : 'この依頼で変更が必要な場所が見つかりません' };
+  const next = state.stage.changeRequests.at(session.index + 1);
+  const carried = withoutTray(state.codebase);
+  return {
+    changeSession: { ...session, index: session.index + 1, inspected: null, outcomes: [...session.outcomes, result.value], carried },
+    codebase: next === undefined ? session.base : withChangePart(carried, next),
+    history: emptyHistory(),
+    selectedMethodId: null,
+    message: null,
+  };
 }
 
 function historyActions(set: (partial: Partial<GameState>) => void, get: () => GameState): Pick<GameState, 'undo' | 'redo'> {
@@ -167,25 +171,38 @@ function historyActions(set: (partial: Partial<GameState>) => void, get: () => G
 function changeSessionActions(
   set: (partial: Partial<GameState>) => void,
   get: () => GameState,
-): Pick<GameState, 'startChangeRequests' | 'toggleInvestigated' | 'inspectMethod' | 'finishInvestigation' | 'endChangeRequests'> {
+): Pick<GameState, 'startChangeRequests' | 'inspectMethod' | 'finishImplementation' | 'endChangeRequests'> {
   return {
     startChangeRequests: () => {
-      set({ changeSession: { index: 0, selected: [], inspected: null, outcomes: [] }, selectedMethodId: null, message: null });
-    },
-    toggleInvestigated: (methodId) => {
-      set(toggleInvestigated(get(), methodId));
+      const { codebase, history, stage } = get();
+      const [first] = stage.changeRequests;
+      set({
+        changeSession: { index: 0, inspected: null, outcomes: [], base: codebase, carried: codebase, baseHistory: history },
+        codebase: withChangePart(codebase, first),
+        history: emptyHistory(),
+        selectedMethodId: null,
+        message: null,
+      });
     },
     inspectMethod: (methodId) => {
       const { changeSession } = get();
       if (changeSession !== null) set({ changeSession: { ...changeSession, inspected: methodId } });
     },
-    finishInvestigation: () => {
-      set(finishInvestigation(get()));
+    finishImplementation: () => {
+      set(finishImplementation(get()));
     },
     endChangeRequests: () => {
-      const { changeSession, codebase, lastChangeReport } = get();
-      const outcomes = changeSession === null ? [] : changeSession.outcomes;
-      set({ changeSession: null, message: null, lastChangeReport: outcomes.length > 0 ? { outcomes, codebase } : lastChangeReport });
+      const { changeSession, lastChangeReport } = get();
+      if (changeSession === null) return;
+      const { outcomes, base, carried, baseHistory } = changeSession;
+      set({
+        changeSession: null,
+        codebase: base,
+        history: baseHistory,
+        selectedMethodId: null,
+        message: null,
+        lastChangeReport: outcomes.length > 0 ? { outcomes, codebase: carried } : lastChangeReport,
+      });
     },
   };
 }
@@ -341,6 +358,8 @@ export function createGameStore(allStages: readonly Stage[]): GameStore {
       ...changeSessionActions(set, get),
       // 「最初に戻す」も1手として記録し、取り消しで戻せるようにする
       resetStage: () => {
+        // 実装中に戻すと、部品置き場ごと消えてしまう
+        if (get().changeSession !== null) return;
         set({ ...commit(get(), get().stage.codebase), selectedMethodId: null, message: null });
       },
       selectStage: (stageId) => {

@@ -1,45 +1,71 @@
 import { describe, expect, it } from 'vitest';
 import type { ChangeRequest } from '../domain/change/ChangeRequest';
+import { withChangePart } from '../domain/change/changePart';
+import { moveMethod } from '../domain/codebase/moveMethod';
 import { sampleCodebase } from '../domain/codebase/testFixtures';
-import { evaluateChangeRequestUseCase } from './ChangeRequestUseCases';
+import { evaluateImplementationUseCase } from './ChangeRequestUseCases';
 
 const taxRequest: ChangeRequest = { id: 'req-tax', title: '軽減税率', description: '', responsibility: 'tax', linesPerSite: 8 };
 const stage = { limits: { method: 20, class: 100, file: 100 }, codebase: sampleCodebase() };
 
-describe('evaluateChangeRequestUseCase', () => {
-  it('今のコードと初期状態のコードの両方に依頼を当てて、点数を返す', () => {
+describe('evaluateImplementationUseCase', () => {
+  const request: ChangeRequest = { ...taxRequest, partName: 'addReducedTax' };
+  const partId = 'method-part-req-tax';
+
+  function placedIn(classId: string): ReturnType<typeof moveMethod> {
+    return moveMethod(withChangePart(sampleCodebase(), request), partId, classId);
+  }
+
+  it("'modify': 挑戦前のコードのコストと初期状態のコストが入り、置き方は base と implemented の比較になる", () => {
     // Arrange
-    const codebase = sampleCodebase();
+    const implemented = placedIn('class-tax');
+    if (!implemented.ok) throw new Error('成功するはず');
 
     // Act
-    const result = evaluateChangeRequestUseCase(stage, codebase, taxRequest, ['method-place']);
+    const result = evaluateImplementationUseCase(stage, sampleCodebase(), implemented.value, request);
 
     // Assert
     if (!result.ok) throw new Error('成功するはず');
-    expect(result.value.current.impact.sites).toEqual(['method-place']);
-    expect(result.value.initial.score.total).toBe(result.value.current.score.total);
-    expect(result.value.investigation).toEqual({ missed: [], extra: [] });
+    expect(result.value.current?.impact.sites).toEqual(['method-place']);
+    expect(result.value.initial?.score.total).toBe(result.value.current?.score.total);
+    expect(result.value.placement.placement.partClassId).toBe('class-tax');
+    expect(result.value.placement.score.total).toBe(90);
   });
 
-  it('調査の漏れは今のコードの点数だけを下げ、初期状態の点数には影響しない', () => {
+  it("'extend': current と initial は null で、依頼の責務がコードになくても ok", () => {
     // Arrange
-    const codebase = sampleCodebase();
+    const extend: ChangeRequest = { ...request, kind: 'extend', responsibility: 'gateway' };
+    const moved = moveMethod(withChangePart(sampleCodebase(), extend), partId, 'class-tax');
+    if (!moved.ok) throw new Error('成功するはず');
 
     // Act
-    const result = evaluateChangeRequestUseCase(stage, codebase, taxRequest, []);
+    const result = evaluateImplementationUseCase(stage, sampleCodebase(), moved.value, extend);
 
     // Assert
     if (!result.ok) throw new Error('成功するはず');
-    expect(result.value.investigation.missed).toEqual(['method-place']);
-    expect(result.value.current.score.total).toBe(result.value.initial.score.total - 10);
+    expect(result.value.current).toBeNull();
+    expect(result.value.initial).toBeNull();
   });
 
-  it('変更箇所がなければ no-sites', () => {
+  it('部品が未配置なら unplaced-part', () => {
     // Arrange
-    const codebase = sampleCodebase();
+    const implemented = withChangePart(sampleCodebase(), request);
 
     // Act
-    const result = evaluateChangeRequestUseCase(stage, codebase, { ...taxRequest, responsibility: 'shipping' }, []);
+    const result = evaluateImplementationUseCase(stage, sampleCodebase(), implemented, request);
+
+    // Assert
+    expect(result).toEqual({ ok: false, error: 'unplaced-part' });
+  });
+
+  it("'modify' で責務がコードになければ no-sites", () => {
+    // Arrange
+    const noSites: ChangeRequest = { ...request, responsibility: 'shipping' };
+    const implemented = moveMethod(withChangePart(sampleCodebase(), noSites), partId, 'class-tax');
+    if (!implemented.ok) throw new Error('成功するはず');
+
+    // Act
+    const result = evaluateImplementationUseCase(stage, sampleCodebase(), implemented.value, noSites);
 
     // Assert
     expect(result).toEqual({ ok: false, error: 'no-sites' });
