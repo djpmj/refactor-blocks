@@ -1,4 +1,5 @@
-import { create } from 'zustand';
+import { createContext, useContext, type Context } from 'react';
+import { createStore, useStore, type StoreApi } from 'zustand';
 import { evaluateChangeRequestUseCase, type ChangeOutcome } from '../../application/ChangeRequestUseCases';
 import { describeCritiqueError, requestCritiqueUseCase } from '../../application/CritiqueUseCases';
 import { findMethod, type Codebase } from '../../domain/codebase/Codebase';
@@ -108,8 +109,6 @@ type GameState = {
   progress: Progress;
   recordProgress: (stageId: string, score: number) => void;
 };
-
-const [firstStage] = stages;
 
 /** コードベースが変わったときだけ、変更前のものを履歴に積んで差し替える。何も変わらない操作は1手に数えない。 */
 function commit(state: GameState, codebase: Codebase): Partial<GameState> {
@@ -289,60 +288,77 @@ function replaceMethodActions(
   };
 }
 
-export const useGameStore = create<GameState>((set, get) => {
-  /** 操作の結果を反映し、成功したかを返す。 */
-  const apply = <E>(result: Result<Codebase, E>, describe: (error: E) => string): boolean => {
-    set(applyResult(get(), result, describe));
-    return result.ok;
-  };
-  return {
-    stages,
-    stage: firstStage,
-    codebase: firstStage.codebase,
-    history: emptyHistory(),
-    selectedMethodId: null,
-    message: null,
-    changeSession: null,
-    lastChangeReport: null,
-    critique: EMPTY_CRITIQUE,
-    ...critiqueActions(set, get),
-    selectMethod: (methodId) => {
-      set({ selectedMethodId: methodId, message: null });
-    },
-    extractMethod: (input) => {
-      return apply(extractMethodUseCase(get().codebase, input, () => crypto.randomUUID()), describeExtractError);
-    },
-    ...replaceMethodActions(set, get),
-    addClass: (fileId, className) => {
-      return apply(addClassUseCase(get().codebase, fileId, className, () => crypto.randomUUID()), describeAddClassError);
-    },
-    addFile: (path) => {
-      return apply(addFileUseCase(get().codebase, path, () => crypto.randomUUID()), describeAddFileError);
-    },
-    ...renameActions(apply, get),
-    deleteClass: (classId) => {
-      return apply(deleteClassUseCase(get().codebase, classId), describeDeleteClassError);
-    },
-    deleteFile: (fileId) => {
-      return apply(deleteFileUseCase(get().codebase, fileId), describeDeleteFileError);
-    },
-    ...moveActions(apply, get),
-    ...historyActions(set, get),
-    ...changeSessionActions(set, get),
-    // 「最初に戻す」も1手として記録し、取り消しで戻せるようにする
-    resetStage: () => {
-      set({ ...commit(get(), get().stage.codebase), selectedMethodId: null, message: null });
-    },
-    selectStage: (stageId) => {
-      const next = selectStageState(stages, stageId);
-      if (next !== null) set(next);
-    },
-    progress: loadProgress(),
-    recordProgress: (stageId, score) => {
-      const next = updateProgress(get().progress, stageId, score);
-      if (next === get().progress) return;
-      saveProgress(next);
-      set({ progress: next });
-    },
-  };
-});
+export type GameStore = StoreApi<GameState>;
+
+/** stages の先頭のステージから始まるストアを作る。selectStage もこの stages から探す。 */
+export function createGameStore(allStages: readonly Stage[]): GameStore {
+  const [firstStage] = allStages;
+  return createStore<GameState>((set, get) => {
+    /** 操作の結果を反映し、成功したかを返す。 */
+    const apply = <E>(result: Result<Codebase, E>, describe: (error: E) => string): boolean => {
+      set(applyResult(get(), result, describe));
+      return result.ok;
+    };
+    return {
+      stages: allStages,
+      stage: firstStage,
+      codebase: firstStage.codebase,
+      history: emptyHistory(),
+      selectedMethodId: null,
+      message: null,
+      changeSession: null,
+      lastChangeReport: null,
+      critique: EMPTY_CRITIQUE,
+      ...critiqueActions(set, get),
+      selectMethod: (methodId) => {
+        set({ selectedMethodId: methodId, message: null });
+      },
+      extractMethod: (input) => {
+        return apply(extractMethodUseCase(get().codebase, input, () => crypto.randomUUID()), describeExtractError);
+      },
+      ...replaceMethodActions(set, get),
+      addClass: (fileId, className) => {
+        return apply(addClassUseCase(get().codebase, fileId, className, () => crypto.randomUUID()), describeAddClassError);
+      },
+      addFile: (path) => {
+        return apply(addFileUseCase(get().codebase, path, () => crypto.randomUUID()), describeAddFileError);
+      },
+      ...renameActions(apply, get),
+      deleteClass: (classId) => {
+        return apply(deleteClassUseCase(get().codebase, classId), describeDeleteClassError);
+      },
+      deleteFile: (fileId) => {
+        return apply(deleteFileUseCase(get().codebase, fileId), describeDeleteFileError);
+      },
+      ...moveActions(apply, get),
+      ...historyActions(set, get),
+      ...changeSessionActions(set, get),
+      // 「最初に戻す」も1手として記録し、取り消しで戻せるようにする
+      resetStage: () => {
+        set({ ...commit(get(), get().stage.codebase), selectedMethodId: null, message: null });
+      },
+      selectStage: (stageId) => {
+        const next = selectStageState(get().stages, stageId);
+        if (next !== null) set(next);
+      },
+      progress: loadProgress(),
+      recordProgress: (stageId, score) => {
+        const next = updateProgress(get().progress, stageId, score);
+        if (next === get().progress) return;
+        saveProgress(next);
+        set({ progress: next });
+      },
+    };
+  });
+}
+
+/** 既定値はリファクタリング用のストア。Providerがない所(リファクタリング画面)ではこれを使う。 */
+export const GameStoreContext: Context<GameStore> = createContext(createGameStore(stages));
+
+export function useGameStoreApi(): GameStore {
+  return useContext(GameStoreContext);
+}
+
+export function useGameStore<T>(selector: (state: GameState) => T): T {
+  return useStore(useGameStoreApi(), selector);
+}

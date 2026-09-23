@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { BlankDesignView } from './blank/BlankDesignView';
 import { CodebaseCanvas } from './canvas/CodebaseCanvas';
 import { ChangeRequestPanel } from './change/ChangeRequestPanel';
 import { MethodEditor } from './editor/MethodEditor';
@@ -7,12 +8,13 @@ import { StagePanel } from './stage/StagePanel';
 import { useGameStore } from './store/useGameStore';
 import { useUndoRedoShortcut } from './useUndoRedoShortcut';
 
-type Mode = 'refactor' | 'quiz';
+type Mode = 'refactor' | 'quiz' | 'blank';
 
-const MODE_LABEL: Record<Mode, string> = { refactor: 'リファクタリング', quiz: '設計くらべ' };
+const MODE_LABEL: Record<Mode, string> = { refactor: 'リファクタリング', quiz: '設計くらべ', blank: '白紙設計' };
 
 function RefactorView({ active }: Readonly<{ active: boolean }>) {
   const investigating = useGameStore((state) => state.changeSession !== null);
+  useUndoRedoShortcut(active);
   return (
     <>
       <StagePanel />
@@ -28,13 +30,13 @@ function RefactorView({ active }: Readonly<{ active: boolean }>) {
 
 export function App() {
   const [mode, setMode] = useState<Mode>('refactor');
-  // クイズのキャンバスは、見えない(大きさ0の)まま fitView すると表示がずれるので、初めて開いたときにマウントする
+  // クイズ・白紙設計のキャンバスは、見えない(大きさ0の)まま fitView すると表示がずれるので、初めて開いたときにマウントする
   const [quizOpened, setQuizOpened] = useState(false);
-  useUndoRedoShortcut(mode === 'refactor');
+  const [blankOpened, setBlankOpened] = useState(false);
   return (
     <div className="app">
       <nav className="mode-switch" aria-label="モード">
-        {(['refactor', 'quiz'] as const).map((candidate) => (
+        {(['refactor', 'quiz', 'blank'] as const).map((candidate) => (
           <button
             key={candidate}
             type="button"
@@ -43,6 +45,7 @@ export function App() {
             onClick={() => {
               setMode(candidate);
               if (candidate === 'quiz') setQuizOpened(true);
+              if (candidate === 'blank') setBlankOpened(true);
             }}
           >
             {MODE_LABEL[candidate]}
@@ -56,6 +59,11 @@ export function App() {
       {quizOpened ? (
         <div className="app__view" hidden={mode !== 'quiz'}>
           <ComparisonQuizView />
+        </div>
+      ) : null}
+      {blankOpened ? (
+        <div className="app__view" hidden={mode !== 'blank'} data-testid="blank-view">
+          <BlankDesignView active={mode === 'blank'} />
         </div>
       ) : null}
     </div>

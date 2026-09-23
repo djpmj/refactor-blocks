@@ -1,22 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { scoreCodebase, type Score, type ScoreRule } from '../../domain/scoring/score';
+import { scoreCodebase } from '../../domain/scoring/score';
 import { sampleAnswerCodebase, sampleAnswerSteps } from '../../domain/stage/sampleAnswer';
 import type { Stage, StageLevel } from '../../domain/stage/Stage';
 import { CritiquePanel } from '../critique/CritiquePanel';
 import { CodebasePreviewDialog } from '../preview/CodebasePreviewDialog';
 import { useGameStore } from '../store/useGameStore';
+import { describeScore } from './describeScore';
 import { HintPanel } from './HintPanel';
-
-const RULE_LABEL: Record<ScoreRule, string> = {
-  'line-limit': '行数',
-  coupling: '結合度',
-  cycle: '循環依存',
-  responsibility: '責務の混在',
-  visibility: 'アクセス制御',
-  empty: '空のクラス・ファイル',
-  unused: '未使用のprivateメソッド',
-  'lone-superclass': '子が1つだけの継承',
-};
 
 const LEVEL_LABEL: Record<StageLevel, string> = {
   tutorial: 'チュートリアル',
@@ -55,13 +45,6 @@ function StageSelect() {
       ))}
     </select>
   );
-}
-
-function describeScore(score: Score): string {
-  const details = score.deductions
-    .filter((deduction) => deduction.points > 0)
-    .map((deduction) => `${RULE_LABEL[deduction.rule]} -${deduction.points}`);
-  return details.length === 0 ? `✅ ${score.total}点` : `${score.total}点(${details.join(' / ')})`;
 }
 
 type PreviewKind = 'before' | 'sample';
