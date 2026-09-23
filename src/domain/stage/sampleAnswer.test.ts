@@ -138,6 +138,18 @@ describe('applySolutionSteps', () => {
     expect(classNamed(result, 'A').superclassKind).toBe('implements');
   });
 
+  it('setSuperclassステップにsuperclass: nullを指定すると、継承を解除する', () => {
+    // Arrange
+    const codebase = twoClassCodebase();
+    const steps: SolutionStep[] = [{ setSuperclass: { class: 'A', superclass: 'B' } }, { setSuperclass: { class: 'A', superclass: null } }];
+
+    // Act
+    const result = applySolutionSteps(codebase, steps);
+
+    // Assert
+    expect(classNamed(result, 'A').superclassId).toBeUndefined();
+  });
+
   it('手順を順番に適用する(前の手順の結果に次の手順を重ねる)', () => {
     // Arrange
     const codebase = twoClassCodebase();

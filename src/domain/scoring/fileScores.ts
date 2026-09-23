@@ -3,6 +3,7 @@ import { classDependencies } from "../codebase/dependencies";
 import type { Stage } from "../stage/Stage";
 import { findEmptyContainers, findUnusedPrivateMethods } from "./leftovers";
 import { findLineLimitViolations } from "./lineLimits";
+import { findLoneSuperclasses } from "./loneSuperclass";
 import { findResponsibilityViolations } from "./responsibilities";
 import { findCouplingViolations, POINTS_PER_VIOLATION } from "./score";
 
@@ -41,6 +42,7 @@ export function fileDeductions(
       .map((dependency) => dependency.from),
     ...findEmptyContainers(codebase),
     ...findUnusedPrivateMethods(codebase),
+    ...findLoneSuperclasses(codebase),
   ];
   const owners = fileIdByTargetId(codebase);
   const points = new Map(

@@ -38,7 +38,8 @@ export type SolutionStep =
   | {
       readonly setSuperclass: {
         readonly class: string;
-        readonly superclass: string;
+        /** null なら継承を解除する。 */
+        readonly superclass: string | null;
         readonly kind?: 'extends' | 'implements';
       };
     };
@@ -218,6 +219,12 @@ export const sampleAnswerSteps: Partial<Record<string, readonly SolutionStep[]>>
     { extract: { from: 'exportMonthlyReport', fragmentIds: ['frag-build-report-monthly'], name: 'buildMonthlyReport' } },
     { merge: { methodA: 'buildWeeklyReport', methodB: 'buildMonthlyReport', name: 'buildReport' } },
     { move: { method: 'buildReport', toClass: 'ReportFactory' } },
+  ],
+  'advanced-collapse-hierarchy': [
+    { move: { method: 'prepareExport', toClass: 'CsvExporter' } },
+    { move: { method: 'escapeValue', toClass: 'CsvExporter' } },
+    { setSuperclass: { class: 'CsvExporter', superclass: null } },
+    { deleteFile: 'src/export/BaseExporter.ts' },
   ],
 };
 

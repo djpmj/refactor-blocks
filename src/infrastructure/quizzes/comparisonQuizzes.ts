@@ -20,6 +20,7 @@ function firstRequest(stage: Stage): ChangeRequest {
 const userController = stageById('beginner-user-controller');
 const volatileTax = stageById('intermediate-volatile-tax');
 const volatileFormat = stageById('intermediate-volatile-format');
+const collapseHierarchy = stageById('advanced-collapse-hierarchy');
 
 // 2問目と3問目は同じ2つの設計で、依頼だけが違う(どこが変わるかで良し悪しが入れ替わる)
 const formatSplitDesign = { label: '帳票の整形を ReportFormatter に分けた設計', codebase: sampleAnswerCodebase(volatileFormat) };
@@ -59,5 +60,18 @@ export const comparisonQuizzes: readonly ComparisonQuiz[] = [
     changeRequest: firstRequest(volatileFormat),
     explanation:
       '整形を ReportFormatter に閉じ込めた設計なら、形式の変更は小さなクラスの中で済む。税を分けた設計では、整形の変更(2か所で+28行)が148行の SalesReportService に入り、上限150行を超える。2問目と同じ2つの設計なのに答えが入れ替わる。良い設計とは、よく変わる所を閉じ込めた設計のこと。',
+  },
+  {
+    id: 'quiz-collapse-hierarchy',
+    title: '4問目: 子が1つしかない継承',
+    description: '売上をCSVでダウンロードさせるコード。CSVを書き出す処理を、継承を使う形と使わない形の2通りで作った。',
+    limits: collapseHierarchy.limits,
+    designs: {
+      a: { label: '基底クラス BaseExporter と、その子 CsvExporter に分けた設計', codebase: collapseHierarchy.codebase },
+      b: { label: 'CSVの処理を CsvExporter 1クラスにまとめた設計', codebase: sampleAnswerCodebase(collapseHierarchy) },
+    },
+    changeRequest: firstRequest(collapseHierarchy),
+    explanation:
+      '子が1つしかない継承は、CSVという1つの概念を2クラスに分けてしまい、区切り文字の変更でも BaseExporter と CsvExporter の両方を直すことになる。拡張ポイントは、2つ目の出力形式が本当に必要になってから作れば間に合う。',
   },
 ];

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { allClasses, findClass, findSuperclass, type CodeClass, type Codebase } from '../../domain/codebase/Codebase';
 import { classDependencies } from '../../domain/codebase/dependencies';
+import { scoreCodebase } from '../../domain/scoring/score';
 import { sampleAnswerCodebase } from '../../domain/stage/sampleAnswer';
 import { advancedStages } from './advancedStages';
 
@@ -328,5 +329,34 @@ describe('advanced-report-factory', () => {
     const reportFactoryId = classNamed(solved, 'ReportFactory').id;
     expect(dependencies).toHaveLength(2);
     expect(targets.every((target) => target === reportFactoryId)).toBe(true);
+  });
+});
+
+describe('advanced-collapse-hierarchy', () => {
+  const stage = advancedStages.find((candidate) => candidate.id === 'advanced-collapse-hierarchy');
+  if (stage === undefined) throw new Error('advanced-collapse-hierarchy ステージが見つかりません');
+
+  it('初期状態では、子が1つだけの BaseExporter が減点されている', () => {
+    // Arrange
+    const { codebase } = stage;
+
+    // Act
+    const score = scoreCodebase(codebase, stage);
+
+    // Assert
+    expect(score.deductions).toContainEqual({ rule: 'lone-superclass', count: 1, points: 10 });
+  });
+
+  it('模範解答では、CSVの処理が CsvExporter 1クラスにまとまり、継承がなくなる', () => {
+    // Arrange
+    const solved = sampleAnswerCodebase(stage);
+
+    // Act
+    const csvExporter = classNamed(solved, 'CsvExporter');
+
+    // Assert
+    expect(csvExporter.superclassId).toBeUndefined();
+    expect(csvExporter.methods.map((method) => method.name)).toEqual(['writeRows', 'quoteChar', 'prepareExport', 'escapeValue']);
+    expect(allClasses(solved).map((codeClass) => codeClass.name)).not.toContain('BaseExporter');
   });
 });

@@ -30,6 +30,27 @@ function classOf(name: string, uses: readonly string[]): CodeClass {
 }
 
 describe("fileDeductions", () => {
+  it("子が1つだけの基底クラスは、その基底クラスがあるファイルの減点になる", () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [
+        { id: "file-base", path: "src/base.ts", classes: [classOf("Base", [])] },
+        {
+          id: "file-child",
+          path: "src/child.ts",
+          classes: [{ ...classOf("Child", []), superclassId: "class-Base" }],
+        },
+      ],
+    };
+
+    // Act
+    const deductions = fileDeductions(codebase, LOOSE);
+
+    // Assert
+    expect(deductions.get("file-base")).toBe(10);
+    expect(deductions.get("file-child")).toBe(0);
+  });
+
   it("行数の違反は、その持ち主のファイルの減点になる", () => {
     // Arrange
     const codebase = sampleCodebase();

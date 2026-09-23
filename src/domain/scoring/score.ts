@@ -3,10 +3,11 @@ import { classDependencies, type ClassDependency } from '../codebase/dependencie
 import type { Stage } from '../stage/Stage';
 import { findEmptyContainers, findUnusedPrivateMethods } from './leftovers';
 import { findLineLimitViolations } from './lineLimits';
+import { findLoneSuperclasses } from './loneSuperclass';
 import { findResponsibilityViolations } from './responsibilities';
 import { findVisibilityViolations } from './visibility';
 
-export type ScoreRule = 'line-limit' | 'coupling' | 'cycle' | 'responsibility' | 'visibility' | 'empty' | 'unused';
+export type ScoreRule = 'line-limit' | 'coupling' | 'cycle' | 'responsibility' | 'visibility' | 'empty' | 'unused' | 'lone-superclass';
 
 export type ScoreDeduction = {
   readonly rule: ScoreRule;
@@ -30,7 +31,7 @@ export function findCouplingViolations(dependencies: readonly ClassDependency[],
 }
 
 /**
- * 行数・結合度・循環依存・責務の混在・アクセス制御・空の入れ物・使われていないprivateメソッドの
+ * 行数・結合度・循環依存・責務の混在・アクセス制御・空の入れ物・使われていないprivateメソッド・子が1つだけの継承の
  * 違反1件につき10点を100点から引く。0点より下にはしない。
  */
 export function scoreCodebase(
@@ -46,8 +47,9 @@ export function scoreCodebase(
     visibility: stage.visibilityEnforced === true ? findVisibilityViolations(codebase).length : 0,
     empty: findEmptyContainers(codebase).length,
     unused: findUnusedPrivateMethods(codebase).length,
+    'lone-superclass': findLoneSuperclasses(codebase).length,
   };
-  const deductions = (['line-limit', 'coupling', 'cycle', 'responsibility', 'visibility', 'empty', 'unused'] as const).map(
+  const deductions = (['line-limit', 'coupling', 'cycle', 'responsibility', 'visibility', 'empty', 'unused', 'lone-superclass'] as const).map(
     (rule): ScoreDeduction => ({ rule, count: counts[rule], points: counts[rule] * POINTS_PER_VIOLATION }),
   );
   const deducted = deductions.reduce((sum, deduction) => sum + deduction.points, 0);

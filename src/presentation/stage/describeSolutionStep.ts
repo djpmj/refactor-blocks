@@ -10,6 +10,13 @@ function fragmentLabel(codebase: Codebase, fragmentId: string): string {
   return fragment?.label ?? fragmentId;
 }
 
+type SetSuperclassStep = Extract<SolutionStep, { readonly setSuperclass: unknown }>['setSuperclass'];
+
+function describeSetSuperclass({ class: className, superclass, kind }: SetSuperclassStep): string {
+  if (superclass === null) return `${className} の継承を右クリックメニューの「継承元を設定」で解除しよう`;
+  return `${className} の継承元を ${superclass} に設定しよう(${kind === 'implements' ? '実装' : '継承'})`;
+}
+
 /** 模範解答の1手を、プレイヤー向けの日本語のヒント文にする。 */
 export function describeSolutionStep(codebase: Codebase, step: SolutionStep): string {
   if ('extract' in step) {
@@ -31,6 +38,5 @@ export function describeSolutionStep(codebase: Codebase, step: SolutionStep): st
   if ('deleteFile' in step) return `空になったファイル ${step.deleteFile} を右クリックで削除しよう`;
   if ('addClass' in step) return `${step.addClass.file} に ${step.addClass.name} クラスを追加しよう`;
   if ('moveClass' in step) return `${step.moveClass.name} クラスを ${step.moveClass.toFile} へ移そう`;
-  const { class: className, superclass, kind } = step.setSuperclass;
-  return `${className} の継承元を ${superclass} に設定しよう(${kind === 'implements' ? '実装' : '継承'})`;
+  return describeSetSuperclass(step.setSuperclass);
 }

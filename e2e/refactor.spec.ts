@@ -919,3 +919,22 @@ test('上級ステージ: 共通処理を基底クラスへ移してから継承
   await expect(edge).toHaveCount(1);
   await expect(page.getByTestId('class-EmailNotifier')).toContainText('extends NotifierBase');
 });
+
+test('上級5: 子が1つだけの継承は減点され、右クリックメニューから継承を解除すると減点が消える', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await page.getByLabel('ステージ').selectOption({ label: '上級5: 子が1つしかない継承を畳む' });
+  const score = page.getByTestId('score');
+  await expect(score).toContainText('子が1つだけの継承 -10');
+  await page.getByTestId('class-header-CsvExporter').click({ button: 'right' });
+  const menu = page.getByTestId('context-menu');
+  await menu.getByRole('menuitem', { name: '継承元を設定' }).click();
+
+  // Act
+  await menu.getByLabel('親クラス名(空で解除)').selectOption('');
+  await menu.getByRole('button', { name: '設定' }).click();
+
+  // Assert
+  await expect(page.getByTestId('class-CsvExporter')).not.toContainText('extends BaseExporter');
+  await expect(score).not.toContainText('子が1つだけの継承');
+});

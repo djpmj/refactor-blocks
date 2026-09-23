@@ -38,6 +38,36 @@ const shortcuts: ReadonlyArray<{ readonly stageId: string; readonly description:
       { extract: { from: 'checkout', fragmentIds: ['frag-reserve-stock', 'frag-order-total'], name: 'prepareOrder' } },
     ],
   },
+  {
+    stageId: 'advanced-collapse-hierarchy',
+    description: '継承を外すだけで、メソッドを1クラスにまとめない',
+    steps: [{ setSuperclass: { class: 'CsvExporter', superclass: null } }],
+  },
+  {
+    stageId: 'advanced-collapse-hierarchy',
+    description: 'prepareExport だけを CsvExporter へ移して継承を外す(escapeValue は BaseExporter に残る)',
+    steps: [
+      { move: { method: 'prepareExport', toClass: 'CsvExporter' } },
+      { setSuperclass: { class: 'CsvExporter', superclass: null } },
+    ],
+  },
+  {
+    stageId: 'advanced-collapse-hierarchy',
+    description: 'prepareExport だけを CsvExporter へ移し、継承を implements に書き換える',
+    steps: [
+      { move: { method: 'prepareExport', toClass: 'CsvExporter' } },
+      { setSuperclass: { class: 'CsvExporter', superclass: 'BaseExporter', kind: 'implements' } },
+    ],
+  },
+  {
+    stageId: 'advanced-collapse-hierarchy',
+    description: '「CSVを出力する」を抽出して CsvExporter へ移し、継承を外す',
+    steps: [
+      { extract: { from: 'downloadSalesCsv', fragmentIds: ['frag-output-csv'], name: 'outputCsv' } },
+      { move: { method: 'outputCsv', toClass: 'CsvExporter' } },
+      { setSuperclass: { class: 'CsvExporter', superclass: null } },
+    ],
+  },
 ];
 
 function unwrap<T, E>(result: Result<T, E>): T {

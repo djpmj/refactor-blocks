@@ -357,9 +357,121 @@ const reportFactoryStage: Stage = {
   },
 };
 
+/**
+ * 上級5: 上級1(共通処理を基底クラスへ集める)と逆向きの操作。BaseExporter.escapeValue は子クラスのフック quoteChar を呼ぶ
+ * (Template Method)ので、メソッドを一部だけ移して継承を外すと、2クラスが互いを呼び合う循環依存が残る。「いずれ Excel や PDF にも」と用意した BaseExporter の
+ * 子クラスが CsvExporter だけのまま、CSV の処理が2クラスに散らばっている。子が1つの継承は畳んで1クラスにまとめる
+ * (Fowler の Collapse Hierarchy)。実装が1つのインターフェース(implements)は、テストの差し替えや依存関係逆転
+ * (上級2)のために正当に使われるので、この減点(lone-superclass)の対象にしていない。
+ */
+const collapseHierarchyStage: Stage = {
+  id: 'advanced-collapse-hierarchy',
+  level: 'advanced',
+  title: '上級5: 子が1つしかない継承を畳む',
+  description:
+    '売上をCSVでダウンロードさせる SalesController。「いずれ Excel や PDF にも対応するかもしれない」と先輩が基底クラス BaseExporter を用意したが、' +
+    '2年たっても子クラスは CsvExporter だけ。しかも BaseExporter の escapeValue が子の quoteChar を呼び返すので、2クラスが互いに呼び合っている' +
+    '(循環依存の赤い印はこのため)。CSVの仕様を少し変えるたびに BaseExporter と CsvExporter を行き来している。',
+  goal:
+    '使われない拡張ポイントは畳んで、1つのクラスにまとめよう。上級1(共通処理を基底クラスへ集める)とは逆向きの操作。' +
+    '1つのクラスにまとめれば呼び合い(循環依存)も消える。2つ目の出力形式が本当に必要になってから、継承を作り直せば間に合う。依存先は1クラスまで',
+  limits: { method: 90, class: 200, file: 300 },
+  dependencyLimit: 1,
+  responsibilityLimit: 2,
+  changeRequests: [
+    { id: 'req-tab-delimiter', title: '区切り文字をタブにも切り替えられるようにして', description: 'Excelで開きやすいよう、タブ区切りのファイルも出せるようにする。', responsibility: 'csv-format', linesPerSite: 6 },
+    { id: 'req-fiscal-year', title: '集計期間を会計年度で指定できるようにして', description: '4月始まりの会計年度で、売上の集計期間を指定できるようにする。', responsibility: 'query', linesPerSite: 4 },
+  ],
+  codebase: {
+    files: [
+      {
+        id: 'file-sales-controller',
+        path: 'src/sales/SalesController.ts',
+        classes: [
+          {
+            id: 'class-sales-controller',
+            name: 'SalesController',
+            methods: [
+              {
+                id: 'method-download-sales-csv',
+                name: 'downloadSalesCsv',
+                visibility: 'public',
+                fragments: [
+                  { id: 'frag-validate-query', label: '検索条件を検証する', lines: 36, responsibility: 'http', suggestedName: 'validateQuery' },
+                  { id: 'frag-fetch-sales', label: '売上データを取得する', lines: 40, responsibility: 'query', suggestedName: 'fetchSales' },
+                  {
+                    id: 'frag-output-csv',
+                    label: 'CSVを出力する',
+                    lines: 8,
+                    responsibility: 'http',
+                    uses: ['method-prepare-export', 'method-write-rows'],
+                    suggestedName: 'outputCsv',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'file-base-exporter',
+        path: 'src/export/BaseExporter.ts',
+        classes: [
+          {
+            id: 'class-base-exporter',
+            name: 'BaseExporter',
+            methods: [
+              {
+                id: 'method-prepare-export',
+                name: 'prepareExport',
+                visibility: 'public',
+                fragments: [{ id: 'frag-decide-header', label: '文字コードとヘッダー行を決める', lines: 18, responsibility: 'csv-format' }],
+              },
+              {
+                id: 'method-escape-value',
+                name: 'escapeValue',
+                visibility: 'protected',
+                // Template Method: 基底クラスが子クラスのフック(quoteChar)を呼ぶ。2クラスに分けたままだと互いを呼び合う循環が残る
+                fragments: [{ id: 'frag-escape-value', label: '値をエスケープする', lines: 14, responsibility: 'csv-format', uses: ['method-quote-char'] }],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'file-csv-exporter',
+        path: 'src/export/CsvExporter.ts',
+        classes: [
+          {
+            id: 'class-csv-exporter',
+            name: 'CsvExporter',
+            superclassId: 'class-base-exporter',
+            superclassKind: 'extends',
+            methods: [
+              {
+                id: 'method-write-rows',
+                name: 'writeRows',
+                visibility: 'public',
+                fragments: [{ id: 'frag-write-rows', label: '行をCSVに書き出す', lines: 26, responsibility: 'csv-format', uses: ['method-escape-value'] }],
+              },
+              {
+                id: 'method-quote-char',
+                name: 'quoteChar',
+                visibility: 'protected',
+                fragments: [{ id: 'frag-quote-char', label: 'クォートに使う文字を返す(BaseExporter から呼ばれるフック)', lines: 4, responsibility: 'csv-format' }],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+};
+
 export const advancedStages: readonly Stage[] = [
   notifierHierarchyStage,
   paymentGatewayInterfaceStage,
   discountStrategyStage,
   reportFactoryStage,
+  collapseHierarchyStage,
 ];

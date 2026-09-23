@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { CodeClass, Codebase } from '../codebase/Codebase';
+import { allClasses, type CodeClass, type Codebase } from '../codebase/Codebase';
 import { extractMethod } from '../codebase/extractMethod';
 import { moveMethod } from '../codebase/moveMethod';
 import { sampleCodebase } from '../codebase/testFixtures';
@@ -62,7 +62,7 @@ function codebaseOf(classes: Record<string, readonly string[]>): Codebase {
 }
 
 describe('scoreCodebase', () => {
-  it('違反がなければ100点で、7ルールとも減点0件を返す', () => {
+  it('違反がなければ100点で、8ルールとも減点0件を返す', () => {
     // Arrange
     const codebase = codebaseOf({ A: ['method-B'], B: [] });
 
@@ -80,6 +80,7 @@ describe('scoreCodebase', () => {
         { rule: 'visibility', count: 0, points: 0 },
         { rule: 'empty', count: 0, points: 0 },
         { rule: 'unused', count: 0, points: 0 },
+        { rule: 'lone-superclass', count: 0, points: 0 },
       ],
     });
   });
@@ -250,6 +251,19 @@ describe('scoreCodebase', () => {
     // Assert
     expect(score.total).toBe(90);
     expect(score.deductions[6]).toEqual({ rule: 'unused', count: 1, points: 10 });
+  });
+
+  it('extends の子が1つだけの基底クラス1つにつき10点減点する', () => {
+    // Arrange
+    const [base, child] = allClasses(codebaseOf({ Base: [], Child: [] }));
+    const codebase: Codebase = { files: [{ id: 'file', path: 'src/all.ts', classes: [base, { ...child, superclassId: base.id }] }] };
+
+    // Act
+    const score = scoreCodebase(codebase, { ...LOOSE, dependencyLimit: 1 });
+
+    // Assert
+    expect(score.total).toBe(90);
+    expect(score.deductions[7]).toEqual({ rule: 'lone-superclass', count: 1, points: 10 });
   });
 
   it('減点の合計が100点を超えても0点で止まる', () => {

@@ -15,6 +15,7 @@ const RULE_LABEL: Record<ScoreRule, string> = {
   visibility: 'アクセス制御',
   empty: '空のクラス・ファイル',
   unused: '未使用のprivateメソッド',
+  'lone-superclass': '子が1つだけの継承',
 };
 
 const LEVEL_LABEL: Record<StageLevel, string> = {
