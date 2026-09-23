@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { allClasses, findClass, findSuperclass, type CodeClass, type Codebase } from '../../domain/codebase/Codebase';
+import { classDependencies } from '../../domain/codebase/dependencies';
 import { sampleAnswerCodebase } from '../../domain/stage/sampleAnswer';
 import { advancedStages } from './advancedStages';
 
@@ -67,6 +68,53 @@ describe('advanced-payment-gateway-interface', () => {
   const stage = advancedStages.find((candidate) => candidate.id === 'advanced-payment-gateway-interface');
   if (stage === undefined) throw new Error('advanced-payment-gateway-interface ステージが見つかりません');
 
+  it('初期状態から、PaymentServiceはPaymentGateway(抽象)にだけ依存している(具象クラスを直接名指ししない)', () => {
+    // Arrange
+    const { codebase } = stage;
+
+    // Act
+    const dependencies = classDependencies(codebase);
+
+    // Assert
+    expect(dependencies).toEqual([{ from: 'class-payment-service', to: 'class-payment-gateway', cyclic: false }]);
+  });
+
+  it('初期状態では、まだ実装関係が結ばれていない', () => {
+    // Arrange
+    const { codebase } = stage;
+
+    // Act
+    const superclasses = allClasses(codebase).map((codeClass) => findSuperclass(codebase, codeClass.id));
+
+    // Assert
+    expect(superclasses.every((superclass) => superclass === undefined)).toBe(true);
+  });
+
+  it('初期状態から、PaymentGatewayは処理本体を持たない契約メソッド charge を1つだけ宣言している', () => {
+    // Arrange
+    const { codebase } = stage;
+
+    // Act
+    const paymentGateway = classNamed(codebase, 'PaymentGateway');
+
+    // Assert
+    expect(paymentGateway.methods.map((method) => method.name)).toEqual(['charge']);
+    expect(paymentGateway.methods[0]?.fragments).toEqual([]);
+  });
+
+  it('初期状態から、StripeGateway・PaypalGatewayとも決済API呼び出し側のメソッド名がPaymentGatewayと同じchargeになっている(UML風のインターフェース実現)', () => {
+    // Arrange
+    const { codebase } = stage;
+
+    // Act
+    const stripeMethodNames = classNamed(codebase, 'StripeGateway').methods.map((method) => method.name);
+    const paypalMethodNames = classNamed(codebase, 'PaypalGateway').methods.map((method) => method.name);
+
+    // Assert
+    expect(stripeMethodNames).toContain('charge');
+    expect(paypalMethodNames).toContain('charge');
+  });
+
   it('模範解答では、StripeGateway・PaypalGatewayの実装先がどちらもPaymentGatewayになり、実装(implements)として記録される', () => {
     // Arrange
     const solved = sampleAnswerCodebase(stage);
@@ -84,27 +132,31 @@ describe('advanced-payment-gateway-interface', () => {
     expect(paypalClass?.superclassKind).toBe('implements');
   });
 
-  it('模範解答では、決済API呼び出しがPaymentGatewayに集まる', () => {
+  it('模範解答では、決済処理の実体はPaymentGatewayへ吸収されず、StripeGateway・PaypalGateway自身に残る', () => {
     // Arrange
     const solved = sampleAnswerCodebase(stage);
 
     // Act
+    const stripeMethodNames = classNamed(solved, 'StripeGateway').methods.map((method) => method.name);
+    const paypalMethodNames = classNamed(solved, 'PaypalGateway').methods.map((method) => method.name);
     const paymentGateway = findClass(solved, 'class-payment-gateway');
-    const methodNames = paymentGateway?.methods.map((method) => method.name) ?? [];
 
     // Assert
-    expect(methodNames).toEqual(['chargeStripe', 'chargePaypal']);
+    expect(stripeMethodNames).toEqual(expect.arrayContaining(['charge', 'logStripePayment']));
+    expect(paypalMethodNames).toEqual(expect.arrayContaining(['charge', 'logPaypalPayment']));
+    expect(paymentGateway?.methods.map((method) => method.name)).toEqual(['charge']);
+    expect(paymentGateway?.methods[0]?.fragments).toEqual([]);
   });
 
-  it('初期状態では、まだ実装関係が結ばれていない', () => {
+  it('模範解答を適用しても、PaymentServiceの依存本数は実装内容によらず変わらない(本物のDIPの性質)', () => {
     // Arrange
-    const { codebase } = stage;
+    const solved = sampleAnswerCodebase(stage);
 
     // Act
-    const superclasses = allClasses(codebase).map((codeClass) => findSuperclass(codebase, codeClass.id));
+    const dependencies = classDependencies(solved);
 
     // Assert
-    expect(superclasses.every((superclass) => superclass === undefined)).toBe(true);
+    expect(dependencies).toEqual([{ from: 'class-payment-service', to: 'class-payment-gateway', cyclic: false }]);
   });
 });
 

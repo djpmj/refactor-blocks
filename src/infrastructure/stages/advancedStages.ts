@@ -79,24 +79,30 @@ const notifierHierarchyStage: Stage = {
 };
 
 /**
- * 上級2: ネットショップの決済。PaymentService が Stripe 用・PayPal 用の決済クラスを名指しで直接呼んでいる
- * (具象クラスへの直接依存)。空の PaymentGateway クラス(インターフェース役)は用意されているが、
- * まだ誰にも使われていない。決済処理を PaymentGateway へ Move Method で移し、
- * StripeGateway・PaypalGateway の実装先(implements)を PaymentGateway に設定すると、
- * PaymentService の依存先が1つに集約される。
+ * 上級2: ネットショップの決済。PaymentService.checkout は最初から共通インターフェース PaymentGateway
+ * (処理本体を持たない契約メソッド charge のみ)だけを呼んでおり、Stripe・PayPalを名指ししない
+ * (本物のDIP: 呼び出し元は抽象への依存だけを持つ)。StripeGateway・PaypalGateway は自分の処理本体を
+ * 保ったまま、まだ PaymentGateway を実装(implements)したと宣言していない。プレイヤーは行数超過の解消
+ * (Extract Method)と実装関係の宣言(Set Superclass)を行う。StripeGateway・PaypalGateway の中身が
+ * どう変わっても PaymentService の依存本数が1のまま変わらない、という点が上級3(Strategy、依存が
+ * 実装数に比例して増える)との対比になる(詳細: docs/specs/payment-gateway-true-dip.md)。
  */
 const paymentGatewayInterfaceStage: Stage = {
   id: 'advanced-payment-gateway-interface',
   level: 'advanced',
   title: '上級2: 決済ゲートウェイをインターフェース越しに呼ぶ',
   description:
-    'PaymentService が、Stripe用の StripeGateway と PayPal用の PaypalGateway を名指しで直接呼び出している。' +
-    'どちらのゲートウェイクラスも「決済APIを呼び出す」処理と「決済ログを記録する」処理をコピーしたように自分の中に抱えていて、設定情報の違いは最後の一部だけ。' +
-    '空のクラス PaymentGateway は用意されているが、まだどちらのクラスとも実装関係で結ばれていない。',
-  goal: '決済APIの呼び出しを PaymentGateway へ Move Method で移し、StripeGateway・PaypalGateway が PaymentGateway を実装(implements)するよう設定しよう。メソッドは90行以内、1クラスの責務は2種類まで',
+    'PaymentService の checkout は、共通インターフェース PaymentGateway 経由で決済を呼び出すよう最初から書かれている(Stripe・PayPalを名指ししない)。' +
+    'しかし StripeGateway・PaypalGateway はまだ PaymentGateway を実装(implements)したと宣言しておらず、' +
+    'どちらも「決済APIを呼び出す」処理と「決済ログを記録する」処理を1つのメソッド(charge)に詰め込んでいて、行数の上限を超えている。',
+  goal:
+    'StripeGateway・PaypalGateway の charge を、Extract Methodで責務(API呼び出し/ログ記録)ごとに分け、PaymentGateway を実装(implements)するよう設定しよう。' +
+    'StripeGateway・PaypalGatewayの中身がどう変わっても、PaymentServiceの依存先は最初から最後まで PaymentGateway 1つのまま変わらない。上級3(方針を増やすほど依存も増える)と見比べてみよう。' +
+    'メソッドは90行以内、1クラスの責務は3種類まで',
   limits: { method: 90, class: 250, file: 400 },
   dependencyLimit: 1,
-  responsibilityLimit: 2,
+  // stripe-config/paypal-configは各ゲートウェイに残る正当な3つ目の責務(このステージの狙いと無関係なため違反にしない)。
+  responsibilityLimit: 3,
   changeRequests: [
     { id: 'req-payment-logging', title: '決済ログの記録方法を見直して', description: '決済ログに、失敗時のリトライ回数を残したい。', responsibility: 'payment-logging', linesPerSite: 6 },
     { id: 'req-gateway-integration', title: '決済APIの呼び出し方を見直して', description: '決済API呼び出しに、共通のタイムアウト設定を追加したい。', responsibility: 'gateway-integration', linesPerSite: 5 },
@@ -117,8 +123,7 @@ const paymentGatewayInterfaceStage: Stage = {
                 visibility: 'public',
                 fragments: [
                   { id: 'frag-validate-payment', label: '注文内容とカード情報を検証する', lines: 60, responsibility: 'validation', suggestedName: 'validatePayment' },
-                  { id: 'frag-dispatch-stripe', label: 'Stripe決済ゲートウェイを直接呼び出す', lines: 12, responsibility: 'gateway-dispatch', uses: ['method-charge-stripe'], suggestedName: 'dispatchStripe' },
-                  { id: 'frag-dispatch-paypal', label: 'PayPal決済ゲートウェイを直接呼び出す', lines: 12, responsibility: 'gateway-dispatch', uses: ['method-charge-paypal'], suggestedName: 'dispatchPaypal' },
+                  { id: 'frag-dispatch-gateway', label: 'PaymentGateway(インターフェース)経由で決済を実行する', lines: 12, responsibility: 'gateway-dispatch', uses: ['method-payment-gateway-charge'], suggestedName: 'dispatchGateway' },
                 ],
               },
             ],
@@ -135,11 +140,11 @@ const paymentGatewayInterfaceStage: Stage = {
             methods: [
               {
                 id: 'method-charge-stripe',
-                name: 'chargeStripe',
+                name: 'charge',
                 visibility: 'public',
                 fragments: [
-                  { id: 'frag-stripe-api-call', label: 'Stripe APIを呼び出して決済する', lines: 30, responsibility: 'gateway-integration', suggestedName: 'callStripeApi' },
-                  { id: 'frag-log-payment-stripe', label: '決済ログを記録する(Stripe)', lines: 16, responsibility: 'payment-logging', suggestedName: 'logStripePayment' },
+                  { id: 'frag-stripe-api-call', label: 'Stripe APIを呼び出して決済する', lines: 60, responsibility: 'gateway-integration', suggestedName: 'callStripeApi' },
+                  { id: 'frag-log-payment-stripe', label: '決済ログを記録する(Stripe)', lines: 32, responsibility: 'payment-logging', suggestedName: 'logStripePayment' },
                 ],
               },
               {
@@ -164,11 +169,11 @@ const paymentGatewayInterfaceStage: Stage = {
             methods: [
               {
                 id: 'method-charge-paypal',
-                name: 'chargePaypal',
+                name: 'charge',
                 visibility: 'public',
                 fragments: [
-                  { id: 'frag-paypal-api-call', label: 'PayPal APIを呼び出して決済する', lines: 28, responsibility: 'gateway-integration', suggestedName: 'callPaypalApi' },
-                  { id: 'frag-log-payment-paypal', label: '決済ログを記録する(PayPal)', lines: 16, responsibility: 'payment-logging', suggestedName: 'logPaypalPayment' },
+                  { id: 'frag-paypal-api-call', label: 'PayPal APIを呼び出して決済する', lines: 58, responsibility: 'gateway-integration', suggestedName: 'callPaypalApi' },
+                  { id: 'frag-log-payment-paypal', label: '決済ログを記録する(PayPal)', lines: 32, responsibility: 'payment-logging', suggestedName: 'logPaypalPayment' },
                 ],
               },
               {
@@ -186,7 +191,13 @@ const paymentGatewayInterfaceStage: Stage = {
       {
         id: 'file-payment-gateway',
         path: 'src/payment/PaymentGateway.ts',
-        classes: [{ id: 'class-payment-gateway', name: 'PaymentGateway', methods: [] }],
+        classes: [
+          {
+            id: 'class-payment-gateway',
+            name: 'PaymentGateway',
+            methods: [{ id: 'method-payment-gateway-charge', name: 'charge', visibility: 'public', fragments: [] }],
+          },
+        ],
       },
     ],
   },

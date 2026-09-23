@@ -10,7 +10,15 @@ import type { Stage } from './Stage';
 
 /** 模範解答の1手。メソッド・クラス・ファイルは、プレイヤーと同じく名前(パス)で指定する。 */
 export type SolutionStep =
-  | { readonly extract: { readonly from: string; readonly fragmentIds: readonly string[]; readonly name: string } }
+  | {
+      readonly extract: {
+        readonly from: string;
+        /** 同名メソッドが複数クラスに存在するときだけ指定する、抽出元クラスの名前による絞り込み。 */
+        readonly fromClass?: string;
+        readonly fragmentIds: readonly string[];
+        readonly name: string;
+      };
+    }
   | { readonly move: { readonly method: string; readonly toClass: string } }
   | { readonly addFile: string }
   | { readonly addClass: { readonly name: string; readonly file: string } }
@@ -34,8 +42,9 @@ function classIdByName(codebase: Codebase, name: string): string {
   return found.id;
 }
 
-function methodIdByName(codebase: Codebase, name: string): string {
+function methodIdByName(codebase: Codebase, name: string, ownerClassName?: string): string {
   const found = allClasses(codebase)
+    .filter((codeClass) => ownerClassName === undefined || codeClass.name === ownerClassName)
     .flatMap((codeClass) => codeClass.methods)
     .find((method) => method.name === name);
   if (found === undefined) throw new Error(`メソッド ${name} がありません`);
@@ -50,8 +59,8 @@ function fileIdByPath(codebase: Codebase, path: string): string {
 
 function applyStep(codebase: Codebase, step: SolutionStep, newId: string): Codebase {
   if ('extract' in step) {
-    const { from, fragmentIds, name } = step.extract;
-    const sourceMethodId = methodIdByName(codebase, from);
+    const { from, fromClass, fragmentIds, name } = step.extract;
+    const sourceMethodId = methodIdByName(codebase, from, fromClass);
     return unwrap(extractMethod(codebase, { sourceMethodId, fragmentIds, newMethodId: newId, newMethodName: name }));
   }
   if ('move' in step) {
@@ -140,8 +149,10 @@ export const sampleAnswerSteps: Partial<Record<string, readonly SolutionStep[]>>
     { setSuperclass: { class: 'SmsNotifier', superclass: 'NotifierBase' } },
   ],
   'advanced-payment-gateway-interface': [
-    { move: { method: 'chargeStripe', toClass: 'PaymentGateway' } },
-    { move: { method: 'chargePaypal', toClass: 'PaymentGateway' } },
+    // StripeGateway・PaypalGatewayとも決済API呼び出し側のメソッド名が最初から同じ(charge)なので、
+    // fromClassでクラスを指定してどちらのchargeから抽出するかを曖昧さなく指定する。
+    { extract: { from: 'charge', fromClass: 'StripeGateway', fragmentIds: ['frag-log-payment-stripe'], name: 'logStripePayment' } },
+    { extract: { from: 'charge', fromClass: 'PaypalGateway', fragmentIds: ['frag-log-payment-paypal'], name: 'logPaypalPayment' } },
     { setSuperclass: { class: 'StripeGateway', superclass: 'PaymentGateway', kind: 'implements' } },
     { setSuperclass: { class: 'PaypalGateway', superclass: 'PaymentGateway', kind: 'implements' } },
   ],
