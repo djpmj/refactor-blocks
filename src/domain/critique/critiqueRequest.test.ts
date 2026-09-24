@@ -104,6 +104,46 @@ describe('buildCritiqueRequest', () => {
     expect(orderClass?.interfaceNames).toEqual(['TaxCalculator']);
   });
 
+  it('空実装のメソッドにはstub: trueを含める', () => {
+    // Arrange
+    const codebase = {
+      files: [
+        {
+          id: 'file-stub',
+          path: 'src/Stub.ts',
+          classes: [
+            {
+              id: 'class-stub',
+              name: 'Stub',
+              methods: [{ id: 'method-stub', name: 'run', visibility: 'public' as const, fragments: [{ id: 'f1', label: '未対応', lines: 2, responsibility: 'x', stub: true }] }],
+            },
+          ],
+        },
+      ],
+    };
+    const score = scoreCodebase(codebase, LOOSE_STAGE);
+
+    // Act
+    const request = buildCritiqueRequest(codebase, LOOSE_STAGE, score);
+
+    // Assert
+    const method = request.files[0]?.classes[0]?.methods[0];
+    expect(method).toMatchObject({ stub: true });
+  });
+
+  it('通常のメソッドにはstubキーを含めない', () => {
+    // Arrange
+    const codebase = sampleCodebase();
+    const score = scoreCodebase(codebase, LOOSE_STAGE);
+
+    // Act
+    const request = buildCritiqueRequest(codebase, LOOSE_STAGE, score);
+
+    // Assert
+    const method = request.files[0]?.classes[0]?.methods[0];
+    expect(method).not.toHaveProperty('stub');
+  });
+
   it('継承元・実装先がなければ何も含めない', () => {
     // Arrange
     const codebase = sampleCodebase();

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { findClass, findClassOfMethod, findMethod, type Method } from '../../domain/codebase/Codebase';
+import { findClass, findClassOfMethod, findMethod, isStubMethod, type Method } from '../../domain/codebase/Codebase';
 import { findMergeCandidates, type MergeCandidate } from '../../domain/codebase/mergeMethods';
 import { methodLines } from '../../domain/codebase/lineCount';
 import { suggestMethodName } from '../../domain/codebase/suggestMethodName';
@@ -77,6 +77,36 @@ function MergeSection({ method, candidates }: Readonly<{ method: Method; candida
   );
 }
 
+/** 呼び出し元へ戻す(private)・空実装のメソッドを削除、の2つのボタン。どちらも条件を満たすときだけ表示する。 */
+function MethodActions({ method }: Readonly<{ method: Method }>) {
+  const inlineMethod = useGameStore((state) => state.inlineMethod);
+  const deleteMethod = useGameStore((state) => state.deleteMethod);
+  return (
+    <>
+      {method.visibility === 'private' ? (
+        <button
+          type="button"
+          onClick={() => {
+            inlineMethod(method.id);
+          }}
+        >
+          呼び出し元へ戻す
+        </button>
+      ) : null}
+      {isStubMethod(method) ? (
+        <button
+          type="button"
+          onClick={() => {
+            deleteMethod(method.id);
+          }}
+        >
+          空実装のメソッドを削除
+        </button>
+      ) : null}
+    </>
+  );
+}
+
 /** 選択中のメソッドの中身を表示し、処理のまとまりを選んで Extract Method する。 */
 function MethodEditorBody({ method }: Readonly<{ method: Method }>) {
   const codebase = useGameStore((state) => state.codebase);
@@ -84,7 +114,6 @@ function MethodEditorBody({ method }: Readonly<{ method: Method }>) {
   // codebaseが変わらない限り同じ配列参照を保つ(毎レンダー新しい配列を作るとZustandの購読が無限ループする)
   const mergeCandidates = useMemo(() => findMergeCandidates(codebase, method.id), [codebase, method.id]);
   const extractMethod = useGameStore((state) => state.extractMethod);
-  const inlineMethod = useGameStore((state) => state.inlineMethod);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   // null のあいだは選んだ処理から名前を自動で考え、プレイヤーが入力したらその名前を優先する
   const [customName, setCustomName] = useState<string | null>(null);
@@ -123,16 +152,7 @@ function MethodEditorBody({ method }: Readonly<{ method: Method }>) {
         </button>
       </div>
       {mergeCandidates.length > 0 ? <MergeSection method={method} candidates={mergeCandidates} /> : null}
-      {method.visibility === 'private' ? (
-        <button
-          type="button"
-          onClick={() => {
-            inlineMethod(method.id);
-          }}
-        >
-          呼び出し元へ戻す
-        </button>
-      ) : null}
+      <MethodActions method={method} />
     </>
   );
 }

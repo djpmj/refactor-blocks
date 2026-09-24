@@ -15,11 +15,13 @@ import {
   addInterfaceUseCase,
   deleteClassUseCase,
   deleteFileUseCase,
+  deleteMethodUseCase,
   describeAddClassError,
   describeAddFileError,
   describeAddInterfaceError,
   describeDeleteClassError,
   describeDeleteFileError,
+  describeDeleteMethodError,
   describeMoveClassError,
   describeExtractError,
   describeInlineError,
@@ -112,6 +114,7 @@ type GameState = {
   removeInterface: (classId: string, interfaceName: string) => boolean;
   deleteClass: (classId: string) => boolean;
   deleteFile: (fileId: string) => boolean;
+  deleteMethod: (methodId: string) => boolean;
   undo: () => void;
   redo: () => void;
   startChangeRequests: () => void;
@@ -299,6 +302,23 @@ function moveActions(
   };
 }
 
+/** クラス・ファイル・空実装メソッドを取り除く操作。 */
+function deleteActions(apply: Apply, set: (partial: Partial<GameState>) => void, get: () => GameState): Pick<GameState, 'deleteClass' | 'deleteFile' | 'deleteMethod'> {
+  return {
+    deleteClass: (classId) => {
+      return apply(deleteClassUseCase(get().codebase, classId), describeDeleteClassError);
+    },
+    deleteFile: (fileId) => {
+      return apply(deleteFileUseCase(get().codebase, fileId), describeDeleteFileError);
+    },
+    deleteMethod: (methodId) => {
+      const succeeded = apply(deleteMethodUseCase(get().codebase, methodId), describeDeleteMethodError);
+      if (succeeded && get().selectedMethodId === methodId) set({ selectedMethodId: null });
+      return succeeded;
+    },
+  };
+}
+
 /** 統合・インライン化など、成功時に選択中メソッドを結果側の別メソッドへ付け替える操作。 */
 function replaceMethodActions(
   set: (partial: Partial<GameState>) => void,
@@ -362,12 +382,7 @@ export function createGameStore(allStages: readonly Stage[]): GameStore {
         return apply(addFileUseCase(get().codebase, path, () => crypto.randomUUID()), describeAddFileError);
       },
       ...renameActions(apply, get),
-      deleteClass: (classId) => {
-        return apply(deleteClassUseCase(get().codebase, classId), describeDeleteClassError);
-      },
-      deleteFile: (fileId) => {
-        return apply(deleteFileUseCase(get().codebase, fileId), describeDeleteFileError);
-      },
+      ...deleteActions(apply, set, get),
       ...moveActions(apply, get),
       ...historyActions(set, get),
       ...changeSessionActions(set, get),

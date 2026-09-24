@@ -3,7 +3,7 @@ import { changeKindOf, type ChangeRequest } from '../../domain/change/ChangeRequ
 import { findChangeSites } from '../../domain/change/findChangeSites';
 import { measureChange } from '../../domain/change/measureChange';
 import { averageScore, scoreChange } from '../../domain/change/scoreChange';
-import { allClasses, type Codebase } from '../../domain/codebase/Codebase';
+import { allClasses, isInterfaceLike, type Codebase } from '../../domain/codebase/Codebase';
 import { methodLines } from '../../domain/codebase/lineCount';
 import { scoreCodebase } from '../../domain/scoring/score';
 import type { Result } from '../../domain/shared/Result';
@@ -112,9 +112,33 @@ function blankPartNames(stage: Stage): string[] {
   return partNames(stage).filter((name) => name.trim() === '');
 }
 
-function clashingPartNames(stage: Stage): string[] {
-  const methodNames = allClasses(stage.codebase).flatMap((codeClass) => codeClass.methods.map((method) => method.name));
-  return partNames(stage).filter((name) => methodNames.includes(name));
+function methodNamesOf(stage: Stage): string[] {
+  return allClasses(stage.codebase).flatMap((codeClass) => codeClass.methods.map((method) => method.name));
+}
+
+/** インターフェース役のクラスが宣言している契約メソッド名。extendの部品名がこれと同じなら、実装を宣言する意図の一致で許される。 */
+function contractMethodNamesOf(stage: Stage): string[] {
+  return allClasses(stage.codebase)
+    .filter(isInterfaceLike)
+    .flatMap((codeClass) => codeClass.methods.map((method) => method.name));
+}
+
+/** modifyの依頼は、部品名が初期コードのどのメソッド名とも重ならない。 */
+function clashingModifyPartNames(stage: Stage): string[] {
+  const methodNames = methodNamesOf(stage);
+  return modifyRequests(stage)
+    .map((request) => request.partName ?? '')
+    .filter((name) => methodNames.includes(name));
+}
+
+/** extendの依頼は、部品名がインターフェース役の契約名と同じか、どのメソッド名とも重ならないかのどちらか。 */
+function invalidExtendPartNames(stage: Stage): string[] {
+  const methodNames = methodNamesOf(stage);
+  const contractNames = contractMethodNamesOf(stage);
+  return stage.changeRequests
+    .filter((request) => changeKindOf(request) === 'extend')
+    .map((request) => request.partName ?? '')
+    .filter((name) => methodNames.includes(name) && !contractNames.includes(name));
 }
 
 function allIds(stage: Stage): string[] {
@@ -235,12 +259,20 @@ describe('stageCatalog', () => {
       expect(blanks).toEqual([]);
     });
 
-    it('全依頼の partName が、初期コードのメソッド名と重ならない', () => {
+    it('modifyの依頼は、partName が初期コードのメソッド名と重ならない', () => {
       // Arrange / Act
-      const clashes = clashingPartNames(stage);
+      const clashes = clashingModifyPartNames(stage);
 
       // Assert
       expect(clashes).toEqual([]);
+    });
+
+    it('extendの依頼は、partName が初期コードのインターフェース役の契約名と同じか、どのメソッド名とも重ならない', () => {
+      // Arrange / Act
+      const invalid = invalidExtendPartNames(stage);
+
+      // Assert
+      expect(invalid).toEqual([]);
     });
 
     it('模範解答にすると、変更依頼のコストが初期状態より下がる(変更容易性スコアが上がる)', () => {

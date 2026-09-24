@@ -9,6 +9,8 @@ export const RULE_LABEL: Record<ScoreRule, string> = {
   empty: '空のクラス・ファイル',
   unused: '未使用のprivateメソッド',
   'lone-superclass': '子が1つだけの継承',
+  stub: '使わないメソッドの空実装',
+  contract: 'インターフェースの約束違反',
 };
 
 export function describeScore(score: Score): string {

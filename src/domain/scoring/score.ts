@@ -1,13 +1,24 @@
 import type { Codebase } from '../codebase/Codebase';
 import { classDependencies, type ClassDependency } from '../codebase/dependencies';
 import type { Stage } from '../stage/Stage';
+import { findContractViolations, findStubMethods } from './interfaceContracts';
 import { findEmptyContainers, findUnusedPrivateMethods } from './leftovers';
 import { findLineLimitViolations } from './lineLimits';
 import { findLoneSuperclasses } from './loneSuperclass';
 import { findResponsibilityViolations } from './responsibilities';
 import { findVisibilityViolations } from './visibility';
 
-export type ScoreRule = 'line-limit' | 'coupling' | 'cycle' | 'responsibility' | 'visibility' | 'empty' | 'unused' | 'lone-superclass';
+export type ScoreRule =
+  | 'line-limit'
+  | 'coupling'
+  | 'cycle'
+  | 'responsibility'
+  | 'visibility'
+  | 'empty'
+  | 'unused'
+  | 'lone-superclass'
+  | 'stub'
+  | 'contract';
 
 export type ScoreDeduction = {
   readonly rule: ScoreRule;
@@ -48,10 +59,12 @@ export function scoreCodebase(
     empty: findEmptyContainers(codebase).length,
     unused: findUnusedPrivateMethods(codebase).length,
     'lone-superclass': findLoneSuperclasses(codebase).length,
+    stub: findStubMethods(codebase).length,
+    contract: findContractViolations(codebase).length,
   };
-  const deductions = (['line-limit', 'coupling', 'cycle', 'responsibility', 'visibility', 'empty', 'unused', 'lone-superclass'] as const).map(
-    (rule): ScoreDeduction => ({ rule, count: counts[rule], points: counts[rule] * POINTS_PER_VIOLATION }),
-  );
+  const deductions = (
+    ['line-limit', 'coupling', 'cycle', 'responsibility', 'visibility', 'empty', 'unused', 'lone-superclass', 'stub', 'contract'] as const
+  ).map((rule): ScoreDeduction => ({ rule, count: counts[rule], points: counts[rule] * POINTS_PER_VIOLATION }));
   const deducted = deductions.reduce((sum, deduction) => sum + deduction.points, 0);
   return { total: Math.max(0, FULL_SCORE - deducted), deductions };
 }

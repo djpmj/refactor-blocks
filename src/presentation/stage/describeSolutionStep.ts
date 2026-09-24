@@ -27,7 +27,16 @@ function describeRemoveInterface({ class: className, interface: interfaceName }:
   return `${className} の implements から ${interfaceName} を外そう`;
 }
 
-type StructuralStep = Exclude<SolutionStep, { readonly extract: unknown } | { readonly move: unknown } | { readonly merge: unknown }>;
+type DeleteMethodStep = Extract<SolutionStep, { readonly deleteMethod: unknown }>['deleteMethod'];
+
+function describeDeleteMethod({ method, fromClass }: DeleteMethodStep): string {
+  return `${fromClass} の ${method} はもう実装しなくてよい空実装なので、メソッドエディタの「空実装のメソッドを削除」で消そう`;
+}
+
+type StructuralStep = Exclude<
+  SolutionStep,
+  { readonly extract: unknown } | { readonly move: unknown } | { readonly merge: unknown } | { readonly deleteMethod: unknown }
+>;
 
 /** ファイル・クラス・継承関係の組み替え(処理の中身を伴わない手)のヒント文。 */
 function describeStructuralStep(step: StructuralStep): string {
@@ -49,7 +58,12 @@ export function describeSolutionStep(codebase: Codebase, step: SolutionStep): st
     return `${source} から「${labels}」をExtract Methodで取り出し、${name} という名前にしよう`;
   }
   if ('move' in step) {
-    return `${step.move.method} をMove Methodで ${step.move.toClass} へ移そう`;
+    const { method, fromClass, toClass } = step.move;
+    const source = fromClass === undefined ? method : `${fromClass} の ${method}`;
+    return `${source} をMove Methodで ${toClass} へ移そう`;
+  }
+  if ('deleteMethod' in step) {
+    return describeDeleteMethod(step.deleteMethod);
   }
   if ('merge' in step) {
     const { methodA, methodAClass, methodB, methodBClass, name } = step.merge;

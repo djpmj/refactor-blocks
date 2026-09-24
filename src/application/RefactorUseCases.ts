@@ -3,6 +3,7 @@ import { addFile, type AddFileError } from '../domain/codebase/addFile';
 import type { Codebase } from '../domain/codebase/Codebase';
 import { deleteClass, type DeleteClassError } from '../domain/codebase/deleteClass';
 import { deleteFile, type DeleteFileError } from '../domain/codebase/deleteFile';
+import { deleteMethod, type DeleteMethodError } from '../domain/codebase/deleteMethod';
 import { extractMethod, type ExtractMethodError } from '../domain/codebase/extractMethod';
 import { findCallerOf, inlineMethod, type InlineMethodError } from '../domain/codebase/inlineMethod';
 import { mergeMethods, type MergeMethodsError } from '../domain/codebase/mergeMethods';
@@ -158,6 +159,11 @@ export function deleteFileUseCase(codebase: Codebase, fileId: string): Result<Co
   return deleteFile(codebase, fileId);
 }
 
+/** プレイヤーの「空実装のメソッドを削除」操作。 */
+export function deleteMethodUseCase(codebase: Codebase, methodId: string): Result<Codebase, DeleteMethodError> {
+  return deleteMethod(codebase, methodId);
+}
+
 const RENAME_CLASS_ERROR_MESSAGES: Record<RenameClassError, string> = {
   'class-not-found': '名前を変えるクラスが見つかりません',
   'empty-class-name': 'クラス名を入力してください',
@@ -253,6 +259,11 @@ const DELETE_FILE_ERROR_MESSAGES: Record<DeleteFileError, string> = {
   'last-file': '最後の1ファイルは削除できません',
 };
 
+const DELETE_METHOD_ERROR_MESSAGES: Record<DeleteMethodError, string> = {
+  'method-not-found': '削除するメソッドが見つかりません',
+  'not-stub': '中身のあるメソッドは削除できません。削除できるのは空実装のメソッドだけです',
+};
+
 export function describeMoveOutError(error: MoveClassToNewFileError | MoveMethodToNewClassError): string {
   return error === 'class-not-found' ? 'クラスが見つかりません' : 'メソッドが見つかりません';
 }
@@ -315,4 +326,8 @@ export function describeDeleteClassError(error: DeleteClassError): string {
 
 export function describeDeleteFileError(error: DeleteFileError): string {
   return DELETE_FILE_ERROR_MESSAGES[error];
+}
+
+export function describeDeleteMethodError(error: DeleteMethodError): string {
+  return DELETE_METHOD_ERROR_MESSAGES[error];
 }

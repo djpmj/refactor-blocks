@@ -1,4 +1,4 @@
-import { findInterfaces, findSuperclass, type Codebase, type Visibility } from '../codebase/Codebase';
+import { findInterfaces, findSuperclass, isStubMethod, type Codebase, type Visibility } from '../codebase/Codebase';
 import { classLines, fileLines, methodLines } from '../codebase/lineCount';
 import { fileDeductions } from '../scoring/fileScores';
 import type { Score } from '../scoring/score';
@@ -8,6 +8,8 @@ export type CritiqueMethodSummary = {
   readonly name: string;
   readonly visibility: Visibility;
   readonly lines: number;
+  /** 空実装(未対応・何もしない)のメソッドのときだけ true にする。 */
+  readonly stub?: true;
 };
 
 export type CritiqueClassSummary = {
@@ -62,6 +64,7 @@ export function buildCritiqueRequest(
               name: method.name,
               visibility: method.visibility,
               lines: methodLines(method),
+              ...(isStubMethod(method) ? { stub: true } : {}),
             }),
           ),
         }),

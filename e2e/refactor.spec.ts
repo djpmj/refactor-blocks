@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 
 /** 既存のテストは OrderService を分解するチュートリアル2を前提にしている。 */
 async function openOrderStage(page: Page) {
@@ -909,8 +909,8 @@ test('上級2: PayPay の追加は、新しいクラスで PaymentGateway を実
   await page.getByTestId('change-request-start').click();
   await expect(page.getByTestId('change-request-kind')).toContainText('機能の追加');
 
-  // Act(1件目: 余白へ出して PaymentGateway を実装する)
-  await dragToEmptyCanvas(page, 'method-chargeWithPaypay');
+  // Act(1件目: 余白へ出して PaymentGateway を実装する。charge という同名メソッドが他にもあるので部品置き場の中に絞る)
+  await dragToEmptyCanvas(page, page.getByTestId('class-部品置き場').getByTestId('method-charge'));
   await page.getByTestId('class-header-NewClass').click({ button: 'right' });
   const menu = page.getByTestId('context-menu');
   await menu.getByRole('menuitem', { name: '実装するインターフェースを設定' }).click();
@@ -940,14 +940,14 @@ test('依頼1で作った新しいクラスは、依頼2のキャンバスにも
   await solvePaymentStage(page);
   await page.getByTestId('change-request-start').click();
 
-  // Act(1件目: 余白へ出して新しいクラスを作り、終える)
-  await dragToEmptyCanvas(page, 'method-chargeWithPaypay');
+  // Act(1件目: 余白へ出して新しいクラスを作り、終える。charge という同名メソッドが他にもあるので部品置き場の中に絞る)
+  await dragToEmptyCanvas(page, page.getByTestId('class-部品置き場').getByTestId('method-charge'));
   await expect(page.getByTestId('class-NewClass')).toBeVisible();
   await finishRequest(page);
 
   // Assert(2件目のキャンバスに、1件目で作ったクラスとメソッドが残っている)
   await expect(page.getByTestId('change-request-title')).not.toHaveText('PayPayでも払えるようにして');
-  await expect(page.getByTestId('class-NewClass').getByTestId('method-chargeWithPaypay')).toBeVisible();
+  await expect(page.getByTestId('class-NewClass').getByTestId('method-charge')).toBeVisible();
 });
 
 test('ファイルの箱をドラッグして位置をずらせる', async ({ page }) => {
@@ -970,9 +970,10 @@ test('ファイルの箱をドラッグして位置をずらせる', async ({ pa
   expect(after?.y).toBeGreaterThan(before.y + 50);
 });
 
-/** 要素をつかんで、キャンバスの右下の余白(どのファイルの枠外)へドラッグして離す。 */
-async function dragToEmptyCanvas(page: Page, testId: string) {
-  const from = await page.getByTestId(testId).boundingBox();
+/** 要素をつかんで、キャンバスの右下の余白(どのファイルの枠外)へドラッグして離す。testIdの文字列か、絞り込み済みのLocatorを渡せる。 */
+async function dragToEmptyCanvas(page: Page, target: string | Locator) {
+  const locator = typeof target === 'string' ? page.getByTestId(target) : target;
+  const from = await locator.boundingBox();
   const pane = await page.locator('.react-flow__pane').boundingBox();
   if (from === null || pane === null) throw new Error('要素の位置を取得できません');
   await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);

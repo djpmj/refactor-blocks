@@ -218,9 +218,9 @@ describe('advanced-payment-gateway-interface', () => {
       expect(scorePlacement(placement, 'extend').total).toBe(100);
     });
 
-    it.each(starts)('%s: StripeGateway へ置くと100点未満で、既存クラスの修正が1つ数えられる', (_name, base) => {
+    it.each(starts)('%s: PaymentService へ置くと100点未満で、既存クラスの修正が1つ数えられる', (_name, base) => {
       // Arrange
-      const implemented = unwrap(moveMethod(withChangePart(base, request), partId, 'class-stripe-gateway'));
+      const implemented = unwrap(moveMethod(withChangePart(base, request), partId, 'class-payment-service'));
 
       // Act
       const score = scorePlacement(unwrap(measurePlacement(base, implemented, request)), 'extend');

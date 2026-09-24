@@ -111,6 +111,58 @@ describe("fileDeductions", () => {
     expect(deductions.get("file-order")).toBe(0);
   });
 
+  it("空実装は、そのメソッドのあるファイルの減点になる", () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [
+        {
+          id: "file-a",
+          path: "a",
+          classes: [
+            {
+              id: "class-a",
+              name: "A",
+              methods: [{ id: "method-a", name: "run", visibility: "public", fragments: [{ id: "f-a", label: "未対応", lines: 2, responsibility: "x", stub: true }] }],
+            },
+          ],
+        },
+      ],
+    };
+
+    // Act
+    const deductions = fileDeductions(codebase, LOOSE);
+
+    // Assert
+    expect(deductions.get("file-a")).toBe(10);
+  });
+
+  it("実装漏れ(約束違反)は、実装クラスのあるファイルの減点になる", () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [
+        { id: "file-i", path: "i", classes: [{ id: "class-i", name: "I", methods: [{ id: "method-i-run", name: "run", visibility: "public", fragments: [] }] }] },
+        {
+          id: "file-c",
+          path: "c",
+          classes: [
+            {
+              id: "class-c",
+              name: "C",
+              interfaceIds: ["class-i"],
+              methods: [{ id: "method-other", name: "other", visibility: "public", fragments: [{ id: "f-other", label: "do", lines: 1, responsibility: "x" }] }],
+            },
+          ],
+        },
+      ],
+    };
+
+    // Act
+    const deductions = fileDeductions(codebase, LOOSE);
+
+    // Assert
+    expect(deductions.get("file-c")).toBe(10);
+  });
+
   it("全ファイルの減点を足すと、採点の減点の合計と一致する", () => {
     // Arrange
     const codebase = sampleCodebase();

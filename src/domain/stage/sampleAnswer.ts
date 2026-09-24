@@ -2,6 +2,7 @@ import { addClass } from '../codebase/addClass';
 import { addFile } from '../codebase/addFile';
 import { allClasses, type Codebase } from '../codebase/Codebase';
 import { deleteFile } from '../codebase/deleteFile';
+import { deleteMethod } from '../codebase/deleteMethod';
 import { extractMethod } from '../codebase/extractMethod';
 import { mergeMethods } from '../codebase/mergeMethods';
 import { moveClass } from '../codebase/moveClass';
@@ -21,7 +22,15 @@ export type SolutionStep =
         readonly name: string;
       };
     }
-  | { readonly move: { readonly method: string; readonly toClass: string } }
+  | {
+      readonly move: {
+        readonly method: string;
+        readonly toClass: string;
+        /** 同名メソッドが複数クラスにあるときの移動元。 */
+        readonly fromClass?: string;
+      };
+    }
+  | { readonly deleteMethod: { readonly method: string; readonly fromClass: string } }
   | {
       readonly merge: {
         readonly methodA: string;
@@ -78,7 +87,12 @@ function applyStep(codebase: Codebase, step: SolutionStep, newId: string): Codeb
     return unwrap(extractMethod(codebase, { sourceMethodId, fragmentIds, newMethodId: newId, newMethodName: name }));
   }
   if ('move' in step) {
-    return unwrap(moveMethod(codebase, methodIdByName(codebase, step.move.method), classIdByName(codebase, step.move.toClass)));
+    const { method, fromClass, toClass } = step.move;
+    return unwrap(moveMethod(codebase, methodIdByName(codebase, method, fromClass), classIdByName(codebase, toClass)));
+  }
+  if ('deleteMethod' in step) {
+    const { method, fromClass } = step.deleteMethod;
+    return unwrap(deleteMethod(codebase, methodIdByName(codebase, method, fromClass)));
   }
   if ('merge' in step) {
     const { methodA, methodAClass, methodB, methodBClass, name } = step.merge;

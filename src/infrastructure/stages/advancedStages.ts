@@ -98,11 +98,12 @@ const paymentGatewayInterfaceStage: Stage = {
   description:
     'PaymentService の checkout は、共通インターフェース PaymentGateway 経由で決済を呼び出すよう最初から書かれている(Stripe・PayPalを名指ししない)。' +
     'しかし StripeGateway・PaypalGateway はまだ PaymentGateway を実装(implements)したと宣言しておらず、' +
-    'どちらも「決済APIを呼び出す」処理と「決済ログを記録する」処理を1つのメソッド(charge)に詰め込んでいて、行数の上限を超えている。',
+    'どちらも「決済APIを呼び出す」処理と「決済ログを記録する」処理を1つのメソッド(charge)に詰め込んでいて、行数の上限を超えている。' +
+    '実装を宣言していないと約束違反になる。',
   goal:
     'StripeGateway・PaypalGateway の charge を、Extract Methodで責務(API呼び出し/ログ記録)ごとに分け、PaymentGateway を実装(implements)するよう設定しよう。' +
     'StripeGateway・PaypalGatewayの中身がどう変わっても、PaymentServiceの依存先は最初から最後まで PaymentGateway 1つのまま変わらない。上級3(方針を増やすほど依存も増える)と見比べてみよう。' +
-    'メソッドは90行以内、1クラスの責務は3種類まで',
+    'メソッドは90行以内、1クラスの責務は3種類まで。実装を宣言していないと約束違反になる。',
   limits: { method: 90, class: 250, file: 400 },
   dependencyLimit: 1,
   // stripe-config/paypal-configは各ゲートウェイに残る正当な3つ目の責務(このステージの狙いと無関係なため違反にしない)。
@@ -115,7 +116,7 @@ const paymentGatewayInterfaceStage: Stage = {
       responsibility: 'gateway-integration',
       linesPerSite: 30,
       kind: 'extend',
-      partName: 'chargeWithPaypay',
+      partName: 'charge',
     },
     { id: 'req-payment-logging', title: '決済ログの記録方法を見直して', description: '決済ログに、失敗時のリトライ回数を残したい。', responsibility: 'payment-logging', linesPerSite: 6, partName: 'logRetryCount' },
     { id: 'req-gateway-integration', title: '決済APIの呼び出し方を見直して', description: '決済API呼び出しに、共通のタイムアウト設定を追加したい。', responsibility: 'gateway-integration', linesPerSite: 5, partName: 'applyGatewayTimeout' },

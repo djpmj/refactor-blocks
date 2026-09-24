@@ -19,6 +19,11 @@ export type Fragment = {
    * 省略時はどの処理とも統合できない(既存ステージはこのタグを使わないため影響しない)。
    */
   readonly duplicateGroup?: string;
+  /**
+   * インターフェースの都合で書かされただけの空実装(何もせず return する・「未対応」の例外を投げるだけ)であることを示す隠しタグ。
+   * responsibility・duplicateGroup と同じくプレイヤーには表示しない(ラベルに「未対応: …」と書く)。省略時は通常の処理。
+   */
+  readonly stub?: boolean;
 };
 
 export type Method = {
@@ -90,6 +95,11 @@ export function findInterfaces(codebase: Codebase, classId: string): CodeClass[]
 /** インターフェース役 = メソッドが1つ以上あり、すべて public で中身(Fragment)がない。 */
 export function isInterfaceLike(codeClass: CodeClass): boolean {
   return codeClass.methods.length > 0 && codeClass.methods.every((method) => method.visibility === 'public' && method.fragments.length === 0);
+}
+
+/** 空実装のメソッド = 処理が1つ以上あり、すべてstub。中身のない契約メソッド(fragments: [])は空実装ではない。 */
+export function isStubMethod(method: Method): boolean {
+  return method.fragments.length > 0 && method.fragments.every((fragment) => fragment.stub === true);
 }
 
 /** 指定したクラスだけを置き換えた新しいCodebaseを返す(元のCodebaseは変更しない)。 */

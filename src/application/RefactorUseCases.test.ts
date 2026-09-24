@@ -5,9 +5,11 @@ import {
   addClassUseCase,
   addFileUseCase,
   addInterfaceUseCase,
+  deleteMethodUseCase,
   describeAddClassError,
   describeAddFileError,
   describeAddInterfaceError,
+  describeDeleteMethodError,
   describeMergeError,
   describeMoveClassError,
   describeRemoveInterfaceError,
@@ -130,6 +132,45 @@ describe('moveMethodUseCase', () => {
 
     // Assert
     expect(result).toEqual({ ok: false, error: 'class-not-found' });
+  });
+});
+
+describe('deleteMethodUseCase', () => {
+  it('空実装のメソッドを削除する', () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [
+        {
+          id: 'file',
+          path: 'src/all.ts',
+          classes: [
+            {
+              id: 'class-a',
+              name: 'A',
+              methods: [{ id: 'method-stub', name: 'stub', visibility: 'public', fragments: [{ id: 'f1', label: '未対応', lines: 2, responsibility: 'x', stub: true }] }],
+            },
+          ],
+        },
+      ],
+    };
+
+    // Act
+    const result = deleteMethodUseCase(codebase, 'method-stub');
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    expect(result.value.files[0].classes[0].methods).toHaveLength(0);
+  });
+
+  it('中身のあるメソッドを指定するとnot-stubを返す', () => {
+    // Arrange
+    const codebase = sampleCodebase();
+
+    // Act
+    const result = deleteMethodUseCase(codebase, 'method-place');
+
+    // Assert
+    expect(result).toEqual({ ok: false, error: 'not-stub' });
   });
 });
 
@@ -344,6 +385,7 @@ describe('エラーメッセージ', () => {
       describeRenameFileError('file-not-found'),
       describeRenameMethodError('duplicate-method-name'),
       describeSetSuperclassError('inheritance-cycle'),
+      describeDeleteMethodError('not-stub'),
     ];
 
     // Assert
@@ -359,6 +401,7 @@ describe('エラーメッセージ', () => {
       '名前を変えるファイルが見つかりません',
       '同じクラスに同じ名前のメソッドがあります',
       '継承の輪ができてしまいます',
+      '中身のあるメソッドは削除できません。削除できるのは空実装のメソッドだけです',
     ]);
   });
 });

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { findInterfaces, findSuperclass, isInterfaceLike, parentIds } from './Codebase';
+import { findInterfaces, findSuperclass, isInterfaceLike, isStubMethod, parentIds } from './Codebase';
 import { sampleCodebase } from './testFixtures';
-import type { CodeClass } from './Codebase';
+import type { CodeClass, Method } from './Codebase';
 
 describe('findSuperclass', () => {
   it('superclassIdが指すクラスを返す', () => {
@@ -172,6 +172,55 @@ describe('isInterfaceLike', () => {
 
     // Act
     const result = isInterfaceLike(codeClass);
+
+    // Assert
+    expect(result).toBe(false);
+  });
+});
+
+function method(overrides: Partial<Method> = {}): Method {
+  return { id: 'm1', name: 'run', visibility: 'public', fragments: [], ...overrides };
+}
+
+describe('isStubMethod', () => {
+  it('処理がすべてstubならtrue', () => {
+    // Arrange
+    const target = method({
+      fragments: [
+        { id: 'f1', label: 'a', lines: 1, responsibility: 'x', stub: true },
+        { id: 'f2', label: 'b', lines: 1, responsibility: 'x', stub: true },
+      ],
+    });
+
+    // Act
+    const result = isStubMethod(target);
+
+    // Assert
+    expect(result).toBe(true);
+  });
+
+  it('stubと通常の処理が混在していればfalse', () => {
+    // Arrange
+    const target = method({
+      fragments: [
+        { id: 'f1', label: 'a', lines: 1, responsibility: 'x', stub: true },
+        { id: 'f2', label: 'b', lines: 1, responsibility: 'x' },
+      ],
+    });
+
+    // Act
+    const result = isStubMethod(target);
+
+    // Assert
+    expect(result).toBe(false);
+  });
+
+  it('処理が1つもなければ(契約メソッド)false', () => {
+    // Arrange
+    const target = method({ fragments: [] });
+
+    // Act
+    const result = isStubMethod(target);
 
     // Assert
     expect(result).toBe(false);

@@ -1,6 +1,7 @@
 import type { Codebase } from "../codebase/Codebase";
 import { classDependencies } from "../codebase/dependencies";
 import type { Stage } from "../stage/Stage";
+import { findContractViolations, findStubMethods } from "./interfaceContracts";
 import { findEmptyContainers, findUnusedPrivateMethods } from "./leftovers";
 import { findLineLimitViolations } from "./lineLimits";
 import { findLoneSuperclasses } from "./loneSuperclass";
@@ -43,6 +44,8 @@ export function fileDeductions(
     ...findEmptyContainers(codebase),
     ...findUnusedPrivateMethods(codebase),
     ...findLoneSuperclasses(codebase),
+    ...findStubMethods(codebase),
+    ...findContractViolations(codebase),
   ];
   const owners = fileIdByTargetId(codebase);
   const points = new Map(

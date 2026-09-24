@@ -62,7 +62,7 @@ function codebaseOf(classes: Record<string, readonly string[]>): Codebase {
 }
 
 describe('scoreCodebase', () => {
-  it('違反がなければ100点で、8ルールとも減点0件を返す', () => {
+  it('違反がなければ100点で、10ルールとも減点0件を返す', () => {
     // Arrange
     const codebase = codebaseOf({ A: ['method-B'], B: [] });
 
@@ -81,6 +81,8 @@ describe('scoreCodebase', () => {
         { rule: 'empty', count: 0, points: 0 },
         { rule: 'unused', count: 0, points: 0 },
         { rule: 'lone-superclass', count: 0, points: 0 },
+        { rule: 'stub', count: 0, points: 0 },
+        { rule: 'contract', count: 0, points: 0 },
       ],
     });
   });
@@ -236,7 +238,7 @@ describe('scoreCodebase', () => {
               id: 'class-A',
               name: 'A',
               methods: [
-                { id: 'method-run', name: 'run', visibility: 'public', fragments: [] },
+                { id: 'method-run', name: 'run', visibility: 'public', fragments: [{ id: 'f-run', label: 'do', lines: 1, responsibility: 'x' }] },
                 { id: 'method-dead', name: 'dead', visibility: 'private', fragments: [] },
               ],
             },
@@ -264,6 +266,60 @@ describe('scoreCodebase', () => {
     // Assert
     expect(score.total).toBe(90);
     expect(score.deductions[7]).toEqual({ rule: 'lone-superclass', count: 1, points: 10 });
+  });
+
+  it('空実装のメソッド1つにつき10点減点する', () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [
+        {
+          id: 'file',
+          path: 'src/all.ts',
+          classes: [
+            {
+              id: 'class-a',
+              name: 'A',
+              methods: [{ id: 'method-a', name: 'run', visibility: 'public', fragments: [{ id: 'f-a', label: '未対応', lines: 2, responsibility: 'x', stub: true }] }],
+            },
+          ],
+        },
+      ],
+    };
+
+    // Act
+    const score = scoreCodebase(codebase, { ...LOOSE, dependencyLimit: 1 });
+
+    // Assert
+    expect(score.total).toBe(90);
+    expect(score.deductions[8]).toEqual({ rule: 'stub', count: 1, points: 10 });
+  });
+
+  it('約束違反(実装漏れ)1件につき10点減点する', () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [
+        {
+          id: 'file',
+          path: 'src/all.ts',
+          classes: [
+            { id: 'class-i', name: 'I', methods: [{ id: 'method-i-run', name: 'run', visibility: 'public', fragments: [] }] },
+            {
+              id: 'class-c',
+              name: 'C',
+              interfaceIds: ['class-i'],
+              methods: [{ id: 'method-other', name: 'other', visibility: 'public', fragments: [{ id: 'f-other', label: 'do', lines: 1, responsibility: 'x' }] }],
+            },
+          ],
+        },
+      ],
+    };
+
+    // Act
+    const score = scoreCodebase(codebase, { ...LOOSE, dependencyLimit: 1 });
+
+    // Assert
+    expect(score.total).toBe(90);
+    expect(score.deductions[9]).toEqual({ rule: 'contract', count: 1, points: 10 });
   });
 
   it('減点の合計が100点を超えても0点で止まる', () => {

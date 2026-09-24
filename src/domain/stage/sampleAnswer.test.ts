@@ -38,6 +38,16 @@ function classNamed(codebase: Codebase, name: string) {
   return found;
 }
 
+/** 指定した名前のクラスのmethodsだけを置き換えたコードベースを返す。 */
+function withMethodsOf(codebase: Codebase, className: string, methods: Codebase['files'][0]['classes'][0]['methods']): Codebase {
+  return {
+    files: codebase.files.map((file) => ({
+      ...file,
+      classes: file.classes.map((codeClass) => (codeClass.name === className ? { ...codeClass, methods } : codeClass)),
+    })),
+  };
+}
+
 describe('applySolutionSteps', () => {
   it('extractステップで、選んだ処理を新しいメソッドとして抽出する', () => {
     // Arrange
@@ -63,6 +73,36 @@ describe('applySolutionSteps', () => {
     // Assert
     expect(classNamed(result, 'A').methods).toHaveLength(0);
     expect(classNamed(result, 'B').methods.map((method) => method.name)).toEqual(['run']);
+  });
+
+  it('moveステップにfromClassを指定すると、同名メソッドのうち指定クラスのものを移す', () => {
+    // Arrange
+    const withThirdClass: Codebase = {
+      files: [...twoClassCodebase().files, { id: 'file-c', path: 'src/c.ts', classes: [{ id: 'class-c', name: 'C', methods: [] }] }],
+    };
+    const codebase = withMethodsOf(withThirdClass, 'B', [{ id: 'method-run-b', name: 'run', visibility: 'public', fragments: [] }]);
+    const steps: SolutionStep[] = [{ move: { method: 'run', fromClass: 'B', toClass: 'C' } }];
+
+    // Act
+    const result = applySolutionSteps(codebase, steps);
+
+    // Assert
+    expect(classNamed(result, 'B').methods).toHaveLength(0);
+    expect(classNamed(result, 'C').methods.map((method) => method.id)).toEqual(['method-run-b']);
+  });
+
+  it('deleteMethodステップで、指定クラスの空実装を削除する', () => {
+    // Arrange
+    const codebase = withMethodsOf(twoClassCodebase(), 'B', [
+      { id: 'method-stub', name: 'stub', visibility: 'public', fragments: [{ id: 'f-stub', label: '未対応', lines: 2, responsibility: 'x', stub: true }] },
+    ]);
+    const steps: SolutionStep[] = [{ deleteMethod: { method: 'stub', fromClass: 'B' } }];
+
+    // Act
+    const result = applySolutionSteps(codebase, steps);
+
+    // Assert
+    expect(classNamed(result, 'B').methods).toHaveLength(0);
   });
 
   it('addFileステップで、新しいファイルを追加する', () => {
