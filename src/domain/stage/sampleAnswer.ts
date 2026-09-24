@@ -7,6 +7,8 @@ import { extractMethod } from '../codebase/extractMethod';
 import { mergeMethods } from '../codebase/mergeMethods';
 import { moveClass } from '../codebase/moveClass';
 import { moveMethod } from '../codebase/moveMethod';
+import { renameClass } from '../codebase/renameClass';
+import { renameFile } from '../codebase/renameFile';
 import { addInterface, removeInterface, setSuperclass } from '../codebase/setSuperclass';
 import type { Result } from '../shared/Result';
 import type { Stage } from './Stage';
@@ -52,7 +54,9 @@ export type SolutionStep =
       };
     }
   | { readonly addInterface: { readonly class: string; readonly interface: string } }
-  | { readonly removeInterface: { readonly class: string; readonly interface: string } };
+  | { readonly removeInterface: { readonly class: string; readonly interface: string } }
+  | { readonly renameClass: { readonly name: string; readonly newName: string } }
+  | { readonly renameFile: { readonly path: string; readonly newPath: string } };
 
 function unwrap<T, E>(result: Result<T, E>): T {
   if (!result.ok) throw new Error(`模範解答の適用に失敗しました: ${String(result.error)}`);
@@ -80,6 +84,42 @@ function fileIdByPath(codebase: Codebase, path: string): string {
   return found.id;
 }
 
+type StructuralStep = Exclude<
+  SolutionStep,
+  { readonly extract: unknown } | { readonly move: unknown } | { readonly merge: unknown } | { readonly deleteMethod: unknown }
+>;
+
+/** ファイル・クラス・継承/実装関係の組み替え(処理の中身を伴わない手)を適用する。 */
+function applyStructuralStep(codebase: Codebase, step: StructuralStep, newId: string): Codebase {
+  if ('addFile' in step) return unwrap(addFile(codebase, step.addFile, newId));
+  if ('deleteFile' in step) return unwrap(deleteFile(codebase, fileIdByPath(codebase, step.deleteFile)));
+  if ('addClass' in step) {
+    return unwrap(addClass(codebase, fileIdByPath(codebase, step.addClass.file), step.addClass.name, newId));
+  }
+  if ('moveClass' in step) {
+    const { name, toFile } = step.moveClass;
+    return unwrap(moveClass(codebase, classIdByName(codebase, name), fileIdByPath(codebase, toFile)));
+  }
+  if ('addInterface' in step) {
+    const { class: className, interface: interfaceName } = step.addInterface;
+    return unwrap(addInterface(codebase, classIdByName(codebase, className), interfaceName));
+  }
+  if ('removeInterface' in step) {
+    const { class: className, interface: interfaceName } = step.removeInterface;
+    return unwrap(removeInterface(codebase, classIdByName(codebase, className), interfaceName));
+  }
+  if ('renameClass' in step) {
+    const { name, newName } = step.renameClass;
+    return unwrap(renameClass(codebase, classIdByName(codebase, name), newName));
+  }
+  if ('renameFile' in step) {
+    const { path, newPath } = step.renameFile;
+    return unwrap(renameFile(codebase, fileIdByPath(codebase, path), newPath));
+  }
+  const { class: className, superclass } = step.setSuperclass;
+  return unwrap(setSuperclass(codebase, classIdByName(codebase, className), superclass));
+}
+
 function applyStep(codebase: Codebase, step: SolutionStep, newId: string): Codebase {
   if ('extract' in step) {
     const { from, fromClass, fragmentIds, name } = step.extract;
@@ -100,25 +140,7 @@ function applyStep(codebase: Codebase, step: SolutionStep, newId: string): Codeb
     const methodBId = methodIdByName(codebase, methodB, methodBClass);
     return unwrap(mergeMethods(codebase, { methodAId, methodBId, newMethodId: newId, newMethodName: name }));
   }
-  if ('addFile' in step) return unwrap(addFile(codebase, step.addFile, newId));
-  if ('deleteFile' in step) return unwrap(deleteFile(codebase, fileIdByPath(codebase, step.deleteFile)));
-  if ('addClass' in step) {
-    return unwrap(addClass(codebase, fileIdByPath(codebase, step.addClass.file), step.addClass.name, newId));
-  }
-  if ('moveClass' in step) {
-    const { name, toFile } = step.moveClass;
-    return unwrap(moveClass(codebase, classIdByName(codebase, name), fileIdByPath(codebase, toFile)));
-  }
-  if ('addInterface' in step) {
-    const { class: className, interface: interfaceName } = step.addInterface;
-    return unwrap(addInterface(codebase, classIdByName(codebase, className), interfaceName));
-  }
-  if ('removeInterface' in step) {
-    const { class: className, interface: interfaceName } = step.removeInterface;
-    return unwrap(removeInterface(codebase, classIdByName(codebase, className), interfaceName));
-  }
-  const { class: className, superclass } = step.setSuperclass;
-  return unwrap(setSuperclass(codebase, classIdByName(codebase, className), superclass));
+  return applyStructuralStep(codebase, step, newId);
 }
 
 /** 手順を順番に適用する。新しく振るIDは呼び出し元のIDと衝突しないよう連番にする。 */
@@ -242,6 +264,22 @@ export const sampleAnswerSteps: Partial<Record<string, readonly SolutionStep[]>>
     { extract: { from: 'exportMonthlyReport', fragmentIds: ['frag-build-report-monthly'], name: 'buildMonthlyReport' } },
     { merge: { methodA: 'buildWeeklyReport', methodB: 'buildMonthlyReport', name: 'buildReport' } },
     { move: { method: 'buildReport', toClass: 'ReportFactory' } },
+  ],
+  'advanced-interface-segregation': [
+    { renameClass: { name: 'CollaborationTool', newName: 'ChatClient' } },
+    { renameFile: { path: 'src/integration/CollaborationTool.ts', newPath: 'src/integration/ChatClient.ts' } },
+    { addFile: 'src/integration/TaskTracker.ts' },
+    { addClass: { name: 'TaskTracker', file: 'src/integration/TaskTracker.ts' } },
+    { move: { method: 'createTask', fromClass: 'ChatClient', toClass: 'TaskTracker' } },
+    { move: { method: 'completeTask', fromClass: 'ChatClient', toClass: 'TaskTracker' } },
+    { addInterface: { class: 'BacklogClient', interface: 'TaskTracker' } },
+    { removeInterface: { class: 'BacklogClient', interface: 'ChatClient' } },
+    { addInterface: { class: 'ChatworkClient', interface: 'TaskTracker' } },
+    { deleteMethod: { method: 'createTask', fromClass: 'SlackClient' } },
+    { deleteMethod: { method: 'completeTask', fromClass: 'SlackClient' } },
+    { deleteMethod: { method: 'createTask', fromClass: 'TeamsClient' } },
+    { deleteMethod: { method: 'completeTask', fromClass: 'TeamsClient' } },
+    { deleteMethod: { method: 'postMessage', fromClass: 'BacklogClient' } },
   ],
   'advanced-collapse-hierarchy': [
     { move: { method: 'prepareExport', toClass: 'CsvExporter' } },

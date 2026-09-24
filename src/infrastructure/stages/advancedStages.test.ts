@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { changeKindOf } from '../../domain/change/ChangeRequest';
 import { withChangePart } from '../../domain/change/changePart';
+import { measureChange } from '../../domain/change/measureChange';
 import { measurePlacement } from '../../domain/change/measurePlacement';
 import { scorePlacement, type PlacementScore } from '../../domain/change/scorePlacement';
+import { deleteMethod } from '../../domain/codebase/deleteMethod';
 import { moveMethod } from '../../domain/codebase/moveMethod';
 import { moveMethodToNewClass } from '../../domain/codebase/moveToNewHome';
 import { addInterface } from '../../domain/codebase/setSuperclass';
-import { allClasses, findClass, findInterfaces, findSuperclass, type CodeClass, type Codebase } from '../../domain/codebase/Codebase';
+import { allClasses, findClass, findInterfaces, findSuperclass, isStubMethod, type CodeClass, type Codebase } from '../../domain/codebase/Codebase';
 import { classDependencies } from '../../domain/codebase/dependencies';
 import { scoreCodebase } from '../../domain/scoring/score';
 import { sampleAnswerCodebase } from '../../domain/stage/sampleAnswer';
@@ -412,5 +414,116 @@ describe('advanced-collapse-hierarchy', () => {
     expect(csvExporter.superclassId).toBeUndefined();
     expect(csvExporter.methods.map((method) => method.name)).toEqual(['writeRows', 'quoteChar', 'prepareExport', 'escapeValue']);
     expect(allClasses(solved).map((codeClass) => codeClass.name)).not.toContain('BaseExporter');
+  });
+});
+
+/**
+ * 採点(line-limit/coupling/cycle/responsibility)だけでは「役割ごとに分けたか」を確認できないので、
+ * この上級ステージの狙いそのもの(太ったインターフェースを2つに分け、必要なクラスだけが実装する)を別途確認する。
+ */
+describe('advanced-interface-segregation', () => {
+  const stage = advancedStages.find((candidate) => candidate.id === 'advanced-interface-segregation');
+  if (stage === undefined) throw new Error('advanced-interface-segregation ステージが見つかりません');
+
+  it('初期状態の減点は空実装5件だけで、50点になる', () => {
+    // Arrange
+    const { codebase } = stage;
+
+    // Act
+    const score = scoreCodebase(codebase, stage);
+
+    // Assert
+    expect(score.total).toBe(50);
+    expect(score.deductions.filter((deduction) => deduction.count > 0)).toEqual([{ rule: 'stub', count: 5, points: 50 }]);
+  });
+
+  it('模範解答では、AlertNotifierの依存先はChatClientだけ、IncidentServiceの依存先はTaskTrackerだけになる', () => {
+    // Arrange
+    const solved = sampleAnswerCodebase(stage);
+
+    // Act
+    const dependencies = classDependencies(solved);
+    const alertTargets = dependencies.filter((dependency) => dependency.from === 'class-alert-notifier').map((dependency) => dependency.to);
+    const incidentTargets = dependencies.filter((dependency) => dependency.from === 'class-incident-service').map((dependency) => dependency.to);
+
+    // Assert
+    expect(alertTargets).toEqual([classNamed(solved, 'ChatClient').id]);
+    expect(incidentTargets).toEqual([classNamed(solved, 'TaskTracker').id]);
+  });
+
+  it('模範解答では、Chatworkだけが両方のインターフェースを実装し、空実装がなくなる', () => {
+    // Arrange
+    const solved = sampleAnswerCodebase(stage);
+
+    // Act
+    const chatworkInterfaces = findInterfaces(solved, 'class-chatwork-client').map((codeClass) => codeClass.name);
+    const slackInterfaces = findInterfaces(solved, 'class-slack-client').map((codeClass) => codeClass.name);
+    const teamsInterfaces = findInterfaces(solved, 'class-teams-client').map((codeClass) => codeClass.name);
+    const backlogInterfaces = findInterfaces(solved, 'class-backlog-client').map((codeClass) => codeClass.name);
+    const stubMethods = allClasses(solved)
+      .flatMap((codeClass) => codeClass.methods)
+      .filter((method) => isStubMethod(method));
+
+    // Assert
+    expect(chatworkInterfaces).toEqual(['ChatClient', 'TaskTracker']);
+    expect(slackInterfaces).toEqual(['ChatClient']);
+    expect(teamsInterfaces).toEqual(['ChatClient']);
+    expect(backlogInterfaces).toEqual(['TaskTracker']);
+    expect(stubMethods).toEqual([]);
+  });
+
+  it('初期状態で、本物の処理を持つ SlackClient.postMessage は空実装ではないので削除できない', () => {
+    // Arrange
+    const { codebase } = stage;
+    const slack = classNamed(codebase, 'SlackClient');
+    const postMessage = slack.methods.find((method) => method.name === 'postMessage');
+    if (postMessage === undefined) throw new Error('postMessage がありません');
+
+    // Act
+    const result = deleteMethod(codebase, postMessage.id);
+
+    // Assert
+    expect(result).toEqual({ ok: false, error: 'not-stub' });
+  });
+
+  it('空実装のメソッドのIDは、どのFragmentのusesにも出てこない(呼ばれない前提)', () => {
+    // Arrange
+    const { codebase } = stage;
+    const stubMethodIds = new Set(
+      allClasses(codebase)
+        .flatMap((codeClass) => codeClass.methods)
+        .filter((method) => isStubMethod(method))
+        .map((method) => method.id),
+    );
+    const usedIds = allClasses(codebase)
+      .flatMap((codeClass) => codeClass.methods)
+      .flatMap((method) => method.fragments)
+      .flatMap((fragment) => fragment.uses ?? []);
+
+    // Act
+    const usedStubIds = usedIds.filter((id) => stubMethodIds.has(id));
+
+    // Assert
+    expect(usedStubIds).toEqual([]);
+  });
+
+  it('変更依頼2件とも、模範解答のあとで変更が必要なクラス数が減る', () => {
+    // Arrange
+    const solved = sampleAnswerCodebase(stage);
+    const taskAssignee = stage.changeRequests.find((candidate) => candidate.id === 'req-task-assignee');
+    const threadReply = stage.changeRequests.find((candidate) => candidate.id === 'req-thread-reply');
+    if (taskAssignee === undefined || threadReply === undefined) throw new Error('依頼が見つかりません');
+
+    // Act
+    const taskAssigneeBefore = unwrap(measureChange(stage.codebase, taskAssignee, stage.limits));
+    const taskAssigneeAfter = unwrap(measureChange(solved, taskAssignee, stage.limits));
+    const threadReplyBefore = unwrap(measureChange(stage.codebase, threadReply, stage.limits));
+    const threadReplyAfter = unwrap(measureChange(solved, threadReply, stage.limits));
+
+    // Assert
+    expect(taskAssigneeBefore.classesTouched).toBe(4);
+    expect(taskAssigneeAfter.classesTouched).toBe(2);
+    expect(threadReplyBefore.classesTouched).toBe(4);
+    expect(threadReplyAfter.classesTouched).toBe(3);
   });
 });

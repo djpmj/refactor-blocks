@@ -190,6 +190,30 @@ describe('applySolutionSteps', () => {
     expect(classNamed(result, 'A').interfaceIds).toBeUndefined();
   });
 
+  it('renameClassステップで、クラスの名前を付け替える', () => {
+    // Arrange
+    const codebase = twoClassCodebase();
+    const steps: SolutionStep[] = [{ renameClass: { name: 'A', newName: 'Renamed' } }];
+
+    // Act
+    const result = applySolutionSteps(codebase, steps);
+
+    // Assert
+    expect(findClass(result, 'class-a')?.name).toBe('Renamed');
+  });
+
+  it('renameFileステップで、ファイルのパスを付け替える', () => {
+    // Arrange
+    const codebase = twoClassCodebase();
+    const steps: SolutionStep[] = [{ renameFile: { path: 'src/a.ts', newPath: 'src/renamed.ts' } }];
+
+    // Act
+    const result = applySolutionSteps(codebase, steps);
+
+    // Assert
+    expect(result.files.find((file) => file.id === 'file-a')?.path).toBe('src/renamed.ts');
+  });
+
   it('setSuperclassステップにsuperclass: nullを指定すると、継承を解除する', () => {
     // Arrange
     const codebase = twoClassCodebase();

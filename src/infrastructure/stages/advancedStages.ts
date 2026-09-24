@@ -477,10 +477,264 @@ const collapseHierarchyStage: Stage = {
   },
 };
 
+/**
+ * 上級6: 上級2・3が「インターフェースを使う側から見た結合度」を扱ったのに対し、このステージは
+ * 「インターフェース自体を大きくしすぎたときの痛み」を扱う(ISP)。障害対応の連絡を自動化するため、
+ * チャット(Slack・Teams)と課題管理(Backlog)と、その両方ができる Chatwork をまとめて扱う
+ * CollaborationTool インターフェースを作った。Slack・Teamsはタスク管理ができず createTask・
+ * completeTask を「未対応」で潰し、Backlogはチャットに投稿できず postMessage を空実装で潰している。
+ * ChatworkClientは分けたあと両方のインターフェースを実装する。投稿だけ使う AlertNotifier、
+ * タスク管理だけ使う IncidentService は、どちらも太った CollaborationTool に依存している。
+ */
+const interfaceSegregationStage: Stage = {
+  id: 'advanced-interface-segregation',
+  level: 'advanced',
+  title: '上級6: 太ったインターフェースを役割ごとに分ける',
+  description:
+    '障害対応の連絡を自動化するため、Slack・Teams・Backlog・Chatwork をまとめて扱う CollaborationTool インターフェースを作った。' +
+    'ところが Slack と Teams はタスク管理ができず createTask・completeTask を「未対応」の例外で潰し、Backlog はチャットに投稿できず postMessage を空実装で潰している。' +
+    '投稿しか使わない AlertNotifier も、タスクしか使わない IncidentService も、同じ太いインターフェースに依存している。',
+  goal:
+    'CollaborationTool を、投稿の役割(ChatClient)とタスク管理の役割(TaskTracker)に分けよう。各クラスには本当に使うインターフェースだけを実装させ、' +
+    '両方できる ChatworkClient には両方を実装させよう。要らなくなった空実装は、メソッドエディタの「空実装のメソッドを削除」で消そう。依存先は1クラスまで',
+  limits: { method: 90, class: 200, file: 300 },
+  dependencyLimit: 1,
+  // 空実装の責務でresponsibilityとstubが二重に減点されないよう、実装クラスは空実装込みで最大3種類までにする。
+  responsibilityLimit: 3,
+  changeRequests: [
+    {
+      id: 'req-task-assignee',
+      title: '障害の対応タスクに担当者を割り当てて',
+      description: 'タスクを登録するときに担当者を指定できるようにしたい。',
+      responsibility: 'task-create',
+      linesPerSite: 4,
+      partName: 'assignTaskOwner',
+    },
+    {
+      id: 'req-thread-reply',
+      title: 'アラートをスレッドにまとめて投稿して',
+      description: '同じ障害の続報は、最初の投稿のスレッドに返信したい。',
+      responsibility: 'chat-post',
+      linesPerSite: 5,
+      partName: 'replyInThread',
+    },
+  ],
+  codebase: {
+    files: [
+      {
+        id: 'file-alert-notifier',
+        path: 'src/alert/AlertNotifier.ts',
+        classes: [
+          {
+            id: 'class-alert-notifier',
+            name: 'AlertNotifier',
+            methods: [
+              {
+                id: 'method-notify-alert',
+                name: 'notifyAlert',
+                visibility: 'public',
+                fragments: [
+                  { id: 'frag-alert-format', label: 'アラートの内容から通知文を組み立てる', lines: 40, responsibility: 'alert-format', suggestedName: 'buildAlertMessage' },
+                  {
+                    id: 'frag-alert-dispatch',
+                    label: 'チャットへ投稿する',
+                    lines: 8,
+                    responsibility: 'alert-dispatch',
+                    uses: ['method-tool-post-message'],
+                    suggestedName: 'dispatchAlert',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'file-incident-service',
+        path: 'src/incident/IncidentService.ts',
+        classes: [
+          {
+            id: 'class-incident-service',
+            name: 'IncidentService',
+            methods: [
+              {
+                id: 'method-report-incident',
+                name: 'reportIncident',
+                visibility: 'public',
+                fragments: [
+                  { id: 'frag-triage', label: '障害の影響範囲と重要度を判定する', lines: 60, responsibility: 'triage', suggestedName: 'triageIncident' },
+                  {
+                    id: 'frag-incident-dispatch-create',
+                    label: '対応タスクを登録する',
+                    lines: 12,
+                    responsibility: 'incident-dispatch',
+                    uses: ['method-tool-create-task'],
+                    suggestedName: 'createIncidentTask',
+                  },
+                  {
+                    id: 'frag-incident-dispatch-complete',
+                    label: '復旧したらタスクを完了にする',
+                    lines: 10,
+                    responsibility: 'incident-dispatch',
+                    uses: ['method-tool-complete-task'],
+                    suggestedName: 'completeIncidentTask',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'file-collaboration-tool',
+        path: 'src/integration/CollaborationTool.ts',
+        classes: [
+          {
+            id: 'class-collaboration-tool',
+            name: 'CollaborationTool',
+            methods: [
+              { id: 'method-tool-post-message', name: 'postMessage', visibility: 'public', fragments: [] },
+              { id: 'method-tool-create-task', name: 'createTask', visibility: 'public', fragments: [] },
+              { id: 'method-tool-complete-task', name: 'completeTask', visibility: 'public', fragments: [] },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'file-slack-client',
+        path: 'src/integration/SlackClient.ts',
+        classes: [
+          {
+            id: 'class-slack-client',
+            name: 'SlackClient',
+            interfaceIds: ['class-collaboration-tool'],
+            methods: [
+              {
+                id: 'method-slack-post-message',
+                name: 'postMessage',
+                visibility: 'public',
+                fragments: [{ id: 'frag-slack-chat-post', label: 'Slack APIでチャンネルに投稿する', lines: 36, responsibility: 'chat-post', suggestedName: 'postToSlack' }],
+              },
+              {
+                id: 'method-slack-create-task',
+                name: 'createTask',
+                visibility: 'public',
+                fragments: [{ id: 'frag-slack-task-create-stub', label: '未対応: UnsupportedOperationErrorを投げるだけ', lines: 3, responsibility: 'task-create', stub: true }],
+              },
+              {
+                id: 'method-slack-complete-task',
+                name: 'completeTask',
+                visibility: 'public',
+                fragments: [{ id: 'frag-slack-task-complete-stub', label: '未対応: UnsupportedOperationErrorを投げるだけ', lines: 3, responsibility: 'task-complete', stub: true }],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'file-teams-client',
+        path: 'src/integration/TeamsClient.ts',
+        classes: [
+          {
+            id: 'class-teams-client',
+            name: 'TeamsClient',
+            interfaceIds: ['class-collaboration-tool'],
+            methods: [
+              {
+                id: 'method-teams-post-message',
+                name: 'postMessage',
+                visibility: 'public',
+                fragments: [{ id: 'frag-teams-chat-post', label: 'Teams のWebhookでチャネルに投稿する', lines: 30, responsibility: 'chat-post', suggestedName: 'postToTeams' }],
+              },
+              {
+                id: 'method-teams-create-task',
+                name: 'createTask',
+                visibility: 'public',
+                fragments: [{ id: 'frag-teams-task-create-stub', label: '未対応: UnsupportedOperationErrorを投げるだけ', lines: 3, responsibility: 'task-create', stub: true }],
+              },
+              {
+                id: 'method-teams-complete-task',
+                name: 'completeTask',
+                visibility: 'public',
+                fragments: [{ id: 'frag-teams-task-complete-stub', label: '未対応: UnsupportedOperationErrorを投げるだけ', lines: 3, responsibility: 'task-complete', stub: true }],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'file-backlog-client',
+        path: 'src/integration/BacklogClient.ts',
+        classes: [
+          {
+            id: 'class-backlog-client',
+            name: 'BacklogClient',
+            interfaceIds: ['class-collaboration-tool'],
+            methods: [
+              {
+                id: 'method-backlog-post-message',
+                name: 'postMessage',
+                visibility: 'public',
+                fragments: [{ id: 'frag-backlog-chat-post-stub', label: '未対応: 何もせずreturnする空実装', lines: 2, responsibility: 'chat-post', stub: true }],
+              },
+              {
+                id: 'method-backlog-create-task',
+                name: 'createTask',
+                visibility: 'public',
+                fragments: [{ id: 'frag-backlog-task-create', label: 'Backlog APIで課題を登録する', lines: 40, responsibility: 'task-create', suggestedName: 'createBacklogIssue' }],
+              },
+              {
+                id: 'method-backlog-complete-task',
+                name: 'completeTask',
+                visibility: 'public',
+                fragments: [
+                  { id: 'frag-backlog-task-complete', label: 'Backlog APIで課題の状態を完了にする', lines: 20, responsibility: 'task-complete', suggestedName: 'completeBacklogIssue' },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'file-chatwork-client',
+        path: 'src/integration/ChatworkClient.ts',
+        classes: [
+          {
+            id: 'class-chatwork-client',
+            name: 'ChatworkClient',
+            interfaceIds: ['class-collaboration-tool'],
+            methods: [
+              {
+                id: 'method-chatwork-post-message',
+                name: 'postMessage',
+                visibility: 'public',
+                fragments: [{ id: 'frag-chatwork-chat-post', label: 'Chatwork APIでルームに投稿する', lines: 32, responsibility: 'chat-post', suggestedName: 'postToChatwork' }],
+              },
+              {
+                id: 'method-chatwork-create-task',
+                name: 'createTask',
+                visibility: 'public',
+                fragments: [{ id: 'frag-chatwork-task-create', label: 'Chatwork APIでタスクを登録する', lines: 18, responsibility: 'task-create', suggestedName: 'createChatworkTask' }],
+              },
+              {
+                id: 'method-chatwork-complete-task',
+                name: 'completeTask',
+                visibility: 'public',
+                fragments: [{ id: 'frag-chatwork-task-complete', label: 'Chatwork APIでタスクを完了にする', lines: 10, responsibility: 'task-complete', suggestedName: 'completeChatworkTask' }],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+};
+
 export const advancedStages: readonly Stage[] = [
   notifierHierarchyStage,
   paymentGatewayInterfaceStage,
   discountStrategyStage,
   reportFactoryStage,
   collapseHierarchyStage,
+  interfaceSegregationStage,
 ];

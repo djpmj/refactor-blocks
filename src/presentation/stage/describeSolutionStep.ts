@@ -27,6 +27,17 @@ function describeRemoveInterface({ class: className, interface: interfaceName }:
   return `${className} の implements から ${interfaceName} を外そう`;
 }
 
+type RenameClassStep = Extract<SolutionStep, { readonly renameClass: unknown }>['renameClass'];
+type RenameFileStep = Extract<SolutionStep, { readonly renameFile: unknown }>['renameFile'];
+
+function describeRenameClass({ name, newName }: RenameClassStep): string {
+  return `${name} の名前を ${newName} に変えよう`;
+}
+
+function describeRenameFile({ path, newPath }: RenameFileStep): string {
+  return `ファイル ${path} の名前を ${newPath} に変えよう`;
+}
+
 type DeleteMethodStep = Extract<SolutionStep, { readonly deleteMethod: unknown }>['deleteMethod'];
 
 function describeDeleteMethod({ method, fromClass }: DeleteMethodStep): string {
@@ -46,6 +57,8 @@ function describeStructuralStep(step: StructuralStep): string {
   if ('moveClass' in step) return `${step.moveClass.name} クラスを ${step.moveClass.toFile} へ移そう`;
   if ('addInterface' in step) return describeAddInterface(step.addInterface);
   if ('removeInterface' in step) return describeRemoveInterface(step.removeInterface);
+  if ('renameClass' in step) return describeRenameClass(step.renameClass);
+  if ('renameFile' in step) return describeRenameFile(step.renameFile);
   return describeSetSuperclass(step.setSuperclass);
 }
 

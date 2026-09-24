@@ -1133,3 +1133,51 @@ test('上級5: 子が1つだけの継承は減点され、右クリックメニ�
   await expect(page.getByTestId('class-CsvExporter')).not.toContainText('extends BaseExporter');
   await expect(score).not.toContainText('子が1つだけの継承');
 });
+
+test('上級6: 空実装を削除するとまだ要求しているインターフェースへの約束違反になり、取り消すと戻る。実装の宣言を外すと宣言漏れになる', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await page.getByLabel('ステージ').selectOption({ label: '上級6: 太ったインターフェースを役割ごとに分ける' });
+  const score = page.getByTestId('score');
+  await expect(score).toContainText('使わないメソッドの空実装 -50');
+  // クラスが多くfitViewの倍率が小さいので、メソッドが見える倍率までズームインする(回数はレイアウトしだいなので決め打ちしない)
+  const slackPostMessage = page.getByTestId('class-SlackClient').getByTestId('method-postMessage');
+  await expect(async () => {
+    await page.getByRole('button', { name: 'Zoom In' }).click();
+    await expect(slackPostMessage).toBeVisible({ timeout: 500 });
+  }).toPass();
+
+  // Act: 中身のあるメソッド(SlackClient.postMessage)には削除ボタンが出ない
+  await slackPostMessage.click();
+
+  // Assert
+  await expect(page.getByRole('button', { name: '空実装のメソッドを削除' })).toHaveCount(0);
+
+  // Act: 空実装(BacklogClient.postMessage)は削除でき、実装漏れ(約束違反)になる
+  await page.getByTestId('class-BacklogClient').getByTestId('method-postMessage').click();
+  await page.getByRole('button', { name: '空実装のメソッドを削除' }).click();
+
+  // Assert
+  await expect(page.getByTestId('class-BacklogClient').getByTestId('method-postMessage')).toHaveCount(0);
+  await expect(score).toContainText('使わないメソッドの空実装 -40');
+  await expect(score).toContainText('インターフェースの約束違反 -10');
+
+  // Act: Ctrl+Zで削除前に戻す
+  await page.keyboard.press('Control+z');
+
+  // Assert
+  await expect(page.getByTestId('class-BacklogClient').getByTestId('method-postMessage')).toBeVisible();
+  await expect(score).toContainText('使わないメソッドの空実装 -50');
+  await expect(score).not.toContainText('インターフェースの約束違反');
+
+  // Act: BacklogClientの実装の宣言を外す(宣言漏れになる)
+  await page.getByTestId('class-header-BacklogClient').click({ button: 'right' });
+  const menu = page.getByTestId('context-menu');
+  await menu.getByRole('menuitem', { name: '実装するインターフェースを設定' }).click();
+  await expect(menu.getByRole('menuitemcheckbox', { name: 'CollaborationTool' })).toHaveAttribute('aria-checked', 'true');
+  await menu.getByRole('menuitemcheckbox', { name: 'CollaborationTool' }).click();
+
+  // Assert
+  await expect(page.getByTestId('class-BacklogClient')).not.toContainText('implements CollaborationTool');
+  await expect(score).toContainText('インターフェースの約束違反 -10');
+});
