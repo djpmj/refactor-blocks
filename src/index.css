@@ -158,12 +158,13 @@ input.class-node__name { width: 14ch; }
 .class-drag-preview { padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); font-weight: 700; box-shadow: 0 4px 12px rgb(0 0 0 / 20%); }
 .context-menu { position: fixed; z-index: 1000; min-width: 200px; padding: 4px; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 6px 20px rgb(0 0 0 / 0.18); font-size: 13px; }
 .context-menu__caption { padding: 4px 8px; color: var(--muted); font-size: 12px; font-family: ui-monospace, monospace; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
-.context-menu [role="menuitem"] { display: block; width: 100%; padding: 6px 8px; border: 0; border-radius: 6px; background: transparent; color: inherit; text-align: left; cursor: pointer; font: inherit; }
-.context-menu [role="menuitem"]:hover, .context-menu [role="menuitem"]:focus-visible { background: color-mix(in srgb, var(--accent) 15%, transparent); outline: none; }
+.context-menu [role="menuitem"], .context-menu [role="menuitemcheckbox"] { display: block; width: 100%; padding: 6px 8px; border: 0; border-radius: 6px; background: transparent; color: inherit; text-align: left; cursor: pointer; font: inherit; }
+.context-menu [role="menuitem"]:hover, .context-menu [role="menuitem"]:focus-visible, .context-menu [role="menuitemcheckbox"]:hover, .context-menu [role="menuitemcheckbox"]:focus-visible { background: color-mix(in srgb, var(--accent) 15%, transparent); outline: none; }
 .context-menu__form { display: flex; gap: 4px; padding: 4px; }
 .context-menu__submenu-wrapper [role="menuitem"][aria-haspopup] { display: flex; justify-content: space-between; align-items: center; }
 .context-menu__submenu-wrapper [role="menuitem"][aria-haspopup]::after { content: '▸'; margin-left: 8px; color: var(--muted); }
 .context-menu__submenu [role="menuitem"][aria-current="true"] { font-weight: 700; color: var(--accent); }
+.context-menu__checkbox--checked { font-weight: 700; color: var(--accent); }
 .change-panel { display: flex; flex-direction: column; gap: 8px; }
 .change-panel button { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 8px; padding: 6px 12px; cursor: pointer; }
 .change-outcomes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }

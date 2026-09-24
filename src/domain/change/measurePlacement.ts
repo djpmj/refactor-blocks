@@ -1,5 +1,5 @@
 import { withoutTray } from '../blank/tray';
-import { allClasses, findClass, type CodeClass, type Codebase } from '../codebase/Codebase';
+import { allClasses, findClass, isInterfaceLike, parentIds, type CodeClass, type Codebase } from '../codebase/Codebase';
 import { classDependencies } from '../codebase/dependencies';
 import { err, ok, type Result } from '../shared/Result';
 import type { ChangeRequest } from './ChangeRequest';
@@ -40,13 +40,13 @@ function findPartClass(design: Codebase, request: ChangeRequest): CodeClass | un
   );
 }
 
-/** クラスの中身。メソッドの並び順は見ない(移して戻すと末尾に付くため)。 */
+/** クラスの中身。メソッドの並び順は見ない(移して戻すと末尾に付くため)。実装先(implements)も並べ替えて比較する(付けて外して付け直しても同じ中身)。 */
 function classContent(codeClass: CodeClass): string {
   const methods = codeClass.methods
     .map((method) => [method.id, method.name, method.visibility, method.fragments.map((fragment) => fragment.id)])
     .sort(([a], [b]) => String(a).localeCompare(String(b)));
-  const kind = codeClass.superclassId === undefined ? null : (codeClass.superclassKind ?? 'extends');
-  return JSON.stringify([codeClass.name, codeClass.superclassId ?? null, kind, methods]);
+  const interfaceIds = [...(codeClass.interfaceIds ?? [])].sort((a, b) => a.localeCompare(b));
+  return JSON.stringify([codeClass.name, codeClass.superclassId ?? null, interfaceIds, methods]);
 }
 
 function findModifiedClassIds(base: Codebase, design: Codebase): string[] {
@@ -72,23 +72,27 @@ function countResponsibilityClasses(codebase: Codebase, request: ChangeRequest):
   ).length;
 }
 
-/** 近い順の先祖のうち、挑戦前のコードにあるクラス。輪になっていても訪問済みで止まる。 */
+/**
+ * 近い順の先祖のうち、挑戦前のコードにあるクラス。継承元 → 実装先の宣言順で幅優先に辿る
+ * (一番近い既存の先祖はその順の先頭)。輪になっていても訪問済みで止まる。
+ */
 function existingAncestors(base: Codebase, design: Codebase, start: CodeClass): CodeClass[] {
   const visited = new Set([start.id]);
   const ancestors: CodeClass[] = [];
-  for (let id = start.superclassId; id !== undefined && !visited.has(id); ) {
-    visited.add(id);
-    const ancestor = findClass(design, id);
-    if (ancestor === undefined) break;
-    if (findClass(base, id) !== undefined) ancestors.push(ancestor);
-    id = ancestor.superclassId;
+  let queue = parentIds(start);
+  while (queue.length > 0) {
+    const next: string[] = [];
+    for (const id of queue) {
+      if (visited.has(id)) continue;
+      visited.add(id);
+      const ancestor = findClass(design, id);
+      if (ancestor === undefined) continue;
+      if (findClass(base, id) !== undefined) ancestors.push(ancestor);
+      next.push(...parentIds(ancestor));
+    }
+    queue = next;
   }
   return ancestors;
-}
-
-/** インターフェース役 = メソッドが1つ以上あり、すべて中身(Fragment)がない。 */
-export function isInterfaceLike(codeClass: CodeClass): boolean {
-  return codeClass.methods.length > 0 && codeClass.methods.every((method) => method.fragments.length === 0);
 }
 
 function measureAttachment(base: Codebase, design: Codebase, partClass: CodeClass): Pick<Placement, 'attachment' | 'attachedClassId'> {

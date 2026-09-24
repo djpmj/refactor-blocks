@@ -19,8 +19,7 @@ function gatewayCodebase(): Codebase {
     {
       id: 'class-stripe',
       name: 'StripeGateway',
-      superclassId: 'class-gateway',
-      superclassKind: 'implements',
+      interfaceIds: ['class-gateway'],
       methods: [method('method-stripe-charge', 'stripeCharge', [fragment('f-stripe', 9, 'gateway')])],
     },
   ];
@@ -53,7 +52,7 @@ describe('sampleImplementation', () => {
     // Assert
     const classes = codebase === undefined ? [] : allClasses(codebase);
     const placed = classes.filter((codeClass) => hasMethodNamed(codeClass, 'chargeWithPaypay'));
-    expect(placed.map((codeClass) => codeClass.superclassId)).toEqual(['class-gateway']);
+    expect(placed.map((codeClass) => codeClass.interfaceIds)).toEqual([['class-gateway']]);
     expect(codebase?.files.some((file) => file.path === '部品置き場')).toBe(false);
   });
 

@@ -126,16 +126,28 @@ describe('applySolutionSteps', () => {
     expect(classNamed(result, 'A').superclassId).toBe('class-b');
   });
 
-  it('setSuperclassステップにkind: implementsを指定すると、superclassKindに"implements"が入る', () => {
+  it('addInterfaceステップで、クラスの実装先にインターフェースを名前で追加する', () => {
     // Arrange
     const codebase = twoClassCodebase();
-    const steps: SolutionStep[] = [{ setSuperclass: { class: 'A', superclass: 'B', kind: 'implements' } }];
+    const steps: SolutionStep[] = [{ addInterface: { class: 'A', interface: 'B' } }];
 
     // Act
     const result = applySolutionSteps(codebase, steps);
 
     // Assert
-    expect(classNamed(result, 'A').superclassKind).toBe('implements');
+    expect(classNamed(result, 'A').interfaceIds).toEqual(['class-b']);
+  });
+
+  it('removeInterfaceステップで、クラスの実装先からインターフェースを外す', () => {
+    // Arrange
+    const codebase = twoClassCodebase();
+    const steps: SolutionStep[] = [{ addInterface: { class: 'A', interface: 'B' } }, { removeInterface: { class: 'A', interface: 'B' } }];
+
+    // Act
+    const result = applySolutionSteps(codebase, steps);
+
+    // Assert
+    expect(classNamed(result, 'A').interfaceIds).toBeUndefined();
   });
 
   it('setSuperclassステップにsuperclass: nullを指定すると、継承を解除する', () => {

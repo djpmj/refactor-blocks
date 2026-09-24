@@ -57,7 +57,8 @@ const shortcuts: ReadonlyArray<{ readonly stageId: string; readonly description:
     description: 'prepareExport だけを CsvExporter へ移し、継承を implements に書き換える',
     steps: [
       { move: { method: 'prepareExport', toClass: 'CsvExporter' } },
-      { setSuperclass: { class: 'CsvExporter', superclass: 'BaseExporter', kind: 'implements' } },
+      { setSuperclass: { class: 'CsvExporter', superclass: null } },
+      { addInterface: { class: 'CsvExporter', interface: 'BaseExporter' } },
     ],
   },
   {

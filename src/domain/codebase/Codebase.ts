@@ -32,10 +32,10 @@ export type CodeClass = {
   readonly id: string;
   readonly name: string;
   readonly methods: readonly Method[];
-  /** 親クラスのID。継承・実装なしなら省略する。 */
+  /** 継承元(extends)のクラスID。継承なしなら省略する。 */
   readonly superclassId?: string;
-  /** superclassId との関係の種類。省略時は 'extends' 扱い。 */
-  readonly superclassKind?: 'extends' | 'implements';
+  /** 実装しているインターフェース(implements)のクラスID。宣言順。省略は [] と同じ。 */
+  readonly interfaceIds?: readonly string[];
 };
 
 export type CodeFile = {
@@ -74,6 +74,22 @@ export function findFileOfClass(codebase: Codebase, classId: string): CodeFile |
 export function findSuperclass(codebase: Codebase, classId: string): CodeClass | undefined {
   const superclassId = findClass(codebase, classId)?.superclassId;
   return superclassId === undefined ? undefined : findClass(codebase, superclassId);
+}
+
+/** 親(継承元 → 実装先の宣言順)のID。存在しないIDもそのまま返す(呼び出し側で findClass して捨てる)。 */
+export function parentIds(codeClass: CodeClass): string[] {
+  return [...(codeClass.superclassId === undefined ? [] : [codeClass.superclassId]), ...(codeClass.interfaceIds ?? [])];
+}
+
+/** 実装しているインターフェース。削除済みで見つからないIDは飛ばす。 */
+export function findInterfaces(codebase: Codebase, classId: string): CodeClass[] {
+  const interfaceIds = findClass(codebase, classId)?.interfaceIds ?? [];
+  return interfaceIds.map((id) => findClass(codebase, id)).filter((codeClass): codeClass is CodeClass => codeClass !== undefined);
+}
+
+/** インターフェース役 = メソッドが1つ以上あり、すべて public で中身(Fragment)がない。 */
+export function isInterfaceLike(codeClass: CodeClass): boolean {
+  return codeClass.methods.length > 0 && codeClass.methods.every((method) => method.visibility === 'public' && method.fragments.length === 0);
 }
 
 /** 指定したクラスだけを置き換えた新しいCodebaseを返す(元のCodebaseは変更しない)。 */

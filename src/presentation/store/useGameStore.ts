@@ -12,10 +12,12 @@ import { fetchCritique } from '../../infrastructure/critique/critiqueClient';
 import {
   addClassUseCase,
   addFileUseCase,
+  addInterfaceUseCase,
   deleteClassUseCase,
   deleteFileUseCase,
   describeAddClassError,
   describeAddFileError,
+  describeAddInterfaceError,
   describeDeleteClassError,
   describeDeleteFileError,
   describeMoveClassError,
@@ -23,6 +25,7 @@ import {
   describeInlineError,
   describeMergeError,
   describeMoveError,
+  describeRemoveInterfaceError,
   describeRenameClassError,
   describeRenameFileError,
   describeRenameMethodError,
@@ -34,6 +37,7 @@ import {
   moveClassUseCase,
   moveMethodToNewClassUseCase,
   moveMethodUseCase,
+  removeInterfaceUseCase,
   renameClassUseCase,
   renameFileUseCase,
   renameMethodUseCase,
@@ -103,7 +107,9 @@ type GameState = {
   renameClass: (classId: string, newName: string) => boolean;
   renameFile: (fileId: string, newPath: string) => boolean;
   renameMethod: (methodId: string, newName: string) => boolean;
-  setSuperclass: (classId: string, superclassName: string | null, kind?: 'extends' | 'implements') => boolean;
+  setSuperclass: (classId: string, superclassName: string | null) => boolean;
+  addInterface: (classId: string, interfaceName: string) => boolean;
+  removeInterface: (classId: string, interfaceName: string) => boolean;
   deleteClass: (classId: string) => boolean;
   deleteFile: (fileId: string) => boolean;
   undo: () => void;
@@ -244,8 +250,11 @@ function selectStageState(allStages: readonly Stage[], stageId: string): Partial
 
 type Apply = <E>(result: Result<Codebase, E>, describe: (error: E) => string) => boolean;
 
-/** クラス・ファイルの名前や継承元を付け替える操作。 */
-function renameActions(apply: Apply, get: () => GameState): Pick<GameState, 'renameClass' | 'renameFile' | 'renameMethod' | 'setSuperclass'> {
+/** クラス・ファイルの名前や継承元・実装先を付け替える操作。 */
+function renameActions(
+  apply: Apply,
+  get: () => GameState,
+): Pick<GameState, 'renameClass' | 'renameFile' | 'renameMethod' | 'setSuperclass' | 'addInterface' | 'removeInterface'> {
   return {
     renameClass: (classId, newName) => {
       return apply(renameClassUseCase(get().codebase, classId, newName), describeRenameClassError);
@@ -256,8 +265,14 @@ function renameActions(apply: Apply, get: () => GameState): Pick<GameState, 'ren
     renameMethod: (methodId, newName) => {
       return apply(renameMethodUseCase(get().codebase, methodId, newName), describeRenameMethodError);
     },
-    setSuperclass: (classId, superclassName, kind) => {
-      return apply(setSuperclassUseCase(get().codebase, classId, superclassName, kind), describeSetSuperclassError);
+    setSuperclass: (classId, superclassName) => {
+      return apply(setSuperclassUseCase(get().codebase, classId, superclassName), describeSetSuperclassError);
+    },
+    addInterface: (classId, interfaceName) => {
+      return apply(addInterfaceUseCase(get().codebase, classId, interfaceName), describeAddInterfaceError);
+    },
+    removeInterface: (classId, interfaceName) => {
+      return apply(removeInterfaceUseCase(get().codebase, classId, interfaceName), describeRemoveInterfaceError);
     },
   };
 }

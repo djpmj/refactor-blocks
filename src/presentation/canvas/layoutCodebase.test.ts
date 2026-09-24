@@ -340,6 +340,27 @@ describe("inheritanceEdges", () => {
     }
   });
 
+  it("1つのクラスが2つのインターフェースを実装しているときは、実装先ごとに1本ずつ辺を作る(IDはinherit-<子>-<親>)", () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [
+        {
+          id: "file-a",
+          path: "a",
+          classes: [{ id: "class-C", name: "C", methods: [], interfaceIds: ["class-X", "class-Y"] }],
+        },
+        { id: "file-x", path: "x", classes: [{ id: "class-X", name: "X", methods: [] }] },
+        { id: "file-y", path: "y", classes: [{ id: "class-Y", name: "Y", methods: [] }] },
+      ],
+    };
+
+    // Act
+    const edges = inheritanceEdges(codebase);
+
+    // Assert
+    expect(edges.map((edge) => edge.id)).toEqual(["inherit-class-C-class-X", "inherit-class-C-class-Y"]);
+  });
+
   it("依存と継承のファイル範囲が重なるときも、まとめて別のレーンに割り当てて重ならないようにする", () => {
     // Arrange: A→B→C→D→A の循環に、A→D(依存)のショートカットと B→D(継承)を追加し、
     // 4つとも同じ層に残しつつ、飛び越える依存と継承の範囲(A..D と B..D)を重ねる

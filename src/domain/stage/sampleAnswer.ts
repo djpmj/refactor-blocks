@@ -6,7 +6,7 @@ import { extractMethod } from '../codebase/extractMethod';
 import { mergeMethods } from '../codebase/mergeMethods';
 import { moveClass } from '../codebase/moveClass';
 import { moveMethod } from '../codebase/moveMethod';
-import { setSuperclass } from '../codebase/setSuperclass';
+import { addInterface, removeInterface, setSuperclass } from '../codebase/setSuperclass';
 import type { Result } from '../shared/Result';
 import type { Stage } from './Stage';
 
@@ -40,9 +40,10 @@ export type SolutionStep =
         readonly class: string;
         /** null なら継承を解除する。 */
         readonly superclass: string | null;
-        readonly kind?: 'extends' | 'implements';
       };
-    };
+    }
+  | { readonly addInterface: { readonly class: string; readonly interface: string } }
+  | { readonly removeInterface: { readonly class: string; readonly interface: string } };
 
 function unwrap<T, E>(result: Result<T, E>): T {
   if (!result.ok) throw new Error(`模範解答の適用に失敗しました: ${String(result.error)}`);
@@ -94,8 +95,16 @@ function applyStep(codebase: Codebase, step: SolutionStep, newId: string): Codeb
     const { name, toFile } = step.moveClass;
     return unwrap(moveClass(codebase, classIdByName(codebase, name), fileIdByPath(codebase, toFile)));
   }
-  const { class: className, superclass, kind } = step.setSuperclass;
-  return unwrap(setSuperclass(codebase, classIdByName(codebase, className), superclass, kind));
+  if ('addInterface' in step) {
+    const { class: className, interface: interfaceName } = step.addInterface;
+    return unwrap(addInterface(codebase, classIdByName(codebase, className), interfaceName));
+  }
+  if ('removeInterface' in step) {
+    const { class: className, interface: interfaceName } = step.removeInterface;
+    return unwrap(removeInterface(codebase, classIdByName(codebase, className), interfaceName));
+  }
+  const { class: className, superclass } = step.setSuperclass;
+  return unwrap(setSuperclass(codebase, classIdByName(codebase, className), superclass));
 }
 
 /** 手順を順番に適用する。新しく振るIDは呼び出し元のIDと衝突しないよう連番にする。 */
@@ -192,8 +201,8 @@ export const sampleAnswerSteps: Partial<Record<string, readonly SolutionStep[]>>
     // fromClassでクラスを指定してどちらのchargeから抽出するかを曖昧さなく指定する。
     { extract: { from: 'charge', fromClass: 'StripeGateway', fragmentIds: ['frag-log-payment-stripe'], name: 'logStripePayment' } },
     { extract: { from: 'charge', fromClass: 'PaypalGateway', fragmentIds: ['frag-log-payment-paypal'], name: 'logPaypalPayment' } },
-    { setSuperclass: { class: 'StripeGateway', superclass: 'PaymentGateway', kind: 'implements' } },
-    { setSuperclass: { class: 'PaypalGateway', superclass: 'PaymentGateway', kind: 'implements' } },
+    { addInterface: { class: 'StripeGateway', interface: 'PaymentGateway' } },
+    { addInterface: { class: 'PaypalGateway', interface: 'PaymentGateway' } },
   ],
   'advanced-discount-strategy': [
     // 3つとも同じ名前(calculate)で抽出するため、Extract Methodの「同じクラス内で名前が重複できない」制約に
@@ -210,9 +219,9 @@ export const sampleAnswerSteps: Partial<Record<string, readonly SolutionStep[]>>
     { move: { method: 'calculate', toClass: 'PremiumDiscount' } },
     { extract: { from: 'calculateDiscount', fragmentIds: ['frag-branch-vip'], name: 'calculate' } },
     { move: { method: 'calculate', toClass: 'VipDiscount' } },
-    { setSuperclass: { class: 'RegularDiscount', superclass: 'DiscountStrategy', kind: 'implements' } },
-    { setSuperclass: { class: 'PremiumDiscount', superclass: 'DiscountStrategy', kind: 'implements' } },
-    { setSuperclass: { class: 'VipDiscount', superclass: 'DiscountStrategy', kind: 'implements' } },
+    { addInterface: { class: 'RegularDiscount', interface: 'DiscountStrategy' } },
+    { addInterface: { class: 'PremiumDiscount', interface: 'DiscountStrategy' } },
+    { addInterface: { class: 'VipDiscount', interface: 'DiscountStrategy' } },
   ],
   'advanced-report-factory': [
     { extract: { from: 'exportWeeklyReport', fragmentIds: ['frag-build-report-weekly'], name: 'buildWeeklyReport' } },

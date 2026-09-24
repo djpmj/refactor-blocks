@@ -497,12 +497,54 @@ test('クラスを右クリックして実装するインターフェースを�
   await menu.getByRole('menuitem', { name: '実装するインターフェースを設定' }).click();
 
   // Act
-  await menu.getByRole('menuitem', { name: 'OrderService' }).click();
+  await menu.getByRole('menuitemcheckbox', { name: 'OrderService' }).click();
 
   // Assert
   await expect(page.getByTestId('class-TaxCalculator')).toContainText('implements OrderService');
   await expect(page.getByTestId('class-TaxCalculator')).not.toContainText('extends OrderService');
+  // チェック式サブメニューは選んでも閉じない(Esc・外側クリックで閉じる)
+  await expect(menu).toHaveCount(1);
+  await expect(menu.getByRole('menuitemcheckbox', { name: 'OrderService' })).toHaveAttribute('aria-checked', 'true');
+  await page.keyboard.press('Escape');
   await expect(menu).toHaveCount(0);
+});
+
+test('1つのクラスに2つのインターフェースを実装すると"implements A, B"と矢印2本が出て、チェックを外すと1つ外れる', async ({ page }) => {
+  // Arrange: チュートリアル2には OrderService・TaxCalculator の2クラスしかないので、
+  // まず余白にクラスを1つ追加してから、TaxCalculatorに2つとも実装させる
+  await openOrderStage(page);
+  const pane = await page.locator('.react-flow__pane').boundingBox();
+  if (pane === null) throw new Error('キャンバスの位置を取得できません');
+  await page.mouse.click(pane.x + pane.width - 20, pane.y + pane.height - 20, { button: 'right' });
+  let menu = page.getByTestId('context-menu');
+  await menu.getByRole('menuitem', { name: 'ファイルを追加' }).click();
+  await page.getByLabel('追加するファイルのパス').fill('src/misc/Extra.ts');
+  await page.getByRole('button', { name: '追加' }).click();
+  await page.getByTestId('file-src/misc/Extra.ts').click({ button: 'right' });
+  menu = page.getByTestId('context-menu');
+  await menu.getByRole('menuitem', { name: 'このファイルにクラスを追加' }).click();
+  await page.getByLabel('追加するクラス名').fill('Extra');
+  await page.getByRole('button', { name: '追加' }).click();
+
+  await page.getByTestId('class-header-TaxCalculator').click({ button: 'right' });
+  menu = page.getByTestId('context-menu');
+  await menu.getByRole('menuitem', { name: '実装するインターフェースを設定' }).click();
+
+  // Act(2つ実装する)
+  await menu.getByRole('menuitemcheckbox', { name: 'OrderService' }).click();
+  await menu.getByRole('menuitemcheckbox', { name: 'Extra' }).click();
+
+  // Assert
+  await expect(page.getByTestId('class-TaxCalculator')).toContainText('implements OrderService, Extra');
+  await expect(page.locator('[data-testid^="rf__edge-inherit-class-tax-calculator-"]')).toHaveCount(2);
+
+  // Act(1つ外す)
+  await menu.getByRole('menuitemcheckbox', { name: 'OrderService' }).click();
+
+  // Assert
+  await expect(page.getByTestId('class-TaxCalculator')).toContainText('implements Extra');
+  await expect(page.getByTestId('class-TaxCalculator')).not.toContainText('OrderService');
+  await expect(page.locator('[data-testid^="rf__edge-inherit-class-tax-calculator-"]')).toHaveCount(1);
 });
 
 test('継承元を設定にカーソルを合わせるだけで、クリックしなくても候補のクラス名が右側に表示される', async ({ page }) => {
@@ -643,7 +685,8 @@ async function solvePaymentStage(page: Page) {
     await page.getByTestId(`class-header-${gateway}Gateway`).click({ button: 'right' });
     const menu = page.getByTestId('context-menu');
     await menu.getByRole('menuitem', { name: '実装するインターフェースを設定' }).click();
-    await menu.getByRole('menuitem', { name: 'PaymentGateway' }).click();
+    await menu.getByRole('menuitemcheckbox', { name: 'PaymentGateway' }).click();
+    await page.keyboard.press('Escape');
   }
   await expect(page.getByTestId('score')).toContainText('100');
 }
@@ -871,7 +914,8 @@ test('上級2: PayPay の追加は、新しいクラスで PaymentGateway を実
   await page.getByTestId('class-header-NewClass').click({ button: 'right' });
   const menu = page.getByTestId('context-menu');
   await menu.getByRole('menuitem', { name: '実装するインターフェースを設定' }).click();
-  await menu.getByRole('menuitem', { name: 'PaymentGateway' }).click();
+  await menu.getByRole('menuitemcheckbox', { name: 'PaymentGateway' }).click();
+  await page.keyboard.press('Escape');
   await expect(page.getByTestId('class-NewClass')).toContainText('implements PaymentGateway');
   await finishRequest(page);
   // 2件目: 余白へ出すだけ(どこからも呼ばれない)

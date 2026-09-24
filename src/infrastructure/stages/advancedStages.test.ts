@@ -5,8 +5,8 @@ import { measurePlacement } from '../../domain/change/measurePlacement';
 import { scorePlacement, type PlacementScore } from '../../domain/change/scorePlacement';
 import { moveMethod } from '../../domain/codebase/moveMethod';
 import { moveMethodToNewClass } from '../../domain/codebase/moveToNewHome';
-import { setSuperclass } from '../../domain/codebase/setSuperclass';
-import { allClasses, findClass, findSuperclass, type CodeClass, type Codebase } from '../../domain/codebase/Codebase';
+import { addInterface } from '../../domain/codebase/setSuperclass';
+import { allClasses, findClass, findInterfaces, findSuperclass, type CodeClass, type Codebase } from '../../domain/codebase/Codebase';
 import { classDependencies } from '../../domain/codebase/dependencies';
 import { scoreCodebase } from '../../domain/scoring/score';
 import { sampleAnswerCodebase } from '../../domain/stage/sampleAnswer';
@@ -118,10 +118,10 @@ describe('advanced-payment-gateway-interface', () => {
     const { codebase } = stage;
 
     // Act
-    const superclasses = allClasses(codebase).map((codeClass) => findSuperclass(codebase, codeClass.id));
+    const interfaceLists = allClasses(codebase).map((codeClass) => findInterfaces(codebase, codeClass.id));
 
     // Assert
-    expect(superclasses.every((superclass) => superclass === undefined)).toBe(true);
+    expect(interfaceLists.every((interfaces) => interfaces.length === 0)).toBe(true);
   });
 
   it('初期状態から、PaymentGatewayは処理本体を持たない契約メソッド charge を1つだけ宣言している', () => {
@@ -154,16 +154,12 @@ describe('advanced-payment-gateway-interface', () => {
     const solved = sampleAnswerCodebase(stage);
 
     // Act
-    const stripeSuperclass = findSuperclass(solved, 'class-stripe-gateway');
-    const paypalSuperclass = findSuperclass(solved, 'class-paypal-gateway');
-    const stripeClass = findClass(solved, 'class-stripe-gateway');
-    const paypalClass = findClass(solved, 'class-paypal-gateway');
+    const stripeInterfaces = findInterfaces(solved, 'class-stripe-gateway').map((codeClass) => codeClass.name);
+    const paypalInterfaces = findInterfaces(solved, 'class-paypal-gateway').map((codeClass) => codeClass.name);
 
     // Assert
-    expect(stripeSuperclass?.name).toBe('PaymentGateway');
-    expect(paypalSuperclass?.name).toBe('PaymentGateway');
-    expect(stripeClass?.superclassKind).toBe('implements');
-    expect(paypalClass?.superclassKind).toBe('implements');
+    expect(stripeInterfaces).toEqual(['PaymentGateway']);
+    expect(paypalInterfaces).toEqual(['PaymentGateway']);
   });
 
   it('模範解答では、決済処理の実体はPaymentGatewayへ吸収されず、StripeGateway・PaypalGateway自身に残る', () => {
@@ -213,7 +209,7 @@ describe('advanced-payment-gateway-interface', () => {
     it.each(starts)('%s: 新しいクラスで PaymentGateway を実装すると100点になる', (_name, base) => {
       // Arrange
       const moved = unwrap(moveMethodToNewClass(withChangePart(base, request), partId, { classId: 'class-paypay', fileId: 'file-paypay' }));
-      const implemented = unwrap(setSuperclass(moved, 'class-paypay', 'PaymentGateway', 'implements'));
+      const implemented = unwrap(addInterface(moved, 'class-paypay', 'PaymentGateway'));
 
       // Act
       const placement = unwrap(measurePlacement(base, implemented, request));
@@ -268,12 +264,9 @@ describe('advanced-discount-strategy', () => {
     const vip = classNamed(solved, 'VipDiscount');
 
     // Assert
-    expect(findSuperclass(solved, regular.id)?.name).toBe('DiscountStrategy');
-    expect(findSuperclass(solved, premium.id)?.name).toBe('DiscountStrategy');
-    expect(findSuperclass(solved, vip.id)?.name).toBe('DiscountStrategy');
-    expect(regular.superclassKind).toBe('implements');
-    expect(premium.superclassKind).toBe('implements');
-    expect(vip.superclassKind).toBe('implements');
+    expect(findInterfaces(solved, regular.id).map((codeClass) => codeClass.name)).toEqual(['DiscountStrategy']);
+    expect(findInterfaces(solved, premium.id).map((codeClass) => codeClass.name)).toEqual(['DiscountStrategy']);
+    expect(findInterfaces(solved, vip.id).map((codeClass) => codeClass.name)).toEqual(['DiscountStrategy']);
   });
 
   it('模範解答では、DiscountServiceの中に割引ロジックの処理が残らない', () => {
@@ -371,9 +364,11 @@ describe('advanced-report-factory', () => {
 
     // Act
     const superclasses = allClasses(solved).map((codeClass) => findSuperclass(solved, codeClass.id));
+    const interfaceLists = allClasses(solved).map((codeClass) => findInterfaces(solved, codeClass.id));
 
     // Assert
     expect(superclasses.every((superclass) => superclass === undefined)).toBe(true);
+    expect(interfaceLists.every((interfaces) => interfaces.length === 0)).toBe(true);
   });
 
   it('模範解答では、WeeklyReportController・MonthlyReportControllerがどちらもReportFactoryへ依存する', () => {

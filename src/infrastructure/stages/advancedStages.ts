@@ -455,7 +455,6 @@ const collapseHierarchyStage: Stage = {
             id: 'class-csv-exporter',
             name: 'CsvExporter',
             superclassId: 'class-base-exporter',
-            superclassKind: 'extends',
             methods: [
               {
                 id: 'method-write-rows',

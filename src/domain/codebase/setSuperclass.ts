@@ -1,21 +1,21 @@
-import { allClasses, findClass, mapClasses, type CodeClass, type Codebase, type Method } from './Codebase';
+import { allClasses, findClass, mapClasses, parentIds, type CodeClass, type Codebase, type Method } from './Codebase';
 import { err, ok, type Result } from '../shared/Result';
 
-export type SetSuperclassError = 'class-not-found' | 'superclass-not-found' | 'self-inheritance' | 'inheritance-cycle';
+export type SetSuperclassError = 'class-not-found' | 'superclass-not-found' | 'self-inheritance' | 'inheritance-cycle' | 'already-related';
+export type AddInterfaceError = 'class-not-found' | 'interface-not-found' | 'self-inheritance' | 'inheritance-cycle' | 'already-related';
+export type RemoveInterfaceError = 'class-not-found' | 'interface-not-found';
 
-/** 指定した親クラス・種類(extends/implements)が、今の設定とまったく同じかを見る。 */
-function matchesCurrent(target: CodeClass, superclassId: string, kind: 'extends' | 'implements'): boolean {
-  return target.superclassId === superclassId && (target.superclassKind ?? 'extends') === kind;
-}
-
-/** superclassId を親から親へ辿って classId に戻れるかを見る。壊れたデータで輪になっていても無限ループしないよう訪問済みで止める。 */
+/** parentIds を親から親へ辿って classId に戻れるかを見る。壊れたデータで輪になっていても無限ループしないよう訪問済みで止める(深さ優先)。 */
 function reachesSelf(codebase: Codebase, fromClassId: string, classId: string): boolean {
   const visited = new Set<string>();
-  let current: string | undefined = fromClassId;
-  while (current !== undefined && !visited.has(current)) {
+  const stack = [fromClassId];
+  while (stack.length > 0) {
+    const current = stack.pop();
+    if (current === undefined || visited.has(current)) continue;
     if (current === classId) return true;
     visited.add(current);
-    current = findClass(codebase, current)?.superclassId;
+    const codeClass = findClass(codebase, current);
+    if (codeClass !== undefined) stack.push(...parentIds(codeClass));
   }
   return false;
 }
@@ -41,46 +41,68 @@ function promoteCalledPrivateMethods(codebase: Codebase, subclassId: string, sup
   });
 }
 
-/** クラスの親クラスを設定・解除する。相手はIDではなくクラス名で指定する(名前の変更・追加と同じ規則)。 */
-export function setSuperclass(
-  codebase: Codebase,
-  classId: string,
-  superclassName: string | null,
-  kind: 'extends' | 'implements' = 'extends',
-): Result<Codebase, SetSuperclassError> {
+function replaceSuperclass(codebase: Codebase, classId: string, superclassId: string | undefined): Codebase {
+  return mapClasses(codebase, (codeClass) => (codeClass.id === classId ? { ...codeClass, superclassId } : codeClass));
+}
+
+/** クラスの継承元(extends)を設定・解除する。相手はIDではなくクラス名で指定する(名前の変更・追加と同じ規則)。 */
+export function setSuperclass(codebase: Codebase, classId: string, superclassName: string | null): Result<Codebase, SetSuperclassError> {
   const target = findClass(codebase, classId);
   if (target === undefined) return err('class-not-found');
 
   const name = superclassName?.trim() ?? '';
   if (name === '') {
     if (target.superclassId === undefined) return ok(codebase);
-    return ok(replaceSuperclass(codebase, classId, undefined, undefined));
+    return ok(replaceSuperclass(codebase, classId, undefined));
   }
 
   const superclass = allClasses(codebase).find((codeClass) => codeClass.name === name);
   if (superclass === undefined) return err('superclass-not-found');
   if (superclass.id === classId) return err('self-inheritance');
-  if (matchesCurrent(target, superclass.id, kind)) return ok(codebase);
+  if (target.superclassId === superclass.id) return ok(codebase);
+  if ((target.interfaceIds ?? []).includes(superclass.id)) return err('already-related');
   if (reachesSelf(codebase, superclass.id, classId)) return err('inheritance-cycle');
 
-  const withSuperclass = replaceSuperclass(codebase, classId, superclass.id, kind);
-  return ok(kind === 'extends' ? promoteCalledPrivateMethods(withSuperclass, classId, superclass.id) : withSuperclass);
+  const withSuperclass = replaceSuperclass(codebase, classId, superclass.id);
+  return ok(promoteCalledPrivateMethods(withSuperclass, classId, superclass.id));
 }
 
-/** 親クラス・実装インターフェースとして選べるクラス一覧(自分自身・循環になる相手を除く)。 */
-export function availableSuperclasses(codebase: Codebase, classId: string): CodeClass[] {
-  return allClasses(codebase).filter(
-    (codeClass) => codeClass.id !== classId && !reachesSelf(codebase, codeClass.id, classId),
+/** クラスに実装しているインターフェース(implements)を1つ追加する。すでに実装していれば何もしない。 */
+export function addInterface(codebase: Codebase, classId: string, interfaceName: string): Result<Codebase, AddInterfaceError> {
+  const target = findClass(codebase, classId);
+  if (target === undefined) return err('class-not-found');
+
+  const name = interfaceName.trim();
+  const candidate = allClasses(codebase).find((codeClass) => codeClass.name === name);
+  if (candidate === undefined) return err('interface-not-found');
+  if (candidate.id === classId) return err('self-inheritance');
+  if ((target.interfaceIds ?? []).includes(candidate.id)) return ok(codebase);
+  if (target.superclassId === candidate.id) return err('already-related');
+  if (reachesSelf(codebase, candidate.id, classId)) return err('inheritance-cycle');
+
+  return ok(mapClasses(codebase, (codeClass) => (codeClass.id === classId ? { ...codeClass, interfaceIds: [...(codeClass.interfaceIds ?? []), candidate.id] } : codeClass)));
+}
+
+/** クラスから実装しているインターフェース(implements)を1つ外す。実装していなければ何もしない。 */
+export function removeInterface(codebase: Codebase, classId: string, interfaceName: string): Result<Codebase, RemoveInterfaceError> {
+  const target = findClass(codebase, classId);
+  if (target === undefined) return err('class-not-found');
+
+  const name = interfaceName.trim();
+  const candidate = allClasses(codebase).find((codeClass) => codeClass.name === name);
+  if (candidate === undefined) return err('interface-not-found');
+  if (!(target.interfaceIds ?? []).includes(candidate.id)) return ok(codebase);
+
+  return ok(
+    mapClasses(codebase, (codeClass) => {
+      if (codeClass.id !== classId) return codeClass;
+      const remaining = (codeClass.interfaceIds ?? []).filter((id) => id !== candidate.id);
+      return { ...codeClass, interfaceIds: remaining.length === 0 ? undefined : remaining };
+    }),
   );
 }
 
-function replaceSuperclass(
-  codebase: Codebase,
-  classId: string,
-  superclassId: string | undefined,
-  kind: 'extends' | 'implements' | undefined,
-): Codebase {
-  return mapClasses(codebase, (codeClass) =>
-    codeClass.id === classId ? { ...codeClass, superclassId, superclassKind: superclassId === undefined ? undefined : kind } : codeClass,
-  );
+/** 継承元・実装先として選べるクラス一覧(自分自身・選ぶと輪になる相手を除く)。継承元・実装先どちらのサブメニューでも使う。 */
+export function availableParents(codebase: Codebase, classId: string): CodeClass[] {
+  return allClasses(codebase).filter((codeClass) => codeClass.id !== classId && !reachesSelf(codebase, codeClass.id, classId));
 }

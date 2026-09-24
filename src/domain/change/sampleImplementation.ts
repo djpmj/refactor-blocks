@@ -1,11 +1,11 @@
 import { withoutTray } from '../blank/tray';
-import { allClasses, type Codebase } from '../codebase/Codebase';
+import { allClasses, isInterfaceLike, type Codebase } from '../codebase/Codebase';
 import { moveMethod } from '../codebase/moveMethod';
 import { moveMethodToNewClass } from '../codebase/moveToNewHome';
-import { setSuperclass } from '../codebase/setSuperclass';
+import { addInterface } from '../codebase/setSuperclass';
 import { changePart, withChangePart } from './changePart';
 import { changeKindOf, type ChangeRequest } from './ChangeRequest';
-import { isInterfaceLike, measurePlacement } from './measurePlacement';
+import { measurePlacement } from './measurePlacement';
 import { scorePlacement } from './scorePlacement';
 
 /** 解答例の置き先。新しいクラスは、実装するインターフェース役のクラス名つき。 */
@@ -34,7 +34,7 @@ function newClassCandidates(base: Codebase, withPart: Codebase, request: ChangeR
   return allClasses(base)
     .filter(isInterfaceLike)
     .map((codeClass) => {
-      const linked = setSuperclass(moved.value, NEW_IDS.classId, codeClass.name, 'implements');
+      const linked = addInterface(moved.value, NEW_IDS.classId, codeClass.name);
       return { target: { kind: 'new-class', implementing: codeClass.name }, implemented: linked.ok ? linked.value : undefined };
     });
 }

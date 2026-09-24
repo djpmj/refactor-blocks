@@ -1,7 +1,7 @@
-import { useEffect, useLayoutEffect, useRef, useState, type RefObject, type SubmitEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject, type SubmitEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { findClass, findSuperclass } from '../../domain/codebase/Codebase';
-import { availableSuperclasses } from '../../domain/codebase/setSuperclass';
+import { availableParents } from '../../domain/codebase/setSuperclass';
 import { useGameStore, useGameStoreApi, type GameStore } from '../store/useGameStore';
 import { clampMenuPosition, type Point } from './clampMenuPosition';
 import type { ContextMenuTarget } from './useCanvasContextMenu';
@@ -75,7 +75,8 @@ function usePositionWithinViewport(menuRef: RefObject<HTMLElement | null>, x: nu
 type MenuItem =
   | { kind: 'form'; mode: FormMode; label: string }
   | { kind: 'action'; run: () => void; label: string }
-  | { kind: 'submenu'; relationKind: 'extends' | 'implements'; label: string };
+  | { kind: 'extends-submenu'; label: string }
+  | { kind: 'implements-submenu'; label: string };
 
 /** 右クリックした場所で使える項目。クラスの上ならクラス、ファイルの上ならファイルに対する項目が増える。 */
 function menuItemsFor(target: ContextMenuTarget, onClose: () => void, api: GameStore): MenuItem[] {
@@ -86,8 +87,8 @@ function menuItemsFor(target: ContextMenuTarget, onClose: () => void, api: GameS
     { kind: 'form', mode: 'file', label: 'ファイルを追加' },
     ...(classId === null ? [] : [{ kind: 'form' as const, mode: 'renameClass' as const, label: 'クラスの名前を変更' }]),
     ...(fileId === null ? [] : [{ kind: 'form' as const, mode: 'renameFile' as const, label: 'ファイルの名前を変更' }]),
-    ...(classId === null ? [] : [{ kind: 'submenu' as const, relationKind: 'extends' as const, label: '継承元を設定' }]),
-    ...(classId === null ? [] : [{ kind: 'submenu' as const, relationKind: 'implements' as const, label: '実装するインターフェースを設定' }]),
+    ...(classId === null ? [] : [{ kind: 'extends-submenu' as const, label: '継承元を設定' }]),
+    ...(classId === null ? [] : [{ kind: 'implements-submenu' as const, label: '実装するインターフェースを設定' }]),
     // 確認ダイアログは出さない。誤って消してもCtrl+Zの取り消し履歴で戻せる
     ...(classId === null
       ? []
@@ -130,29 +131,18 @@ function useSubmenuPosition(triggerRef: RefObject<HTMLElement | null>, submenuRe
   return position;
 }
 
-type SuperclassMenuItemProps = { target: ContextMenuTarget; relationKind: 'extends' | 'implements'; label: string; autoFocus: boolean; onClose: () => void };
+type SubmenuTriggerProps = {
+  label: string;
+  autoFocus: boolean;
+  open: boolean;
+  setOpen: (open: boolean) => void;
+  wrapperRef: RefObject<HTMLDivElement | null>;
+  triggerRef: RefObject<HTMLButtonElement | null>;
+  children: ReactNode;
+};
 
-/**
- * 「継承元を設定」「実装するインターフェースを設定」の項目。ホバー(またはフォーカス)すると、
- * 候補のクラス名を右側に出す。候補をクリックすればその場で決まり、別画面や設定ボタンを挟まない。
- */
-function SuperclassMenuItem({ target, relationKind, label, autoFocus, onClose }: Readonly<SuperclassMenuItemProps>) {
-  const codebase = useGameStore((state) => state.codebase);
-  const { setSuperclass } = useGameStoreApi().getState();
-  const [open, setOpen] = useState(false);
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const submenuRef = useRef<HTMLDivElement>(null);
-  const position = useSubmenuPosition(triggerRef, submenuRef, open);
-  const codeClass = findClass(codebase, target.classId ?? '');
-  if (codeClass === undefined) return null;
-
-  const select = (name: string) => {
-    if (setSuperclass(codeClass.id, name, relationKind)) onClose();
-  };
-  const currentName = findSuperclass(codebase, codeClass.id)?.name ?? '';
-  const candidates = availableSuperclasses(codebase, codeClass.id).map((candidate) => candidate.name);
-
+/** ホバー(またはフォーカス)すると候補を右側に出すサブメニューの見た目の共通部分。 */
+function SubmenuTrigger({ label, autoFocus, open, setOpen, wrapperRef, triggerRef, children }: Readonly<SubmenuTriggerProps>) {
   return (
     <div
       ref={wrapperRef}
@@ -184,19 +174,98 @@ function SuperclassMenuItem({ target, relationKind, label, autoFocus, onClose }:
       >
         {label}
       </button>
-      {open ? (
-        <div ref={submenuRef} role="menu" aria-label={label} className="context-menu context-menu__submenu" style={{ left: position.x, top: position.y }}>
-          <button type="button" role="menuitem" aria-current={currentName === ''} onClick={() => select('')}>
-            (解除)
-          </button>
-          {candidates.map((name) => (
-            <button key={name} type="button" role="menuitem" aria-current={name === currentName} onClick={() => select(name)}>
-              {name}
-            </button>
-          ))}
-        </div>
-      ) : null}
+      {open ? children : null}
     </div>
+  );
+}
+
+type ExtendsMenuItemProps = { target: ContextMenuTarget; label: string; autoFocus: boolean; onClose: () => void };
+
+/**
+ * 「継承元を設定」の項目。候補をクリックすればその場で決まり、メニューを閉じる(1クラスに1つしか持てないため)。
+ * 候補から、すでに実装先(implements)になっている相手を除く。
+ */
+function ExtendsMenuItem({ target, label, autoFocus, onClose }: Readonly<ExtendsMenuItemProps>) {
+  const codebase = useGameStore((state) => state.codebase);
+  const { setSuperclass } = useGameStoreApi().getState();
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const submenuRef = useRef<HTMLDivElement>(null);
+  const position = useSubmenuPosition(triggerRef, submenuRef, open);
+  const codeClass = findClass(codebase, target.classId ?? '');
+  if (codeClass === undefined) return null;
+
+  const select = (name: string) => {
+    if (setSuperclass(codeClass.id, name)) onClose();
+  };
+  const currentName = findSuperclass(codebase, codeClass.id)?.name ?? '';
+  const interfaceIds = new Set(codeClass.interfaceIds ?? []);
+  const candidates = availableParents(codebase, codeClass.id)
+    .filter((candidate) => !interfaceIds.has(candidate.id))
+    .map((candidate) => candidate.name);
+
+  return (
+    <SubmenuTrigger label={label} autoFocus={autoFocus} open={open} setOpen={setOpen} wrapperRef={wrapperRef} triggerRef={triggerRef}>
+      <div ref={submenuRef} role="menu" aria-label={label} className="context-menu context-menu__submenu" style={{ left: position.x, top: position.y }}>
+        <button type="button" role="menuitem" aria-current={currentName === ''} onClick={() => select('')}>
+          (解除)
+        </button>
+        {candidates.map((name) => (
+          <button key={name} type="button" role="menuitem" aria-current={name === currentName} onClick={() => select(name)}>
+            {name}
+          </button>
+        ))}
+      </div>
+    </SubmenuTrigger>
+  );
+}
+
+type ImplementsMenuItemProps = { target: ContextMenuTarget; label: string; autoFocus: boolean };
+
+/**
+ * 「実装するインターフェースを設定」の項目。チェック式(menuitemcheckbox)で、複数選べる。
+ * 押しても閉じず、続けて別のインターフェースを付け外しできる(Esc・外側クリックで閉じる)。
+ * 候補から、継承元(extends)になっている相手を除く。
+ */
+function ImplementsMenuItem({ target, label, autoFocus }: Readonly<ImplementsMenuItemProps>) {
+  const codebase = useGameStore((state) => state.codebase);
+  const { addInterface, removeInterface } = useGameStoreApi().getState();
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const submenuRef = useRef<HTMLDivElement>(null);
+  const position = useSubmenuPosition(triggerRef, submenuRef, open);
+  const codeClass = findClass(codebase, target.classId ?? '');
+  if (codeClass === undefined) return null;
+
+  const implementedIds = new Set(codeClass.interfaceIds ?? []);
+  const candidates = availableParents(codebase, codeClass.id).filter((candidate) => candidate.id !== codeClass.superclassId);
+
+  return (
+    <SubmenuTrigger label={label} autoFocus={autoFocus} open={open} setOpen={setOpen} wrapperRef={wrapperRef} triggerRef={triggerRef}>
+      <div ref={submenuRef} role="menu" aria-label={label} className="context-menu context-menu__submenu" style={{ left: position.x, top: position.y }}>
+        {candidates.map((candidate) => {
+          const checked = implementedIds.has(candidate.id);
+          return (
+            <button
+              key={candidate.id}
+              type="button"
+              role="menuitemcheckbox"
+              aria-checked={checked}
+              className={checked ? 'context-menu__checkbox context-menu__checkbox--checked' : 'context-menu__checkbox'}
+              onClick={() => {
+                if (checked) removeInterface(codeClass.id, candidate.name);
+                else addInterface(codeClass.id, candidate.name);
+              }}
+            >
+              {checked ? '✓ ' : ''}
+              {candidate.name}
+            </button>
+          );
+        })}
+      </div>
+    </SubmenuTrigger>
   );
 }
 
@@ -206,8 +275,11 @@ function MenuItems({ items, target, onSelectForm, onClose }: Readonly<MenuItemsP
   return (
     <div role="menu" aria-label="キャンバスのメニュー">
       {items.map((item, index) => {
-        if (item.kind === 'submenu') {
-          return <SuperclassMenuItem key={item.relationKind} target={target} relationKind={item.relationKind} label={item.label} autoFocus={index === 0} onClose={onClose} />;
+        if (item.kind === 'extends-submenu') {
+          return <ExtendsMenuItem key={item.kind} target={target} label={item.label} autoFocus={index === 0} onClose={onClose} />;
+        }
+        if (item.kind === 'implements-submenu') {
+          return <ImplementsMenuItem key={item.kind} target={target} label={item.label} autoFocus={index === 0} />;
         }
         return (
           <button

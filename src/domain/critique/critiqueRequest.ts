@@ -1,4 +1,4 @@
-import { findSuperclass, type Codebase, type Visibility } from '../codebase/Codebase';
+import { findInterfaces, findSuperclass, type Codebase, type Visibility } from '../codebase/Codebase';
 import { classLines, fileLines, methodLines } from '../codebase/lineCount';
 import { fileDeductions } from '../scoring/fileScores';
 import type { Score } from '../scoring/score';
@@ -14,10 +14,10 @@ export type CritiqueClassSummary = {
   readonly name: string;
   readonly lines: number;
   readonly methods: readonly CritiqueMethodSummary[];
-  /** 継承元・実装先のクラス名。無ければ継承・実装なし。 */
+  /** 継承元(extends)のクラス名。無ければ継承なし。 */
   readonly superclassName?: string;
-  /** superclassName との関係の種類。省略時は 'extends' 扱い(Codebase の CodeClass と同じ規約)。 */
-  readonly superclassKind?: 'extends' | 'implements';
+  /** 実装しているインターフェース(implements)のクラス名。1つ以上あるときだけ含める。 */
+  readonly interfaceNames?: readonly string[];
 };
 
 export type CritiqueFileSummary = {
@@ -33,6 +33,11 @@ export type CritiqueRequest = {
   readonly score: Score;
   readonly files: readonly CritiqueFileSummary[];
 };
+
+function interfaceNamesOf(codebase: Codebase, classId: string): readonly string[] | undefined {
+  const names = findInterfaces(codebase, classId).map((codeClass) => codeClass.name);
+  return names.length === 0 ? undefined : names;
+}
 
 /** ファイル・クラス・メソッドの構成と採点結果を、AI講評に渡せる形にまとめる。 */
 export function buildCritiqueRequest(
@@ -51,7 +56,7 @@ export function buildCritiqueRequest(
           name: codeClass.name,
           lines: classLines(codeClass),
           superclassName: findSuperclass(codebase, codeClass.id)?.name,
-          superclassKind: codeClass.superclassKind,
+          interfaceNames: interfaceNamesOf(codebase, codeClass.id),
           methods: codeClass.methods.map(
             (method): CritiqueMethodSummary => ({
               name: method.name,

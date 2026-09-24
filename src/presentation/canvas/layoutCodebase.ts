@@ -1,5 +1,5 @@
 import { MarkerType, type Edge, type Node } from "@xyflow/react";
-import { allClasses, findClass, type Codebase } from "../../domain/codebase/Codebase";
+import { allClasses, findClass, parentIds, type Codebase } from "../../domain/codebase/Codebase";
 import { classDependencies } from "../../domain/codebase/dependencies";
 
 export type FileNodeData = { fileId: string };
@@ -52,8 +52,8 @@ function fileDependencyGraph(codebase: Codebase): Map<string, Set<string>> {
   };
   for (const { from, to } of classDependencies(codebase)) addEdge(from, to);
   for (const codeClass of allClasses(codebase)) {
-    if (codeClass.superclassId !== undefined && findClass(codebase, codeClass.superclassId) !== undefined) {
-      addEdge(codeClass.id, codeClass.superclassId);
+    for (const parentId of parentIds(codeClass)) {
+      if (findClass(codebase, parentId) !== undefined) addEdge(codeClass.id, parentId);
     }
   }
   return graph;
@@ -243,8 +243,9 @@ function topLanesByEdgeId(codebase: Codebase): ReadonlyMap<string, number> {
     .map(({ from, to }) => topLaneSpan(`dep-${from}-${to}`, at(from), at(to)))
     .filter((span): span is TopLaneSpan => span !== undefined);
   const inheritSpans = allClasses(codebase)
-    .filter((codeClass) => codeClass.superclassId !== undefined && findClass(codebase, codeClass.superclassId) !== undefined)
-    .map((codeClass) => topLaneSpan(`inherit-${codeClass.id}-${codeClass.superclassId}`, at(codeClass.id), at(codeClass.superclassId ?? "")))
+    .flatMap((codeClass) => parentIds(codeClass).map((parentId) => ({ codeClass, parentId })))
+    .filter(({ parentId }) => findClass(codebase, parentId) !== undefined)
+    .map(({ codeClass, parentId }) => topLaneSpan(`inherit-${codeClass.id}-${parentId}`, at(codeClass.id), at(parentId)))
     .filter((span): span is TopLaneSpan => span !== undefined);
   return assignTopLanes([...depSpans, ...inheritSpans]);
 }
@@ -289,25 +290,26 @@ export function inheritanceEdges(codebase: Codebase): Edge[] {
   const laneByEdgeId = topLanesByEdgeId(codebase);
   const edges: Edge[] = [];
   for (const codeClass of allClasses(codebase)) {
-    const superclassId = codeClass.superclassId;
-    if (superclassId === undefined || findClass(codebase, superclassId) === undefined) continue;
-    const fromPosition = positionByClassId.get(codeClass.id) ?? { row: 0, col: 0, classIndex: 0 };
-    const toPosition = positionByClassId.get(superclassId) ?? { row: 0, col: 0, classIndex: 0 };
-    const [sourceSide, targetSide] = handleSides(fromPosition, toPosition);
-    const id = `inherit-${codeClass.id}-${superclassId}`;
-    const isSkip = sourceSide === "skip" && targetSide === "skip";
-    edges.push({
-      id,
-      source: codeClass.id,
-      target: superclassId,
-      sourceHandle: `source-${sourceSide}`,
-      targetHandle: `target-${targetSide}`,
-      type: isSkip ? "topRoute" : undefined,
-      data: isSkip ? { lane: laneByEdgeId.get(id) ?? 0 } : undefined,
-      zIndex: EDGE_Z_INDEX,
-      className: "edge--inheritance",
-      markerEnd: { type: MarkerType.Arrow },
-    });
+    for (const parentId of parentIds(codeClass)) {
+      if (findClass(codebase, parentId) === undefined) continue;
+      const fromPosition = positionByClassId.get(codeClass.id) ?? { row: 0, col: 0, classIndex: 0 };
+      const toPosition = positionByClassId.get(parentId) ?? { row: 0, col: 0, classIndex: 0 };
+      const [sourceSide, targetSide] = handleSides(fromPosition, toPosition);
+      const id = `inherit-${codeClass.id}-${parentId}`;
+      const isSkip = sourceSide === "skip" && targetSide === "skip";
+      edges.push({
+        id,
+        source: codeClass.id,
+        target: parentId,
+        sourceHandle: `source-${sourceSide}`,
+        targetHandle: `target-${targetSide}`,
+        type: isSkip ? "topRoute" : undefined,
+        data: isSkip ? { lane: laneByEdgeId.get(id) ?? 0 } : undefined,
+        zIndex: EDGE_Z_INDEX,
+        className: "edge--inheritance",
+        markerEnd: { type: MarkerType.Arrow },
+      });
+    }
   }
   return edges;
 }

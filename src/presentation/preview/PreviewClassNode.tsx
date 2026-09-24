@@ -1,5 +1,5 @@
 import type { NodeProps } from '@xyflow/react';
-import { findClass, findSuperclass } from '../../domain/codebase/Codebase';
+import { findClass, findInterfaces, findSuperclass } from '../../domain/codebase/Codebase';
 import { classLines, methodLines } from '../../domain/codebase/lineCount';
 import { DependencyHandles } from '../canvas/DependencyHandles';
 import type { ClassFlowNode } from '../canvas/layoutCodebase';
@@ -12,6 +12,7 @@ export function PreviewClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
   const { codebase, methodLimit } = useCodebasePreview();
   const codeClass = findClass(codebase, data.classId);
   const superclass = findSuperclass(codebase, data.classId);
+  const interfaceNames = findInterfaces(codebase, data.classId).map((interfaceClass) => interfaceClass.name);
   if (codeClass === undefined) return null;
   return (
     <div className="class-node" data-testid={`preview-class-${codeClass.name}`}>
@@ -19,7 +20,7 @@ export function PreviewClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
       <div className="class-node__header">
         <span className="class-node__name">
           {codeClass.name}
-          {superclass === undefined ? null : <SuperclassLabel kind={codeClass.superclassKind ?? 'extends'} superclassName={superclass.name} />}
+          <SuperclassLabel superclassName={superclass?.name} interfaceNames={interfaceNames} />
         </span>
         <span className="line-badge">{classLines(codeClass)}行</span>
       </div>

@@ -4,10 +4,13 @@ import { sampleCodebase } from '../domain/codebase/testFixtures';
 import {
   addClassUseCase,
   addFileUseCase,
+  addInterfaceUseCase,
   describeAddClassError,
   describeAddFileError,
+  describeAddInterfaceError,
   describeMergeError,
   describeMoveClassError,
+  describeRemoveInterfaceError,
   describeRenameClassError,
   describeRenameFileError,
   describeRenameMethodError,
@@ -22,6 +25,7 @@ import {
   moveClassToNewFileUseCase,
   moveMethodToNewClassUseCase,
   moveMethodUseCase,
+  removeInterfaceUseCase,
   renameClassUseCase,
   renameFileUseCase,
   renameMethodUseCase,
@@ -284,16 +288,38 @@ describe('setSuperclassUseCase', () => {
     expect(result.value.files[0].classes[0].superclassId).toBeUndefined();
   });
 
-  it('kindにimplementsを指定すると、superclassKindに"implements"が入る', () => {
+});
+
+describe('addInterfaceUseCase / removeInterfaceUseCase', () => {
+  it('クラス名からIDを解決してinterfaceIdsに追加する', () => {
     // Arrange
     const codebase = sampleCodebase();
 
     // Act
-    const result = setSuperclassUseCase(codebase, 'class-order', 'TaxCalculator', 'implements');
+    const result = addInterfaceUseCase(codebase, 'class-order', 'TaxCalculator');
 
     // Assert
     if (!result.ok) throw new Error(result.error);
-    expect(result.value.files[0].classes[0].superclassKind).toBe('implements');
+    expect(result.value.files[0].classes[0].interfaceIds).toEqual(['class-tax']);
+  });
+
+  it('追加したインターフェースを外す', () => {
+    // Arrange
+    const withInterface = addInterfaceUseCase(sampleCodebase(), 'class-order', 'TaxCalculator');
+    if (!withInterface.ok) throw new Error(withInterface.error);
+
+    // Act
+    const result = removeInterfaceUseCase(withInterface.value, 'class-order', 'TaxCalculator');
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    expect(result.value.files[0].classes[0].interfaceIds).toBeUndefined();
+  });
+
+  it('存在しない名前を指定するとエラー文言を返す', () => {
+    // Arrange / Act / Assert
+    expect(describeAddInterfaceError('interface-not-found')).toBe('その名前のクラスが見つかりません');
+    expect(describeRemoveInterfaceError('interface-not-found')).toBe('その名前のクラスが見つかりません');
   });
 });
 

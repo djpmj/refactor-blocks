@@ -12,7 +12,7 @@ import { moveMethod, type MoveMethodError } from '../domain/codebase/moveMethod'
 import { renameClass, type RenameClassError } from '../domain/codebase/renameClass';
 import { renameFile, type RenameFileError } from '../domain/codebase/renameFile';
 import { renameMethod, type RenameMethodError } from '../domain/codebase/renameMethod';
-import { setSuperclass, type SetSuperclassError } from '../domain/codebase/setSuperclass';
+import { addInterface, removeInterface, setSuperclass, type AddInterfaceError, type RemoveInterfaceError, type SetSuperclassError } from '../domain/codebase/setSuperclass';
 import { err, ok, type Result } from '../domain/shared/Result';
 
 export type IdGenerator = () => string;
@@ -134,13 +134,18 @@ export function renameMethodUseCase(codebase: Codebase, methodId: string, newNam
 }
 
 /** プレイヤーの「継承元を設定」操作。空文字/nullは継承の解除。 */
-export function setSuperclassUseCase(
-  codebase: Codebase,
-  classId: string,
-  superclassName: string | null,
-  kind: 'extends' | 'implements' = 'extends',
-): Result<Codebase, SetSuperclassError> {
-  return setSuperclass(codebase, classId, superclassName, kind);
+export function setSuperclassUseCase(codebase: Codebase, classId: string, superclassName: string | null): Result<Codebase, SetSuperclassError> {
+  return setSuperclass(codebase, classId, superclassName);
+}
+
+/** プレイヤーの「実装するインターフェースを追加」操作。 */
+export function addInterfaceUseCase(codebase: Codebase, classId: string, interfaceName: string): Result<Codebase, AddInterfaceError> {
+  return addInterface(codebase, classId, interfaceName);
+}
+
+/** プレイヤーの「実装するインターフェースを外す」操作。 */
+export function removeInterfaceUseCase(codebase: Codebase, classId: string, interfaceName: string): Result<Codebase, RemoveInterfaceError> {
+  return removeInterface(codebase, classId, interfaceName);
 }
 
 /** プレイヤーの「クラスを削除」操作。 */
@@ -223,6 +228,20 @@ const SET_SUPERCLASS_ERROR_MESSAGES: Record<SetSuperclassError, string> = {
   'superclass-not-found': 'その名前のクラスが見つかりません',
   'self-inheritance': '自分自身を継承元にはできません',
   'inheritance-cycle': '継承の輪ができてしまいます',
+  'already-related': 'すでに継承元または実装先になっています',
+};
+
+const ADD_INTERFACE_ERROR_MESSAGES: Record<AddInterfaceError, string> = {
+  'class-not-found': '実装先を設定するクラスが見つかりません',
+  'interface-not-found': 'その名前のクラスが見つかりません',
+  'self-inheritance': '自分自身を実装先にはできません',
+  'inheritance-cycle': '継承の輪ができてしまいます',
+  'already-related': 'すでに継承元または実装先になっています',
+};
+
+const REMOVE_INTERFACE_ERROR_MESSAGES: Record<RemoveInterfaceError, string> = {
+  'class-not-found': '実装先を外すクラスが見つかりません',
+  'interface-not-found': 'その名前のクラスが見つかりません',
 };
 
 const DELETE_CLASS_ERROR_MESSAGES: Record<DeleteClassError, string> = {
@@ -280,6 +299,14 @@ export function describeRenameMethodError(error: RenameMethodError): string {
 
 export function describeSetSuperclassError(error: SetSuperclassError): string {
   return SET_SUPERCLASS_ERROR_MESSAGES[error];
+}
+
+export function describeAddInterfaceError(error: AddInterfaceError): string {
+  return ADD_INTERFACE_ERROR_MESSAGES[error];
+}
+
+export function describeRemoveInterfaceError(error: RemoveInterfaceError): string {
+  return REMOVE_INTERFACE_ERROR_MESSAGES[error];
 }
 
 export function describeDeleteClassError(error: DeleteClassError): string {

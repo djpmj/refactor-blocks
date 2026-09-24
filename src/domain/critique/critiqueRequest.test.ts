@@ -83,17 +83,15 @@ describe('buildCritiqueRequest', () => {
     // Assert
     const orderClass = request.files.find((file) => file.path === 'src/OrderService.ts')?.classes[0];
     expect(orderClass?.superclassName).toBe('TaxCalculator');
-    expect(orderClass?.superclassKind).toBeUndefined();
+    expect(orderClass?.interfaceNames).toBeUndefined();
   });
 
-  it('実装先(implements)のクラス名と種類を含める', () => {
+  it('実装先(implements)のクラス名を含める', () => {
     // Arrange
     const base = sampleCodebase();
     const codebase = {
       files: base.files.map((file, index) =>
-        index === 0
-          ? { ...file, classes: [{ ...file.classes[0], superclassId: 'class-tax', superclassKind: 'implements' as const }] }
-          : file,
+        index === 0 ? { ...file, classes: [{ ...file.classes[0], interfaceIds: ['class-tax'] }] } : file,
       ),
     };
     const score = scoreCodebase(codebase, LOOSE_STAGE);
@@ -103,8 +101,7 @@ describe('buildCritiqueRequest', () => {
 
     // Assert
     const orderClass = request.files.find((file) => file.path === 'src/OrderService.ts')?.classes[0];
-    expect(orderClass?.superclassName).toBe('TaxCalculator');
-    expect(orderClass?.superclassKind).toBe('implements');
+    expect(orderClass?.interfaceNames).toEqual(['TaxCalculator']);
   });
 
   it('継承元・実装先がなければ何も含めない', () => {
@@ -118,5 +115,6 @@ describe('buildCritiqueRequest', () => {
     // Assert
     const orderClass = request.files.find((file) => file.path === 'src/OrderService.ts')?.classes[0];
     expect(orderClass?.superclassName).toBeUndefined();
+    expect(orderClass?.interfaceNames).toBeUndefined();
   });
 });

@@ -3,7 +3,7 @@ import { mapClasses, type CodeClass, type Codebase } from '../codebase/Codebase'
 import { deleteClass } from '../codebase/deleteClass';
 import { moveMethod } from '../codebase/moveMethod';
 import { moveMethodToNewClass } from '../codebase/moveToNewHome';
-import { setSuperclass } from '../codebase/setSuperclass';
+import { addInterface, setSuperclass } from '../codebase/setSuperclass';
 import { fragment, sampleCodebase } from '../codebase/testFixtures';
 import type { ChangeRequest } from './ChangeRequest';
 import { withChangePart } from './changePart';
@@ -39,8 +39,7 @@ function gatewayCodebase(): Codebase {
     {
       id: 'class-stripe',
       name: 'StripeGateway',
-      superclassId: 'class-gateway',
-      superclassKind: 'implements',
+      interfaceIds: ['class-gateway'],
       methods: [method('method-stripe-charge', 'stripeCharge', [fragment('f-stripe', 9, 'gateway')])],
     },
     { id: 'class-port', name: 'UnusedPort', methods: [method('method-port-run', 'portRun')] },
@@ -55,7 +54,10 @@ function toExistingClass(base: Codebase, request: ChangeRequest, classId: string
 /** 部品を新しいクラス(NewClass)へ出し、必要なら親を設定する。 */
 function toNewClass(base: Codebase, request: ChangeRequest, parent?: { name: string; kind: 'extends' | 'implements' }): Codebase {
   const moved = unwrap(moveMethodToNewClass(withChangePart(base, request), PART_ID, newIds));
-  return parent === undefined ? moved : unwrap(setSuperclass(moved, newIds.classId, parent.name, parent.kind));
+  if (parent === undefined) return moved;
+  return parent.kind === 'extends'
+    ? unwrap(setSuperclass(moved, newIds.classId, parent.name))
+    : unwrap(addInterface(moved, newIds.classId, parent.name));
 }
 
 describe('measurePlacement: ルールの変更(sampleCodebase)', () => {
@@ -201,11 +203,9 @@ describe('measurePlacement: つながり方(gatewayCodebase)', () => {
     expect(result).toMatchObject({ attachment: 'concrete', attachedClassId: 'class-stripe' });
   });
 
-  it('StripeGateway が継承を外していると、それを extends しても none', () => {
+  it('StripeGateway が実装を外していると、それを extends しても none', () => {
     // Arrange
-    const base = mapClasses(gatewayCodebase(), (codeClass) =>
-      codeClass.id === 'class-stripe' ? { ...codeClass, superclassId: undefined, superclassKind: undefined } : codeClass,
-    );
+    const base = mapClasses(gatewayCodebase(), (codeClass) => (codeClass.id === 'class-stripe' ? { ...codeClass, interfaceIds: undefined } : codeClass));
 
     // Act
     const result = placement(base, toNewClass(base, gatewayRequest, { name: 'StripeGateway', kind: 'extends' }), gatewayRequest);
@@ -228,7 +228,7 @@ describe('measurePlacement: つながり方(gatewayCodebase)', () => {
   it('新クラス → 別の新クラス → Gateway の順でも、間の新クラスを飛ばして abstract', () => {
     // Arrange
     const base = gatewayCodebase();
-    const middle: CodeClass = { id: 'class-middle', name: 'Middle', methods: [], superclassId: 'class-gateway', superclassKind: 'implements' };
+    const middle: CodeClass = { id: 'class-middle', name: 'Middle', methods: [], interfaceIds: ['class-gateway'] };
     const withMiddle: Codebase = { files: [...base.files, { id: 'file-middle', path: 'src/Middle.ts', classes: [middle] }] };
     const implemented = unwrap(setSuperclass(toNewClass(withMiddle, gatewayRequest), newIds.classId, 'Middle'));
 
@@ -242,7 +242,7 @@ describe('measurePlacement: つながり方(gatewayCodebase)', () => {
   it('superclassId が輪になっていても止まって none を返す', () => {
     // Arrange
     const base = mapClasses(gatewayCodebase(), (codeClass) => {
-      if (codeClass.id === 'class-stripe') return { ...codeClass, superclassId: 'class-port' };
+      if (codeClass.id === 'class-stripe') return { ...codeClass, superclassId: 'class-port', interfaceIds: undefined };
       if (codeClass.id === 'class-port') return { ...codeClass, superclassId: 'class-stripe' };
       return codeClass;
     });

@@ -1,6 +1,6 @@
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import type { NodeProps } from "@xyflow/react";
-import { findClass, findSuperclass } from "../../domain/codebase/Codebase";
+import { findClass, findInterfaces, findSuperclass } from "../../domain/codebase/Codebase";
 import { classDependencies, cyclicClassIds } from "../../domain/codebase/dependencies";
 import { classLines } from "../../domain/codebase/lineCount";
 import { useGameStore } from "../store/useGameStore";
@@ -31,8 +31,9 @@ function classNodeClassName({ isOver, isCyclic }: Readonly<{ isOver: boolean; is
 
 /** クラス名と、親クラス(継承元/実装先)があれば "extends 親クラス名" か "implements 親クラス名" を添える。 */
 function ClassNameLabel({ classId, name }: Readonly<{ classId: string; name: string }>) {
-  const superclass = useGameStore((state) => findSuperclass(state.codebase, classId));
-  const kind = useGameStore((state) => findClass(state.codebase, classId)?.superclassKind ?? "extends");
+  const codebase = useGameStore((state) => state.codebase);
+  const superclass = findSuperclass(codebase, classId);
+  const interfaceNames = findInterfaces(codebase, classId).map((codeClass) => codeClass.name);
   const renameClass = useGameStore((state) => state.renameClass);
   return (
     <span className="class-node__name-group">
@@ -42,7 +43,7 @@ function ClassNameLabel({ classId, name }: Readonly<{ classId: string; name: str
         className="class-node__name"
         onSubmit={(newName) => renameClass(classId, newName)}
       />
-      {superclass === undefined ? null : <SuperclassLabel kind={kind} superclassName={superclass.name} />}
+      <SuperclassLabel superclassName={superclass?.name} interfaceNames={interfaceNames} />
     </span>
   );
 }

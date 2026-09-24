@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import type { CodeClass, Codebase } from '../codebase/Codebase';
 import { findLoneSuperclasses } from './loneSuperclass';
 
-function classOf(id: string, superclassId?: string, superclassKind?: 'extends' | 'implements'): CodeClass {
-  return { id, name: id, methods: [], superclassId, superclassKind };
+function classOf(id: string, superclassId?: string, interfaceIds?: readonly string[]): CodeClass {
+  return { id, name: id, methods: [], superclassId, interfaceIds };
 }
 
 function codebaseOf(...classes: CodeClass[]): Codebase {
@@ -24,7 +24,7 @@ describe('findLoneSuperclasses', () => {
 
   it('extends の子が2つある基底クラスは返さない', () => {
     // Arrange
-    const codebase = codebaseOf(classOf('Base'), classOf('ChildA', 'Base'), classOf('ChildB', 'Base', 'extends'));
+    const codebase = codebaseOf(classOf('Base'), classOf('ChildA', 'Base'), classOf('ChildB', 'Base'));
 
     // Act
     const lone = findLoneSuperclasses(codebase);
@@ -35,7 +35,7 @@ describe('findLoneSuperclasses', () => {
 
   it('implements の子が1つだけのクラス(インターフェース)は返さない', () => {
     // Arrange
-    const codebase = codebaseOf(classOf('Gateway'), classOf('StripeGateway', 'Gateway', 'implements'));
+    const codebase = codebaseOf(classOf('Gateway'), classOf('StripeGateway', undefined, ['Gateway']));
 
     // Act
     const lone = findLoneSuperclasses(codebase);
@@ -46,7 +46,7 @@ describe('findLoneSuperclasses', () => {
 
   it('extends の子1つと implements の子1つを持つクラスは、extends の子だけを数えて返す', () => {
     // Arrange
-    const codebase = codebaseOf(classOf('Base'), classOf('Child', 'Base'), classOf('Impl', 'Base', 'implements'));
+    const codebase = codebaseOf(classOf('Base'), classOf('Child', 'Base'), classOf('Impl', undefined, ['Base']));
 
     // Act
     const lone = findLoneSuperclasses(codebase);
