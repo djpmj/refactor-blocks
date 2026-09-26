@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { findClass, findClassOfMethod, findMethod, isStubMethod, type Method } from '../../domain/codebase/Codebase';
+import { findClass, findClassOfField, findClassOfMethod, findField, findMethod, isStubMethod, type Codebase, type Fragment, type Method } from '../../domain/codebase/Codebase';
 import { findMergeCandidates, type MergeCandidate } from '../../domain/codebase/mergeMethods';
 import { methodLines } from '../../domain/codebase/lineCount';
 import { suggestMethodName } from '../../domain/codebase/suggestMethodName';
@@ -16,11 +16,37 @@ function toggle(selected: ReadonlySet<string>, id: string): Set<string> {
   return next;
 }
 
+/** 処理が読む・書くフィールドを「クラス名.フィールド名」の並びにする。見つからないIDは飛ばす。 */
+function fieldRefText(codebase: Codebase, fieldIds: readonly string[]): string {
+  return fieldIds
+    .map((fieldId) => {
+      const owner = findClassOfField(codebase, fieldId);
+      const field = findField(codebase, fieldId);
+      return owner === undefined || field === undefined ? null : `${owner.name}.${field.name}`;
+    })
+    .filter((text): text is string => text !== null)
+    .join(', ');
+}
+
+/** 処理が触るフィールドを色だけに頼らず文字で出す。Feature Envy・カプセル化の破れをプレイヤーが判断する手がかりになる。 */
+function FragmentFieldRefs({ codebase, fragment }: Readonly<{ codebase: Codebase; fragment: Fragment }>) {
+  const reads = fieldRefText(codebase, fragment.reads ?? []);
+  const writes = fieldRefText(codebase, fragment.writes ?? []);
+  if (reads === '' && writes === '') return null;
+  return (
+    <div className="fragment-list__field-refs">
+      {reads === '' ? null : <div>読む: {reads}</div>}
+      {writes === '' ? null : <div>書く: {writes}</div>}
+    </div>
+  );
+}
+
 function FragmentList({
+  codebase,
   method,
   selected,
   onToggle,
-}: Readonly<{ method: Method; selected: ReadonlySet<string>; onToggle: (id: string) => void }>) {
+}: Readonly<{ codebase: Codebase; method: Method; selected: ReadonlySet<string>; onToggle: (id: string) => void }>) {
   return (
     <ul className="fragment-list">
       {method.fragments.map((fragment) => (
@@ -36,6 +62,7 @@ function FragmentList({
             <span className="fragment-list__label">{fragment.label}</span>
             <span className="fragment-list__lines">{fragment.lines}行</span>
           </label>
+          <FragmentFieldRefs codebase={codebase} fragment={fragment} />
         </li>
       ))}
     </ul>
@@ -137,7 +164,7 @@ function MethodEditorBody({ method }: Readonly<{ method: Method }>) {
       <h2 className="method-editor__title">
         {owner?.name ?? '?'}.{method.name}() <span className="line-badge">{methodLines(method)}行</span>
       </h2>
-      <FragmentList method={method} selected={selected} onToggle={(id) => { setSelected(toggle(selected, id)); }} />
+      <FragmentList codebase={codebase} method={method} selected={selected} onToggle={(id) => { setSelected(toggle(selected, id)); }} />
       <div className="method-editor__extract">
         <input
           aria-label="新しいメソッド名"

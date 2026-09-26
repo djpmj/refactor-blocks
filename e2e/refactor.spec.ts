@@ -12,6 +12,12 @@ async function openCyclicStage(page: Page) {
   await page.getByLabel('ステージ').selectOption({ label: '中級1: 循環依存を断ち切る' });
 }
 
+/** フィールド・Move Field・Feature Envyを扱うテストは中級6を前提にしている。 */
+async function openFeatureEnvyStage(page: Page) {
+  await page.goto('/');
+  await page.getByLabel('ステージ').selectOption({ label: '中級6: 他人のデータばかり触るメソッド' });
+}
+
 /**
  * 直前の操作でキャンバスのレイアウトが再計算され続けている間に座標を読むと、
  * 古い位置へドラッグしてしまい失敗することがある(連続でMove Methodするテストで発生)。
@@ -1180,4 +1186,71 @@ test('上級6: 空実装を削除するとまだ要求しているインター�
   // Assert
   await expect(page.getByTestId('class-BacklogClient')).not.toContainText('implements CollaborationTool');
   await expect(score).toContainText('インターフェースの約束違反 -10');
+});
+
+test('中級6: フィールドをドラッグで別クラスへ移すと移り、Ctrl+Zで戻る', async ({ page }) => {
+  // Arrange
+  await openFeatureEnvyStage(page);
+  await expect(page.getByTestId('score')).toContainText('他クラスのデータを触りすぎ(Feature Envy) -20');
+  await expect(page.getByTestId('score')).toContainText('カプセル化の破れ -20');
+  const source = page.getByTestId('field-trialDays');
+  const target = page.getByTestId('class-Subscription');
+  await expect(source).toBeVisible();
+
+  // Act
+  await dragMethodToClass(page, 'field-trialDays', 'class-Subscription');
+
+  // Assert
+  await expect(target.getByTestId('field-trialDays')).toBeVisible();
+  await expect(page.getByTestId('class-BillingService').getByTestId('field-trialDays')).toHaveCount(0);
+
+  // Act: Ctrl+Zで削除前に戻す
+  await page.keyboard.press('Control+z');
+
+  // Assert
+  await expect(page.getByTestId('class-BillingService').getByTestId('field-trialDays')).toBeVisible();
+});
+
+test('中級6: メソッドだけ移すと循環依存になり、使うフィールドも移すと消える', async ({ page }) => {
+  // Arrange
+  await openFeatureEnvyStage(page);
+
+  // Act
+  await page.getByTestId('method-renewSubscription').click();
+
+  // Assert
+  await expect(page.getByText('読む: Subscription.startedAt')).toBeVisible();
+  await expect(page.getByText('BillingService.trialDays')).toBeVisible();
+
+  // Act: 「トライアル期間中なら請求しない」を抽出する
+  await page.getByLabel('トライアル期間中なら請求しない').check();
+  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+  const cyclicMark = page.getByTestId('class-Subscription').getByTestId('cyclic-mark');
+  await expect(cyclicMark).toHaveCount(0);
+
+  // Act: isInTrial だけを Subscription へ移す
+  await dragMethodToClass(page, 'method-isInTrial', 'class-Subscription');
+
+  // Assert(フィールドを置き去りにしたので循環依存になる)
+  await expect(cyclicMark).toBeVisible();
+
+  // Act: 使うフィールド trialDays も Subscription へ移す
+  await dragMethodToClass(page, 'field-trialDays', 'class-Subscription');
+
+  // Assert(循環依存が消える)
+  await expect(cyclicMark).toHaveCount(0);
+});
+
+test('中級6: フィールドを持つクラスは削除できない', async ({ page }) => {
+  // Arrange
+  await openFeatureEnvyStage(page);
+  await page.getByTestId('class-header-Subscription').click({ button: 'right' });
+  const menu = page.getByTestId('context-menu');
+
+  // Act
+  await menu.getByRole('menuitem', { name: 'クラスを削除' }).click();
+
+  // Assert
+  await expect(page.getByRole('alert')).toHaveText('フィールドを持つクラスは削除できません。先にフィールドを別のクラスへ移してください');
+  await expect(page.getByTestId('class-Subscription')).toBeVisible();
 });

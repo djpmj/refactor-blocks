@@ -396,4 +396,142 @@ const volatileFormatStage: Stage = {
   codebase: salesReportCodebase,
 };
 
-export const intermediateStages: readonly Stage[] = [cyclicDependencyStage, godFileStage, misplacedPrivateStage, volatileTaxStage, volatileFormatStage];
+/**
+ * 中級6: 中級1がメソッド呼び出し(uses)の置き場所だったのに対し、こちらはフィールドの読み書きが題材。
+ * BillingService が Subscription の public フィールドを読み書きし(Tell, Don't Ask違反)、
+ * トライアル日数(trialDays)というデータまで BillingService に取り残されている。
+ * Extract Method してから Subscription へ Move Method し、一緒に使うフィールドを Move Field で運ぶ。
+ */
+const featureEnvyStage: Stage = {
+  id: 'intermediate-feature-envy',
+  level: 'intermediate',
+  title: '中級6: 他人のデータばかり触るメソッド',
+  description:
+    'SaaS の月額課金を担当する BillingService。契約(Subscription)は public なフィールドを持つだけのクラスで、トライアル中かの判定も、席数と単価からの請求額の計算も、解約の手続きも、すべて BillingService が Subscription のフィールドを読んで行い、最後に subscription.status を外から書き換えている。しかも、キャンペーンで契約ごとに変わるようになったトライアル日数(trialDays)が、まだ BillingService のフィールドのまま残っている。',
+  goal: 'データを持つクラスに仕事を頼もう(Tell, Don\'t Ask)。他クラスのフィールドばかり触る処理は Extract Method してからデータの持ち主へ移し、一緒に使うフィールドは Move Field で運ぼう。メソッドは60行以内、1クラスの責務は3種類まで、依存先は1クラスまで',
+  limits: { method: 60, class: 150, file: 300 },
+  dependencyLimit: 1,
+  responsibilityLimit: 3,
+  changeRequests: [
+    { id: 'req-free-admin-seat', title: '管理者の席は無料にして', description: '契約の管理者1名分の席は請求しないようにしたい', responsibility: 'pricing', linesPerSite: 6, partName: 'excludeAdminSeat' },
+    { id: 'req-campaign-trial', title: 'キャンペーン契約はトライアルを30日にして', description: 'キャンペーン経由の契約だけ、トライアル期間を30日に延ばしたい', responsibility: 'trial', linesPerSite: 4, partName: 'applyCampaignTrial' },
+  ],
+  codebase: {
+    files: [
+      {
+        id: 'file-billing-service',
+        path: 'src/billing/BillingService.ts',
+        classes: [
+          {
+            id: 'class-billing-service',
+            name: 'BillingService',
+            fields: [
+              { id: 'field-payment-gateway', name: 'paymentGateway', visibility: 'private' },
+              { id: 'field-mailer', name: 'mailer', visibility: 'private' },
+              { id: 'field-trial-days', name: 'trialDays', visibility: 'private' },
+            ],
+            methods: [
+              {
+                id: 'method-renew-subscription',
+                name: 'renewSubscription',
+                visibility: 'public',
+                fragments: [
+                  {
+                    id: 'frag-check-trial',
+                    label: 'トライアル期間中なら請求しない',
+                    lines: 12,
+                    responsibility: 'trial',
+                    reads: ['field-started-at', 'field-status', 'field-trial-days'],
+                    suggestedName: 'isInTrial',
+                  },
+                  {
+                    id: 'frag-calc-fee',
+                    label: '席数と単価から今月の請求額を計算する',
+                    lines: 28,
+                    responsibility: 'pricing',
+                    reads: ['field-seats', 'field-unit-price'],
+                    suggestedName: 'monthlyFee',
+                  },
+                  {
+                    id: 'frag-charge-card',
+                    label: '決済代行サービスでカードに請求する',
+                    lines: 30,
+                    responsibility: 'payment',
+                    reads: ['field-payment-gateway'],
+                    suggestedName: 'chargeCard',
+                  },
+                  {
+                    id: 'frag-send-invoice-mail',
+                    label: '請求書メールを送る',
+                    lines: 22,
+                    responsibility: 'notification',
+                    reads: ['field-mailer'],
+                    suggestedName: 'sendInvoiceMail',
+                  },
+                ],
+              },
+              {
+                id: 'method-cancel-subscription',
+                name: 'cancelSubscription',
+                visibility: 'public',
+                fragments: [
+                  {
+                    id: 'frag-check-cancelable',
+                    label: '解約できる状態か確かめる',
+                    lines: 10,
+                    responsibility: 'cancellation',
+                    reads: ['field-status', 'field-canceled-at'],
+                    suggestedName: 'checkCancelable',
+                  },
+                  {
+                    id: 'frag-mark-canceled',
+                    label: '状態を解約済みにし、解約日を記録する',
+                    lines: 6,
+                    responsibility: 'cancellation',
+                    writes: ['field-status', 'field-canceled-at'],
+                    suggestedName: 'markCanceled',
+                  },
+                  {
+                    id: 'frag-send-cancel-mail',
+                    label: '解約の確認メールを送る',
+                    lines: 18,
+                    responsibility: 'notification',
+                    reads: ['field-mailer'],
+                    suggestedName: 'sendCancelMail',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'file-subscription',
+        path: 'src/billing/Subscription.ts',
+        classes: [
+          {
+            id: 'class-subscription',
+            name: 'Subscription',
+            fields: [
+              { id: 'field-status', name: 'status', visibility: 'public' },
+              { id: 'field-started-at', name: 'startedAt', visibility: 'public' },
+              { id: 'field-seats', name: 'seats', visibility: 'public' },
+              { id: 'field-unit-price', name: 'unitPrice', visibility: 'public' },
+              { id: 'field-canceled-at', name: 'canceledAt', visibility: 'public' },
+            ],
+            methods: [],
+          },
+        ],
+      },
+    ],
+  },
+};
+
+export const intermediateStages: readonly Stage[] = [
+  cyclicDependencyStage,
+  godFileStage,
+  misplacedPrivateStage,
+  volatileTaxStage,
+  volatileFormatStage,
+  featureEnvyStage,
+];

@@ -12,12 +12,13 @@ import {
 import { Background, Controls, ReactFlow, useReactFlow, type EdgeTypes, type NodeChange, type NodeTypes, type XYPosition } from '@xyflow/react';
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { findClass, findFileOfClass, findMethod, type Codebase } from '../../domain/codebase/Codebase';
+import { findClass, findField, findFileOfClass, findMethod, type Codebase } from '../../domain/codebase/Codebase';
 import { methodLines } from '../../domain/codebase/lineCount';
 import { useGameStore } from '../store/useGameStore';
 import { CanvasContextMenu } from './CanvasContextMenu';
 import { ClassNode } from './ClassNode';
-import { parseClassDragId, parseClassDropId, parseFileDropId, parseMethodDragId } from './dndIds';
+import { parseClassDragId, parseClassDropId, parseFieldDragId, parseFileDropId, parseMethodDragId } from './dndIds';
+import { FieldChipView } from './FieldChip';
 import { FileNode } from './FileNode';
 import { dependencyEdges, inheritanceEdges, layoutCodebase, type CodebaseFlowNode } from './layoutCodebase';
 import { MethodChipView } from './MethodChip';
@@ -33,8 +34,10 @@ const POINTER_ACTIVATION = { activationConstraint: { distance: 5 } };
 function DraggingOverlay({ activeId }: Readonly<{ activeId: UniqueIdentifier | null }>) {
   const methodId = activeId === null ? null : parseMethodDragId(activeId);
   const classId = activeId === null ? null : parseClassDragId(activeId);
+  const fieldId = activeId === null ? null : parseFieldDragId(activeId);
   const method = useGameStore((state) => (methodId === null ? undefined : findMethod(state.codebase, methodId)));
   const codeClass = useGameStore((state) => (classId === null ? undefined : findClass(state.codebase, classId)));
+  const field = useGameStore((state) => (fieldId === null ? undefined : findField(state.codebase, fieldId)));
   const limit = useGameStore((state) => state.stage.limits.method);
   // React Flowのビューポートには transform: scale() がかかっているため、
   // オーバーレイはbody直下へポータルしてズーム倍率の影響を受けないようにする。
@@ -42,6 +45,7 @@ function DraggingOverlay({ activeId }: Readonly<{ activeId: UniqueIdentifier | n
     <DragOverlay>
       {method === undefined ? null : <MethodChipView method={method} overLimit={methodLines(method) > limit} />}
       {codeClass === undefined ? null : <div className="class-drag-preview">{codeClass.name}</div>}
+      {field === undefined ? null : <FieldChipView field={field} />}
     </DragOverlay>,
     document.body,
   );
@@ -98,17 +102,21 @@ function useDropHandler(codebase: Codebase, onEnd: () => void) {
   const moveClass = useGameStore((state) => state.moveClass);
   const moveClassToNewFile = useGameStore((state) => state.moveClassToNewFile);
   const moveMethodToNewClass = useGameStore((state) => state.moveMethodToNewClass);
+  const moveField = useGameStore((state) => state.moveField);
   return (event: DragEndEvent) => {
     onEnd();
     const methodId = parseMethodDragId(event.active.id);
     const classId = parseClassDragId(event.active.id);
+    const fieldId = parseFieldDragId(event.active.id);
     if (event.over === null) {
       if (methodId !== null) moveMethodToNewClass(methodId);
       if (classId !== null) moveClassToNewFile(classId);
+      // ponytail: フィールドを余白へ落として新しいクラスを作る操作(moveFieldToNewClass)はスコープ外。何もしない
       return;
     }
     const targetClassId = parseClassDropId(event.over.id);
     if (methodId !== null && targetClassId !== null) moveMethod(methodId, targetClassId);
+    if (fieldId !== null && targetClassId !== null) moveField(fieldId, targetClassId);
     const targetFileId = dropTargetFileId(codebase, event.over.id);
     if (classId !== null && targetFileId !== undefined) moveClass(classId, targetFileId);
   };

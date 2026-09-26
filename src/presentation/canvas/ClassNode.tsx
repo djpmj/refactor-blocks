@@ -1,11 +1,12 @@
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import type { NodeProps } from "@xyflow/react";
-import { findClass, findInterfaces, findSuperclass } from "../../domain/codebase/Codebase";
+import { fieldsOf, findClass, findInterfaces, findSuperclass, type CodeClass } from "../../domain/codebase/Codebase";
 import { classDependencies, cyclicClassIds } from "../../domain/codebase/dependencies";
 import { classLines } from "../../domain/codebase/lineCount";
 import { useGameStore } from "../store/useGameStore";
 import { classDragId, classDropId } from "./dndIds";
 import { DependencyHandles } from "./DependencyHandles";
+import { FieldChip } from "./FieldChip";
 import { InlineEditableLabel } from "./InlineEditableLabel";
 import type { ClassFlowNode } from "./layoutCodebase";
 import { MethodChip } from "./MethodChip";
@@ -45,6 +46,29 @@ function ClassNameLabel({ classId, name }: Readonly<{ classId: string; name: str
       />
       <SuperclassLabel superclassName={superclass?.name} interfaceNames={interfaceNames} />
     </span>
+  );
+}
+
+/** フィールド(あれば)とメソッドの一覧。詳細表示(showDetails)のときだけ描く。 */
+function ClassBody({ codeClass }: Readonly<{ codeClass: CodeClass }>) {
+  const fields = fieldsOf(codeClass);
+  return (
+    <>
+      {fields.length === 0 ? null : (
+        <div className="class-node__fields" aria-label="フィールド">
+          {fields.map((field) => (
+            <FieldChip key={field.id} field={field} />
+          ))}
+        </div>
+      )}
+      <div className="class-node__methods">
+        {codeClass.methods.length === 0 ? (
+          <div className="class-node__empty">ここにメソッドをドロップ</div>
+        ) : (
+          codeClass.methods.map((method) => <MethodChip key={method.id} method={method} />)
+        )}
+      </div>
+    </>
   );
 }
 
@@ -94,17 +118,7 @@ export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
           </span>
         ) : null}
       </div>
-      {showDetails ? (
-        <div className="class-node__methods">
-          {codeClass.methods.length === 0 ? (
-            <div className="class-node__empty">ここにメソッドをドロップ</div>
-          ) : (
-            codeClass.methods.map((method) => (
-              <MethodChip key={method.id} method={method} />
-            ))
-          )}
-        </div>
-      ) : null}
+      {showDetails ? <ClassBody codeClass={codeClass} /> : null}
     </div>
   );
 }

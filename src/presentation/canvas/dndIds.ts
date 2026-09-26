@@ -4,9 +4,14 @@ const METHOD_PREFIX = 'method:';
 const CLASS_PREFIX = 'class:';
 const CLASS_DRAG_PREFIX = 'class-drag:';
 const FILE_PREFIX = 'file:';
+const FIELD_PREFIX = 'field:';
 
 export function methodDragId(methodId: string): string {
   return `${METHOD_PREFIX}${methodId}`;
+}
+
+export function fieldDragId(fieldId: string): string {
+  return `${FIELD_PREFIX}${fieldId}`;
 }
 
 export function classDropId(classId: string): string {
@@ -40,4 +45,8 @@ export function parseClassDragId(id: UniqueIdentifier): string | null {
 
 export function parseFileDropId(id: UniqueIdentifier): string | null {
   return stripPrefix(id, FILE_PREFIX);
+}
+
+export function parseFieldDragId(id: UniqueIdentifier): string | null {
+  return stripPrefix(id, FIELD_PREFIX);
 }

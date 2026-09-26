@@ -4,12 +4,7 @@ import { methodLines } from '../../domain/codebase/lineCount';
 import { useGameStore } from '../store/useGameStore';
 import { methodDragId } from './dndIds';
 import { useInlineEdit } from './useInlineEdit';
-
-const VISIBILITY_MARK: Record<Method['visibility'], string> = {
-  public: '+',
-  private: '-',
-  protected: '#',
-};
+import { VISIBILITY_MARK } from './visibilityMark';
 
 type MethodChipViewProps = {
   method: Method;

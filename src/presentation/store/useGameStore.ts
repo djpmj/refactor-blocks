@@ -27,6 +27,7 @@ import {
   describeInlineError,
   describeMergeError,
   describeMoveError,
+  describeMoveFieldError,
   describeRemoveInterfaceError,
   describeRenameClassError,
   describeRenameFileError,
@@ -37,6 +38,7 @@ import {
   describeMoveOutError,
   moveClassToNewFileUseCase,
   moveClassUseCase,
+  moveFieldUseCase,
   moveMethodToNewClassUseCase,
   moveMethodUseCase,
   removeInterfaceUseCase,
@@ -98,6 +100,7 @@ type GameState = {
   requestCritique: () => void;
   selectMethod: (methodId: string | null) => void;
   moveMethod: (methodId: string, targetClassId: string) => void;
+  moveField: (fieldId: string, targetClassId: string) => void;
   extractMethod: (input: ExtractMethodInput) => boolean;
   mergeMethods: (methodAId: string, methodBId: string, newMethodName: string) => boolean;
   inlineMethod: (methodId: string) => void;
@@ -284,11 +287,14 @@ function renameActions(
 function moveActions(
   apply: Apply,
   get: () => GameState,
-): Pick<GameState, 'moveMethod' | 'moveClass' | 'moveClassToNewFile' | 'moveMethodToNewClass'> {
+): Pick<GameState, 'moveMethod' | 'moveField' | 'moveClass' | 'moveClassToNewFile' | 'moveMethodToNewClass'> {
   const newId = () => crypto.randomUUID();
   return {
     moveMethod: (methodId, targetClassId) => {
       apply(moveMethodUseCase(get().codebase, methodId, targetClassId), describeMoveError);
+    },
+    moveField: (fieldId, targetClassId) => {
+      apply(moveFieldUseCase(get().codebase, fieldId, targetClassId), describeMoveFieldError);
     },
     moveClass: (classId, targetFileId) => {
       apply(moveClassUseCase(get().codebase, classId, targetFileId), describeMoveClassError);

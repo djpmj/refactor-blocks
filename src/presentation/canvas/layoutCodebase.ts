@@ -1,5 +1,5 @@
 import { MarkerType, type Edge, type Node } from "@xyflow/react";
-import { allClasses, findClass, parentIds, type Codebase } from "../../domain/codebase/Codebase";
+import { allClasses, fieldsOf, findClass, parentIds, type CodeClass, type Codebase } from "../../domain/codebase/Codebase";
 import { classDependencies } from "../../domain/codebase/dependencies";
 
 export type FileNodeData = { fileId: string };
@@ -16,6 +16,8 @@ const FILE_HEADER = 36;
 const CLASS_WIDTH = 280;
 const CLASS_GAP = 24;
 const METHOD_ROW = 34;
+/** フィールド1つぶんの高さ。メソッドより見た目を控えめにするぶん、行の高さも少し小さい。 */
+const FIELD_ROW = 30;
 const CLASS_HEADER = 44;
 const MIN_CLASS_HEIGHT = 110;
 /** クラスが空のファイルにもクラスをドロップできる広さを残す。 */
@@ -23,10 +25,10 @@ const MIN_FILE_HEIGHT = 140;
 /** 層(row)の間は、依存・継承の矢印が通れるだけの余白を空ける。 */
 const ROW_GAP = 96;
 
-function classHeight(methodCount: number): number {
+function classHeight(codeClass: CodeClass): number {
   return Math.max(
     MIN_CLASS_HEIGHT,
-    CLASS_HEADER + methodCount * METHOD_ROW + 16,
+    CLASS_HEADER + codeClass.methods.length * METHOD_ROW + fieldsOf(codeClass).length * FIELD_ROW + 16,
   );
 }
 
@@ -34,7 +36,7 @@ type FileMetrics = { width: number; height: number };
 
 function measureFile(file: CodeFile): FileMetrics {
   const classY = file.classes.reduce(
-    (y, codeClass) => y + classHeight(codeClass.methods.length) + CLASS_GAP,
+    (y, codeClass) => y + classHeight(codeClass) + CLASS_GAP,
     FILE_HEADER + FILE_PADDING,
   );
   return { width: CLASS_WIDTH + FILE_PADDING * 2, height: Math.max(MIN_FILE_HEIGHT, classY - CLASS_GAP + FILE_PADDING) };
@@ -120,7 +122,7 @@ function fileRows(codebase: Codebase): CodeFile[][] {
 function layoutFile(file: CodeFile, x: number, y: number, { width, height }: FileMetrics): CodebaseFlowNode[] {
   let classY = FILE_HEADER + FILE_PADDING;
   const classNodes: ClassFlowNode[] = file.classes.map((codeClass) => {
-    const nodeHeight = classHeight(codeClass.methods.length);
+    const nodeHeight = classHeight(codeClass);
     const node: ClassFlowNode = {
       id: codeClass.id,
       type: "classNode",

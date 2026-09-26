@@ -311,6 +311,15 @@ export const sampleAnswerSteps: Partial<Record<string, readonly SolutionStep[]>>
     { setSuperclass: { class: 'CsvExporter', superclass: null } },
     { deleteFile: 'src/export/BaseExporter.ts' },
   ],
+  'intermediate-feature-envy': [
+    { extract: { from: 'renewSubscription', fragmentIds: ['frag-check-trial'], name: 'isInTrial' } },
+    { move: { method: 'isInTrial', toClass: 'Subscription' } },
+    { moveField: { field: 'trialDays', fromClass: 'BillingService', toClass: 'Subscription' } },
+    { extract: { from: 'renewSubscription', fragmentIds: ['frag-calc-fee'], name: 'monthlyFee' } },
+    { move: { method: 'monthlyFee', toClass: 'Subscription' } },
+    { extract: { from: 'cancelSubscription', fragmentIds: ['frag-check-cancelable', 'frag-mark-canceled'], name: 'cancel' } },
+    { move: { method: 'cancel', toClass: 'Subscription' } },
+  ],
 };
 
 /** ステージの模範解答を適用した最終形のコードベース。「解答例の図」に使う。 */

@@ -3,7 +3,7 @@ import { changeKindOf, type ChangeRequest } from '../../domain/change/ChangeRequ
 import { findChangeSites } from '../../domain/change/findChangeSites';
 import { measureChange } from '../../domain/change/measureChange';
 import { averageScore, scoreChange } from '../../domain/change/scoreChange';
-import { allClasses, isInterfaceLike, type Codebase } from '../../domain/codebase/Codebase';
+import { allClasses, fieldsOf, isInterfaceLike, touchedFieldIds, type Codebase } from '../../domain/codebase/Codebase';
 import { methodLines } from '../../domain/codebase/lineCount';
 import { scoreCodebase } from '../../domain/scoring/score';
 import type { Result } from '../../domain/shared/Result';
@@ -151,6 +151,62 @@ const shortcuts: ReadonlyArray<{ readonly stageId: string; readonly description:
       { deleteFile: 'src/integration/Trash.ts' },
     ],
   },
+  {
+    stageId: 'intermediate-feature-envy',
+    description: '3つとも抽出するが、どれも Subscription へ移さない',
+    steps: [
+      { extract: { from: 'renewSubscription', fragmentIds: ['frag-check-trial'], name: 'isInTrial' } },
+      { extract: { from: 'renewSubscription', fragmentIds: ['frag-calc-fee'], name: 'monthlyFee' } },
+      { extract: { from: 'cancelSubscription', fragmentIds: ['frag-check-cancelable', 'frag-mark-canceled'], name: 'cancel' } },
+    ],
+  },
+  {
+    stageId: 'intermediate-feature-envy',
+    description: 'メソッドは3つとも移すが、trialDays を Move Field しない',
+    steps: [
+      { extract: { from: 'renewSubscription', fragmentIds: ['frag-check-trial'], name: 'isInTrial' } },
+      { move: { method: 'isInTrial', toClass: 'Subscription' } },
+      { extract: { from: 'renewSubscription', fragmentIds: ['frag-calc-fee'], name: 'monthlyFee' } },
+      { move: { method: 'monthlyFee', toClass: 'Subscription' } },
+      { extract: { from: 'cancelSubscription', fragmentIds: ['frag-check-cancelable', 'frag-mark-canceled'], name: 'cancel' } },
+      { move: { method: 'cancel', toClass: 'Subscription' } },
+    ],
+  },
+  {
+    stageId: 'intermediate-feature-envy',
+    description: 'trialDays は移すが、isInTrial を BillingService に残す',
+    steps: [
+      { extract: { from: 'renewSubscription', fragmentIds: ['frag-check-trial'], name: 'isInTrial' } },
+      { moveField: { field: 'trialDays', fromClass: 'BillingService', toClass: 'Subscription' } },
+      { extract: { from: 'renewSubscription', fragmentIds: ['frag-calc-fee'], name: 'monthlyFee' } },
+      { move: { method: 'monthlyFee', toClass: 'Subscription' } },
+      { extract: { from: 'cancelSubscription', fragmentIds: ['frag-check-cancelable', 'frag-mark-canceled'], name: 'cancel' } },
+      { move: { method: 'cancel', toClass: 'Subscription' } },
+    ],
+  },
+  {
+    stageId: 'intermediate-feature-envy',
+    description: 'データをサービスへ寄せる: Subscription の5つのフィールドを BillingService へ Move Field し、Subscription.ts を削除する',
+    steps: [
+      { moveField: { field: 'status', fromClass: 'Subscription', toClass: 'BillingService' } },
+      { moveField: { field: 'startedAt', fromClass: 'Subscription', toClass: 'BillingService' } },
+      { moveField: { field: 'seats', fromClass: 'Subscription', toClass: 'BillingService' } },
+      { moveField: { field: 'unitPrice', fromClass: 'Subscription', toClass: 'BillingService' } },
+      { moveField: { field: 'canceledAt', fromClass: 'Subscription', toClass: 'BillingService' } },
+      { deleteFile: 'src/billing/Subscription.ts' },
+      { extract: { from: 'renewSubscription', fragmentIds: ['frag-check-trial'], name: 'isInTrial' } },
+      { extract: { from: 'renewSubscription', fragmentIds: ['frag-calc-fee'], name: 'monthlyFee' } },
+      { extract: { from: 'cancelSubscription', fragmentIds: ['frag-check-cancelable', 'frag-mark-canceled'], name: 'cancel' } },
+    ],
+  },
+  {
+    stageId: 'intermediate-feature-envy',
+    description: 'renewSubscription・cancelSubscription をメソッドごと Subscription へ移す',
+    steps: [
+      { move: { method: 'renewSubscription', toClass: 'Subscription' } },
+      { move: { method: 'cancelSubscription', toClass: 'Subscription' } },
+    ],
+  },
 ];
 
 function unwrap<T, E>(result: Result<T, E>): T {
@@ -227,7 +283,23 @@ function allIds(stage: Stage): string[] {
   const classes = allClasses(stage.codebase);
   const methods = classes.flatMap((codeClass) => codeClass.methods);
   const fragments = methods.flatMap((method) => method.fragments);
-  return [...files, ...classes, ...methods, ...fragments].map((item) => item.id);
+  const fields = classes.flatMap((codeClass) => fieldsOf(codeClass));
+  return [...files, ...classes, ...methods, ...fragments, ...fields].map((item) => item.id);
+}
+
+/** ステージ内のフィールドID一覧(打ち間違いの検査に使う)。 */
+function fieldIdsOf(stage: Stage): Set<string> {
+  return new Set(allClasses(stage.codebase).flatMap((codeClass) => fieldsOf(codeClass).map((field) => field.id)));
+}
+
+/** 処理の reads/writes が、そのステージに実在しないフィールドIDを指していないか。 */
+function danglingFieldRefs(stage: Stage): string[] {
+  const fieldIds = fieldIdsOf(stage);
+  return allClasses(stage.codebase)
+    .flatMap((codeClass) => codeClass.methods)
+    .flatMap((method) => method.fragments)
+    .flatMap((fragment) => touchedFieldIds(fragment))
+    .filter((fieldId) => !fieldIds.has(fieldId));
 }
 
 describe('stageCatalog', () => {
@@ -263,6 +335,14 @@ describe('stageCatalog', () => {
 
       // Assert
       expect(unique.size).toBe(ids.length);
+    });
+
+    it('処理の reads / writes は、そのステージにあるフィールドIDだけを指す', () => {
+      // Arrange / Act
+      const dangling = danglingFieldRefs(stage);
+
+      // Assert
+      expect(dangling).toEqual([]);
     });
 
     it('どんなコードを表しているかの説明がある', () => {
