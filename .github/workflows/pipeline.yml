@@ -29,11 +29,6 @@ on:
         description: "機能スラッグ(docs/pipeline/<slug>/ を指す。discover以外は必須)"
         required: false
         type: string
-  push:
-    paths:
-      - "docs/pipeline/*/03-confirmed-answers.md"
-  pull_request:
-    types: [closed]
 
 concurrency:
   group: pipeline-${{ inputs.slug || github.ref }}
@@ -47,7 +42,9 @@ permissions:
   id-token: write
 
 jobs:
-  # workflow_dispatch / push / pull_request(マージ) のどの入口から来たかによらず、
+  # claude-code-actionは workflow_dispatch 以外のイベント種別(push/pull_requestなど)を
+  # そのままでは受け付けない("Unsupported event type")ため、このワークフローは全ステージを
+  # workflow_dispatch(または schedule、discoverのみ)からしか起動しない。
   # 後続ジョブが見るべき stage と slug をここで1本化する。
   determine:
     runs-on: ubuntu-latest
@@ -55,9 +52,6 @@ jobs:
       stage: ${{ steps.set.outputs.stage }}
       slug: ${{ steps.set.outputs.slug }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
       - id: set
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
@@ -66,15 +60,6 @@ jobs:
           elif [ "${{ github.event_name }}" = "schedule" ]; then
             echo "stage=discover" >> "$GITHUB_OUTPUT"
             echo "slug=" >> "$GITHUB_OUTPUT"
-          elif [ "${{ github.event_name }}" = "push" ]; then
-            FILE=$(git diff --name-only HEAD^ HEAD -- 'docs/pipeline/*/03-confirmed-answers.md' | head -1)
-            SLUG=$(echo "$FILE" | sed -E 's#docs/pipeline/([^/]+)/03-confirmed-answers\.md#\1#')
-            echo "stage=final-spec" >> "$GITHUB_OUTPUT"
-            echo "slug=$SLUG" >> "$GITHUB_OUTPUT"
-          elif [ "${{ github.event.pull_request.merged }}" = "true" ] && [[ "${{ github.event.pull_request.head.ref }}" == pipeline/* ]]; then
-            REF="${{ github.event.pull_request.head.ref }}"
-            echo "stage=evaluate" >> "$GITHUB_OUTPUT"
-            echo "slug=${REF#pipeline/}" >> "$GITHUB_OUTPUT"
           else
             echo "stage=" >> "$GITHUB_OUTPUT"
             echo "slug=" >> "$GITHUB_OUTPUT"
@@ -431,6 +416,7 @@ jobs:
             gh pr edit "$BRANCH" --add-label claude-approved --remove-label changes-requested || true
             gh pr comment "$BRANCH" --body "Claudeレビューが完了しました。指摘はありません。自動マージします。マージ後に評価ステージが自動で起動します。"
             gh pr merge "$BRANCH" --squash --delete-branch
+            gh workflow run pipeline.yml -f stage=evaluate -f slug="${{ env.SLUG }}"
           fi
 
   evaluate:

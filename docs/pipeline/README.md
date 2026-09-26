@@ -29,8 +29,13 @@
 ```
 
 各ステージが読み書きするmdファイルが、そのまま次のステージへの引き継ぎ資料になる。
-GitHub Actions側の自動連鎖(`gh workflow run` によるチェイン)が止まっても、mdファイルさえ
-残っていれば手動で次のステージを `workflow_dispatch` から再実行できる。
+すべてのステージは `workflow_dispatch`(`gh workflow run pipeline.yml -f stage=... -f slug=...`)
+からしか起動しない(`push`/`pull_request` イベントは使わない。claude-code-actionが
+`workflow_dispatch` 以外のイベント種別を受け付けないため)。ステージ間の連鎖は、前段のステップが
+成功した最後に次段を `gh workflow run` で明示的に呼ぶことで行う(discoverの最後・final-specの
+最後・codex-reviewの最後・claude-review合格時)。`/spec-confirm` コマンドの最後も同様に
+`final-spec` を呼ぶ。連鎖が止まっても、mdファイルさえ残っていれば手動で次のステージを
+`workflow_dispatch` から再実行できる。
 
 ## 各役割定義
 
@@ -59,8 +64,8 @@ GitHub Actions側のプロンプトは、以下の `.claude/agents/*.md` の内�
 ```
 
 `03-confirmed-answers.md` を書いてコミットした後、pushしてよいかユーザーに確認する
-(`auto-dev.md` コマンドと同じ流儀。無断でpushしない)。push後、`final-spec` ステージが
-自動で起動する。
+(`auto-dev.md` コマンドと同じ流儀。無断でpushしない)。push後、このコマンド自身が
+`gh workflow run pipeline.yml -f stage=final-spec -f slug=<slug>` を実行して次のステージを起動する。
 
 ## 必要なSecrets
 
@@ -110,8 +115,10 @@ Plusプランを使うため)。GitHub Actions上のヘッドレス環境では�
 
 `claude-review` に合格すると、`gh pr merge --squash --delete-branch` でそのPRを**自動でマージする**
 (ユーザーの選択により、手動マージの安全弁は設けていない。Codexが書いてClaudeがレビューしたコードが、
-人の目を介さずmasterに入る設計であることに注意)。`evaluate` ステージはPRがマージされたことを
-トリガーに起動する。
+人の目を介さずmasterに入る設計であることに注意)。マージ直後に `claude-review` ジョブ自身が
+`gh workflow run pipeline.yml -f stage=evaluate -f slug=<slug>` を実行し、`evaluate` ステージを
+起動する(`pull_request` イベントのトリガーは使わない。前述のとおりclaude-code-actionが
+未対応のため)。
 
 マージには「Settings → Actions → General → Allow GitHub Actions to create and approve pull
 requests」の有効化に加え、`master` にブランチ保護(必須レビューなど)が設定されている場合は

@@ -1,6 +1,6 @@
 ---
 description: docs/pipeline/*/02-draft-spec.md の未決事項をユーザーに選ばせ、03-confirmed-answers.md として確定させる
-allowed-tools: Read, Write, Glob, Bash(git:*)
+allowed-tools: Read, Write, Glob, Bash(git:*), Bash(gh workflow run:*)
 ---
 
 開発パイプライン(`docs/pipeline/README.md`)の「ユーザ確定」ステップを行います。
@@ -22,6 +22,9 @@ allowed-tools: Read, Write, Glob, Bash(git:*)
    `git add docs/pipeline/<slug>/03-confirmed-answers.md`・コミット
    (コミットメッセージ末尾に `Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>` を付ける)・
    `git push origin HEAD:master` を実行する。承認が得られなければコミットまでで止める。
+6. pushできたら、`gh workflow run pipeline.yml -f stage=final-spec -f slug=<slug>` を実行して
+   `final-spec` ステージを起動する(claude-code-actionは`push`イベントを受け付けないため、
+   pushトリガーには頼らず、ここから明示的に`workflow_dispatch`で呼び出す)。
 
 ## 注意
 
