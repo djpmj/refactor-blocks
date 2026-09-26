@@ -96,6 +96,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          allowed_bots: "*"
           show_full_output: true
           prompt: |
             REPO: ${{ github.repository }}
@@ -142,6 +143,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          allowed_bots: "*"
           prompt: |
             REPO: ${{ github.repository }}
             SLUG: ${{ env.SLUG }}
@@ -184,6 +186,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          allowed_bots: "*"
           prompt: |
             REPO: ${{ github.repository }}
             SLUG: ${{ env.SLUG }}
@@ -396,6 +399,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          allowed_bots: "*"
           prompt: |
             REPO: ${{ github.repository }}
             SLUG: ${{ env.SLUG }}
@@ -454,6 +458,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          allowed_bots: "*"
           prompt: |
             REPO: ${{ github.repository }}
             SLUG: ${{ env.SLUG }}
