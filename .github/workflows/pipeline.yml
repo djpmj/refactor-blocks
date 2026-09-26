@@ -249,7 +249,6 @@ jobs:
         id: codexrun
         run: |
           codex exec - \
-            --sandbox workspace-write \
             --approve-for-me \
             --skip-git-repo-check \
             -o /tmp/codex-last-message.md \
@@ -325,7 +324,6 @@ jobs:
       - name: codex execでレビューする
         run: |
           codex exec "docs/specs/${{ env.SLUG }}.md の受け入れ基準と、CLAUDE.mdのDDD構成・eslint規約に照らして、master からのこのブランチの差分(git diff master...HEAD)をレビューしてください。指摘があれば具体的な指摘を書いてください。最後に、直すべき指摘(blocker)が1件でもあれば最後の1行だけに NEEDS_FIX と書き、無ければ最後の1行だけに PASS と書いてください。" \
-            --sandbox workspace-write \
             --approve-for-me \
             --skip-git-repo-check \
             -o /tmp/codex-verdict.md
