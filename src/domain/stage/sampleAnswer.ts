@@ -354,6 +354,24 @@ export const sampleAnswerSteps: Partial<Record<string, readonly SolutionStep[]>>
     { move: { method: 'formatMailingAddress', toClass: 'Address' } },
     { move: { method: 'changeAddress', toClass: 'Address' } },
   ],
+  'advanced-value-object': [
+    { extract: { from: 'submitExpense', fragmentIds: ['frag-apply-validate-money'], name: 'validateMoney' } },
+    { extract: { from: 'submitExpense', fragmentIds: ['frag-apply-format-money'], name: 'formatMoney' } },
+    { extract: { from: 'approveMonthlyExpenses', fragmentIds: ['frag-approve-validate-money'], name: 'validateMoney' } },
+    { extract: { from: 'approveMonthlyExpenses', fragmentIds: ['frag-approve-sum-money'], name: 'sumMoney' } },
+    { extract: { from: 'payOut', fragmentIds: ['frag-payout-sum-money'], name: 'sumMoney' } },
+    { extract: { from: 'payOut', fragmentIds: ['frag-payout-format-money'], name: 'formatMoney' } },
+    { merge: { methodA: 'validateMoney', methodAClass: 'ExpenseApplicationService', methodB: 'validateMoney', methodBClass: 'ApprovalService', name: 'validate' } },
+    { merge: { methodA: 'sumMoney', methodAClass: 'ApprovalService', methodB: 'sumMoney', methodBClass: 'PayoutService', name: 'add' } },
+    { merge: { methodA: 'formatMoney', methodAClass: 'ExpenseApplicationService', methodB: 'formatMoney', methodBClass: 'PayoutService', name: 'format' } },
+    { addFile: 'src/expense/Money.ts' },
+    { addClass: { name: 'Money', file: 'src/expense/Money.ts' } },
+    { moveField: { field: 'amount', fromClass: 'Expense', toClass: 'Money' } },
+    { moveField: { field: 'currency', fromClass: 'Expense', toClass: 'Money' } },
+    { move: { method: 'validate', toClass: 'Money' } },
+    { move: { method: 'add', toClass: 'Money' } },
+    { move: { method: 'format', toClass: 'Money' } },
+  ],
 };
 
 /** ステージの模範解答を適用した最終形のコードベース。「解答例の図」に使う。 */

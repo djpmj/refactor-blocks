@@ -758,25 +758,28 @@ export function findLowCohesionClasses(codebase: Codebase): LowCohesion[];
 
 ### 初期コード
 
+(メソッドの行数は、処理の合計に `METHOD_OVERHEAD_LINES`(+2行)を足した値で書く。採点の `methodLines` と同じ数え方)
+
 | ファイル | クラス | フィールド | メソッド | 処理(行数, responsibility, 読む / 書く / 呼ぶ, duplicateGroup) |
 | --- | --- | --- | --- | --- |
 | `src/expense/Expense.ts` | `Expense` | `amount`・`currency`・`category`・`status`(すべて public) | `submit`(public) | 勘定科目が決まっているか確かめ、状態を提出済みにする(8, `workflow`, 読む: category, 書く: status) |
 | | | | `isReceiptRequired`(public) | 勘定科目から領収書が必要か判定する(10, `category-rule`, 読む: category) |
-| `src/expense/ExpenseApplicationService.ts` | `ExpenseApplicationService` | なし | `submitExpense`(public, 82行) | 日付・勘定科目・領収書の有無を確かめる(22, `application`, 呼ぶ: isReceiptRequired)<br>金額が0より大きく、対応している通貨か確かめる(18, `money-validation`, 読む: amount・currency, `money-validate`)<br>通貨ごとの小数桁で金額を表示用に整える(16, `money-format`, 読む: amount・currency, `money-format`)<br>申請を提出し、上長へ承認依頼を送る(26, `approval-request`, 呼ぶ: submit) |
-| `src/expense/ApprovalService.ts` | `ApprovalService` | なし | `approveMonthlyExpenses`(public, 50行) | 部署ごとに今月の申請を集める(12, `aggregation`)<br>金額が0より大きく、対応している通貨か確かめる(18, `money-validation`, 読む: amount・currency, `money-validate`)<br>同じ通貨どうしで金額を合計し、新しい金額として返す(20, `money-arithmetic`, 読む: amount・currency, `money-sum`) |
-| `src/expense/PayoutService.ts` | `PayoutService` | なし | `payOut`(public, 50行) | 同じ通貨どうしで金額を合計し、新しい金額として返す(20, `money-arithmetic`, 読む: amount・currency, `money-sum`)<br>通貨ごとの小数桁で金額を表示用に整える(16, `money-format`, 読む: amount・currency, `money-format`)<br>振込データを作って銀行へ送る(14, `transfer`) |
+| `src/expense/ExpenseApplicationService.ts` | `ExpenseApplicationService` | なし | `submitExpense`(public, 80行) | 日付・勘定科目・領収書の有無を確かめる(20, `application`, 呼ぶ: isReceiptRequired)<br>金額が0より大きく、対応している通貨か確かめる(16, `money-validation`, 読む: amount・currency, `money-validate`)<br>通貨ごとの小数桁で金額を表示用に整える(16, `money-format`, 読む: amount・currency, `money-format`)<br>申請を提出し、上長へ承認依頼を送る(26, `approval-request`, 呼ぶ: submit) |
+| `src/expense/ApprovalService.ts` | `ApprovalService` | なし | `approveMonthlyExpenses`(public, 46行) | 部署ごとに今月の申請を集める(10, `aggregation`)<br>金額が0より大きく、対応している通貨か確かめる(16, `money-validation`, 読む: amount・currency, `money-validate`)<br>同じ通貨どうしで金額を合計し、新しい金額として返す(18, `money-arithmetic`, 読む: amount・currency, `money-sum`) |
+| `src/expense/PayoutService.ts` | `PayoutService` | なし | `payOut`(public, 48行) | 同じ通貨どうしで金額を合計し、新しい金額として返す(18, `money-arithmetic`, 読む: amount・currency, `money-sum`)<br>通貨ごとの小数桁で金額を表示用に整える(16, `money-format`, 読む: amount・currency, `money-format`)<br>振込データを作って銀行へ送る(12, `transfer`) |
 
 - `Expense.submit` が `category` も読むのは、凝集度の全ステージ化のため(`submit` と `isReceiptRequired` が category でつながり、模範解答のあとの `Expense` が1塊になる)。読まないと `Expense` が2塊に分かれ、模範解答が90点になる
 - 重複グループ3つ(`money-validate`・`money-sum`・`money-format`)はどれも2か所だけで、同じグループの2つは行数も同じ
 - Fragment ID: `frag-apply-check-form` / `frag-apply-validate-money` / `frag-apply-format-money` / `frag-apply-request-approval` /
   `frag-approve-collect` / `frag-approve-validate-money` / `frag-approve-sum-money` / `frag-payout-sum-money` / `frag-payout-format-money` / `frag-payout-transfer` /
   `frag-submit-expense` / `frag-receipt-required`
+- **実測での調整**: `submitExpense` の各フラグメントの行数は当初案(22/18/16/26)から、模範解答後の `submitExpense`(50行以内)と `Money`(65行以内、変更依頼の加算後も超えない余白)の両方を満たすように 20/16/16/26 に調整した。`approveMonthlyExpenses`・`payOut` も、初期状態でメソッド単体の行数超過が出ないように(仕様の想定どおり「行数の減点は `submitExpense` と `ExpenseApplicationService` の2件だけ」にするため)10/16/18・18/16/12 に調整した(メソッドの行数は `METHOD_OVERHEAD_LINES`(呼び出し行の合図・閉じ括弧ぶんの+2行)を含めて判定されるため)
 
-初期の減点(手計算。実測で確かめる): **40点**
+初期の減点(実測): **40点**
 
 | ルール | 件数 | 内容 |
 | --- | --- | --- |
-| 行数 | 2 | `submitExpense` 82行 > 50、`ExpenseApplicationService` 82行 > 65 |
+| 行数 | 2 | `submitExpense` 80行 > 50、`ExpenseApplicationService` 82行 > 65 |
 | 責務の混在 | 1 | `ExpenseApplicationService` 4種類 > 3 |
 | Feature Envy | 3 | 3つのサービスのメソッドが `Expense` の amount・currency を触り、自分側は0 |
 | 凝集度 | 0 | `Expense` は `submit`・`isReceiptRequired` が category でつながり1塊(amount・currency は `Expense` のメソッドが触らないので数えない)。サービスはフィールドなし |
@@ -790,10 +793,10 @@ export function findLowCohesionClasses(codebase: Codebase): LowCohesion[];
 
 | 依頼 | 初期 | 模範解答のあと |
 | --- | --- | --- |
-| `req-accept-euro` | 2クラス。散らばり -10、巻き込み3+2 -25、上限超え3 -30 → 35点 | `Money.validate` 1か所。波及(3サービス)-15 → 85点 |
-| `req-hide-yen-decimals` | 2クラス。散らばり -10、巻き込み3+2 -25、上限超え3 -30 → 35点 | `Money.format` 1か所(`Money` 60行 ≤ 65)。波及 -15 → 85点 |
+| `req-accept-euro` | 2クラス。散らばり -10、巻き込み3+2 -25、上限超え2 -20 → **45点**(実測。`money-validation` は `PayoutService` に無いため、`payOut` は上限超えにならず、仕様書の想定35点より上限超えが1件少ない) | `Money.validate` 1か所。波及(3サービス)-15 → 85点 |
+| `req-hide-yen-decimals` | 2クラス。散らばり -10、巻き込み3+2 -25、上限超え3 -30 → 35点 | `Money.format` 1か所(`Money` 58行 ≤ 65)。波及 -15 → 85点 |
 
-変更容易性スコア 35 → 85。`classesTouched` [2, 2] → [1, 1]。
+変更容易性スコア(平均) 40 → 85(実測。仕様書は当初35→85の見込みだったが、`req-accept-euro` の初期点が45点のため平均は40点に修正)。`classesTouched` [2, 2] → [1, 1]。
 
 ### 模範解答(`sampleAnswerSteps['advanced-value-object']`)
 
@@ -818,7 +821,7 @@ export function findLowCohesionClasses(codebase: Codebase): LowCohesion[];
 ]
 ```
 
-完成形: `Money`(amount・currency。validate 18・add 20・format 16 の54行。責務3種類・1塊)。
+完成形(実測): `Money`(amount・currency。validate 18・add 20・format 18 の58行。責務3種類・1塊)。
 `ExpenseApplicationService`(submitExpense 50行、依存 `Expense`・`Money`)、`ApprovalService`(14行)、`PayoutService`(16行)、`Expense`(category・status、1塊)。100点。
 統合したメソッドは private のまま `Money` へ移り、サービスから呼ばれる。上級7は `visibilityEnforced` を立てないので上級4と同じく減点しない。
 プレイヤーが `Money` のメソッドを public にしても点は変わらない(他クラスから呼ばれているので選べる)。ただし統合の前に public にすると Merge Methods が使えなくなる(下がる方向)。
@@ -829,9 +832,9 @@ export function findLowCohesionClasses(codebase: Codebase): LowCohesion[];
 
 ### `stageCatalog.test.ts` の `shortcuts` に足すもの(どれも100点未満)
 
-1. 統合せずに6つとも `Money` へ移す(抽出名はクラスごとに変える)→ `Money` 108行 > 65
-2. `validate` の1組だけ統合し、残りの4つは統合せずに `Money` へ移す → `Money` 90行 > 65
-3. `Money` を作らず、統合した3つを `Expense` へ移す → 責務5種類・72行・凝集度(経費の塊と金額の塊)
+1. 統合せずに6つとも `Money` へ移す(抽出名はクラスごとに変える)→ `Money` が65行を大きく超える(実測114行)
+2. `validate` の1組だけ統合し、残りの4つは統合せずに `Money` へ移す → `Money` が65行を超える(実測96行)
+3. `Money` を作らず、統合した3つを `Expense` へ移す → 責務・行数・凝集度(経費の塊と金額の塊)で減点
 4. `Money` を作ってメソッドを3つ移すが、`amount`・`currency` を `Expense` に残す → Feature Envy 3
 
 ### ステージのテスト(新規 `src/infrastructure/stages/valueObjectStage.test.ts`)

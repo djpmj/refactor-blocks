@@ -730,6 +730,227 @@ const interfaceSegregationStage: Stage = {
   },
 };
 
+/**
+ * 上級7: 経費(Expense)の金額を amount(数値)と currency(通貨コードの文字列)のままフィールドに持たせているため、
+ * 申請(ExpenseApplicationService)・承認(ApprovalService)・精算(PayoutService)の3サービスが「金額の検証」
+ * 「同じ通貨どうしの合計」「通貨ごとの表示整形」をそれぞれコピペで持っている(重複3グループ、各2か所)。
+ * 上級4(Merge Methods)と中級8(Extract Class)の組み合わせ: 重複をMerge Methodsで1つに統合してから、
+ * amount・currencyと一緒に新しいMoneyクラスへ移す(Primitive Obsession → Value Object)。
+ * 値の出どころはExpenseの1か所に絞り、不変性(作ったあとに書き換えない)は採点しない(amount・currencyへのwritesを置かない)。
+ * submitがcategoryも読むのは、凝集度の全ステージ化でExpenseがsubmit・isReceiptRequiredの2塊に分かれないようにするため。
+ */
+const valueObjectStage: Stage = {
+  id: 'advanced-value-object',
+  level: 'advanced',
+  title: '上級7: 金額と通貨を Money にまとめる',
+  description:
+    '経費精算システム。外貨の経費に対応したとき、経費(Expense)の金額を amount(数値)と currency(通貨コードの文字列)のまま持たせた。' +
+    'その結果、申請(ExpenseApplicationService)・承認(ApprovalService)・精算(PayoutService)の3つのサービスが、' +
+    '「金額が0より大きく対応している通貨か」「同じ通貨どうしで合計する」「通貨ごとの小数桁で表示する」を、それぞれコピペで持っている。',
+  goal:
+    '金額と通貨をひとまとまりの値(Money)として扱おう。コピペされた処理は抽出して統合(Merge Methods)し、amount・currency と一緒に新しい Money クラスへ移す。' +
+    'Money は自分で自分を検証し、足し算や表示も自分でする(値オブジェクト)。Expense に直接入れるのではなく、別のクラスにしよう。メソッドは50行・クラスは65行以内、1クラスの責務は3種類まで、依存先は2クラスまで',
+  limits: { method: 50, class: 65, file: 300 },
+  dependencyLimit: 2,
+  responsibilityLimit: 3,
+  changeRequests: [
+    { id: 'req-accept-euro', title: 'ユーロ建ての経費も申請できるようにして', description: '海外出張が増えたので、対応通貨にユーロ(EUR)を足したい', responsibility: 'money-validation', linesPerSite: 4, partName: 'acceptEuro' },
+    { id: 'req-hide-yen-decimals', title: '円は小数点以下を表示しないで', description: '円の金額は「1,200円」のように小数点以下を出さずに表示したい', responsibility: 'money-format', linesPerSite: 6, partName: 'hideYenDecimals' },
+  ],
+  codebase: {
+    files: [
+      {
+        id: 'file-expense',
+        path: 'src/expense/Expense.ts',
+        classes: [
+          {
+            id: 'class-expense',
+            name: 'Expense',
+            fields: [
+              { id: 'field-amount', name: 'amount', visibility: 'public' },
+              { id: 'field-currency', name: 'currency', visibility: 'public' },
+              { id: 'field-category', name: 'category', visibility: 'public' },
+              { id: 'field-status', name: 'status', visibility: 'public' },
+            ],
+            methods: [
+              {
+                id: 'method-submit',
+                name: 'submit',
+                visibility: 'public',
+                fragments: [
+                  {
+                    id: 'frag-submit-expense',
+                    label: '勘定科目が決まっているか確かめ、状態を提出済みにする',
+                    lines: 8,
+                    responsibility: 'workflow',
+                    reads: ['field-category'],
+                    writes: ['field-status'],
+                  },
+                ],
+              },
+              {
+                id: 'method-is-receipt-required',
+                name: 'isReceiptRequired',
+                visibility: 'public',
+                fragments: [
+                  {
+                    id: 'frag-receipt-required',
+                    label: '勘定科目から領収書が必要か判定する',
+                    lines: 10,
+                    responsibility: 'category-rule',
+                    reads: ['field-category'],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'file-expense-application-service',
+        path: 'src/expense/ExpenseApplicationService.ts',
+        classes: [
+          {
+            id: 'class-expense-application-service',
+            name: 'ExpenseApplicationService',
+            methods: [
+              {
+                id: 'method-submit-expense',
+                name: 'submitExpense',
+                visibility: 'public',
+                fragments: [
+                  {
+                    id: 'frag-apply-check-form',
+                    label: '日付・勘定科目・領収書の有無を確かめる',
+                    lines: 20,
+                    responsibility: 'application',
+                    uses: ['method-is-receipt-required'],
+                    suggestedName: 'checkExpenseForm',
+                  },
+                  {
+                    id: 'frag-apply-validate-money',
+                    label: '金額が0より大きく、対応している通貨か確かめる',
+                    lines: 16,
+                    responsibility: 'money-validation',
+                    reads: ['field-amount', 'field-currency'],
+                    duplicateGroup: 'money-validate',
+                    suggestedName: 'validateMoney',
+                  },
+                  {
+                    id: 'frag-apply-format-money',
+                    label: '通貨ごとの小数桁で金額を表示用に整える',
+                    lines: 16,
+                    responsibility: 'money-format',
+                    reads: ['field-amount', 'field-currency'],
+                    duplicateGroup: 'money-format',
+                    suggestedName: 'formatMoney',
+                  },
+                  {
+                    id: 'frag-apply-request-approval',
+                    label: '申請を提出し、上長へ承認依頼を送る',
+                    lines: 26,
+                    responsibility: 'approval-request',
+                    uses: ['method-submit'],
+                    suggestedName: 'requestApproval',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'file-approval-service',
+        path: 'src/expense/ApprovalService.ts',
+        classes: [
+          {
+            id: 'class-approval-service',
+            name: 'ApprovalService',
+            methods: [
+              {
+                id: 'method-approve-monthly-expenses',
+                name: 'approveMonthlyExpenses',
+                visibility: 'public',
+                fragments: [
+                  {
+                    id: 'frag-approve-collect',
+                    label: '部署ごとに今月の申請を集める',
+                    lines: 10,
+                    responsibility: 'aggregation',
+                    suggestedName: 'collectMonthlyExpenses',
+                  },
+                  {
+                    id: 'frag-approve-validate-money',
+                    label: '金額が0より大きく、対応している通貨か確かめる',
+                    lines: 16,
+                    responsibility: 'money-validation',
+                    reads: ['field-amount', 'field-currency'],
+                    duplicateGroup: 'money-validate',
+                    suggestedName: 'validateMoney',
+                  },
+                  {
+                    id: 'frag-approve-sum-money',
+                    label: '同じ通貨どうしで金額を合計し、新しい金額として返す',
+                    lines: 18,
+                    responsibility: 'money-arithmetic',
+                    reads: ['field-amount', 'field-currency'],
+                    duplicateGroup: 'money-sum',
+                    suggestedName: 'sumMoney',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'file-payout-service',
+        path: 'src/expense/PayoutService.ts',
+        classes: [
+          {
+            id: 'class-payout-service',
+            name: 'PayoutService',
+            methods: [
+              {
+                id: 'method-pay-out',
+                name: 'payOut',
+                visibility: 'public',
+                fragments: [
+                  {
+                    id: 'frag-payout-sum-money',
+                    label: '同じ通貨どうしで金額を合計し、新しい金額として返す',
+                    lines: 18,
+                    responsibility: 'money-arithmetic',
+                    reads: ['field-amount', 'field-currency'],
+                    duplicateGroup: 'money-sum',
+                    suggestedName: 'sumMoney',
+                  },
+                  {
+                    id: 'frag-payout-format-money',
+                    label: '通貨ごとの小数桁で金額を表示用に整える',
+                    lines: 16,
+                    responsibility: 'money-format',
+                    reads: ['field-amount', 'field-currency'],
+                    duplicateGroup: 'money-format',
+                    suggestedName: 'formatMoney',
+                  },
+                  {
+                    id: 'frag-payout-transfer',
+                    label: '振込データを作って銀行へ送る',
+                    lines: 12,
+                    responsibility: 'transfer',
+                    suggestedName: 'sendTransfer',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+};
+
 export const advancedStages: readonly Stage[] = [
   notifierHierarchyStage,
   paymentGatewayInterfaceStage,
@@ -737,4 +958,5 @@ export const advancedStages: readonly Stage[] = [
   reportFactoryStage,
   collapseHierarchyStage,
   interfaceSegregationStage,
+  valueObjectStage,
 ];
