@@ -530,6 +530,178 @@ const featureEnvyStage: Stage = {
   },
 };
 
+/**
+ * 中級7: Account はフィールドがすべて private で、getter/setter だけを public に公開している(貧血ドメインモデル)。
+ * 中級6は public フィールドを外から触る形だったが、こちらは getter で取り出して判断し、setter で書き戻す形で同じことをしている。
+ * アクセサ越しのアクセスも Feature Envy・カプセル化の破れに数え、visibilityEnforced で「移したメソッドを public にする」必要を見せる。
+ */
+const anemicDomainModelStage: Stage = {
+  id: 'intermediate-anemic-domain-model',
+  level: 'intermediate',
+  title: '中級7: getter/setter だけの口座クラス',
+  description:
+    'ネット銀行の口座(Account)。フィールドはすべて private で、getBalance / setBalance のような getter と setter が並んでいるので、一見カプセル化できているように見える。' +
+    'しかし、凍結中かどうかの確認も、残高と1日の引き出し上限のチェックも、残高の更新も、すべて AccountService が getter で値を取り出して判断し、setter で書き戻している。',
+  goal:
+    'getter で取り出して判断し、setter で書き戻すのは、public フィールドを外から触るのと同じ。口座のルールは Account に任せよう(Tell, Don\'t Ask)。' +
+    'ルールの処理を Extract Method して Account へ移し、外から呼ぶメソッドは public に、もう外から使わない setter は private にしよう(メソッドエディタの「可視性」)。' +
+    'メソッドは60行以内、依存先は1クラスまで',
+  limits: { method: 60, class: 150, file: 300 },
+  dependencyLimit: 1,
+  responsibilityLimit: 5,
+  visibilityEnforced: true,
+  changeRequests: [
+    { id: 'req-premium-daily-limit', title: 'プレミアム会員は1日の引き出し上限を上げて', description: 'プレミアム会員だけ、1日に引き出せる上限額を100万円にしたい', responsibility: 'withdrawal-limit', linesPerSite: 6, partName: 'raisePremiumDailyLimit' },
+    { id: 'req-deposit-while-frozen', title: '凍結中でも入金だけは受け付けて', description: '口座が凍結されていても、入金(給与の振込など)は受け付けるようにしたい', responsibility: 'account-status', linesPerSite: 4, partName: 'allowDepositWhileFrozen' },
+  ],
+  codebase: {
+    files: [
+      {
+        id: 'file-account',
+        path: 'src/account/Account.ts',
+        classes: [
+          {
+            id: 'class-account',
+            name: 'Account',
+            fields: [
+              { id: 'field-balance', name: 'balance', visibility: 'private' },
+              { id: 'field-status', name: 'status', visibility: 'private' },
+              { id: 'field-daily-withdrawn', name: 'dailyWithdrawn', visibility: 'private' },
+            ],
+            methods: [
+              {
+                id: 'method-get-balance',
+                name: 'getBalance',
+                visibility: 'public',
+                fragments: [{ id: 'frag-get-balance', label: '残高を返す', lines: 3, responsibility: 'accessor', reads: ['field-balance'], accessor: true }],
+              },
+              {
+                id: 'method-set-balance',
+                name: 'setBalance',
+                visibility: 'public',
+                fragments: [{ id: 'frag-set-balance', label: '残高を書き換える', lines: 3, responsibility: 'accessor', writes: ['field-balance'], accessor: true }],
+              },
+              {
+                id: 'method-get-status',
+                name: 'getStatus',
+                visibility: 'public',
+                fragments: [{ id: 'frag-get-status', label: '口座の状態を返す', lines: 3, responsibility: 'accessor', reads: ['field-status'], accessor: true }],
+              },
+              {
+                id: 'method-get-daily-withdrawn',
+                name: 'getDailyWithdrawn',
+                visibility: 'public',
+                fragments: [{ id: 'frag-get-daily-withdrawn', label: '本日の引き出し額を返す', lines: 3, responsibility: 'accessor', reads: ['field-daily-withdrawn'], accessor: true }],
+              },
+              {
+                id: 'method-set-daily-withdrawn',
+                name: 'setDailyWithdrawn',
+                visibility: 'public',
+                fragments: [{ id: 'frag-set-daily-withdrawn', label: '本日の引き出し額を書き換える', lines: 3, responsibility: 'accessor', writes: ['field-daily-withdrawn'], accessor: true }],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'file-account-service',
+        path: 'src/account/AccountService.ts',
+        classes: [
+          {
+            id: 'class-account-service',
+            name: 'AccountService',
+            fields: [
+              { id: 'field-transaction-log', name: 'transactionLog', visibility: 'private' },
+              { id: 'field-notifier', name: 'notifier', visibility: 'private' },
+            ],
+            methods: [
+              {
+                id: 'method-withdraw',
+                name: 'withdraw',
+                visibility: 'public',
+                fragments: [
+                  {
+                    id: 'frag-withdraw-check-status',
+                    label: 'getStatus() で状態を取り出し、凍結されていないか確かめる',
+                    lines: 8,
+                    responsibility: 'account-status',
+                    uses: ['method-get-status'],
+                    suggestedName: 'checkNotFrozen',
+                  },
+                  {
+                    id: 'frag-check-withdrawable',
+                    label: '残高と1日の引き出し上限から引き出せるか確かめる',
+                    lines: 18,
+                    responsibility: 'withdrawal-limit',
+                    uses: ['method-get-balance', 'method-get-daily-withdrawn'],
+                    suggestedName: 'checkWithdrawable',
+                  },
+                  {
+                    id: 'frag-debit-balance',
+                    label: '残高を減らし、本日の引き出し額を足して setter で書き戻す',
+                    lines: 8,
+                    responsibility: 'balance',
+                    uses: ['method-get-balance', 'method-set-balance', 'method-get-daily-withdrawn', 'method-set-daily-withdrawn'],
+                    suggestedName: 'debitBalance',
+                  },
+                  {
+                    id: 'frag-withdraw-log',
+                    label: '取引履歴に記録する',
+                    lines: 24,
+                    responsibility: 'history',
+                    reads: ['field-transaction-log'],
+                    suggestedName: 'logWithdrawal',
+                  },
+                  {
+                    id: 'frag-withdraw-notify',
+                    label: '引き出し後の残高をメールで知らせる',
+                    lines: 22,
+                    responsibility: 'notification',
+                    reads: ['field-notifier'],
+                    uses: ['method-get-balance'],
+                    suggestedName: 'notifyWithdrawal',
+                  },
+                ],
+              },
+              {
+                id: 'method-deposit',
+                name: 'deposit',
+                visibility: 'public',
+                fragments: [
+                  {
+                    id: 'frag-deposit-check-status',
+                    label: 'getStatus() で状態を取り出し、凍結されていないか確かめる',
+                    lines: 8,
+                    responsibility: 'account-status',
+                    uses: ['method-get-status'],
+                    suggestedName: 'checkNotFrozenForDeposit',
+                  },
+                  {
+                    id: 'frag-credit-balance',
+                    label: '残高を増やして setBalance() で書き戻す',
+                    lines: 6,
+                    responsibility: 'balance',
+                    uses: ['method-get-balance', 'method-set-balance'],
+                    suggestedName: 'creditBalance',
+                  },
+                  {
+                    id: 'frag-deposit-log',
+                    label: '取引履歴に記録する',
+                    lines: 20,
+                    responsibility: 'history',
+                    reads: ['field-transaction-log'],
+                    suggestedName: 'logDeposit',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+};
+
 export const intermediateStages: readonly Stage[] = [
   cyclicDependencyStage,
   godFileStage,
@@ -537,4 +709,5 @@ export const intermediateStages: readonly Stage[] = [
   volatileTaxStage,
   volatileFormatStage,
   featureEnvyStage,
+  anemicDomainModelStage,
 ];

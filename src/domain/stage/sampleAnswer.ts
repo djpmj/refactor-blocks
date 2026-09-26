@@ -334,6 +334,16 @@ export const sampleAnswerSteps: Partial<Record<string, readonly SolutionStep[]>>
     { extract: { from: 'cancelSubscription', fragmentIds: ['frag-check-cancelable', 'frag-mark-canceled'], name: 'cancel' } },
     { move: { method: 'cancel', toClass: 'Subscription' } },
   ],
+  'intermediate-anemic-domain-model': [
+    { extract: { from: 'withdraw', fragmentIds: ['frag-withdraw-check-status', 'frag-check-withdrawable', 'frag-debit-balance'], name: 'debit' } },
+    { move: { method: 'debit', toClass: 'Account' } },
+    { changeVisibility: { method: 'debit', class: 'Account', visibility: 'public' } },
+    { extract: { from: 'deposit', fragmentIds: ['frag-deposit-check-status', 'frag-credit-balance'], name: 'credit' } },
+    { move: { method: 'credit', toClass: 'Account' } },
+    { changeVisibility: { method: 'credit', class: 'Account', visibility: 'public' } },
+    { changeVisibility: { method: 'setBalance', class: 'Account', visibility: 'private' } },
+    { changeVisibility: { method: 'setDailyWithdrawn', class: 'Account', visibility: 'private' } },
+  ],
 };
 
 /** ステージの模範解答を適用した最終形のコードベース。「解答例の図」に使う。 */

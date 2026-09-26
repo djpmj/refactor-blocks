@@ -1,5 +1,18 @@
 import { useMemo, useState } from 'react';
-import { findClass, findClassOfField, findClassOfMethod, findField, findMethod, isStubMethod, type Codebase, type Fragment, type Method } from '../../domain/codebase/Codebase';
+import {
+  accessorFieldAccess,
+  findClass,
+  findClassOfField,
+  findClassOfMethod,
+  findField,
+  findMethod,
+  isStubMethod,
+  type Codebase,
+  type Fragment,
+  type Method,
+  type Visibility,
+} from '../../domain/codebase/Codebase';
+import { changeVisibilityUseCase } from '../../application/RefactorUseCases';
 import { findMergeCandidates, type MergeCandidate } from '../../domain/codebase/mergeMethods';
 import { methodLines } from '../../domain/codebase/lineCount';
 import { suggestMethodName } from '../../domain/codebase/suggestMethodName';
@@ -32,11 +45,16 @@ function fieldRefText(codebase: Codebase, fieldIds: readonly string[]): string {
 function FragmentFieldRefs({ codebase, fragment }: Readonly<{ codebase: Codebase; fragment: Fragment }>) {
   const reads = fieldRefText(codebase, fragment.reads ?? []);
   const writes = fieldRefText(codebase, fragment.writes ?? []);
-  if (reads === '' && writes === '') return null;
+  const accessed = accessorFieldAccess(codebase, fragment);
+  const accessorReads = fieldRefText(codebase, accessed.reads);
+  const accessorWrites = fieldRefText(codebase, accessed.writes);
+  if (reads === '' && writes === '' && accessorReads === '' && accessorWrites === '') return null;
   return (
     <div className="fragment-list__field-refs">
       {reads === '' ? null : <div>読む: {reads}</div>}
       {writes === '' ? null : <div>書く: {writes}</div>}
+      {accessorReads === '' ? null : <div>getter 経由で読む: {accessorReads}</div>}
+      {accessorWrites === '' ? null : <div>setter 経由で書く: {accessorWrites}</div>}
     </div>
   );
 }
@@ -104,12 +122,57 @@ function MergeSection({ method, candidates }: Readonly<{ method: Method; candida
   );
 }
 
+const VISIBILITY_OPTIONS: readonly Visibility[] = ['public', 'protected', 'private'];
+
+function isVisibility(value: string): value is Visibility {
+  return VISIBILITY_OPTIONS.some((visibility) => visibility === value);
+}
+
+/** 可視性(public / protected / private)を選ぶ欄。選んでも前提条件を満たさない値は disabled にする。 */
+function VisibilitySelect({ method }: Readonly<{ method: Method }>) {
+  const codebase = useGameStore((state) => state.codebase);
+  const changeVisibility = useGameStore((state) => state.changeVisibility);
+  const disabled = useMemo(
+    () =>
+      new Set(
+        VISIBILITY_OPTIONS.filter(
+          (visibility) => visibility !== method.visibility && !changeVisibilityUseCase(codebase, method.id, visibility).ok,
+        ),
+      ),
+    [codebase, method.id, method.visibility],
+  );
+  return (
+    <div className="method-editor__visibility">
+      <label>
+        可視性{' '}
+        <select
+          className="method-editor__visibility-select"
+          aria-label={`メソッド ${method.name} の可視性`}
+          value={method.visibility}
+          onChange={(event) => {
+            const { value } = event.target;
+            if (isVisibility(value)) changeVisibility(method.id, value);
+          }}
+        >
+          {VISIBILITY_OPTIONS.map((visibility) => (
+            <option key={visibility} value={visibility} disabled={disabled.has(visibility)}>
+              {visibility}
+            </option>
+          ))}
+        </select>
+      </label>
+      <p className="method-editor__visibility-hint">public は他のクラスから、protected は子クラスから呼ばれているときだけ選べます</p>
+    </div>
+  );
+}
+
 /** 呼び出し元へ戻す(private)・空実装のメソッドを削除、の2つのボタン。どちらも条件を満たすときだけ表示する。 */
 function MethodActions({ method }: Readonly<{ method: Method }>) {
   const inlineMethod = useGameStore((state) => state.inlineMethod);
   const deleteMethod = useGameStore((state) => state.deleteMethod);
   return (
     <>
+      {method.fragments.length > 0 ? <VisibilitySelect method={method} /> : null}
       {method.visibility === 'private' ? (
         <button
           type="button"

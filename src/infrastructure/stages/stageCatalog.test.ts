@@ -216,6 +216,66 @@ const shortcuts: ReadonlyArray<{ readonly stageId: string; readonly description:
       { move: { method: 'cancelSubscription', toClass: 'Subscription' } },
     ],
   },
+  {
+    stageId: 'intermediate-anemic-domain-model',
+    description: 'debit・credit を抽出するが AccountService に残す',
+    steps: [
+      { extract: { from: 'withdraw', fragmentIds: ['frag-withdraw-check-status', 'frag-check-withdrawable', 'frag-debit-balance'], name: 'debit' } },
+      { extract: { from: 'deposit', fragmentIds: ['frag-deposit-check-status', 'frag-credit-balance'], name: 'credit' } },
+    ],
+  },
+  {
+    stageId: 'intermediate-anemic-domain-model',
+    description: '残高の更新だけを抽出して Account へ移し(public にし)、チェックはサービスに残す',
+    steps: [
+      { extract: { from: 'withdraw', fragmentIds: ['frag-debit-balance'], name: 'debitBalance' } },
+      { move: { method: 'debitBalance', toClass: 'Account' } },
+      { changeVisibility: { method: 'debitBalance', class: 'Account', visibility: 'public' } },
+    ],
+  },
+  {
+    stageId: 'intermediate-anemic-domain-model',
+    description: 'getter/setter 5つを AccountService へ移す',
+    steps: [
+      { move: { method: 'getBalance', toClass: 'AccountService' } },
+      { move: { method: 'setBalance', toClass: 'AccountService' } },
+      { move: { method: 'getStatus', toClass: 'AccountService' } },
+      { move: { method: 'getDailyWithdrawn', toClass: 'AccountService' } },
+      { move: { method: 'setDailyWithdrawn', toClass: 'AccountService' } },
+    ],
+  },
+  {
+    stageId: 'intermediate-anemic-domain-model',
+    description: 'withdraw・deposit をメソッドごと Account へ移す',
+    steps: [
+      { move: { method: 'withdraw', toClass: 'Account' } },
+      { move: { method: 'deposit', toClass: 'Account' } },
+    ],
+  },
+  {
+    stageId: 'intermediate-anemic-domain-model',
+    description: '模範解答から setter を private にする2手を抜く',
+    steps: [
+      { extract: { from: 'withdraw', fragmentIds: ['frag-withdraw-check-status', 'frag-check-withdrawable', 'frag-debit-balance'], name: 'debit' } },
+      { move: { method: 'debit', toClass: 'Account' } },
+      { changeVisibility: { method: 'debit', class: 'Account', visibility: 'public' } },
+      { extract: { from: 'deposit', fragmentIds: ['frag-deposit-check-status', 'frag-credit-balance'], name: 'credit' } },
+      { move: { method: 'credit', toClass: 'Account' } },
+      { changeVisibility: { method: 'credit', class: 'Account', visibility: 'public' } },
+    ],
+  },
+  {
+    stageId: 'intermediate-anemic-domain-model',
+    description: '模範解答から debit・credit を public にする2手を抜く',
+    steps: [
+      { extract: { from: 'withdraw', fragmentIds: ['frag-withdraw-check-status', 'frag-check-withdrawable', 'frag-debit-balance'], name: 'debit' } },
+      { move: { method: 'debit', toClass: 'Account' } },
+      { extract: { from: 'deposit', fragmentIds: ['frag-deposit-check-status', 'frag-credit-balance'], name: 'credit' } },
+      { move: { method: 'credit', toClass: 'Account' } },
+      { changeVisibility: { method: 'setBalance', class: 'Account', visibility: 'private' } },
+      { changeVisibility: { method: 'setDailyWithdrawn', class: 'Account', visibility: 'private' } },
+    ],
+  },
 ];
 
 function unwrap<T, E>(result: Result<T, E>): T {

@@ -4,7 +4,7 @@ import { evaluateImplementationUseCase, type ChangeOutcome } from '../../applica
 import { describeCritiqueError, requestCritiqueUseCase } from '../../application/CritiqueUseCases';
 import { withoutTray } from '../../domain/blank/tray';
 import { withChangePart } from '../../domain/change/changePart';
-import { findMethod, type Codebase } from '../../domain/codebase/Codebase';
+import { findMethod, type Codebase, type Visibility } from '../../domain/codebase/Codebase';
 import { emptyHistory, recordChange, redoHistory, undoHistory, type History, type Travel } from '../../domain/codebase/history';
 import { scoreCodebase } from '../../domain/scoring/score';
 import type { Stage } from '../../domain/stage/Stage';
@@ -47,6 +47,8 @@ import {
   renameMethodUseCase,
   describeSetSuperclassError,
   setSuperclassUseCase,
+  changeVisibilityUseCase,
+  describeChangeVisibilityError,
   type ExtractMethodInput,
   type MergeMethodsInput,
 } from '../../application/RefactorUseCases';
@@ -101,6 +103,7 @@ type GameState = {
   selectMethod: (methodId: string | null) => void;
   moveMethod: (methodId: string, targetClassId: string) => void;
   moveField: (fieldId: string, targetClassId: string) => void;
+  changeVisibility: (methodId: string, visibility: Visibility) => void;
   extractMethod: (input: ExtractMethodInput) => boolean;
   mergeMethods: (methodAId: string, methodBId: string, newMethodName: string) => boolean;
   inlineMethod: (methodId: string) => void;
@@ -283,11 +286,11 @@ function renameActions(
   };
 }
 
-/** ドラッグ&ドロップによる移動系の操作。 */
+/** ドラッグ&ドロップによる移動系の操作と、メソッドの可視性を変える操作。 */
 function moveActions(
   apply: Apply,
   get: () => GameState,
-): Pick<GameState, 'moveMethod' | 'moveField' | 'moveClass' | 'moveClassToNewFile' | 'moveMethodToNewClass'> {
+): Pick<GameState, 'moveMethod' | 'moveField' | 'changeVisibility' | 'moveClass' | 'moveClassToNewFile' | 'moveMethodToNewClass'> {
   const newId = () => crypto.randomUUID();
   return {
     moveMethod: (methodId, targetClassId) => {
@@ -295,6 +298,9 @@ function moveActions(
     },
     moveField: (fieldId, targetClassId) => {
       apply(moveFieldUseCase(get().codebase, fieldId, targetClassId), describeMoveFieldError);
+    },
+    changeVisibility: (methodId, visibility) => {
+      apply(changeVisibilityUseCase(get().codebase, methodId, visibility), describeChangeVisibilityError);
     },
     moveClass: (classId, targetFileId) => {
       apply(moveClassUseCase(get().codebase, classId, targetFileId), describeMoveClassError);

@@ -130,6 +130,9 @@ input.class-node__name { width: 14ch; }
 .method-editor__title { font-size: 15px; font-family: ui-monospace, monospace; }
 .method-editor__hint { color: var(--muted); font-size: 13px; }
 .method-editor__message { color: var(--danger); font-size: 13px; }
+.method-editor__visibility { margin-top: 12px; }
+.method-editor__visibility-select { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 8px; padding: 4px 8px; font-size: 12px; }
+.method-editor__visibility-hint { color: var(--muted); font-size: 11px; margin: 4px 0 0; }
 .method-editor__extract { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
 .method-editor__extract input { padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); }
 .method-editor__merge { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }

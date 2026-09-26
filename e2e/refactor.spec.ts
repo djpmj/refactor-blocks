@@ -18,6 +18,12 @@ async function openFeatureEnvyStage(page: Page) {
   await page.getByLabel('ステージ').selectOption({ label: '中級6: 他人のデータばかり触るメソッド' });
 }
 
+/** 貧血ドメインモデル・アクセサ越しのアクセスを扱うテストは中級7を前提にしている。 */
+async function openAnemicDomainModelStage(page: Page) {
+  await page.goto('/');
+  await page.getByLabel('ステージ').selectOption({ label: '中級7: getter/setter だけの口座クラス' });
+}
+
 /**
  * 直前の操作でキャンバスのレイアウトが再計算され続けている間に座標を読むと、
  * 古い位置へドラッグしてしまい失敗することがある(連続でMove Methodするテストで発生)。
@@ -34,6 +40,47 @@ async function stableBoundingBox(page: Page, testId: string) {
   }
   if (previous === null) throw new Error(`要素 ${testId} の位置を取得できません`);
   return previous;
+}
+
+/**
+ * キャンバスの中で、ノードの載っていない(パンに使える)点を探す。
+ * e2e の tsconfig は DOM の型を持たない(vite.config.ts と共用)ので、ブラウザで動かす処理は文字列で渡す。
+ */
+const FIND_EMPTY_PANE_POINT = `(() => {
+  const pane = document.querySelector('.react-flow__pane')?.getBoundingClientRect();
+  if (pane === undefined) return null;
+  for (let y = pane.top + 10; y < pane.bottom; y += 20) {
+    for (let x = pane.left + 10; x < pane.right; x += 20) {
+      if (document.elementFromPoint(x, y)?.classList.contains('react-flow__pane')) return { x, y };
+    }
+  }
+  return null;
+})()`;
+
+async function emptyPanePoint(page: Page) {
+  const point = await page.evaluate<{ x: number; y: number } | null>(FIND_EMPTY_PANE_POINT);
+  if (point === null) throw new Error('キャンバスに空いている場所がありません');
+  return point;
+}
+
+/**
+ * Move Method でクラスが縦に伸びると、移したメソッドがキャンバスの表示範囲の外へはみ出すことがある。
+ * Fit View で縮めるとセマンティックズームでメソッドが隠れるので、プレイヤーと同じく余白をドラッグしてパンし、
+ * 対象をキャンバスの中央へ寄せてから、位置が落ち着いたところでクリックする。
+ */
+async function clickInCanvas(page: Page, testId: string) {
+  const box = await stableBoundingBox(page, testId);
+  const pane = await page.locator('.react-flow__pane').boundingBox();
+  if (pane === null) throw new Error('キャンバスの位置を取得できません');
+  const from = await emptyPanePoint(page);
+  const dx = pane.x + pane.width / 2 - (box.x + box.width / 2);
+  const dy = pane.y + pane.height / 2 - (box.y + box.height / 2);
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down();
+  await page.mouse.move(from.x + dx, from.y + dy, { steps: 10 });
+  await page.mouse.up();
+  const moved = await stableBoundingBox(page, testId);
+  await page.mouse.click(moved.x + moved.width / 2, moved.y + moved.height / 2);
 }
 
 /** ドラッグ操作(Move Method)で、あるメソッドを別クラスへ移す。 */
@@ -1071,6 +1118,57 @@ test('越境した private メソッドの呼び出しは減点され、呼び�
   await expect(page.getByTestId('score')).toContainText('100点');
 });
 
+test('中級3: renderTemplate を public にするとアクセス制御の減点は消えるが、依存が残るので満点にならない', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await page.getByLabel('ステージ').selectOption({ label: '中級3: 越境する private メソッド' });
+  const score = page.getByTestId('score');
+  await expect(score).toContainText('70点');
+  await expect(score).toContainText('アクセス制御 -10');
+  await expect(score).toContainText('結合度 -10');
+
+  // Act: renderTemplate の可視性の選択欄を開き、protected は選べないことを確かめる
+  await page.getByTestId('method-renderTemplate').click();
+  const select = page.getByLabel('メソッド renderTemplate の可視性');
+  await expect(select).toBeVisible();
+  // <option> は toBeDisabled() の対象外(Playwright は disabled を持つ要素を button/input/select などに限る)なので、プロパティで確かめる
+  await expect(select.locator('option[value="protected"]')).toHaveJSProperty('disabled', true);
+
+  // Act: キーボードでフォーカスし、ArrowUpでpublicにする(disabledのprotectedを飛ばす)
+  await select.focus();
+  await select.press('ArrowUp');
+
+  // Assert
+  await expect(select).toHaveValue('public');
+  await expect(score).not.toContainText('アクセス制御');
+  await expect(score).toContainText('結合度 -10');
+  await expect(score).not.toContainText('100点');
+
+  // Act: 選択欄からフォーカスを外してCtrl+Z(選択欄にフォーカスがあるとCtrl+Zはブラウザ標準が優先される)
+  await page.getByTestId('method-renderTemplate').click();
+  await page.keyboard.press('Control+z');
+
+  // Assert
+  await expect(score).toContainText('アクセス制御 -10');
+});
+
+test('中身のないメソッドには可視性の選択が出ない', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await page.getByLabel('ステージ').selectOption({ label: '上級6: 太ったインターフェースを役割ごとに分ける' });
+  const postMessage = page.getByTestId('class-CollaborationTool').getByTestId('method-postMessage');
+  await expect(async () => {
+    await page.getByRole('button', { name: 'Zoom In' }).click();
+    await expect(postMessage).toBeVisible({ timeout: 500 });
+  }).toPass();
+
+  // Act
+  await postMessage.click();
+
+  // Assert
+  await expect(page.getByLabel('メソッド postMessage の可視性')).toHaveCount(0);
+});
+
 test('上級1ステージ: 重複した送信ログ記録処理をExtract Methodで取り出し統合すると、メソッドが1つになる', async ({ page }) => {
   // Arrange: EmailNotifier・SmsNotifierそれぞれから「送信ログを記録する」処理を抽出する
   await page.goto('/');
@@ -1259,4 +1357,64 @@ test('中級6: フィールドを持つクラスは削除できない', async ({
   // Assert
   await expect(page.getByRole('alert')).toHaveText('フィールドを持つクラスは削除できません。先にフィールドを別のクラスへ移してください');
   await expect(page.getByTestId('class-Subscription')).toBeVisible();
+});
+
+test('中級7: setter 越しの書き換えが見え、ルールを移して可視性を直すと減点が消える', async ({ page }) => {
+  // Arrange
+  await openAnemicDomainModelStage(page);
+  const score = page.getByTestId('score');
+  await expect(score).toContainText('カプセル化の破れ -20');
+  const withdraw = page.getByTestId('method-withdraw');
+  await expect(async () => {
+    await page.getByRole('button', { name: 'Zoom In' }).click();
+    await expect(withdraw).toBeVisible({ timeout: 500 });
+  }).toPass();
+
+  // Act: withdraw の中身を見ると setter 経由の書き換えが分かる
+  await withdraw.click();
+  await expect(page.getByText('setter 経由で書く: Account.balance')).toBeVisible();
+
+  // Act: 3つの処理を選んで debit として抽出し、Account へ移す
+  await page.getByLabel('getStatus() で状態を取り出し、凍結されていないか確かめる').check();
+  await page.getByLabel('残高と1日の引き出し上限から引き出せるか確かめる').check();
+  await page.getByLabel('残高を減らし、本日の引き出し額を足して setter で書き戻す').check();
+  await page.getByLabel('新しいメソッド名').fill('debit');
+  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+  await dragMethodToClass(page, 'method-debit', 'class-Account');
+
+  // Assert: 移した直後は private のままなのでアクセス制御の違反が出る
+  await expect(score).toContainText('アクセス制御');
+
+  // Act: debit をキーボードで public にする
+  const debitSelect = page.getByLabel('メソッド debit の可視性');
+  await clickInCanvas(page, 'method-debit');
+  await expect(debitSelect).toBeVisible();
+  await debitSelect.focus();
+  await debitSelect.press('ArrowUp');
+
+  // Assert
+  await expect(debitSelect).toHaveValue('public');
+  await expect(score).not.toContainText('アクセス制御');
+
+  // Act: deposit からも credit を抽出して Account へ移し、public にする
+  await clickInCanvas(page, 'method-deposit');
+  await page.getByLabel('getStatus() で状態を取り出し、凍結されていないか確かめる').check();
+  await page.getByLabel('残高を増やして setBalance() で書き戻す').check();
+  await page.getByLabel('新しいメソッド名').fill('credit');
+  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+  await dragMethodToClass(page, 'method-credit', 'class-Account');
+  const creditSelect = page.getByLabel('メソッド credit の可視性');
+  await clickInCanvas(page, 'method-credit');
+  await expect(creditSelect).toBeVisible();
+  await creditSelect.focus();
+  await creditSelect.press('ArrowUp');
+
+  // Act: setBalance・setDailyWithdrawn を private にする
+  await clickInCanvas(page, 'method-setBalance');
+  await page.getByLabel('メソッド setBalance の可視性').selectOption('private');
+  await clickInCanvas(page, 'method-setDailyWithdrawn');
+  await page.getByLabel('メソッド setDailyWithdrawn の可視性').selectOption('private');
+
+  // Assert
+  await expect(score).not.toContainText('カプセル化の破れ');
 });
