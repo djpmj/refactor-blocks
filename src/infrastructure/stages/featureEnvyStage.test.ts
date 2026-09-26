@@ -4,6 +4,7 @@ import { scoreChange } from '../../domain/change/scoreChange';
 import { allClasses, findClass } from '../../domain/codebase/Codebase';
 import { deleteClass } from '../../domain/codebase/deleteClass';
 import { classDependencies } from '../../domain/codebase/dependencies';
+import { findLowCohesionClasses } from '../../domain/scoring/cohesion';
 import { scoreCodebase } from '../../domain/scoring/score';
 import { applySolutionSteps, sampleAnswerSteps } from '../../domain/stage/sampleAnswer';
 import { stages } from './stageCatalog';
@@ -65,6 +66,17 @@ describe('中級6: 他人のデータばかり触るメソッド', () => {
     // Assert
     expect(subscription?.fields?.some((field) => field.name === 'trialDays')).toBe(true);
     expect(billingDependencies.map((dependency) => dependency.to)).toEqual(['class-subscription']);
+  });
+
+  it('模範解答のあと、Subscription のメソッドは status でつながり、凝集度の低いクラスはない', () => {
+    // Arrange
+    const solved = applySolutionSteps(stage.codebase, solution);
+
+    // Act
+    const lowCohesion = findLowCohesionClasses(solved);
+
+    // Assert
+    expect(lowCohesion).toEqual([]);
   });
 
   it('初期状態で Subscription を削除しようとすると has-fields になる', () => {

@@ -344,6 +344,16 @@ export const sampleAnswerSteps: Partial<Record<string, readonly SolutionStep[]>>
     { changeVisibility: { method: 'setBalance', class: 'Account', visibility: 'private' } },
     { changeVisibility: { method: 'setDailyWithdrawn', class: 'Account', visibility: 'private' } },
   ],
+  'intermediate-extract-class': [
+    { extract: { from: 'calculateMonthlyPay', fragmentIds: ['frag-withholding'], name: 'withholdTaxes' } },
+    { addFile: 'src/hr/Address.ts' },
+    { addClass: { name: 'Address', file: 'src/hr/Address.ts' } },
+    { moveField: { field: 'postalCode', fromClass: 'Employee', toClass: 'Address' } },
+    { moveField: { field: 'prefecture', fromClass: 'Employee', toClass: 'Address' } },
+    { moveField: { field: 'addressLine', fromClass: 'Employee', toClass: 'Address' } },
+    { move: { method: 'formatMailingAddress', toClass: 'Address' } },
+    { move: { method: 'changeAddress', toClass: 'Address' } },
+  ],
 };
 
 /** ステージの模範解答を適用した最終形のコードベース。「解答例の図」に使う。 */

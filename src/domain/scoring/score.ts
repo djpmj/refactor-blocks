@@ -1,6 +1,7 @@
 import type { Codebase } from '../codebase/Codebase';
 import { classDependencies, type ClassDependency } from '../codebase/dependencies';
 import type { Stage } from '../stage/Stage';
+import { findLowCohesionClasses } from './cohesion';
 import { findEncapsulationViolations, findFeatureEnvy, findOpenSetters } from './fieldAccess';
 import { findContractViolations, findStubMethods } from './interfaceContracts';
 import { findEmptyContainers, findUnusedPrivateMethods } from './leftovers';
@@ -21,7 +22,8 @@ export type ScoreRule =
   | 'stub'
   | 'contract'
   | 'feature-envy'
-  | 'encapsulation';
+  | 'encapsulation'
+  | 'cohesion';
 
 export type ScoreDeduction = {
   readonly rule: ScoreRule;
@@ -46,7 +48,7 @@ export function findCouplingViolations(dependencies: readonly ClassDependency[],
 
 /**
  * 行数・結合度・循環依存・責務の混在・アクセス制御・空の入れ物・使われていないprivateメソッド・子が1つだけの継承・
- * 空実装・インターフェースの約束違反・Feature Envy・カプセル化の破れの違反1件につき10点を100点から引く。0点より下にはしない。
+ * 空実装・インターフェースの約束違反・Feature Envy・カプセル化の破れ・凝集度の違反1件につき10点を100点から引く。0点より下にはしない。
  */
 export function scoreCodebase(
   codebase: Codebase,
@@ -66,6 +68,7 @@ export function scoreCodebase(
     contract: findContractViolations(codebase).length,
     'feature-envy': findFeatureEnvy(codebase).length,
     encapsulation: findEncapsulationViolations(codebase).length + findOpenSetters(codebase).length,
+    cohesion: findLowCohesionClasses(codebase).length,
   };
   const deductions = (
     [
@@ -81,6 +84,7 @@ export function scoreCodebase(
       'contract',
       'feature-envy',
       'encapsulation',
+      'cohesion',
     ] as const
   ).map((rule): ScoreDeduction => ({ rule, count: counts[rule], points: counts[rule] * POINTS_PER_VIOLATION }));
   const deducted = deductions.reduce((sum, deduction) => sum + deduction.points, 0);

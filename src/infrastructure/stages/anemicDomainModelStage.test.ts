@@ -14,7 +14,7 @@ const solution = sampleAnswerSteps[stage.id];
 if (solution === undefined) throw new Error('中級7の模範解答がありません');
 
 describe('中級7: getter/setter だけの口座クラス', () => {
-  it('初期状態は50点(行数1・Feature Envy 2件・カプセル化の破れ2件。段階Eの凝集度はまだ入らない)', () => {
+  it('初期状態は40点(行数1・Feature Envy 2件・カプセル化の破れ2件・凝集度1件)', () => {
     // Arrange
     const { codebase } = stage;
 
@@ -22,10 +22,11 @@ describe('中級7: getter/setter だけの口座クラス', () => {
     const score = scoreCodebase(codebase, stage);
 
     // Assert
-    expect(score.total).toBe(50);
+    expect(score.total).toBe(40);
     expect(score.deductions.find((d) => d.rule === 'line-limit')?.count).toBe(1);
     expect(score.deductions.find((d) => d.rule === 'feature-envy')?.count).toBe(2);
     expect(score.deductions.find((d) => d.rule === 'encapsulation')?.count).toBe(2);
+    expect(score.deductions.find((d) => d.rule === 'cohesion')?.count).toBe(1);
     expect(score.deductions.find((d) => d.rule === 'responsibility')?.count).toBe(0);
     expect(score.deductions.find((d) => d.rule === 'visibility')?.count).toBe(0);
     expect(score.deductions.find((d) => d.rule === 'coupling')?.count).toBe(0);

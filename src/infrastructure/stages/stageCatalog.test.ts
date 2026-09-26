@@ -276,6 +276,44 @@ const shortcuts: ReadonlyArray<{ readonly stageId: string; readonly description:
       { changeVisibility: { method: 'setDailyWithdrawn', class: 'Account', visibility: 'private' } },
     ],
   },
+  {
+    stageId: 'intermediate-extract-class',
+    description: 'withholdTaxes を抽出するだけ',
+    steps: [{ extract: { from: 'calculateMonthlyPay', fragmentIds: ['frag-withholding'], name: 'withholdTaxes' } }],
+  },
+  {
+    stageId: 'intermediate-extract-class',
+    description: '違う切り口で分ける: withholdTaxes と buildTransferData を抽出し、新しいクラス PayTransfer に bankAccount と buildTransferData を移す',
+    steps: [
+      { extract: { from: 'calculateMonthlyPay', fragmentIds: ['frag-withholding'], name: 'withholdTaxes' } },
+      { extract: { from: 'calculateMonthlyPay', fragmentIds: ['frag-pay-transfer'], name: 'buildTransferData' } },
+      { addFile: 'src/hr/PayTransfer.ts' },
+      { addClass: { name: 'PayTransfer', file: 'src/hr/PayTransfer.ts' } },
+      { moveField: { field: 'bankAccount', fromClass: 'Employee', toClass: 'PayTransfer' } },
+      { move: { method: 'buildTransferData', toClass: 'PayTransfer' } },
+    ],
+  },
+  {
+    stageId: 'intermediate-extract-class',
+    description: 'Address を作ってメソッドだけ移し、フィールドは残す',
+    steps: [
+      { addFile: 'src/hr/Address.ts' },
+      { addClass: { name: 'Address', file: 'src/hr/Address.ts' } },
+      { move: { method: 'formatMailingAddress', toClass: 'Address' } },
+      { move: { method: 'changeAddress', toClass: 'Address' } },
+    ],
+  },
+  {
+    stageId: 'intermediate-extract-class',
+    description: 'Address を作ってフィールドだけ移し、メソッドは残す',
+    steps: [
+      { addFile: 'src/hr/Address.ts' },
+      { addClass: { name: 'Address', file: 'src/hr/Address.ts' } },
+      { moveField: { field: 'postalCode', fromClass: 'Employee', toClass: 'Address' } },
+      { moveField: { field: 'prefecture', fromClass: 'Employee', toClass: 'Address' } },
+      { moveField: { field: 'addressLine', fromClass: 'Employee', toClass: 'Address' } },
+    ],
+  },
 ];
 
 function unwrap<T, E>(result: Result<T, E>): T {

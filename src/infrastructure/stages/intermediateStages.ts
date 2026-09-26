@@ -449,10 +449,10 @@ const featureEnvyStage: Stage = {
                   },
                   {
                     id: 'frag-calc-fee',
-                    label: '席数と単価から今月の請求額を計算する',
+                    label: '解約済み・支払い停止中なら請求しない。それ以外は席数と単価から今月の請求額を計算する',
                     lines: 28,
                     responsibility: 'pricing',
-                    reads: ['field-seats', 'field-unit-price'],
+                    reads: ['field-status', 'field-seats', 'field-unit-price'],
                     suggestedName: 'monthlyFee',
                   },
                   {
@@ -702,6 +702,123 @@ const anemicDomainModelStage: Stage = {
   },
 };
 
+/**
+ * 中級8: 中級6・7はデータの持ち主へ処理を寄せる話だったが、こちらは1クラスの中のデータの塊ごとにクラスを分ける話(Extract Class)。
+ * Employee が給与(baseSalary・overtimeRate・bankAccount)と住所(postalCode・prefecture・addressLine)という
+ * 互いに使わないフィールドの塊を抱えており、凝集度(cohesion)で検出できる。responsibilityLimit を4にして二重に減点しない。
+ */
+const extractClassStage: Stage = {
+  id: 'intermediate-extract-class',
+  level: 'intermediate',
+  title: '中級8: 給与と住所を抱えた社員クラス',
+  description:
+    '人事システムの社員(Employee)クラス。基本給・残業単価・振込口座を使う給与計算のメソッドと、郵便番号・都道府県・番地を使う住所のメソッドが同居している。' +
+    '給与のメソッドは住所のフィールドを一切使わず、住所のメソッドも給与のフィールドを一切使わない。住所の書式を直すたびに、給与計算の入った大きなクラスを開くことになっている。',
+  goal:
+    'メソッドがどのフィールドを使っているかを見て、一緒に使われるフィールドとメソッドの塊ごとにクラスを分けよう(Extract Class)。' +
+    '新しいクラスを作り、フィールドは Move Field、メソッドは Move Method で移す。メソッドは60行・クラスは120行以内',
+  limits: { method: 60, class: 120, file: 300 },
+  dependencyLimit: 1,
+  responsibilityLimit: 4,
+  changeRequests: [
+    { id: 'req-building-name', title: '住所に建物名・部屋番号の欄を足して', description: '源泉徴収票の郵送が届かないことがあるので、建物名と部屋番号も持てるようにしたい', responsibility: 'address', linesPerSite: 6, partName: 'addBuildingName' },
+    { id: 'req-late-night-overtime', title: '深夜残業の割増率を上げて', description: '22時以降の残業は、割増率を50%で計算したい', responsibility: 'payroll', linesPerSite: 8, partName: 'applyLateNightPremium' },
+  ],
+  codebase: {
+    files: [
+      {
+        id: 'file-employee',
+        path: 'src/hr/Employee.ts',
+        classes: [
+          {
+            id: 'class-employee',
+            name: 'Employee',
+            fields: [
+              { id: 'field-base-salary', name: 'baseSalary', visibility: 'private' },
+              { id: 'field-overtime-rate', name: 'overtimeRate', visibility: 'private' },
+              { id: 'field-bank-account', name: 'bankAccount', visibility: 'private' },
+              { id: 'field-postal-code', name: 'postalCode', visibility: 'private' },
+              { id: 'field-prefecture', name: 'prefecture', visibility: 'private' },
+              { id: 'field-address-line', name: 'addressLine', visibility: 'private' },
+            ],
+            methods: [
+              {
+                id: 'method-calculate-monthly-pay',
+                name: 'calculateMonthlyPay',
+                visibility: 'public',
+                fragments: [
+                  {
+                    id: 'frag-overtime-pay',
+                    label: '残業時間と残業単価から残業代を計算する',
+                    lines: 26,
+                    responsibility: 'payroll',
+                    reads: ['field-base-salary', 'field-overtime-rate'],
+                    suggestedName: 'calculateOvertimePay',
+                  },
+                  {
+                    id: 'frag-withholding',
+                    label: '所得税と社会保険料を差し引く',
+                    lines: 32,
+                    responsibility: 'withholding',
+                    reads: ['field-base-salary'],
+                    suggestedName: 'withholdTaxes',
+                  },
+                  {
+                    id: 'frag-pay-transfer',
+                    label: '給与の振込データを作る',
+                    lines: 24,
+                    responsibility: 'transfer',
+                    reads: ['field-bank-account'],
+                    suggestedName: 'buildTransferData',
+                  },
+                ],
+              },
+              {
+                id: 'method-format-mailing-address',
+                name: 'formatMailingAddress',
+                visibility: 'public',
+                fragments: [
+                  {
+                    id: 'frag-format-address',
+                    label: '郵便番号・都道府県・番地を宛名ラベルの形に整える',
+                    lines: 22,
+                    responsibility: 'address',
+                    reads: ['field-postal-code', 'field-prefecture', 'field-address-line'],
+                    suggestedName: 'formatLabel',
+                  },
+                ],
+              },
+              {
+                id: 'method-change-address',
+                name: 'changeAddress',
+                visibility: 'public',
+                fragments: [
+                  {
+                    id: 'frag-validate-postal-code',
+                    label: '郵便番号の形式を確かめる',
+                    lines: 12,
+                    responsibility: 'address',
+                    reads: ['field-postal-code'],
+                    suggestedName: 'validatePostalCode',
+                  },
+                  {
+                    id: 'frag-update-address',
+                    label: '住所を書き換える',
+                    lines: 8,
+                    responsibility: 'address',
+                    writes: ['field-postal-code', 'field-prefecture', 'field-address-line'],
+                    suggestedName: 'updateAddress',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+};
+
 export const intermediateStages: readonly Stage[] = [
   cyclicDependencyStage,
   godFileStage,
@@ -710,4 +827,5 @@ export const intermediateStages: readonly Stage[] = [
   volatileFormatStage,
   featureEnvyStage,
   anemicDomainModelStage,
+  extractClassStage,
 ];

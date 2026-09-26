@@ -24,6 +24,12 @@ async function openAnemicDomainModelStage(page: Page) {
   await page.getByLabel('ステージ').selectOption({ label: '中級7: getter/setter だけの口座クラス' });
 }
 
+/** 凝集度・Extract Classを扱うテストは中級8を前提にしている。 */
+async function openExtractClassStage(page: Page) {
+  await page.goto('/');
+  await page.getByLabel('ステージ').selectOption({ label: '中級8: 給与と住所を抱えた社員クラス' });
+}
+
 /**
  * 直前の操作でキャンバスのレイアウトが再計算され続けている間に座標を読むと、
  * 古い位置へドラッグしてしまい失敗することがある(連続でMove Methodするテストで発生)。
@@ -1417,4 +1423,29 @@ test('中級7: setter 越しの書き換えが見え、ルールを移して可�
 
   // Assert
   await expect(score).not.toContainText('カプセル化の破れ');
+});
+
+test('中級8: 住所のフィールドとメソッドを新しいクラスへ移すと、凝集度の減点が消える', async ({ page }) => {
+  // Arrange
+  await openExtractClassStage(page);
+  const score = page.getByTestId('score');
+  await expect(score).toContainText('無関係なデータの塊が同居(凝集度が低い) -10');
+
+  // Act: Employeeの右クリックメニューからAddressクラスを追加する
+  await page.getByTestId('class-header-Employee').click({ button: 'right' });
+  const menu = page.getByTestId('context-menu');
+  await menu.getByRole('menuitem', { name: 'このファイルにクラスを追加' }).click();
+  await menu.getByLabel('追加するクラス名').fill('Address');
+  await menu.getByLabel('追加するクラス名').press('Enter');
+  await expect(page.getByTestId('class-Address')).toBeVisible();
+
+  // Act: 住所の3フィールドと2メソッドをAddressへドラッグする
+  await dragMethodToClass(page, 'field-postalCode', 'class-Address');
+  await dragMethodToClass(page, 'field-prefecture', 'class-Address');
+  await dragMethodToClass(page, 'field-addressLine', 'class-Address');
+  await dragMethodToClass(page, 'method-formatMailingAddress', 'class-Address');
+  await dragMethodToClass(page, 'method-changeAddress', 'class-Address');
+
+  // Assert
+  await expect(score).not.toContainText('無関係なデータの塊が同居(凝集度が低い)');
 });

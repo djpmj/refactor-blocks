@@ -13,6 +13,7 @@ export const RULE_LABEL: Record<ScoreRule, string> = {
   contract: 'インターフェースの約束違反',
   'feature-envy': '他クラスのデータを触りすぎ(Feature Envy)',
   encapsulation: 'カプセル化の破れ',
+  cohesion: '無関係なデータの塊が同居(凝集度が低い)',
 };
 
 export function describeScore(score: Score): string {

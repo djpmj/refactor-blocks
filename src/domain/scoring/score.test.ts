@@ -62,7 +62,7 @@ function codebaseOf(classes: Record<string, readonly string[]>): Codebase {
 }
 
 describe('scoreCodebase', () => {
-  it('違反がなければ100点で、12ルールとも減点0件を返す', () => {
+  it('違反がなければ100点で、13ルールとも減点0件を返す', () => {
     // Arrange
     const codebase = codebaseOf({ A: ['method-B'], B: [] });
 
@@ -85,6 +85,7 @@ describe('scoreCodebase', () => {
         { rule: 'contract', count: 0, points: 0 },
         { rule: 'feature-envy', count: 0, points: 0 },
         { rule: 'encapsulation', count: 0, points: 0 },
+        { rule: 'cohesion', count: 0, points: 0 },
       ],
     });
   });
@@ -432,6 +433,39 @@ describe('scoreCodebase', () => {
     // Assert
     expect(score.total).toBe(90);
     expect(score.deductions[11]).toEqual({ rule: 'encapsulation', count: 1, points: 10 });
+  });
+
+  it('フィールドを共有しないメソッドの塊が同居するクラス1つにつき10点減点する(cohesion)', () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [
+        {
+          id: 'file',
+          path: 'src/all.ts',
+          classes: [
+            {
+              id: 'class-a',
+              name: 'A',
+              fields: [
+                { id: 'field-pay', name: 'pay', visibility: 'private' },
+                { id: 'field-city', name: 'city', visibility: 'private' },
+              ],
+              methods: [
+                { id: 'method-pay', name: 'calcPay', visibility: 'public', fragments: [{ id: 'f-pay', label: 'pay', lines: 1, responsibility: 'a', reads: ['field-pay'] }] },
+                { id: 'method-city', name: 'formatCity', visibility: 'public', fragments: [{ id: 'f-city', label: 'city', lines: 1, responsibility: 'a', reads: ['field-city'] }] },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    // Act
+    const score = scoreCodebase(codebase, { ...LOOSE, dependencyLimit: 1 });
+
+    // Assert
+    expect(score.total).toBe(90);
+    expect(score.deductions.find((deduction) => deduction.rule === 'cohesion')).toEqual({ rule: 'cohesion', count: 1, points: 10 });
   });
 
   it('減点の合計が100点を超えても0点で止まる', () => {

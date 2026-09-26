@@ -683,10 +683,10 @@ export function findLowCohesionClasses(codebase: Codebase): LowCohesion[];
 
 | 依頼 | 初期 | 模範解答のあと |
 | --- | --- | --- |
-| `req-building-name` | 2メソッド(同じクラス)。上限超え(`Employee` 136行)-10 → 90点 | `Address` の2メソッド → 100点 |
-| `req-late-night-overtime` | 巻き込み2 -10、上限超え(メソッド90行・クラス132行)-20 → 70点 | 巻き込み1 -5 → 95点 |
+| `req-building-name` | 2メソッド(同じクラス)。上限超え1 -10 → 90点(実測) | `Address` の2メソッド → 100点(実測) |
+| `req-late-night-overtime` | 巻き込み2 -10、上限超え2 -20 → 70点(実測) | 巻き込み1 -5、上限超え1 -10 → 85点(実測。仕様は当初95点の見込みだったが、`calculateMonthlyPay`(呼び出し1+残業代26+振込24=51行、行数の数え方は `METHOD_OVERHEAD_LINES` を足して53行)に8行足すと呼び出し1+残業代34+振込24=59行(overhead込みで61行)で60行を超え、上限超えが1件残る) |
 
-変更容易性スコア 80 → 98。`classesTouched` [1, 1] → [1, 1]。
+変更容易性スコア 80 → 93(実測。仕様は当初98の見込み)。`classesTouched` [1, 1] → [1, 1]。
 
 ### 模範解答(`sampleAnswerSteps['intermediate-extract-class']`)
 

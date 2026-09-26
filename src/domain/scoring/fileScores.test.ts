@@ -344,6 +344,38 @@ describe("fileDeductions", () => {
     // Assert
     expect(deductions.get("file-a")).toBe(10);
   });
+
+  it("凝集度の低いクラスは、そのクラスのあるファイルの減点になる", () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [
+        {
+          id: "file-a",
+          path: "a",
+          classes: [
+            {
+              id: "class-a",
+              name: "A",
+              fields: [
+                { id: "field-pay", name: "pay", visibility: "private" },
+                { id: "field-city", name: "city", visibility: "private" },
+              ],
+              methods: [
+                { id: "method-pay", name: "calcPay", visibility: "public", fragments: [{ id: "f-pay", label: "pay", lines: 1, responsibility: "a", reads: ["field-pay"] }] },
+                { id: "method-city", name: "formatCity", visibility: "public", fragments: [{ id: "f-city", label: "city", lines: 1, responsibility: "a", reads: ["field-city"] }] },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    // Act
+    const deductions = fileDeductions(codebase, LOOSE);
+
+    // Assert
+    expect(deductions.get("file-a")).toBe(10);
+  });
 });
 
 describe("fileSeverity", () => {

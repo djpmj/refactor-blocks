@@ -1,6 +1,7 @@
 import type { Codebase } from "../codebase/Codebase";
 import { classDependencies } from "../codebase/dependencies";
 import type { Stage } from "../stage/Stage";
+import { findLowCohesionClasses } from "./cohesion";
 import { findEncapsulationViolations, findFeatureEnvy, findOpenSetters } from "./fieldAccess";
 import { findContractViolations, findStubMethods } from "./interfaceContracts";
 import { findEmptyContainers, findUnusedPrivateMethods } from "./leftovers";
@@ -52,6 +53,7 @@ export function fileDeductions(
     ...findEncapsulationViolations(codebase).map((violation) => violation.accessorClassId),
     ...findOpenSetters(codebase),
     ...countedVisibilityViolations(codebase, stage.visibilityEnforced).map((violation) => violation.callerClassId),
+    ...findLowCohesionClasses(codebase).map((violation) => violation.classId),
   ];
   const owners = fileIdByTargetId(codebase);
   const points = new Map(
