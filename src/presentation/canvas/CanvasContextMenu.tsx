@@ -1,6 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject, type SubmitEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { findClass, findSuperclass } from '../../domain/codebase/Codebase';
+import { moveMethodTargets } from '../../domain/codebase/moveMethod';
+import { moveFieldTargets } from '../../domain/codebase/moveField';
 import { availableParents } from '../../domain/codebase/setSuperclass';
 import { useGameStore, useGameStoreApi, type GameStore } from '../store/useGameStore';
 import { clampMenuPosition, type Point } from './clampMenuPosition';
@@ -75,6 +77,7 @@ function usePositionWithinViewport(menuRef: RefObject<HTMLElement | null>, x: nu
 type MenuItem =
   | { kind: 'form'; mode: FormMode; label: string }
   | { kind: 'action'; run: () => void; label: string }
+  | { kind: 'move-submenu'; label: string }
   | { kind: 'extends-submenu'; label: string }
   | { kind: 'implements-submenu'; label: string };
 
@@ -82,7 +85,9 @@ type MenuItem =
 function menuItemsFor(target: ContextMenuTarget, onClose: () => void, api: GameStore): MenuItem[] {
   const { deleteClass, deleteFile } = api.getState();
   const { classId, fileId } = target;
+  const moveItems: MenuItem[] = target.member === null ? [] : [{ kind: 'move-submenu', label: '別のクラスへ移動' }];
   return [
+    ...moveItems,
     ...(fileId === null ? [] : [{ kind: 'form' as const, mode: 'class' as const, label: 'このファイルにクラスを追加' }]),
     { kind: 'form', mode: 'file', label: 'ファイルを追加' },
     ...(classId === null ? [] : [{ kind: 'form' as const, mode: 'renameClass' as const, label: 'クラスの名前を変更' }]),
@@ -221,6 +226,36 @@ function ExtendsMenuItem({ target, label, autoFocus, onClose }: Readonly<Extends
   );
 }
 
+function MoveMenuItem({ target, label, autoFocus, onClose }: Readonly<ExtendsMenuItemProps>) {
+  const codebase = useGameStore((state) => state.codebase);
+  const { moveMethod, moveField } = useGameStoreApi().getState();
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const submenuRef = useRef<HTMLDivElement>(null);
+  const position = useSubmenuPosition(triggerRef, submenuRef, open);
+  const member = target.member;
+  if (member === null) return null;
+  const candidates = member.kind === 'method' ? moveMethodTargets(codebase, member.id) : moveFieldTargets(codebase, member.id);
+  if (candidates.length === 0) return null;
+  const select = (classId: string) => {
+    if (member.kind === 'method') moveMethod(member.id, classId);
+    else moveField(member.id, classId);
+    onClose();
+  };
+  return (
+    <SubmenuTrigger label={label} autoFocus={autoFocus} open={open} setOpen={setOpen} wrapperRef={wrapperRef} triggerRef={triggerRef}>
+      <div ref={submenuRef} role="menu" aria-label={label} className="context-menu context-menu__submenu" style={{ left: position.x, top: position.y }}>
+        {candidates.map((candidate) => (
+          <button key={candidate.id} type="button" role="menuitem" onClick={() => select(candidate.id)}>
+            {candidate.name}
+          </button>
+        ))}
+      </div>
+    </SubmenuTrigger>
+  );
+}
+
 type ImplementsMenuItemProps = { target: ContextMenuTarget; label: string; autoFocus: boolean };
 
 /**
@@ -275,6 +310,9 @@ function MenuItems({ items, target, onSelectForm, onClose }: Readonly<MenuItemsP
   return (
     <div role="menu" aria-label="キャンバスのメニュー">
       {items.map((item, index) => {
+        if (item.kind === 'move-submenu') {
+          return <MoveMenuItem key={item.kind} target={target} label={item.label} autoFocus={index === 0} onClose={onClose} />;
+        }
         if (item.kind === 'extends-submenu') {
           return <ExtendsMenuItem key={item.kind} target={target} label={item.label} autoFocus={index === 0} onClose={onClose} />;
         }
@@ -370,7 +408,14 @@ export function CanvasContextMenu({ target, onClose }: Readonly<{ target: Contex
   const [mode, setMode] = useState<Mode>('menu');
   const menuRef = useRef<HTMLDivElement>(null);
 
-  useCloseOnOutside(menuRef, onClose);
+  const dismiss = () => {
+    onClose();
+    // pointerdownの後のブラウザ既定フォーカス移動より後に戻す。
+    requestAnimationFrame(() => {
+      if (target.returnFocus instanceof HTMLElement && target.returnFocus.isConnected) target.returnFocus.focus();
+    });
+  };
+  useCloseOnOutside(menuRef, dismiss);
   const position = usePositionWithinViewport(menuRef, target.x, target.y, mode);
 
   return createPortal(

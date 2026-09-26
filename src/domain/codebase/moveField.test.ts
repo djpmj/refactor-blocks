@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { findClassOfField, type Codebase } from './Codebase';
-import { moveField } from './moveField';
+import { moveField, moveFieldTargets } from './moveField';
 
 /** class-a に field-a1・field-a2、class-b にフィールドなしを持つ最小のコードベース。 */
 function codebaseWithFields(): Codebase {
@@ -92,5 +92,42 @@ describe('moveField', () => {
 
     // Assert
     expect(result).toEqual({ ok: false, error: expected });
+  });
+});
+
+describe('moveFieldTargets', () => {
+  it('移動元と同名メンバーを除き、ファイル順・宣言順に返し、元を変更しない', () => {
+    // Arrange
+    const base = codebaseWithFields();
+    const source = base.files[0].classes[0];
+    const first = { id: 'first', name: 'First', methods: [] };
+    const contract: Codebase['files'][number]['classes'][number] = { id: 'contract', name: 'Contract', methods: [{ id: 'contract-run', name: 'contractRun', visibility: 'public', fragments: [] }] };
+    const duplicate = { ...source, id: 'duplicate', fields: (source.fields ?? []).map((member) => ({ ...member, id: member.id + '-copy' })) };
+    const codebase: Codebase = {
+      files: [
+        { ...base.files[0], classes: [source, first, duplicate] },
+        { id: 'second-file', path: 'second.ts', classes: [contract, { id: 'last', name: 'Last', methods: [] }] },
+      ],
+    };
+    const before = structuredClone(codebase);
+
+    // Act
+    const targets = moveFieldTargets(codebase, 'field-a2');
+
+    // Assert
+    expect(targets.map((target) => target.id)).toEqual(['first', 'contract', 'last']);
+    expect(codebase).toEqual(before);
+  });
+
+  it.each(['field-a2', 'missing'])('移動先がないかIDが存在しなければ空配列: %s', (memberId) => {
+    // Arrange
+    const base = codebaseWithFields();
+    const codebase = { files: [{ ...base.files[0], classes: [base.files[0].classes[0]] }] };
+
+    // Act
+    const targets = moveFieldTargets(memberId === 'missing' ? base : codebase, memberId);
+
+    // Assert
+    expect(targets).toEqual([]);
   });
 });

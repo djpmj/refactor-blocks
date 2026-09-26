@@ -64,6 +64,7 @@ export function MethodChip({ method }: Readonly<{ method: Method }>) {
 
   return (
     <button
+      data-method-id={method.id}
       ref={setNodeRef}
       type="button"
       className="method-chip-button nodrag nopan"

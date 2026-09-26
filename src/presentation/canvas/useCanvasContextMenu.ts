@@ -8,7 +8,18 @@ export type ContextMenuTarget = {
   readonly fileId: string | null;
   /** 右クリックしたクラス(メソッドならそれを持つクラス)。ファイル・余白ならnull。 */
   readonly classId: string | null;
+  readonly member: { readonly kind: 'method' | 'field'; readonly id: string } | null;
+  readonly returnFocus: Element | null;
 };
+
+function memberAt(element: EventTarget | null): ContextMenuTarget['member'] {
+  if (!(element instanceof Element)) return null;
+  const chip = element.closest('[data-method-id], [data-field-id]');
+  const methodId = chip?.getAttribute('data-method-id');
+  if (methodId != null) return { kind: 'method', id: methodId };
+  const fieldId = chip?.getAttribute('data-field-id');
+  return fieldId == null ? null : { kind: 'field', id: fieldId };
+}
 
 /** 右クリックメニューの開閉。React Flowの onNodeContextMenu / onPaneContextMenu に渡すハンドラーを返す。 */
 export function useCanvasContextMenu() {
@@ -18,7 +29,7 @@ export function useCanvasContextMenu() {
   }, []);
   const open = (event: MouseEvent | globalThis.MouseEvent, fileId: string | null, classId: string | null) => {
     event.preventDefault();
-    setTarget({ x: event.clientX, y: event.clientY, fileId, classId });
+    setTarget({ x: event.clientX, y: event.clientY, fileId, classId, member: classId === null ? null : memberAt(event.target), returnFocus: document.activeElement });
   };
   // メソッドを右クリックしたときも、イベントはそれを含むクラスノードに届く。
   // クラスノードの親(parentId)はファイルノードで、ファイルノードのIDはファイルのID。

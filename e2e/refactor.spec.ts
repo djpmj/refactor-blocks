@@ -1449,3 +1449,95 @@ test('中級8: 住所のフィールドとメソッドを新しいクラスへ�
   // Assert
   await expect(score).not.toContainText('無関係なデータの塊が同居(凝集度が低い)');
 });
+
+for (const kind of ['method', 'field']) {
+  test(`移動メニュー: ${kind}を右クリックして移動し、Ctrl+Zで戻せる`, async ({ page }) => {
+    // Arrange
+    await openFeatureEnvyStage(page);
+    const chipId = kind === 'method' ? 'method-renewSubscription' : 'field-trialDays';
+    const source = page.getByTestId('class-BillingService');
+    const target = page.getByTestId('class-Subscription');
+    const chip = source.getByTestId(chipId);
+
+    // Act
+    await chip.click({ button: 'right' });
+    const menu = page.getByTestId('context-menu');
+    await expect(menu.getByRole('menuitem').first()).toHaveText('別のクラスへ移動');
+    const candidates = menu.getByRole('menu', { name: '別のクラスへ移動', exact: true });
+    await expect(candidates.getByRole('menuitem', { name: 'BillingService' })).toHaveCount(0);
+    await expect(candidates.getByRole('menuitem', { name: '新しいクラスへ移動' })).toHaveCount(0);
+    await candidates.getByRole('menuitem', { name: 'Subscription', exact: true }).click();
+
+    // Assert
+    await expect(menu).toHaveCount(0);
+    await expect(target.getByTestId(chipId)).toBeVisible();
+    await expect(source.getByTestId(chipId)).toHaveCount(0);
+    await page.keyboard.press('Control+z');
+    await expect(source.getByTestId(chipId)).toBeVisible();
+  });
+
+  test(`移動メニュー: ${kind}をShift+F10とTab/Enterだけで移動できる`, async ({ page }) => {
+    // Arrange
+    await openFeatureEnvyStage(page);
+    const chipId = kind === 'method' ? 'method-renewSubscription' : 'field-trialDays';
+    const chip = page.getByTestId(chipId);
+    await chip.focus();
+
+    // Act
+    await chip.press('Shift+F10');
+    const menu = page.getByTestId('context-menu');
+    await expect(menu.getByRole('menuitem', { name: '別のクラスへ移動' })).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(menu.getByRole('menuitem', { name: 'Subscription', exact: true })).toBeFocused();
+    await page.keyboard.press('Enter');
+
+    // Assert
+    await expect(menu).toHaveCount(0);
+    await expect(page.getByTestId('class-Subscription').getByTestId(chipId)).toBeVisible();
+  });
+}
+
+test('移動メニュー: Escapeと外側クリックで開く前のチップにフォーカスを戻す', async ({ page }) => {
+  // Arrange
+  await openOrderStage(page);
+  const chip = page.getByTestId('method-placeOrder');
+  await chip.focus();
+
+  // Act
+  await chip.press('Shift+F10');
+  await expect(page.getByTestId('context-menu')).toBeVisible();
+  await page.keyboard.press('Escape');
+
+  // Assert
+  await expect(page.getByTestId('context-menu')).toHaveCount(0);
+  await expect(chip).toBeFocused();
+
+  // Act
+  await chip.press('Shift+F10');
+  await expect(page.getByTestId('context-menu')).toBeVisible();
+  await page.getByLabel('ステージ').click();
+
+  // Assert
+  await expect(page.getByTestId('context-menu')).toHaveCount(0);
+  await expect(chip).toBeFocused();
+});
+
+test('移動メニュー: クラス・ファイル・余白では移動項目を出さない', async ({ page }) => {
+  // Arrange
+  await openOrderStage(page);
+  const menu = page.getByTestId('context-menu');
+
+  for (const target of [
+    page.getByTestId('class-TaxCalculator').locator('.class-node__header'),
+    page.locator('.file-node__header').first(),
+    page.locator('.react-flow__pane'),
+  ]) {
+    // Act
+    await target.click({ button: 'right', position: { x: 5, y: 5 } });
+
+    // Assert
+    await expect(menu).toBeVisible();
+    await expect(menu.getByRole('menuitem', { name: '別のクラスへ移動' })).toHaveCount(0);
+    await page.keyboard.press('Escape');
+  }
+});
