@@ -138,7 +138,6 @@ function useSubmenuPosition(triggerRef: RefObject<HTMLElement | null>, submenuRe
 
 type SubmenuTriggerProps = {
   label: string;
-  autoFocus: boolean;
   open: boolean;
   setOpen: (open: boolean) => void;
   wrapperRef: RefObject<HTMLDivElement | null>;
@@ -147,7 +146,7 @@ type SubmenuTriggerProps = {
 };
 
 /** ホバー(またはフォーカス)すると候補を右側に出すサブメニューの見た目の共通部分。 */
-function SubmenuTrigger({ label, autoFocus, open, setOpen, wrapperRef, triggerRef, children }: Readonly<SubmenuTriggerProps>) {
+function SubmenuTrigger({ label, open, setOpen, wrapperRef, triggerRef, children }: Readonly<SubmenuTriggerProps>) {
   return (
     <div
       ref={wrapperRef}
@@ -171,7 +170,6 @@ function SubmenuTrigger({ label, autoFocus, open, setOpen, wrapperRef, triggerRe
         role="menuitem"
         aria-haspopup="menu"
         aria-expanded={open}
-        autoFocus={autoFocus}
         onClick={() => {
           // ホバーで既に開いていることがあるので、開閉のトグルにはしない(トグルだとホバー直後のクリックで閉じてしまう)
           setOpen(true);
@@ -184,13 +182,13 @@ function SubmenuTrigger({ label, autoFocus, open, setOpen, wrapperRef, triggerRe
   );
 }
 
-type ExtendsMenuItemProps = { target: ContextMenuTarget; label: string; autoFocus: boolean; onClose: () => void };
+type ExtendsMenuItemProps = { target: ContextMenuTarget; label: string; onClose: () => void };
 
 /**
  * 「継承元を設定」の項目。候補をクリックすればその場で決まり、メニューを閉じる(1クラスに1つしか持てないため)。
  * 候補から、すでに実装先(implements)になっている相手を除く。
  */
-function ExtendsMenuItem({ target, label, autoFocus, onClose }: Readonly<ExtendsMenuItemProps>) {
+function ExtendsMenuItem({ target, label, onClose }: Readonly<ExtendsMenuItemProps>) {
   const codebase = useGameStore((state) => state.codebase);
   const { setSuperclass } = useGameStoreApi().getState();
   const [open, setOpen] = useState(false);
@@ -211,7 +209,7 @@ function ExtendsMenuItem({ target, label, autoFocus, onClose }: Readonly<Extends
     .map((candidate) => candidate.name);
 
   return (
-    <SubmenuTrigger label={label} autoFocus={autoFocus} open={open} setOpen={setOpen} wrapperRef={wrapperRef} triggerRef={triggerRef}>
+    <SubmenuTrigger label={label} open={open} setOpen={setOpen} wrapperRef={wrapperRef} triggerRef={triggerRef}>
       <div ref={submenuRef} role="menu" aria-label={label} className="context-menu context-menu__submenu" style={{ left: position.x, top: position.y }}>
         <button type="button" role="menuitem" aria-current={currentName === ''} onClick={() => select('')}>
           (解除)
@@ -226,7 +224,7 @@ function ExtendsMenuItem({ target, label, autoFocus, onClose }: Readonly<Extends
   );
 }
 
-function MoveMenuItem({ target, label, autoFocus, onClose }: Readonly<ExtendsMenuItemProps>) {
+function MoveMenuItem({ target, label, onClose }: Readonly<ExtendsMenuItemProps>) {
   const codebase = useGameStore((state) => state.codebase);
   const { moveMethod, moveField } = useGameStoreApi().getState();
   const [open, setOpen] = useState(false);
@@ -244,7 +242,7 @@ function MoveMenuItem({ target, label, autoFocus, onClose }: Readonly<ExtendsMen
     onClose();
   };
   return (
-    <SubmenuTrigger label={label} autoFocus={autoFocus} open={open} setOpen={setOpen} wrapperRef={wrapperRef} triggerRef={triggerRef}>
+    <SubmenuTrigger label={label} open={open} setOpen={setOpen} wrapperRef={wrapperRef} triggerRef={triggerRef}>
       <div ref={submenuRef} role="menu" aria-label={label} className="context-menu context-menu__submenu" style={{ left: position.x, top: position.y }}>
         {candidates.map((candidate) => (
           <button key={candidate.id} type="button" role="menuitem" onClick={() => select(candidate.id)}>
@@ -256,14 +254,14 @@ function MoveMenuItem({ target, label, autoFocus, onClose }: Readonly<ExtendsMen
   );
 }
 
-type ImplementsMenuItemProps = { target: ContextMenuTarget; label: string; autoFocus: boolean };
+type ImplementsMenuItemProps = { target: ContextMenuTarget; label: string };
 
 /**
  * 「実装するインターフェースを設定」の項目。チェック式(menuitemcheckbox)で、複数選べる。
  * 押しても閉じず、続けて別のインターフェースを付け外しできる(Esc・外側クリックで閉じる)。
  * 候補から、継承元(extends)になっている相手を除く。
  */
-function ImplementsMenuItem({ target, label, autoFocus }: Readonly<ImplementsMenuItemProps>) {
+function ImplementsMenuItem({ target, label }: Readonly<ImplementsMenuItemProps>) {
   const codebase = useGameStore((state) => state.codebase);
   const { addInterface, removeInterface } = useGameStoreApi().getState();
   const [open, setOpen] = useState(false);
@@ -278,7 +276,7 @@ function ImplementsMenuItem({ target, label, autoFocus }: Readonly<ImplementsMen
   const candidates = availableParents(codebase, codeClass.id).filter((candidate) => candidate.id !== codeClass.superclassId);
 
   return (
-    <SubmenuTrigger label={label} autoFocus={autoFocus} open={open} setOpen={setOpen} wrapperRef={wrapperRef} triggerRef={triggerRef}>
+    <SubmenuTrigger label={label} open={open} setOpen={setOpen} wrapperRef={wrapperRef} triggerRef={triggerRef}>
       <div ref={submenuRef} role="menu" aria-label={label} className="context-menu context-menu__submenu" style={{ left: position.x, top: position.y }}>
         {candidates.map((candidate) => {
           const checked = implementedIds.has(candidate.id);
@@ -307,24 +305,28 @@ function ImplementsMenuItem({ target, label, autoFocus }: Readonly<ImplementsMen
 type MenuItemsProps = { items: readonly MenuItem[]; target: ContextMenuTarget; onSelectForm: (mode: FormMode) => void; onClose: () => void };
 
 function MenuItems({ items, target, onSelectForm, onClose }: Readonly<MenuItemsProps>) {
+  const menuRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    // nullを返す項目を飛ばし、実際に描画された先頭項目にフォーカスする。
+    menuRef.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
+  }, [target]);
   return (
-    <div role="menu" aria-label="キャンバスのメニュー">
-      {items.map((item, index) => {
+    <div ref={menuRef} role="menu" aria-label="キャンバスのメニュー">
+      {items.map((item) => {
         if (item.kind === 'move-submenu') {
-          return <MoveMenuItem key={item.kind} target={target} label={item.label} autoFocus={index === 0} onClose={onClose} />;
+          return <MoveMenuItem key={item.kind} target={target} label={item.label} onClose={onClose} />;
         }
         if (item.kind === 'extends-submenu') {
-          return <ExtendsMenuItem key={item.kind} target={target} label={item.label} autoFocus={index === 0} onClose={onClose} />;
+          return <ExtendsMenuItem key={item.kind} target={target} label={item.label} onClose={onClose} />;
         }
         if (item.kind === 'implements-submenu') {
-          return <ImplementsMenuItem key={item.kind} target={target} label={item.label} autoFocus={index === 0} />;
+          return <ImplementsMenuItem key={item.kind} target={target} label={item.label} />;
         }
         return (
           <button
             key={item.kind === 'form' ? item.mode : item.label}
             type="button"
             role="menuitem"
-            autoFocus={index === 0}
             onClick={() => {
               if (item.kind === 'form') onSelectForm(item.mode);
               else item.run();
@@ -402,20 +404,13 @@ function MenuForm({ target, mode, onDone }: Readonly<MenuFormProps>) {
 }
 
 /** キャンバスの右クリックメニュー。クラス・ファイルの追加と名前の変更を、その場で名前を入れて行う。 */
-export function CanvasContextMenu({ target, onClose }: Readonly<{ target: ContextMenuTarget; onClose: () => void }>) {
+export function CanvasContextMenu({ target, onClose, onDismiss }: Readonly<{ target: ContextMenuTarget; onClose: () => void; onDismiss: () => void }>) {
   const file = useGameStore((state) => state.codebase.files.find((candidate) => candidate.id === target.fileId));
   const api = useGameStoreApi();
   const [mode, setMode] = useState<Mode>('menu');
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const dismiss = () => {
-    onClose();
-    // pointerdownの後のブラウザ既定フォーカス移動より後に戻す。
-    requestAnimationFrame(() => {
-      if (target.returnFocus instanceof HTMLElement && target.returnFocus.isConnected) target.returnFocus.focus();
-    });
-  };
-  useCloseOnOutside(menuRef, dismiss);
+  useCloseOnOutside(menuRef, onDismiss);
   const position = usePositionWithinViewport(menuRef, target.x, target.y, mode);
 
   return createPortal(

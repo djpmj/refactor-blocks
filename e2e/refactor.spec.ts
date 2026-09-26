@@ -1541,3 +1541,44 @@ test('移動メニュー: クラス・ファイル・余白では移動項目を
     await page.keyboard.press('Escape');
   }
 });
+
+test('移動メニュー: 候補が0件でも表示された先頭項目にフォーカスする', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  const chip = page.getByTestId('method-printMonthlyReport');
+  await chip.focus();
+
+  // Act
+  await chip.press('Shift+F10');
+
+  // Assert
+  const menu = page.getByTestId('context-menu');
+  await expect(menu.getByRole('menuitem', { name: '別のクラスへ移動' })).toHaveCount(0);
+  await expect(menu.getByRole('menuitem').first()).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(menu.getByRole('menuitem').nth(1)).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(chip).toBeFocused();
+});
+
+test('移動メニュー: 開き直したメニューに古いフォーカス復帰が干渉しない', async ({ page }) => {
+  // Arrange
+  await openFeatureEnvyStage(page);
+  const method = page.getByTestId('method-renewSubscription');
+  await method.focus();
+  await method.press('Shift+F10');
+  const menu = page.getByTestId('context-menu');
+  await expect(menu.getByRole('menuitem', { name: '別のクラスへ移動' })).toBeFocused();
+
+  // Act
+  await page.getByTestId('field-trialDays').click({ button: 'right' });
+  // フォーカス復帰が予約されるフレームを確実に過ぎてから検証する。
+  await page.evaluate('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
+
+  // Assert
+  await expect(menu.getByRole('menuitem', { name: '別のクラスへ移動' })).toBeFocused();
+  await expect(menu.getByRole('menu', { name: '別のクラスへ移動', exact: true })).toBeVisible();
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('class-Subscription').getByTestId('field-trialDays')).toBeVisible();
+});

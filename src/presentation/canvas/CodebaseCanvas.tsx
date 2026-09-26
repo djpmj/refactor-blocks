@@ -178,6 +178,7 @@ export function CodebaseCanvas({ active }: Readonly<{ active: boolean }>) {
           key={`${String(contextMenu.target.x)},${String(contextMenu.target.y)}`}
           target={contextMenu.target}
           onClose={contextMenu.close}
+          onDismiss={contextMenu.dismiss}
         />
       )}
     </DndContext>
