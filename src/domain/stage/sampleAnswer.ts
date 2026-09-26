@@ -1,11 +1,12 @@
 import { addClass } from '../codebase/addClass';
 import { addFile } from '../codebase/addFile';
-import { allClasses, type Codebase } from '../codebase/Codebase';
+import { allClasses, fieldsOf, type Codebase } from '../codebase/Codebase';
 import { deleteFile } from '../codebase/deleteFile';
 import { deleteMethod } from '../codebase/deleteMethod';
 import { extractMethod } from '../codebase/extractMethod';
 import { mergeMethods } from '../codebase/mergeMethods';
 import { moveClass } from '../codebase/moveClass';
+import { moveField } from '../codebase/moveField';
 import { moveMethod } from '../codebase/moveMethod';
 import { renameClass } from '../codebase/renameClass';
 import { renameFile } from '../codebase/renameFile';
@@ -33,6 +34,14 @@ export type SolutionStep =
       };
     }
   | { readonly deleteMethod: { readonly method: string; readonly fromClass: string } }
+  | {
+      readonly moveField: {
+        readonly field: string;
+        /** 同名フィールドが複数クラスにありうるため必須。 */
+        readonly fromClass: string;
+        readonly toClass: string;
+      };
+    }
   | {
       readonly merge: {
         readonly methodA: string;
@@ -84,9 +93,20 @@ function fileIdByPath(codebase: Codebase, path: string): string {
   return found.id;
 }
 
+function fieldIdByName(codebase: Codebase, name: string, ownerClassName: string): string {
+  const owner = allClasses(codebase).find((codeClass) => codeClass.name === ownerClassName);
+  const found = owner === undefined ? undefined : fieldsOf(owner).find((field) => field.name === name);
+  if (found === undefined) throw new Error(`フィールド ${name} がありません`);
+  return found.id;
+}
+
 type StructuralStep = Exclude<
   SolutionStep,
-  { readonly extract: unknown } | { readonly move: unknown } | { readonly merge: unknown } | { readonly deleteMethod: unknown }
+  | { readonly extract: unknown }
+  | { readonly move: unknown }
+  | { readonly merge: unknown }
+  | { readonly deleteMethod: unknown }
+  | { readonly moveField: unknown }
 >;
 
 /** ファイル・クラス・継承/実装関係の組み替え(処理の中身を伴わない手)を適用する。 */
@@ -139,6 +159,10 @@ function applyStep(codebase: Codebase, step: SolutionStep, newId: string): Codeb
     const methodAId = methodIdByName(codebase, methodA, methodAClass);
     const methodBId = methodIdByName(codebase, methodB, methodBClass);
     return unwrap(mergeMethods(codebase, { methodAId, methodBId, newMethodId: newId, newMethodName: name }));
+  }
+  if ('moveField' in step) {
+    const { field, fromClass, toClass } = step.moveField;
+    return unwrap(moveField(codebase, fieldIdByName(codebase, field, fromClass), classIdByName(codebase, toClass)));
   }
   return applyStructuralStep(codebase, step, newId);
 }

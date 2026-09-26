@@ -1,8 +1,8 @@
-import { allClasses, type Codebase } from '../codebase/Codebase';
+import { allClasses, fieldsOf, type Codebase } from '../codebase/Codebase';
 
-/** メソッドが1つもないクラスと、クラスが1つもないファイルのIDを返す。分けすぎ・片付け忘れの跡。 */
+/** メソッドもフィールドもないクラスと、クラスが1つもないファイルのIDを返す。分けすぎ・片付け忘れの跡。 */
 export function findEmptyContainers(codebase: Codebase): string[] {
-  const emptyClasses = allClasses(codebase).filter((codeClass) => codeClass.methods.length === 0);
+  const emptyClasses = allClasses(codebase).filter((codeClass) => codeClass.methods.length === 0 && fieldsOf(codeClass).length === 0);
   const emptyFiles = codebase.files.filter((file) => file.classes.length === 0);
   return [...emptyClasses, ...emptyFiles].map((container) => container.id);
 }

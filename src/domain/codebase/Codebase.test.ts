@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { findInterfaces, findSuperclass, isInterfaceLike, isStubMethod, parentIds } from './Codebase';
+import { fieldsOf, findClassOfField, findField, findInterfaces, findSuperclass, isInterfaceLike, isStubMethod, parentIds, touchedFieldIds } from './Codebase';
 import { sampleCodebase } from './testFixtures';
-import type { CodeClass, Method } from './Codebase';
+import type { CodeClass, Field, Fragment, Method } from './Codebase';
 
 describe('findSuperclass', () => {
   it('superclassIdが指すクラスを返す', () => {
@@ -224,5 +224,113 @@ describe('isStubMethod', () => {
 
     // Assert
     expect(result).toBe(false);
+  });
+});
+
+function field(id: string, overrides: Partial<Field> = {}): Field {
+  return { id, name: id, visibility: 'public', ...overrides };
+}
+
+describe('fieldsOf', () => {
+  it('fieldsがあればそのまま返す', () => {
+    // Arrange
+    const codeClass = emptyClass('class-a', { fields: [field('field-status')] });
+
+    // Act
+    const result = fieldsOf(codeClass);
+
+    // Assert
+    expect(result).toEqual([field('field-status')]);
+  });
+
+  it('fieldsがなければ空配列を返す', () => {
+    // Arrange
+    const codeClass = emptyClass('class-a');
+
+    // Act
+    const result = fieldsOf(codeClass);
+
+    // Assert
+    expect(result).toEqual([]);
+  });
+});
+
+function fragment(overrides: Partial<Fragment> = {}): Fragment {
+  return { id: 'f1', label: 'f1', lines: 1, responsibility: 'x', ...overrides };
+}
+
+describe('touchedFieldIds', () => {
+  it('readsとwritesに同じIDがあっても1つにまとめる', () => {
+    // Arrange
+    const target = fragment({ reads: ['field-a', 'field-b'], writes: ['field-b'] });
+
+    // Act
+    const result = touchedFieldIds(target);
+
+    // Assert
+    expect(result).toEqual(['field-a', 'field-b']);
+  });
+
+  it('readsもwritesもなければ空配列を返す', () => {
+    // Arrange
+    const target = fragment();
+
+    // Act
+    const result = touchedFieldIds(target);
+
+    // Assert
+    expect(result).toEqual([]);
+  });
+});
+
+function codebaseWithField(): CodeClass[] {
+  return [emptyClass('class-a', { fields: [field('field-status')] }), emptyClass('class-b')];
+}
+
+describe('findField', () => {
+  it('存在するフィールドIDなら見つかる', () => {
+    // Arrange
+    const codebase = { files: [{ id: 'file', path: 'src/all.ts', classes: codebaseWithField() }] };
+
+    // Act
+    const result = findField(codebase, 'field-status');
+
+    // Assert
+    expect(result).toEqual(field('field-status'));
+  });
+
+  it('存在しないフィールドIDはundefinedを返す', () => {
+    // Arrange
+    const codebase = { files: [{ id: 'file', path: 'src/all.ts', classes: codebaseWithField() }] };
+
+    // Act
+    const result = findField(codebase, 'field-missing');
+
+    // Assert
+    expect(result).toBeUndefined();
+  });
+});
+
+describe('findClassOfField', () => {
+  it('フィールドを持つクラスが見つかる', () => {
+    // Arrange
+    const codebase = { files: [{ id: 'file', path: 'src/all.ts', classes: codebaseWithField() }] };
+
+    // Act
+    const result = findClassOfField(codebase, 'field-status');
+
+    // Assert
+    expect(result?.id).toBe('class-a');
+  });
+
+  it('存在しないフィールドIDはundefinedを返す', () => {
+    // Arrange
+    const codebase = { files: [{ id: 'file', path: 'src/all.ts', classes: codebaseWithField() }] };
+
+    // Act
+    const result = findClassOfField(codebase, 'field-missing');
+
+    // Assert
+    expect(result).toBeUndefined();
   });
 });

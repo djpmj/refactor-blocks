@@ -1,4 +1,4 @@
-import { findInterfaces, findSuperclass, isStubMethod, type Codebase, type Visibility } from '../codebase/Codebase';
+import { fieldsOf, findInterfaces, findSuperclass, isStubMethod, type CodeClass, type Codebase, type Visibility } from '../codebase/Codebase';
 import { classLines, fileLines, methodLines } from '../codebase/lineCount';
 import { fileDeductions } from '../scoring/fileScores';
 import type { Score } from '../scoring/score';
@@ -12,6 +12,8 @@ export type CritiqueMethodSummary = {
   readonly stub?: true;
 };
 
+export type CritiqueFieldSummary = { readonly name: string; readonly visibility: Visibility };
+
 export type CritiqueClassSummary = {
   readonly name: string;
   readonly lines: number;
@@ -20,6 +22,8 @@ export type CritiqueClassSummary = {
   readonly superclassName?: string;
   /** 実装しているインターフェース(implements)のクラス名。1つ以上あるときだけ含める。 */
   readonly interfaceNames?: readonly string[];
+  /** クラスのフィールド。1つ以上あるときだけ含める。 */
+  readonly fields?: readonly CritiqueFieldSummary[];
 };
 
 export type CritiqueFileSummary = {
@@ -41,6 +45,11 @@ function interfaceNamesOf(codebase: Codebase, classId: string): readonly string[
   return names.length === 0 ? undefined : names;
 }
 
+function fieldSummariesOf(codeClass: CodeClass): readonly CritiqueFieldSummary[] | undefined {
+  const fields = fieldsOf(codeClass).map((field) => ({ name: field.name, visibility: field.visibility }));
+  return fields.length === 0 ? undefined : fields;
+}
+
 /** ファイル・クラス・メソッドの構成と採点結果を、AI講評に渡せる形にまとめる。 */
 export function buildCritiqueRequest(
   codebase: Codebase,
@@ -53,12 +62,14 @@ export function buildCritiqueRequest(
       path: file.path,
       lines: fileLines(file),
       deductionPoints: deductionsByFile.get(file.id) ?? 0,
-      classes: file.classes.map(
-        (codeClass): CritiqueClassSummary => ({
+      classes: file.classes.map((codeClass): CritiqueClassSummary => {
+        const fields = fieldSummariesOf(codeClass);
+        return {
           name: codeClass.name,
           lines: classLines(codeClass),
           superclassName: findSuperclass(codebase, codeClass.id)?.name,
           interfaceNames: interfaceNamesOf(codebase, codeClass.id),
+          ...(fields === undefined ? {} : { fields }),
           methods: codeClass.methods.map(
             (method): CritiqueMethodSummary => ({
               name: method.name,
@@ -67,8 +78,8 @@ export function buildCritiqueRequest(
               ...(isStubMethod(method) ? { stub: true } : {}),
             }),
           ),
-        }),
-      ),
+        };
+      }),
     }),
   );
   return { goal: stage.goal, score, files };

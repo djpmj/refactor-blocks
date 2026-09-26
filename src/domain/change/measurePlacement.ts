@@ -1,5 +1,5 @@
 import { withoutTray } from '../blank/tray';
-import { allClasses, findClass, isInterfaceLike, parentIds, type CodeClass, type Codebase } from '../codebase/Codebase';
+import { allClasses, fieldsOf, findClass, isInterfaceLike, parentIds, type CodeClass, type Codebase } from '../codebase/Codebase';
 import { classDependencies } from '../codebase/dependencies';
 import { err, ok, type Result } from '../shared/Result';
 import type { ChangeRequest } from './ChangeRequest';
@@ -40,13 +40,16 @@ function findPartClass(design: Codebase, request: ChangeRequest): CodeClass | un
   );
 }
 
-/** クラスの中身。メソッドの並び順は見ない(移して戻すと末尾に付くため)。実装先(implements)も並べ替えて比較する(付けて外して付け直しても同じ中身)。 */
+/** クラスの中身。メソッド・フィールドの並び順は見ない(移して戻すと末尾に付くため)。実装先(implements)も並べ替えて比較する(付けて外して付け直しても同じ中身)。 */
 function classContent(codeClass: CodeClass): string {
   const methods = codeClass.methods
     .map((method) => [method.id, method.name, method.visibility, method.fragments.map((fragment) => fragment.id)])
     .sort(([a], [b]) => String(a).localeCompare(String(b)));
   const interfaceIds = [...(codeClass.interfaceIds ?? [])].sort((a, b) => a.localeCompare(b));
-  return JSON.stringify([codeClass.name, codeClass.superclassId ?? null, interfaceIds, methods]);
+  const fields = fieldsOf(codeClass)
+    .map((field) => [field.id, field.name, field.visibility])
+    .sort(([a], [b]) => String(a).localeCompare(String(b)));
+  return JSON.stringify([codeClass.name, codeClass.superclassId ?? null, interfaceIds, methods, fields]);
 }
 
 function findModifiedClassIds(base: Codebase, design: Codebase): string[] {

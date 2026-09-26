@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mapClasses, type CodeClass, type Codebase } from '../codebase/Codebase';
 import { deleteClass } from '../codebase/deleteClass';
+import { moveField } from '../codebase/moveField';
 import { moveMethod } from '../codebase/moveMethod';
 import { moveMethodToNewClass } from '../codebase/moveToNewHome';
 import { addInterface, setSuperclass } from '../codebase/setSuperclass';
@@ -134,6 +135,35 @@ describe('measurePlacement: ルールの変更(sampleCodebase)', () => {
 
     // Assert
     expect(result.modifiedClassIds).toEqual(['class-tax']);
+  });
+
+  it('実装中に既存クラスのフィールドを別クラスへ移すと、移動元・移動先の両方が触った扱いになる', () => {
+    // Arrange
+    const base: Codebase = mapClasses(sampleCodebase(), (codeClass) =>
+      codeClass.id === 'class-order' ? { ...codeClass, fields: [{ id: 'field-total', name: 'total', visibility: 'public' }] } : codeClass,
+    );
+    const implemented = unwrap(moveField(toNewClass(base, taxRequest), 'field-total', 'class-tax'));
+
+    // Act
+    const result = placement(base, implemented, taxRequest);
+
+    // Assert
+    expect([...result.modifiedClassIds].sort((a, b) => a.localeCompare(b))).toEqual(['class-order', 'class-tax']);
+  });
+
+  it('実装中にフィールドを移して戻すと、触っていない扱いになる', () => {
+    // Arrange
+    const base: Codebase = mapClasses(sampleCodebase(), (codeClass) =>
+      codeClass.id === 'class-order' ? { ...codeClass, fields: [{ id: 'field-total', name: 'total', visibility: 'public' }] } : codeClass,
+    );
+    const moved = unwrap(moveField(toNewClass(base, taxRequest), 'field-total', 'class-tax'));
+    const implemented = unwrap(moveField(moved, 'field-total', 'class-order'));
+
+    // Act
+    const result = placement(base, implemented, taxRequest);
+
+    // Assert
+    expect(result.modifiedClassIds).toEqual([]);
   });
 
   it('部品とは別に、既存クラスの継承元を変える・既存クラスを消すと、そのクラスも触った扱い', () => {

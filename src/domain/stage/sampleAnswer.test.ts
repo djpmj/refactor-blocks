@@ -48,6 +48,16 @@ function withMethodsOf(codebase: Codebase, className: string, methods: Codebase[
   };
 }
 
+/** 指定した名前のクラスのfieldsだけを置き換えたコードベースを返す。 */
+function withFieldsOf(codebase: Codebase, className: string, fields: NonNullable<Codebase['files'][0]['classes'][0]['fields']>): Codebase {
+  return {
+    files: codebase.files.map((file) => ({
+      ...file,
+      classes: file.classes.map((codeClass) => (codeClass.name === className ? { ...codeClass, fields } : codeClass)),
+    })),
+  };
+}
+
 describe('applySolutionSteps', () => {
   it('extractステップで、選んだ処理を新しいメソッドとして抽出する', () => {
     // Arrange
@@ -89,6 +99,32 @@ describe('applySolutionSteps', () => {
     // Assert
     expect(classNamed(result, 'B').methods).toHaveLength(0);
     expect(classNamed(result, 'C').methods.map((method) => method.id)).toEqual(['method-run-b']);
+  });
+
+  it('moveFieldステップで、指定クラスのフィールドを別クラスへ移す', () => {
+    // Arrange
+    const codebase = withFieldsOf(twoClassCodebase(), 'A', [{ id: 'field-x', name: 'x', visibility: 'public' }]);
+    const steps: SolutionStep[] = [{ moveField: { field: 'x', fromClass: 'A', toClass: 'B' } }];
+
+    // Act
+    const result = applySolutionSteps(codebase, steps);
+
+    // Assert
+    expect(classNamed(result, 'A').fields).toBeUndefined();
+    expect(classNamed(result, 'B').fields?.map((field) => field.name)).toEqual(['x']);
+  });
+
+  it('moveFieldステップは別クラスの同名フィールドを動かさない', () => {
+    // Arrange
+    const withA = withFieldsOf(twoClassCodebase(), 'A', [{ id: 'field-a-x', name: 'x', visibility: 'public' }]);
+    const codebase = withFieldsOf(withA, 'B', [{ id: 'field-b-x', name: 'x-unused', visibility: 'public' }]);
+    const steps: SolutionStep[] = [{ moveField: { field: 'x', fromClass: 'A', toClass: 'B' } }];
+
+    // Act
+    const result = applySolutionSteps(codebase, steps);
+
+    // Assert
+    expect(classNamed(result, 'B').fields?.map((field) => field.id)).toEqual(['field-b-x', 'field-a-x']);
   });
 
   it('deleteMethodステップで、指定クラスの空実装を削除する', () => {

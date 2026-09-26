@@ -104,6 +104,48 @@ describe('mergeMethods', () => {
     expect(merged?.fragments).toEqual([{ id: 'method-merged:merge0', label: '送信ログを記録する', lines: 24, responsibility: 'logging' }]);
   });
 
+  it('統合後のFragmentのreads/writesはA/Bの和集合になる', () => {
+    // Arrange
+    function withFragmentReadsWrites(method: Method, overrides: Partial<Fragment>): Method {
+      return { ...method, fragments: [{ ...method.fragments[0], ...overrides }] };
+    }
+    function replaceMethod(codeClass: CodeClass, methodId: string, overrides: Partial<Fragment>): CodeClass {
+      return { ...codeClass, methods: codeClass.methods.map((m) => (m.id === methodId ? withFragmentReadsWrites(m, overrides) : m)) };
+    }
+    const base = fixture();
+    const codebase: Codebase = {
+      ...base,
+      files: base.files.map((f) => {
+        if (f.id === 'file-a') return { ...f, classes: [replaceMethod(f.classes[0], 'method-a', { reads: ['field-x'] })] };
+        if (f.id === 'file-b') return { ...f, classes: [replaceMethod(f.classes[0], 'method-b', { reads: ['field-y'], writes: ['field-z'] })] };
+        return f;
+      }),
+    };
+
+    // Act
+    const result = mergeMethods(codebase, request());
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    const merged = findMethod(result.value, 'method-merged');
+    expect(merged?.fragments[0].reads).toEqual(['field-x', 'field-y']);
+    expect(merged?.fragments[0].writes).toEqual(['field-z']);
+  });
+
+  it('A・Bともreads/writesがなければ統合後のFragmentにキーを付けない', () => {
+    // Arrange
+    const codebase = fixture();
+
+    // Act
+    const result = mergeMethods(codebase, request());
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    const merged = findMethod(result.value, 'method-merged');
+    expect(merged?.fragments[0]).not.toHaveProperty('reads');
+    expect(merged?.fragments[0]).not.toHaveProperty('writes');
+  });
+
   it('統合前にA・Bを呼んでいた呼び出し元は、統合後は新メソッドをusesに持つ', () => {
     // Arrange
     const codebase = fixture();

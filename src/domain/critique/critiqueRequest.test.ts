@@ -144,6 +144,53 @@ describe('buildCritiqueRequest', () => {
     expect(method).not.toHaveProperty('stub');
   });
 
+  it('フィールドを持つクラスには、名前と可視性を宣言順で含める', () => {
+    // Arrange
+    const base = sampleCodebase();
+    const codebase = {
+      files: base.files.map((file, index) =>
+        index === 0
+          ? {
+              ...file,
+              classes: [
+                {
+                  ...file.classes[0],
+                  fields: [
+                    { id: 'field-status', name: 'status', visibility: 'public' as const },
+                    { id: 'field-total', name: 'total', visibility: 'private' as const },
+                  ],
+                },
+              ],
+            }
+          : file,
+      ),
+    };
+    const score = scoreCodebase(codebase, LOOSE_STAGE);
+
+    // Act
+    const request = buildCritiqueRequest(codebase, LOOSE_STAGE, score);
+
+    // Assert
+    const orderClass = request.files.find((file) => file.path === 'src/OrderService.ts')?.classes[0];
+    expect(orderClass?.fields).toEqual([
+      { name: 'status', visibility: 'public' },
+      { name: 'total', visibility: 'private' },
+    ]);
+  });
+
+  it('フィールドのないクラスにはfieldsキーを含めない', () => {
+    // Arrange
+    const codebase = sampleCodebase();
+    const score = scoreCodebase(codebase, LOOSE_STAGE);
+
+    // Act
+    const request = buildCritiqueRequest(codebase, LOOSE_STAGE, score);
+
+    // Assert
+    const orderClass = request.files.find((file) => file.path === 'src/OrderService.ts')?.classes[0];
+    expect(orderClass).not.toHaveProperty('fields');
+  });
+
   it('継承元・実装先がなければ何も含めない', () => {
     // Arrange
     const codebase = sampleCodebase();

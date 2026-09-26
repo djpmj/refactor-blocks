@@ -61,6 +61,8 @@ function validate(codebase: Codebase, request: MergeMethodsRequest): Result<Vali
 /** 統合後のFragmentを1つ組み立てる。大きいほうの行数に合わせ、uses は和集合、duplicateGroupは引き継がない。 */
 function mergeFragment(newMethodId: string, index: number, fragmentA: Fragment, fragmentB: Fragment): Fragment {
   const uses = [...new Set([...(fragmentA.uses ?? []), ...(fragmentB.uses ?? [])])];
+  const reads = [...new Set([...(fragmentA.reads ?? []), ...(fragmentB.reads ?? [])])];
+  const writes = [...new Set([...(fragmentA.writes ?? []), ...(fragmentB.writes ?? [])])];
   return {
     id: `${newMethodId}:merge${index}`,
     label: fragmentA.label,
@@ -68,6 +70,8 @@ function mergeFragment(newMethodId: string, index: number, fragmentA: Fragment, 
     lines: Math.max(fragmentA.lines, fragmentB.lines),
     ...(fragmentA.suggestedName === undefined ? {} : { suggestedName: fragmentA.suggestedName }),
     ...(uses.length === 0 ? {} : { uses }),
+    ...(reads.length === 0 ? {} : { reads }),
+    ...(writes.length === 0 ? {} : { writes }),
   };
 }
 

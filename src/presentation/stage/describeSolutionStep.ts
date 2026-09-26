@@ -44,9 +44,19 @@ function describeDeleteMethod({ method, fromClass }: DeleteMethodStep): string {
   return `${fromClass} の ${method} はもう実装しなくてよい空実装なので、メソッドエディタの「空実装のメソッドを削除」で消そう`;
 }
 
+type MoveFieldStep = Extract<SolutionStep, { readonly moveField: unknown }>['moveField'];
+
+function describeMoveField({ field, fromClass, toClass }: MoveFieldStep): string {
+  return `${fromClass} のフィールド ${field} を ${toClass} へドラッグして移そう(Move Field)`;
+}
+
 type StructuralStep = Exclude<
   SolutionStep,
-  { readonly extract: unknown } | { readonly move: unknown } | { readonly merge: unknown } | { readonly deleteMethod: unknown }
+  | { readonly extract: unknown }
+  | { readonly move: unknown }
+  | { readonly merge: unknown }
+  | { readonly deleteMethod: unknown }
+  | { readonly moveField: unknown }
 >;
 
 /** ファイル・クラス・継承関係の組み替え(処理の中身を伴わない手)のヒント文。 */
@@ -77,6 +87,9 @@ export function describeSolutionStep(codebase: Codebase, step: SolutionStep): st
   }
   if ('deleteMethod' in step) {
     return describeDeleteMethod(step.deleteMethod);
+  }
+  if ('moveField' in step) {
+    return describeMoveField(step.moveField);
   }
   if ('merge' in step) {
     const { methodA, methodAClass, methodB, methodBClass, name } = step.merge;

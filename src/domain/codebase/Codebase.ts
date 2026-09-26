@@ -24,6 +24,18 @@ export type Fragment = {
    * responsibility・duplicateGroup と同じくプレイヤーには表示しない(ラベルに「未対応: …」と書く)。省略時は通常の処理。
    */
   readonly stub?: boolean;
+  /** この処理が読むフィールドのID。クラス間の依存・Feature Envy・カプセル化の採点の元になる。省略は [] と同じ。 */
+  readonly reads?: readonly string[];
+  /** この処理が書き換えるフィールドのID。読み書きの両方をするときもここだけに書けばよい。省略は [] と同じ。 */
+  readonly writes?: readonly string[];
+};
+
+/** クラスが持つデータ。行数は持たない(クラス・ファイルの行数は今までどおりメソッドの Fragment だけから数える)。 */
+// ponytail: フィールド宣言の行数は数えない。フィールドの多いクラスの大きさを採点したくなったら lineCount に足す
+export type Field = {
+  readonly id: string;
+  readonly name: string;
+  readonly visibility: Visibility;
 };
 
 export type Method = {
@@ -41,6 +53,8 @@ export type CodeClass = {
   readonly superclassId?: string;
   /** 実装しているインターフェース(implements)のクラスID。宣言順。省略は [] と同じ。 */
   readonly interfaceIds?: readonly string[];
+  /** クラスが持つフィールド。宣言順。省略は [] と同じ(既存ステージは書かない)。 */
+  readonly fields?: readonly Field[];
 };
 
 export type CodeFile = {
@@ -107,4 +121,24 @@ export function mapClasses(codebase: Codebase, transform: (codeClass: CodeClass)
   return {
     files: codebase.files.map((file) => ({ ...file, classes: file.classes.map(transform) })),
   };
+}
+
+/** クラスのフィールド。省略時は []。 */
+export function fieldsOf(codeClass: CodeClass): readonly Field[] {
+  return codeClass.fields ?? [];
+}
+
+/** 処理が触る(読む・書く)フィールドのID。重複なし、reads → writes の順。 */
+export function touchedFieldIds(fragment: Fragment): string[] {
+  return [...new Set([...(fragment.reads ?? []), ...(fragment.writes ?? [])])];
+}
+
+export function findField(codebase: Codebase, fieldId: string): Field | undefined {
+  return allClasses(codebase)
+    .flatMap((codeClass) => fieldsOf(codeClass))
+    .find((field) => field.id === fieldId);
+}
+
+export function findClassOfField(codebase: Codebase, fieldId: string): CodeClass | undefined {
+  return allClasses(codebase).find((codeClass) => fieldsOf(codeClass).some((field) => field.id === fieldId));
 }

@@ -9,9 +9,12 @@ import {
   describeAddClassError,
   describeAddFileError,
   describeAddInterfaceError,
+  describeDeleteClassError,
+  describeDeleteFileError,
   describeDeleteMethodError,
   describeMergeError,
   describeMoveClassError,
+  describeMoveFieldError,
   describeRemoveInterfaceError,
   describeRenameClassError,
   describeRenameFileError,
@@ -25,6 +28,7 @@ import {
   mergeMethodsUseCase,
   moveClassUseCase,
   moveClassToNewFileUseCase,
+  moveFieldUseCase,
   moveMethodToNewClassUseCase,
   moveMethodUseCase,
   removeInterfaceUseCase,
@@ -129,6 +133,52 @@ describe('moveMethodUseCase', () => {
 
     // Act
     const result = moveMethodUseCase(codebase, 'method-place', 'missing');
+
+    // Assert
+    expect(result).toEqual({ ok: false, error: 'class-not-found' });
+  });
+});
+
+/** moveFieldUseCase用: class-order に field-total、class-tax にフィールドなし。 */
+function codebaseWithField(): Codebase {
+  const base = sampleCodebase();
+  return {
+    files: base.files.map((file, index) =>
+      index === 0 ? { ...file, classes: [{ ...file.classes[0], fields: [{ id: 'field-total', name: 'total', visibility: 'public' as const }] }] } : file,
+    ),
+  };
+}
+
+describe('moveFieldUseCase', () => {
+  it('同じクラスへのドロップは何も変えずに成功扱いにする', () => {
+    // Arrange
+    const codebase = codebaseWithField();
+
+    // Act
+    const result = moveFieldUseCase(codebase, 'field-total', 'class-order');
+
+    // Assert
+    expect(result).toEqual({ ok: true, value: codebase });
+  });
+
+  it('別クラスへのドロップでフィールドを移動する', () => {
+    // Arrange
+    const codebase = codebaseWithField();
+
+    // Act
+    const result = moveFieldUseCase(codebase, 'field-total', 'class-tax');
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    expect(result.value.files[1].classes[0].fields?.map((field) => field.id)).toEqual(['field-total']);
+  });
+
+  it('同じクラス以外のエラーはそのまま返す', () => {
+    // Arrange
+    const codebase = codebaseWithField();
+
+    // Act
+    const result = moveFieldUseCase(codebase, 'field-total', 'missing');
 
     // Assert
     expect(result).toEqual({ ok: false, error: 'class-not-found' });
@@ -386,6 +436,9 @@ describe('エラーメッセージ', () => {
       describeRenameMethodError('duplicate-method-name'),
       describeSetSuperclassError('inheritance-cycle'),
       describeDeleteMethodError('not-stub'),
+      describeMoveFieldError('duplicate-field-name'),
+      describeDeleteClassError('has-fields'),
+      describeDeleteFileError('has-fields'),
     ];
 
     // Assert
@@ -402,6 +455,9 @@ describe('エラーメッセージ', () => {
       '同じクラスに同じ名前のメソッドがあります',
       '継承の輪ができてしまいます',
       '中身のあるメソッドは削除できません。削除できるのは空実装のメソッドだけです',
+      '移動先に同じ名前のフィールドがあります',
+      'フィールドを持つクラスは削除できません。先にフィールドを別のクラスへ移してください',
+      'フィールドを持つクラスがあるファイルは削除できません。先にフィールドを別のクラスへ移してください',
     ]);
   });
 });

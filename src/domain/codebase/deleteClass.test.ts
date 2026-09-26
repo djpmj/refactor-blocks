@@ -94,4 +94,35 @@ describe('deleteClass', () => {
     // Assert
     expect(result).toEqual({ ok: false, error: 'class-not-found' });
   });
+
+  it('フィールドを持つクラスは削除できない', () => {
+    // Arrange
+    const base = sampleCodebase();
+    const codebase: Codebase = {
+      files: [
+        { ...base.files[0], classes: [{ ...base.files[0].classes[0], fields: [{ id: 'field-status', name: 'status', visibility: 'public' }] }] },
+        base.files[1],
+      ],
+    };
+
+    // Act
+    const result = deleteClass(codebase, 'class-order');
+
+    // Assert
+    expect(result).toEqual({ ok: false, error: 'has-fields' });
+  });
+
+  it('フィールドを移し終えたクラス(fieldsが空配列)は削除できる', () => {
+    // Arrange
+    const base = sampleCodebase();
+    const codebase: Codebase = {
+      files: [{ ...base.files[0], classes: [{ ...base.files[0].classes[0], fields: [] }] }, base.files[1]],
+    };
+
+    // Act
+    const result = deleteClass(codebase, 'class-order');
+
+    // Assert
+    expect(result.ok).toBe(true);
+  });
 });

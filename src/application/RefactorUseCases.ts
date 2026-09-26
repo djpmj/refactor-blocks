@@ -8,6 +8,7 @@ import { extractMethod, type ExtractMethodError } from '../domain/codebase/extra
 import { findCallerOf, inlineMethod, type InlineMethodError } from '../domain/codebase/inlineMethod';
 import { mergeMethods, type MergeMethodsError } from '../domain/codebase/mergeMethods';
 import { moveClass, type MoveClassError } from '../domain/codebase/moveClass';
+import { moveField, type MoveFieldError } from '../domain/codebase/moveField';
 import { moveClassToNewFile, moveMethodToNewClass, type MoveClassToNewFileError, type MoveMethodToNewClassError } from '../domain/codebase/moveToNewHome';
 import { moveMethod, type MoveMethodError } from '../domain/codebase/moveMethod';
 import { renameClass, type RenameClassError } from '../domain/codebase/renameClass';
@@ -57,6 +58,18 @@ export function moveMethodUseCase(
   targetClassId: string,
 ): Result<Codebase, Exclude<MoveMethodError, 'same-class'>> {
   const result = moveMethod(codebase, methodId, targetClassId);
+  if (result.ok) return ok(result.value);
+  const { error } = result;
+  return error === 'same-class' ? ok(codebase) : err(error);
+}
+
+/** プレイヤーの「フィールドを別クラスへドロップ」操作。同じクラスへのドロップは何もしない操作として成功扱いにする。 */
+export function moveFieldUseCase(
+  codebase: Codebase,
+  fieldId: string,
+  targetClassId: string,
+): Result<Codebase, Exclude<MoveFieldError, 'same-class'>> {
+  const result = moveField(codebase, fieldId, targetClassId);
   if (result.ok) return ok(result.value);
   const { error } = result;
   return error === 'same-class' ? ok(codebase) : err(error);
@@ -229,6 +242,12 @@ const MOVE_CLASS_ERROR_MESSAGES: Record<Exclude<MoveClassError, 'same-file'>, st
   'file-not-found': '移動先のファイルが見つかりません',
 };
 
+const MOVE_FIELD_ERROR_MESSAGES: Record<Exclude<MoveFieldError, 'same-class'>, string> = {
+  'field-not-found': '移動するフィールドが見つかりません',
+  'class-not-found': '移動先のクラスが見つかりません',
+  'duplicate-field-name': '移動先に同じ名前のフィールドがあります',
+};
+
 const SET_SUPERCLASS_ERROR_MESSAGES: Record<SetSuperclassError, string> = {
   'class-not-found': '継承元を設定するクラスが見つかりません',
   'superclass-not-found': 'その名前のクラスが見つかりません',
@@ -252,11 +271,13 @@ const REMOVE_INTERFACE_ERROR_MESSAGES: Record<RemoveInterfaceError, string> = {
 
 const DELETE_CLASS_ERROR_MESSAGES: Record<DeleteClassError, string> = {
   'class-not-found': '削除するクラスが見つかりません',
+  'has-fields': 'フィールドを持つクラスは削除できません。先にフィールドを別のクラスへ移してください',
 };
 
 const DELETE_FILE_ERROR_MESSAGES: Record<DeleteFileError, string> = {
   'file-not-found': '削除するファイルが見つかりません',
   'last-file': '最後の1ファイルは削除できません',
+  'has-fields': 'フィールドを持つクラスがあるファイルは削除できません。先にフィールドを別のクラスへ移してください',
 };
 
 const DELETE_METHOD_ERROR_MESSAGES: Record<DeleteMethodError, string> = {
@@ -294,6 +315,10 @@ export function describeAddFileError(error: AddFileError): string {
 
 export function describeMoveClassError(error: Exclude<MoveClassError, 'same-file'>): string {
   return MOVE_CLASS_ERROR_MESSAGES[error];
+}
+
+export function describeMoveFieldError(error: Exclude<MoveFieldError, 'same-class'>): string {
+  return MOVE_FIELD_ERROR_MESSAGES[error];
 }
 
 export function describeRenameClassError(error: RenameClassError): string {

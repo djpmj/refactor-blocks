@@ -1,9 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import type { CodeClass, Codebase, Fragment } from './Codebase';
-import { classDependencies, cyclicClassIds, methodOwnerMap } from './dependencies';
+import { classDependencies, cyclicClassIds, fieldOwnerMap, methodOwnerMap } from './dependencies';
 
 function callFragment(id: string, uses: readonly string[]): Fragment {
   return { id, label: id, lines: 1, responsibility: 'call', uses };
+}
+
+function readFragment(id: string, reads: readonly string[]): Fragment {
+  return { id, label: id, lines: 1, responsibility: 'read', reads };
+}
+
+function writeFragment(id: string, writes: readonly string[]): Fragment {
+  return { id, label: id, lines: 1, responsibility: 'write', writes };
 }
 
 /** クラスごとに「メソッド1つ + そのメソッドが呼ぶメソッドID」だけを持つ最小のコードベースを作る。 */
@@ -38,6 +46,31 @@ describe('methodOwnerMap', () => {
 
     // Assert
     expect(map.get('method-missing')).toBeUndefined();
+  });
+});
+
+describe('fieldOwnerMap', () => {
+  it('全クラスのフィールドIDから持ち主が引ける', () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [
+        {
+          id: 'file',
+          path: 'src/all.ts',
+          classes: [
+            { id: 'class-a', name: 'A', methods: [], fields: [{ id: 'field-a1', name: 'a1', visibility: 'public' }] },
+            { id: 'class-b', name: 'B', methods: [], fields: [{ id: 'field-b1', name: 'b1', visibility: 'private' }] },
+          ],
+        },
+      ],
+    };
+
+    // Act
+    const map = fieldOwnerMap(codebase);
+
+    // Assert
+    expect(map.get('field-a1')).toBe('class-a');
+    expect(map.get('field-b1')).toBe('class-b');
   });
 });
 
@@ -178,6 +211,144 @@ describe('classDependencies', () => {
       { from: 'class-A', to: 'class-B', cyclic: false },
       { from: 'class-B', to: 'class-C', cyclic: true },
       { from: 'class-C', to: 'class-B', cyclic: true },
+    ]);
+  });
+
+  function classWithField(id: string, name: string, fieldId: string): CodeClass {
+    return { id, name, methods: [], fields: [{ id: fieldId, name: fieldId, visibility: 'public' }] };
+  }
+
+  it('Aの処理がBのフィールドを読むと、AからBへの依存になる', () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [
+        {
+          id: 'file',
+          path: 'src/all.ts',
+          classes: [
+            { id: 'class-A', name: 'A', methods: [{ id: 'method-A', name: 'run', visibility: 'public', fragments: [readFragment('f-a', ['field-b'])] }] },
+            classWithField('class-B', 'B', 'field-b'),
+          ],
+        },
+      ],
+    };
+
+    // Act
+    const dependencies = classDependencies(codebase);
+
+    // Assert
+    expect(dependencies).toEqual([{ from: 'class-A', to: 'class-B', cyclic: false }]);
+  });
+
+  it('Bのフィールドを書くだけでもAからBへの依存になる', () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [
+        {
+          id: 'file',
+          path: 'src/all.ts',
+          classes: [
+            { id: 'class-A', name: 'A', methods: [{ id: 'method-A', name: 'run', visibility: 'public', fragments: [writeFragment('f-a', ['field-b'])] }] },
+            classWithField('class-B', 'B', 'field-b'),
+          ],
+        },
+      ],
+    };
+
+    // Act
+    const dependencies = classDependencies(codebase);
+
+    // Assert
+    expect(dependencies).toEqual([{ from: 'class-A', to: 'class-B', cyclic: false }]);
+  });
+
+  it('Bのメソッド呼び出しとフィールド参照の両方があっても依存は1本だけ', () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [
+        {
+          id: 'file',
+          path: 'src/all.ts',
+          classes: [
+            {
+              id: 'class-A',
+              name: 'A',
+              methods: [{ id: 'method-A', name: 'run', visibility: 'public', fragments: [{ id: 'f-a', label: 'f-a', lines: 1, responsibility: 'x', uses: ['method-B'], reads: ['field-b'] }] }],
+            },
+            {
+              ...classWithField('class-B', 'B', 'field-b'),
+              methods: [{ id: 'method-B', name: 'run', visibility: 'public', fragments: [] }],
+            },
+          ],
+        },
+      ],
+    };
+
+    // Act
+    const dependencies = classDependencies(codebase);
+
+    // Assert
+    expect(dependencies).toEqual([{ from: 'class-A', to: 'class-B', cyclic: false }]);
+  });
+
+  it('自クラスのフィールド・存在しないフィールドIDは依存にならない', () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [
+        {
+          id: 'file',
+          path: 'src/all.ts',
+          classes: [
+            {
+              id: 'class-A',
+              name: 'A',
+              fields: [{ id: 'field-a', name: 'a', visibility: 'public' }],
+              methods: [{ id: 'method-A', name: 'run', visibility: 'public', fragments: [readFragment('f-a', ['field-a', 'field-missing'])] }],
+            },
+          ],
+        },
+      ],
+    };
+
+    // Act
+    const dependencies = classDependencies(codebase);
+
+    // Assert
+    expect(dependencies).toEqual([]);
+  });
+
+  it('Aがフィールドで、Bがメソッド呼び出しで互いに依存すると両方cyclic:trueになる', () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [
+        {
+          id: 'file',
+          path: 'src/all.ts',
+          classes: [
+            {
+              id: 'class-A',
+              name: 'A',
+              fields: [{ id: 'field-a', name: 'a', visibility: 'public' }],
+              methods: [{ id: 'method-A', name: 'run', visibility: 'public', fragments: [readFragment('f-a', ['field-b'])] }],
+            },
+            {
+              id: 'class-B',
+              name: 'B',
+              fields: [{ id: 'field-b', name: 'b', visibility: 'public' }],
+              methods: [{ id: 'method-B', name: 'run', visibility: 'public', fragments: [callFragment('f-b', ['method-A'])] }],
+            },
+          ],
+        },
+      ],
+    };
+
+    // Act
+    const dependencies = classDependencies(codebase);
+
+    // Assert
+    expect(dependencies).toEqual([
+      { from: 'class-A', to: 'class-B', cyclic: true },
+      { from: 'class-B', to: 'class-A', cyclic: true },
     ]);
   });
 });

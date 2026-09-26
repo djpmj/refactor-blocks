@@ -29,6 +29,38 @@ describe('findEmptyContainers', () => {
     // Assert
     expect(empty).toEqual(['class-empty', 'file-empty']);
   });
+
+  it('フィールドだけのクラスは空ではない', () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [
+        {
+          id: 'file-a',
+          path: 'src/a.ts',
+          classes: [{ id: 'class-data', name: 'Data', methods: [], fields: [{ id: 'field-x', name: 'x', visibility: 'public' }] }],
+        },
+      ],
+    };
+
+    // Act
+    const empty = findEmptyContainers(codebase);
+
+    // Assert
+    expect(empty).toEqual([]);
+  });
+
+  it('メソッドもフィールドもないクラスは空', () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [{ id: 'file-a', path: 'src/a.ts', classes: [{ id: 'class-empty', name: 'Empty', methods: [] }] }],
+    };
+
+    // Act
+    const empty = findEmptyContainers(codebase);
+
+    // Assert
+    expect(empty).toEqual(['class-empty']);
+  });
 });
 
 describe('findUnusedPrivateMethods', () => {

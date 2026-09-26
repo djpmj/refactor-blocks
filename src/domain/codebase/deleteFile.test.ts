@@ -81,4 +81,21 @@ describe('deleteFile', () => {
     // Assert
     expect(result).toEqual({ ok: false, error: 'last-file' });
   });
+
+  it('フィールドを持つクラスを含むファイルは削除できない', () => {
+    // Arrange
+    const base = sampleCodebase();
+    const codebase: Codebase = {
+      files: [
+        { ...base.files[0], classes: [{ ...base.files[0].classes[0], fields: [{ id: 'field-status', name: 'status', visibility: 'public' }] }] },
+        base.files[1],
+      ],
+    };
+
+    // Act
+    const result = deleteFile(codebase, 'file-order');
+
+    // Assert
+    expect(result).toEqual({ ok: false, error: 'has-fields' });
+  });
 });
