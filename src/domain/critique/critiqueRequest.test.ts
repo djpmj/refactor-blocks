@@ -37,7 +37,7 @@ describe('buildCritiqueRequest', () => {
     });
   });
 
-  it('メソッドの中の処理(Fragmentの中身)は含めない', () => {
+  it.each(['fragments', 'stub', 'enviedClassName'] as const)('通常のメソッドには%sキーを含めない', (key) => {
     // Arrange
     const codebase = sampleCodebase();
     const score = scoreCodebase(codebase, LOOSE_STAGE);
@@ -47,7 +47,7 @@ describe('buildCritiqueRequest', () => {
 
     // Assert
     const method = request.files[0]?.classes[0]?.methods[0];
-    expect(method).not.toHaveProperty('fragments');
+    expect(method).not.toHaveProperty(key);
   });
 
   it('行数の違反があるファイルには、その減点がdeductionPointsに入る', () => {
@@ -131,19 +131,6 @@ describe('buildCritiqueRequest', () => {
     expect(method).toMatchObject({ stub: true });
   });
 
-  it('通常のメソッドにはstubキーを含めない', () => {
-    // Arrange
-    const codebase = sampleCodebase();
-    const score = scoreCodebase(codebase, LOOSE_STAGE);
-
-    // Act
-    const request = buildCritiqueRequest(codebase, LOOSE_STAGE, score);
-
-    // Assert
-    const method = request.files[0]?.classes[0]?.methods[0];
-    expect(method).not.toHaveProperty('stub');
-  });
-
   it('フィールドを持つクラスには、名前と可視性を宣言順で含める', () => {
     // Arrange
     const base = sampleCodebase();
@@ -189,6 +176,55 @@ describe('buildCritiqueRequest', () => {
     // Assert
     const orderClass = request.files.find((file) => file.path === 'src/OrderService.ts')?.classes[0];
     expect(orderClass).not.toHaveProperty('fields');
+  });
+
+  it('Feature EnvyのメソッドだけenviedClassNameを含める', () => {
+    // Arrange
+    const codebase = {
+      files: [
+        {
+          id: 'file-a',
+          path: 'src/A.ts',
+          classes: [
+            {
+              id: 'class-a',
+              name: 'A',
+              methods: [
+                {
+                  id: 'method-envy',
+                  name: 'run',
+                  visibility: 'public' as const,
+                  fragments: [{ id: 'f1', label: 'do', lines: 1, responsibility: 'x', reads: ['field-b1', 'field-b2'] }],
+                },
+              ],
+            },
+          ],
+        },
+        {
+          id: 'file-b',
+          path: 'src/B.ts',
+          classes: [
+            {
+              id: 'class-b',
+              name: 'B',
+              methods: [],
+              fields: [
+                { id: 'field-b1', name: 'b1', visibility: 'public' as const },
+                { id: 'field-b2', name: 'b2', visibility: 'public' as const },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const score = scoreCodebase(codebase, LOOSE_STAGE);
+
+    // Act
+    const request = buildCritiqueRequest(codebase, LOOSE_STAGE, score);
+
+    // Assert
+    const method = request.files.find((file) => file.path === 'src/A.ts')?.classes[0]?.methods[0];
+    expect(method).toMatchObject({ enviedClassName: 'B' });
   });
 
   it('継承元・実装先がなければ何も含めない', () => {

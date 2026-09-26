@@ -11,6 +11,8 @@ export const RULE_LABEL: Record<ScoreRule, string> = {
   'lone-superclass': '子が1つだけの継承',
   stub: '使わないメソッドの空実装',
   contract: 'インターフェースの約束違反',
+  'feature-envy': '他クラスのデータを触りすぎ(Feature Envy)',
+  encapsulation: 'カプセル化の破れ',
 };
 
 export function describeScore(score: Score): string {

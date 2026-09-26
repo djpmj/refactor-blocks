@@ -1,5 +1,6 @@
-import { fieldsOf, findInterfaces, findSuperclass, isStubMethod, type CodeClass, type Codebase, type Visibility } from '../codebase/Codebase';
+import { fieldsOf, findClass, findInterfaces, findSuperclass, isStubMethod, type CodeClass, type Codebase, type Visibility } from '../codebase/Codebase';
 import { classLines, fileLines, methodLines } from '../codebase/lineCount';
+import { findFeatureEnvy } from '../scoring/fieldAccess';
 import { fileDeductions } from '../scoring/fileScores';
 import type { Score } from '../scoring/score';
 import type { Stage } from '../stage/Stage';
@@ -10,6 +11,8 @@ export type CritiqueMethodSummary = {
   readonly lines: number;
   /** 空実装(未対応・何もしない)のメソッドのときだけ true にする。 */
   readonly stub?: true;
+  /** Feature Envy のメソッドだけ、いちばんうらやましがっているクラス名。AIが移し先を具体的に書けるように。 */
+  readonly enviedClassName?: string;
 };
 
 export type CritiqueFieldSummary = { readonly name: string; readonly visibility: Visibility };
@@ -50,6 +53,16 @@ function fieldSummariesOf(codeClass: CodeClass): readonly CritiqueFieldSummary[]
   return fields.length === 0 ? undefined : fields;
 }
 
+/** Feature Envy のメソッドIDから、うらやましがっている相手のクラス名を引くMapを作る。 */
+function enviedClassNameByMethodId(codebase: Codebase): Map<string, string> {
+  const names = new Map<string, string>();
+  for (const envy of findFeatureEnvy(codebase)) {
+    const name = findClass(codebase, envy.enviedClassId)?.name;
+    if (name !== undefined) names.set(envy.methodId, name);
+  }
+  return names;
+}
+
 /** ファイル・クラス・メソッドの構成と採点結果を、AI講評に渡せる形にまとめる。 */
 export function buildCritiqueRequest(
   codebase: Codebase,
@@ -57,6 +70,7 @@ export function buildCritiqueRequest(
   score: Score,
 ): CritiqueRequest {
   const deductionsByFile = fileDeductions(codebase, stage);
+  const enviedNames = enviedClassNameByMethodId(codebase);
   const files = codebase.files.map(
     (file): CritiqueFileSummary => ({
       path: file.path,
@@ -76,6 +90,7 @@ export function buildCritiqueRequest(
               visibility: method.visibility,
               lines: methodLines(method),
               ...(isStubMethod(method) ? { stub: true } : {}),
+              ...(enviedNames.has(method.id) ? { enviedClassName: enviedNames.get(method.id) } : {}),
             }),
           ),
         };

@@ -62,7 +62,7 @@ function codebaseOf(classes: Record<string, readonly string[]>): Codebase {
 }
 
 describe('scoreCodebase', () => {
-  it('違反がなければ100点で、10ルールとも減点0件を返す', () => {
+  it('違反がなければ100点で、12ルールとも減点0件を返す', () => {
     // Arrange
     const codebase = codebaseOf({ A: ['method-B'], B: [] });
 
@@ -83,6 +83,8 @@ describe('scoreCodebase', () => {
         { rule: 'lone-superclass', count: 0, points: 0 },
         { rule: 'stub', count: 0, points: 0 },
         { rule: 'contract', count: 0, points: 0 },
+        { rule: 'feature-envy', count: 0, points: 0 },
+        { rule: 'encapsulation', count: 0, points: 0 },
       ],
     });
   });
@@ -320,6 +322,82 @@ describe('scoreCodebase', () => {
     // Assert
     expect(score.total).toBe(90);
     expect(score.deductions[9]).toEqual({ rule: 'contract', count: 1, points: 10 });
+  });
+
+  it('Feature Envy 1件につき10点減点する', () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [
+        {
+          id: 'file',
+          path: 'src/all.ts',
+          classes: [
+            {
+              id: 'class-a',
+              name: 'A',
+              methods: [
+                {
+                  id: 'method-a',
+                  name: 'run',
+                  visibility: 'public',
+                  fragments: [{ id: 'f-a', label: 'do', lines: 1, responsibility: 'x', reads: ['field-b1', 'field-b2'] }],
+                },
+              ],
+            },
+            {
+              id: 'class-b',
+              name: 'B',
+              methods: [],
+              fields: [
+                { id: 'field-b1', name: 'b1', visibility: 'public' },
+                { id: 'field-b2', name: 'b2', visibility: 'public' },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    // Act
+    const score = scoreCodebase(codebase, { ...LOOSE, dependencyLimit: 1 });
+
+    // Assert
+    expect(score.total).toBe(90);
+    expect(score.deductions[10]).toEqual({ rule: 'feature-envy', count: 1, points: 10 });
+  });
+
+  it('外からのフィールド書き換え1件につき10点減点する', () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [
+        {
+          id: 'file',
+          path: 'src/all.ts',
+          classes: [
+            {
+              id: 'class-a',
+              name: 'A',
+              methods: [
+                {
+                  id: 'method-a',
+                  name: 'run',
+                  visibility: 'public',
+                  fragments: [{ id: 'f-a', label: 'do', lines: 1, responsibility: 'x', writes: ['field-b1'] }],
+                },
+              ],
+            },
+            { id: 'class-b', name: 'B', methods: [], fields: [{ id: 'field-b1', name: 'b1', visibility: 'public' }] },
+          ],
+        },
+      ],
+    };
+
+    // Act
+    const score = scoreCodebase(codebase, { ...LOOSE, dependencyLimit: 1 });
+
+    // Assert
+    expect(score.total).toBe(90);
+    expect(score.deductions[11]).toEqual({ rule: 'encapsulation', count: 1, points: 10 });
   });
 
   it('減点の合計が100点を超えても0点で止まる', () => {

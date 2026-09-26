@@ -163,6 +163,92 @@ describe("fileDeductions", () => {
     expect(deductions.get("file-c")).toBe(10);
   });
 
+  it("Feature Envyは、そのメソッドのあるファイルの減点になる", () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [
+        {
+          id: "file-a",
+          path: "a",
+          classes: [
+            {
+              id: "class-a",
+              name: "A",
+              methods: [
+                {
+                  id: "method-a",
+                  name: "run",
+                  visibility: "public",
+                  fragments: [{ id: "f-a", label: "do", lines: 1, responsibility: "x", reads: ["field-b1", "field-b2"] }],
+                },
+              ],
+            },
+          ],
+        },
+        {
+          id: "file-b",
+          path: "b",
+          classes: [
+            {
+              id: "class-b",
+              name: "B",
+              methods: [],
+              fields: [
+                { id: "field-b1", name: "b1", visibility: "public" },
+                { id: "field-b2", name: "b2", visibility: "public" },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    // Act
+    const deductions = fileDeductions(codebase, LOOSE);
+
+    // Assert
+    expect(deductions.get("file-a")).toBe(10);
+    expect(deductions.get("file-b")).toBe(0);
+  });
+
+  it("カプセル化の破れは、触っている側のクラスのあるファイルの減点になる", () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [
+        {
+          id: "file-a",
+          path: "a",
+          classes: [
+            {
+              id: "class-a",
+              name: "A",
+              methods: [
+                {
+                  id: "method-a",
+                  name: "run",
+                  visibility: "public",
+                  fragments: [{ id: "f-a", label: "do", lines: 1, responsibility: "x", writes: ["field-b1"] }],
+                },
+              ],
+            },
+          ],
+        },
+        {
+          id: "file-b",
+          path: "b",
+          classes: [{ id: "class-b", name: "B", methods: [], fields: [{ id: "field-b1", name: "b1", visibility: "public" }] }],
+        },
+      ],
+    };
+
+    // Act
+    const deductions = fileDeductions(codebase, LOOSE);
+
+    // Assert
+    expect(deductions.get("file-a")).toBe(10);
+    expect(deductions.get("file-b")).toBe(0);
+  });
+
   it("全ファイルの減点を足すと、採点の減点の合計と一致する", () => {
     // Arrange
     const codebase = sampleCodebase();
