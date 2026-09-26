@@ -1,4 +1,5 @@
-import { allClasses, findClass, findClassOfField, findField, touchedFieldIds, type CodeClass, type Codebase, type Method } from '../codebase/Codebase';
+import { accessorFieldAccess, allClasses, extendsChainIds, findClassOfField, findField, isAccessorMethod, touchedFieldIds, type CodeClass, type Codebase, type Method } from '../codebase/Codebase';
+import { methodOwnerMap } from '../codebase/dependencies';
 
 export type FeatureEnvy = {
   readonly methodId: string;
@@ -15,20 +16,13 @@ export type EncapsulationViolation = {
 /** 「他クラスのフィールドを何個以上、自分側より多く触っていたら Feature Envy か」の下限。 */
 const ENVY_THRESHOLD = 2;
 
-/** クラス自身と、extends(superclassId)を辿った先祖のクラスID集合。輪になっていても訪問済みで止まる。 */
-function selfClassIds(codebase: Codebase, classId: string): Set<string> {
-  const ids = new Set<string>();
-  let current: CodeClass | undefined = findClass(codebase, classId);
-  while (current !== undefined && !ids.has(current.id)) {
-    ids.add(current.id);
-    current = current.superclassId === undefined ? undefined : findClass(codebase, current.superclassId);
-  }
-  return ids;
-}
-
-/** メソッドが触ったフィールドを、宣言しているクラスごとに数える(存在しないIDは無視)。 */
+/** メソッドが触ったフィールド(直接の reads/writes と、getter/setter越しのアクセス)を、宣言しているクラスごとに数える(存在しないIDは無視)。 */
 function fieldCountsByClass(codebase: Codebase, method: Method): Map<string, number> {
-  const fieldIds = new Set(method.fragments.flatMap((fragment) => touchedFieldIds(fragment)));
+  const accessed = method.fragments.flatMap((fragment) => {
+    const { reads, writes } = accessorFieldAccess(codebase, fragment);
+    return [...touchedFieldIds(fragment), ...reads, ...writes];
+  });
+  const fieldIds = new Set(accessed);
   const counts = new Map<string, number>();
   for (const fieldId of fieldIds) {
     const ownerClass = findClassOfField(codebase, fieldId);
@@ -44,7 +38,7 @@ function fieldCountsByClass(codebase: Codebase, method: Method): Map<string, num
  */
 function findEnviedClass(codebase: Codebase, method: Method, ownerClassId: string): string | undefined {
   const counts = fieldCountsByClass(codebase, method);
-  const selfIds = selfClassIds(codebase, ownerClassId);
+  const selfIds = extendsChainIds(codebase, ownerClassId);
   const selfCount = [...counts].filter(([classId]) => selfIds.has(classId)).reduce((sum, [, count]) => sum + count, 0);
   let enviedClassId: string | undefined;
   let maxCount = 0;
@@ -92,10 +86,12 @@ function collectClassViolations(
   seen: Set<string>,
   violations: EncapsulationViolation[],
 ): void {
-  const selfIds = selfClassIds(codebase, codeClass.id);
+  const selfIds = extendsChainIds(codebase, codeClass.id);
   const fragments = codeClass.methods.flatMap((method) => method.fragments);
+  const accessorWrites = fragments.flatMap((fragment) => accessorFieldAccess(codebase, fragment).writes);
   const candidates = [
     ...fragments.flatMap((fragment) => fragment.writes ?? []).filter((fieldId) => isWriteViolation(codebase, fieldId, selfIds)),
+    ...accessorWrites.filter((fieldId) => isWriteViolation(codebase, fieldId, selfIds)),
     ...fragments.flatMap((fragment) => fragment.reads ?? []).filter((fieldId) => isReadViolation(codebase, fieldId, selfIds)),
   ];
   for (const fieldId of candidates) {
@@ -112,4 +108,37 @@ export function findEncapsulationViolations(codebase: Codebase): EncapsulationVi
   const seen = new Set<string>();
   for (const codeClass of allClasses(codebase)) collectClassViolations(codebase, codeClass, seen, violations);
   return violations;
+}
+
+/** メソッドIDごとに、それを呼んでいる Fragment を持つクラスのID集合。 */
+function callerClassIdsOf(codebase: Codebase): Map<string, Set<string>> {
+  const callers = new Map<string, Set<string>>();
+  for (const codeClass of allClasses(codebase)) {
+    for (const methodId of codeClass.methods.flatMap((method) => method.fragments).flatMap((fragment) => fragment.uses ?? [])) {
+      const existing = callers.get(methodId);
+      if (existing === undefined) callers.set(methodId, new Set([codeClass.id]));
+      else existing.add(codeClass.id);
+    }
+  }
+  return callers;
+}
+
+/**
+ * 持ち主以外のどのクラスからも呼ばれていない、private でない setter(isAccessorMethod で writes を持つ)のメソッドIDを出現順に返す。
+ * 外から書き換えられる窓口が開いたまま。他クラスから呼ばれている setter は、呼ぶ側の書き換え(findEncapsulationViolations)で数えるのでここでは数えない。
+ */
+export function findOpenSetters(codebase: Codebase): string[] {
+  const owners = methodOwnerMap(codebase);
+  const callerClassIds = callerClassIdsOf(codebase);
+  const setters: string[] = [];
+  for (const method of allClasses(codebase).flatMap((codeClass) => codeClass.methods)) {
+    if (method.visibility === 'private' || !isAccessorMethod(method)) continue;
+    const hasWrite = method.fragments.some((fragment) => (fragment.writes ?? []).length > 0);
+    if (!hasWrite) continue;
+    const ownerId = owners.get(method.id);
+    const callers = callerClassIds.get(method.id) ?? new Set<string>();
+    const calledFromOtherClass = [...callers].some((callerClassId) => callerClassId !== ownerId);
+    if (!calledFromOtherClass) setters.push(method.id);
+  }
+  return setters;
 }

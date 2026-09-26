@@ -1,6 +1,7 @@
 import { addClass, type AddClassError } from '../domain/codebase/addClass';
 import { addFile, type AddFileError } from '../domain/codebase/addFile';
-import type { Codebase } from '../domain/codebase/Codebase';
+import type { Codebase, Visibility } from '../domain/codebase/Codebase';
+import { changeVisibility, type ChangeVisibilityError } from '../domain/codebase/changeVisibility';
 import { deleteClass, type DeleteClassError } from '../domain/codebase/deleteClass';
 import { deleteFile, type DeleteFileError } from '../domain/codebase/deleteFile';
 import { deleteMethod, type DeleteMethodError } from '../domain/codebase/deleteMethod';
@@ -73,6 +74,18 @@ export function moveFieldUseCase(
   if (result.ok) return ok(result.value);
   const { error } = result;
   return error === 'same-class' ? ok(codebase) : err(error);
+}
+
+/** プレイヤーの「可視性を変える」操作。同じ可視性を選んだときは何もしない操作として成功扱いにする。 */
+export function changeVisibilityUseCase(
+  codebase: Codebase,
+  methodId: string,
+  visibility: Visibility,
+): Result<Codebase, Exclude<ChangeVisibilityError, 'same-visibility'>> {
+  const result = changeVisibility(codebase, methodId, visibility);
+  if (result.ok) return ok(result.value);
+  const { error } = result;
+  return error === 'same-visibility' ? ok(codebase) : err(error);
 }
 
 /** プレイヤーの「呼び出し元へ戻す」操作。戻した先を選び直せるよう、呼び出し元のメソッドIDも返す。 */
@@ -285,6 +298,13 @@ const DELETE_METHOD_ERROR_MESSAGES: Record<DeleteMethodError, string> = {
   'not-stub': '中身のあるメソッドは削除できません。削除できるのは空実装のメソッドだけです',
 };
 
+const CHANGE_VISIBILITY_ERROR_MESSAGES: Record<Exclude<ChangeVisibilityError, 'same-visibility'>, string> = {
+  'method-not-found': 'メソッドが見つかりません',
+  'contract-method': '中身のないメソッド(インターフェースの約束)の可視性は変えられません',
+  'widening-not-needed': 'public は他のクラスから、protected は子クラスから呼ばれているメソッドにだけ選べます',
+  'narrowing-breaks-callers': '外から呼ばれているメソッドは、その可視性にはできません',
+};
+
 export function describeMoveOutError(error: MoveClassToNewFileError | MoveMethodToNewClassError): string {
   return error === 'class-not-found' ? 'クラスが見つかりません' : 'メソッドが見つかりません';
 }
@@ -355,4 +375,8 @@ export function describeDeleteFileError(error: DeleteFileError): string {
 
 export function describeDeleteMethodError(error: DeleteMethodError): string {
   return DELETE_METHOD_ERROR_MESSAGES[error];
+}
+
+export function describeChangeVisibilityError(error: Exclude<ChangeVisibilityError, 'same-visibility'>): string {
+  return CHANGE_VISIBILITY_ERROR_MESSAGES[error];
 }

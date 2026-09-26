@@ -28,6 +28,11 @@ export type Fragment = {
   readonly reads?: readonly string[];
   /** この処理が書き換えるフィールドのID。読み書きの両方をするときもここだけに書けばよい。省略は [] と同じ。 */
   readonly writes?: readonly string[];
+  /**
+   * フィールドを返す・代入するだけの getter/setter の処理であることを示す隠しタグ。responsibility・stub と同じくプレイヤーには表示しない。
+   * 全部の処理が accessor のメソッドを他の処理が呼ぶと、そのメソッドが読む・書くフィールドを読んだ・書いたものとして Feature Envy・カプセル化の破れを数える。省略時は通常の処理。
+   */
+  readonly accessor?: boolean;
 };
 
 /** クラスが持つデータ。行数は持たない(クラス・ファイルの行数は今までどおりメソッドの Fragment だけから数える)。 */
@@ -114,6 +119,41 @@ export function isInterfaceLike(codeClass: CodeClass): boolean {
 /** 空実装のメソッド = 処理が1つ以上あり、すべてstub。中身のない契約メソッド(fragments: [])は空実装ではない。 */
 export function isStubMethod(method: Method): boolean {
   return method.fragments.length > 0 && method.fragments.every((fragment) => fragment.stub === true);
+}
+
+/** getter/setter = 処理が1つ以上あり、すべてaccessor。isStubMethodと同じ形。 */
+export function isAccessorMethod(method: Method): boolean {
+  return method.fragments.length > 0 && method.fragments.every((fragment) => fragment.accessor === true);
+}
+
+/**
+ * 処理が呼んでいる getter/setter(isAccessorMethod)越しに読む・書くフィールドのID。
+ * 呼び先のアクセサの処理のreadsをreadsに、writesをwritesに集める。それぞれ重複なし、usesの順。存在しないメソッドIDは飛ばす。
+ * ponytail: アクセサは1段だけたどる。アクセサがアクセサを呼ぶ題材を作るときに再帰にする
+ */
+function calledAccessorMethods(codebase: Codebase, fragment: Fragment): Method[] {
+  return (fragment.uses ?? [])
+    .map((methodId) => findMethod(codebase, methodId))
+    .filter((method): method is Method => method !== undefined && isAccessorMethod(method));
+}
+
+export function accessorFieldAccess(codebase: Codebase, fragment: Fragment): { readonly reads: string[]; readonly writes: string[] } {
+  const accessorFragments = calledAccessorMethods(codebase, fragment).flatMap((method) => method.fragments);
+  return {
+    reads: [...new Set(accessorFragments.flatMap((accessorFragment) => accessorFragment.reads ?? []))],
+    writes: [...new Set(accessorFragments.flatMap((accessorFragment) => accessorFragment.writes ?? []))],
+  };
+}
+
+/** クラス自身と、extends(superclassId)をたどった先祖のクラスID集合。輪になっていても訪問済みで止まる。 */
+export function extendsChainIds(codebase: Codebase, classId: string): Set<string> {
+  const ids = new Set<string>();
+  let current: CodeClass | undefined = findClass(codebase, classId);
+  while (current !== undefined && !ids.has(current.id)) {
+    ids.add(current.id);
+    current = current.superclassId === undefined ? undefined : findClass(codebase, current.superclassId);
+  }
+  return ids;
 }
 
 /** 指定したクラスだけを置き換えた新しいCodebaseを返す(元のCodebaseは変更しない)。 */

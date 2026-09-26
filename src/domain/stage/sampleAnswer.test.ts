@@ -127,6 +127,40 @@ describe('applySolutionSteps', () => {
     expect(classNamed(result, 'B').fields?.map((field) => field.id)).toEqual(['field-b-x', 'field-a-x']);
   });
 
+  it('changeVisibilityステップで、指定クラスのメソッドだけ可視性を変える(別クラスの同名メソッドは変わらない)', () => {
+    // Arrange
+    const withA = withMethodsOf(twoClassCodebase(), 'A', [
+      { id: 'method-a-run', name: 'run', visibility: 'private', fragments: [{ id: 'f-a', label: 'do', lines: 3, responsibility: 'x' }] },
+    ]);
+    const codebase: Codebase = {
+      files: [
+        ...withA.files,
+        {
+          id: 'file-c',
+          path: 'src/c.ts',
+          classes: [
+            {
+              id: 'class-c',
+              name: 'C',
+              methods: [
+                { id: 'method-b-run', name: 'run', visibility: 'private', fragments: [{ id: 'f-c', label: 'do', lines: 3, responsibility: 'x' }] },
+                { id: 'method-caller', name: 'caller', visibility: 'public', fragments: [{ id: 'f-caller', label: 'call', lines: 1, responsibility: 'x', uses: ['method-a-run'] }] },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const steps: SolutionStep[] = [{ changeVisibility: { method: 'run', class: 'A', visibility: 'public' } }];
+
+    // Act
+    const result = applySolutionSteps(codebase, steps);
+
+    // Assert
+    expect(classNamed(result, 'A').methods.find((method) => method.id === 'method-a-run')?.visibility).toBe('public');
+    expect(classNamed(result, 'C').methods.find((method) => method.id === 'method-b-run')?.visibility).toBe('private');
+  });
+
   it('deleteMethodステップで、指定クラスの空実装を削除する', () => {
     // Arrange
     const codebase = withMethodsOf(twoClassCodebase(), 'B', [

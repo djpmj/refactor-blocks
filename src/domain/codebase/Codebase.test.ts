@@ -1,7 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import { fieldsOf, findClassOfField, findField, findInterfaces, findSuperclass, isInterfaceLike, isStubMethod, parentIds, touchedFieldIds } from './Codebase';
+import {
+  accessorFieldAccess,
+  extendsChainIds,
+  fieldsOf,
+  findClassOfField,
+  findField,
+  findInterfaces,
+  findSuperclass,
+  isAccessorMethod,
+  isInterfaceLike,
+  isStubMethod,
+  parentIds,
+  touchedFieldIds,
+} from './Codebase';
 import { sampleCodebase } from './testFixtures';
-import type { CodeClass, Field, Fragment, Method } from './Codebase';
+import type { CodeClass, Codebase, Field, Fragment, Method } from './Codebase';
 
 describe('findSuperclass', () => {
   it('superclassIdが指すクラスを返す', () => {
@@ -308,6 +321,169 @@ describe('findField', () => {
 
     // Assert
     expect(result).toBeUndefined();
+  });
+});
+
+describe('isAccessorMethod', () => {
+  it('処理が1つ以上あり、すべてaccessorならtrue', () => {
+    // Arrange
+    const target = method({
+      fragments: [{ id: 'f1', label: 'getBalance', lines: 1, responsibility: 'x', accessor: true }],
+    });
+
+    // Act
+    const result = isAccessorMethod(target);
+
+    // Assert
+    expect(result).toBe(true);
+  });
+
+  it('accessorでない通常の処理が混ざっていればfalse', () => {
+    // Arrange
+    const target = method({
+      fragments: [
+        { id: 'f1', label: 'getBalance', lines: 1, responsibility: 'x', accessor: true },
+        { id: 'f2', label: 'log', lines: 1, responsibility: 'x' },
+      ],
+    });
+
+    // Act
+    const result = isAccessorMethod(target);
+
+    // Assert
+    expect(result).toBe(false);
+  });
+
+  it('処理が1つもなければ(契約メソッド)false', () => {
+    // Arrange
+    const target = method({ fragments: [] });
+
+    // Act
+    const result = isAccessorMethod(target);
+
+    // Assert
+    expect(result).toBe(false);
+  });
+});
+
+function accessorMethod(id: string, opts: { readonly reads?: readonly string[]; readonly writes?: readonly string[] }): Method {
+  return {
+    id,
+    name: id,
+    visibility: 'public',
+    fragments: [{ id: `${id}-f`, label: id, lines: 3, responsibility: 'accessor', accessor: true, reads: opts.reads, writes: opts.writes }],
+  };
+}
+
+describe('accessorFieldAccess', () => {
+  it('getter越しに読むフィールドをreads、setter越しに書くフィールドをwritesに集める', () => {
+    // Arrange
+    const codeClass: CodeClass = {
+      id: 'class-a',
+      name: 'A',
+      methods: [accessorMethod('method-get', { reads: ['field-x'] }), accessorMethod('method-set', { writes: ['field-x'] })],
+    };
+    const codebase: Codebase = { files: [{ id: 'file', path: 'src/a.ts', classes: [codeClass] }] };
+    const target = fragment({ uses: ['method-get', 'method-set'] });
+
+    // Act
+    const result = accessorFieldAccess(codebase, target);
+
+    // Assert
+    expect(result).toEqual({ reads: ['field-x'], writes: ['field-x'] });
+  });
+
+  it('accessorでないメソッド・存在しないID・usesなしは空になる', () => {
+    // Arrange
+    const codeClass: CodeClass = {
+      id: 'class-a',
+      name: 'A',
+      methods: [{ id: 'method-plain', name: 'plain', visibility: 'public', fragments: [{ id: 'f-plain', label: 'plain', lines: 1, responsibility: 'x', reads: ['field-y'] }] }],
+    };
+    const codebase: Codebase = { files: [{ id: 'file', path: 'src/a.ts', classes: [codeClass] }] };
+
+    // Act
+    const withPlain = accessorFieldAccess(codebase, fragment({ uses: ['method-plain', 'method-missing'] }));
+    const withoutUses = accessorFieldAccess(codebase, fragment());
+
+    // Assert
+    expect(withPlain).toEqual({ reads: [], writes: [] });
+    expect(withoutUses).toEqual({ reads: [], writes: [] });
+  });
+
+  it('同じgetterを2回usesに指しても重複なく1つにまとめる', () => {
+    // Arrange
+    const codeClass: CodeClass = {
+      id: 'class-a',
+      name: 'A',
+      methods: [accessorMethod('method-get', { reads: ['field-x'] })],
+    };
+    const codebase: Codebase = { files: [{ id: 'file', path: 'src/a.ts', classes: [codeClass] }] };
+
+    // Act
+    const result = accessorFieldAccess(codebase, fragment({ uses: ['method-get', 'method-get'] }));
+
+    // Assert
+    expect(result).toEqual({ reads: ['field-x'], writes: [] });
+  });
+});
+
+describe('extendsChainIds', () => {
+  function chainCodebase(): Codebase {
+    return {
+      files: [
+        {
+          id: 'file',
+          path: 'src/all.ts',
+          classes: [
+            emptyClass('class-grandparent'),
+            emptyClass('class-parent', { superclassId: 'class-grandparent' }),
+            emptyClass('class-child', { superclassId: 'class-parent' }),
+          ],
+        },
+      ],
+    };
+  }
+
+  it('継承元がなければ自分だけの集合を返す', () => {
+    // Arrange
+    const codebase = chainCodebase();
+
+    // Act
+    const result = extendsChainIds(codebase, 'class-grandparent');
+
+    // Assert
+    expect(result).toEqual(new Set(['class-grandparent']));
+  });
+
+  it('2段の先祖まで辿った集合を返す', () => {
+    // Arrange
+    const codebase = chainCodebase();
+
+    // Act
+    const result = extendsChainIds(codebase, 'class-child');
+
+    // Assert
+    expect(result).toEqual(new Set(['class-child', 'class-parent', 'class-grandparent']));
+  });
+
+  it('継承が輪になっていても訪問済みで止まる', () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [
+        {
+          id: 'file',
+          path: 'src/all.ts',
+          classes: [emptyClass('class-a', { superclassId: 'class-b' }), emptyClass('class-b', { superclassId: 'class-a' })],
+        },
+      ],
+    };
+
+    // Act
+    const result = extendsChainIds(codebase, 'class-a');
+
+    // Assert
+    expect(result).toEqual(new Set(['class-a', 'class-b']));
   });
 });
 

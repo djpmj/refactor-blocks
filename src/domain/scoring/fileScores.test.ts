@@ -268,6 +268,82 @@ describe("fileDeductions", () => {
     expect(total).toBe(100 - scoreCodebase(codebase, stage).total);
     expect(total).toBeGreaterThan(0);
   });
+
+  it("protectedの越境は、呼んでいる側のクラスのあるファイルの減点になる(visibilityEnforcedがなくても数える)", () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [
+        { id: "file-a", path: "a", classes: [classOf("A", ["method-B"])] },
+        {
+          id: "file-b",
+          path: "b",
+          classes: [{ id: "class-B", name: "B", methods: [{ id: "method-B", name: "run", visibility: "protected", fragments: [] }] }],
+        },
+      ],
+    };
+
+    // Act
+    const deductions = fileDeductions(codebase, LOOSE);
+
+    // Assert
+    expect(deductions.get("file-a")).toBe(10);
+    expect(deductions.get("file-b")).toBe(0);
+  });
+
+  it("privateの越境は、visibilityEnforcedのときだけ数える", () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [
+        { id: "file-a", path: "a", classes: [classOf("A", ["method-B"])] },
+        {
+          id: "file-b",
+          path: "b",
+          classes: [{ id: "class-B", name: "B", methods: [{ id: "method-B", name: "run", visibility: "private", fragments: [] }] }],
+        },
+      ],
+    };
+
+    // Act
+    const withoutEnforced = fileDeductions(codebase, LOOSE);
+    const withEnforced = fileDeductions(codebase, { ...LOOSE, visibilityEnforced: true });
+
+    // Assert
+    expect(withoutEnforced.get("file-a")).toBe(0);
+    expect(withEnforced.get("file-a")).toBe(10);
+  });
+
+  it("公開されたsetterは、setterのあるファイルの減点になる", () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [
+        {
+          id: "file-a",
+          path: "a",
+          classes: [
+            {
+              id: "class-a",
+              name: "A",
+              fields: [{ id: "field-a1", name: "a1", visibility: "private" }],
+              methods: [
+                {
+                  id: "method-set",
+                  name: "setA1",
+                  visibility: "public",
+                  fragments: [{ id: "f-set", label: "set", lines: 1, responsibility: "accessor", accessor: true, writes: ["field-a1"] }],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    // Act
+    const deductions = fileDeductions(codebase, LOOSE);
+
+    // Assert
+    expect(deductions.get("file-a")).toBe(10);
+  });
 });
 
 describe("fileSeverity", () => {

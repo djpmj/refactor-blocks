@@ -1,13 +1,14 @@
 import type { Codebase } from "../codebase/Codebase";
 import { classDependencies } from "../codebase/dependencies";
 import type { Stage } from "../stage/Stage";
-import { findEncapsulationViolations, findFeatureEnvy } from "./fieldAccess";
+import { findEncapsulationViolations, findFeatureEnvy, findOpenSetters } from "./fieldAccess";
 import { findContractViolations, findStubMethods } from "./interfaceContracts";
 import { findEmptyContainers, findUnusedPrivateMethods } from "./leftovers";
 import { findLineLimitViolations } from "./lineLimits";
 import { findLoneSuperclasses } from "./loneSuperclass";
 import { findResponsibilityViolations } from "./responsibilities";
 import { findCouplingViolations, POINTS_PER_VIOLATION } from "./score";
+import { countedVisibilityViolations } from "./visibility";
 
 /** メソッド・クラス・ファイルのIDから、それが属するファイルのIDを引く。 */
 function fileIdByTargetId(codebase: Codebase): Map<string, string> {
@@ -23,12 +24,12 @@ function fileIdByTargetId(codebase: Codebase): Map<string, string> {
 }
 
 /**
- * ファイルごとの減点(点)。違反は持ち主のファイルに数え、結合度と循環依存は依存元のクラスがあるファイルに数える。
- * 全ファイルの合計は、アクセス制御を除いた `scoreCodebase` の減点の合計と一致する。
+ * ファイルごとの減点(点)。違反は持ち主のファイルに数え、結合度と循環依存は依存元のクラスがあるファイルに数え、
+ * アクセス制御の違反は呼んでいる側のクラスのファイルに数える。全ファイルの合計は `scoreCodebase` の減点の合計と一致する。
  */
 export function fileDeductions(
   codebase: Codebase,
-  stage: Pick<Stage, "limits" | "dependencyLimit" | "responsibilityLimit">,
+  stage: Pick<Stage, "limits" | "dependencyLimit" | "responsibilityLimit" | "visibilityEnforced">,
 ): Map<string, number> {
   const dependencies = classDependencies(codebase);
   const violatingTargetIds = [
@@ -49,6 +50,8 @@ export function fileDeductions(
     ...findContractViolations(codebase),
     ...findFeatureEnvy(codebase).map((violation) => violation.methodId),
     ...findEncapsulationViolations(codebase).map((violation) => violation.accessorClassId),
+    ...findOpenSetters(codebase),
+    ...countedVisibilityViolations(codebase, stage.visibilityEnforced).map((violation) => violation.callerClassId),
   ];
   const owners = fileIdByTargetId(codebase);
   const points = new Map(

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { CodeClass, Codebase, Fragment } from '../codebase/Codebase';
-import { findVisibilityViolations } from './visibility';
+import { countedVisibilityViolations, findVisibilityViolations } from './visibility';
 
 function fragment(id: string, uses: readonly string[]): Fragment {
   return { id, label: id, lines: 1, responsibility: 'call', uses };
@@ -30,7 +30,7 @@ describe('findVisibilityViolations', () => {
     const violations = findVisibilityViolations(codebase);
 
     // Assert
-    expect(violations).toEqual([{ methodId: 'method-B', callerClassId: 'class-A' }]);
+    expect(violations).toEqual([{ methodId: 'method-B', callerClassId: 'class-A', kind: 'private' }]);
   });
 
   it('同じクラス内で private メソッドを呼ぶのは違反にしない', () => {
@@ -75,7 +75,7 @@ describe('findVisibilityViolations', () => {
     expect(violations).toEqual([]);
   });
 
-  it('protected メソッドを別クラスから呼ぶのは違反にしない', () => {
+  it('継承関係のない別クラスから protected を呼ぶと違反になる', () => {
     // Arrange
     const codebase = codebaseOf({
       A: { visibility: 'public', uses: ['method-B'] },
@@ -86,7 +86,115 @@ describe('findVisibilityViolations', () => {
     const violations = findVisibilityViolations(codebase);
 
     // Assert
+    expect(violations).toEqual([{ methodId: 'method-B', callerClassId: 'class-A', kind: 'protected' }]);
+  });
+
+  it('子クラスから親の protected を呼ぶのは違反にしない', () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [
+        {
+          id: 'file',
+          path: 'src/all.ts',
+          classes: [
+            { id: 'class-parent', name: 'Parent', methods: [{ id: 'method-parent', name: 'run', visibility: 'protected', fragments: [] }] },
+            {
+              id: 'class-child',
+              name: 'Child',
+              superclassId: 'class-parent',
+              methods: [{ id: 'method-child', name: 'run', visibility: 'public', fragments: [fragment('f-child', ['method-parent'])] }],
+            },
+          ],
+        },
+      ],
+    };
+
+    // Act
+    const violations = findVisibilityViolations(codebase);
+
+    // Assert
     expect(violations).toEqual([]);
+  });
+
+  it('孫クラスから祖父の protected を呼ぶのは違反にしない', () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [
+        {
+          id: 'file',
+          path: 'src/all.ts',
+          classes: [
+            { id: 'class-grandparent', name: 'Grandparent', methods: [{ id: 'method-grandparent', name: 'run', visibility: 'protected', fragments: [] }] },
+            { id: 'class-parent', name: 'Parent', superclassId: 'class-grandparent', methods: [] },
+            {
+              id: 'class-child',
+              name: 'Child',
+              superclassId: 'class-parent',
+              methods: [{ id: 'method-child', name: 'run', visibility: 'public', fragments: [fragment('f-child', ['method-grandparent'])] }],
+            },
+          ],
+        },
+      ],
+    };
+
+    // Act
+    const violations = findVisibilityViolations(codebase);
+
+    // Assert
+    expect(violations).toEqual([]);
+  });
+
+  it('親から子の protected を呼ぶのは違反になる', () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [
+        {
+          id: 'file',
+          path: 'src/all.ts',
+          classes: [
+            {
+              id: 'class-parent',
+              name: 'Parent',
+              methods: [{ id: 'method-parent', name: 'run', visibility: 'public', fragments: [fragment('f-parent', ['method-child'])] }],
+            },
+            { id: 'class-child', name: 'Child', superclassId: 'class-parent', methods: [{ id: 'method-child', name: 'hook', visibility: 'protected', fragments: [] }] },
+          ],
+        },
+      ],
+    };
+
+    // Act
+    const violations = findVisibilityViolations(codebase);
+
+    // Assert
+    expect(violations).toEqual([{ methodId: 'method-child', callerClassId: 'class-parent', kind: 'protected' }]);
+  });
+
+  it('implements しているだけのクラスから protected を呼ぶのは違反になる', () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [
+        {
+          id: 'file',
+          path: 'src/all.ts',
+          classes: [
+            { id: 'class-i', name: 'I', methods: [{ id: 'method-i', name: 'run', visibility: 'protected', fragments: [] }] },
+            {
+              id: 'class-impl',
+              name: 'Impl',
+              interfaceIds: ['class-i'],
+              methods: [{ id: 'method-impl', name: 'run', visibility: 'public', fragments: [fragment('f-impl', ['method-i'])] }],
+            },
+          ],
+        },
+      ],
+    };
+
+    // Act
+    const violations = findVisibilityViolations(codebase);
+
+    // Assert
+    expect(violations).toEqual([{ methodId: 'method-i', callerClassId: 'class-impl', kind: 'protected' }]);
   });
 
   it('存在しないメソッドIDへの uses は無視して例外を投げない', () => {
@@ -135,7 +243,7 @@ describe('findVisibilityViolations', () => {
     const violations = findVisibilityViolations(codebase);
 
     // Assert
-    expect(violations).toEqual([{ methodId: 'method-B', callerClassId: 'class-A' }]);
+    expect(violations).toEqual([{ methodId: 'method-B', callerClassId: 'class-A', kind: 'private' }]);
   });
 
   it('異なる2つの外部クラスが同じ private メソッドを呼んでいると2件になる(callerClassIdが異なる)', () => {
@@ -171,8 +279,43 @@ describe('findVisibilityViolations', () => {
 
     // Assert
     expect(violations).toEqual([
-      { methodId: 'method-C', callerClassId: 'class-A' },
-      { methodId: 'method-C', callerClassId: 'class-B' },
+      { methodId: 'method-C', callerClassId: 'class-A', kind: 'private' },
+      { methodId: 'method-C', callerClassId: 'class-B', kind: 'private' },
+    ]);
+  });
+});
+
+describe('countedVisibilityViolations', () => {
+  it('visibilityEnforcedがfalseなら、protectedの越境だけを数える', () => {
+    // Arrange
+    const codebase = codebaseOf({
+      A: { visibility: 'public', uses: ['method-B', 'method-C'] },
+      B: { visibility: 'private', uses: [] },
+      C: { visibility: 'protected', uses: [] },
+    });
+
+    // Act
+    const result = countedVisibilityViolations(codebase, undefined);
+
+    // Assert
+    expect(result).toEqual([{ methodId: 'method-C', callerClassId: 'class-A', kind: 'protected' }]);
+  });
+
+  it('visibilityEnforcedがtrueなら、private/protectedとも数える', () => {
+    // Arrange
+    const codebase = codebaseOf({
+      A: { visibility: 'public', uses: ['method-B', 'method-C'] },
+      B: { visibility: 'private', uses: [] },
+      C: { visibility: 'protected', uses: [] },
+    });
+
+    // Act
+    const result = countedVisibilityViolations(codebase, true);
+
+    // Assert
+    expect(result).toEqual([
+      { methodId: 'method-B', callerClassId: 'class-A', kind: 'private' },
+      { methodId: 'method-C', callerClassId: 'class-A', kind: 'protected' },
     ]);
   });
 });

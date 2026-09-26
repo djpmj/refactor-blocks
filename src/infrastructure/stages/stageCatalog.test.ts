@@ -40,6 +40,15 @@ const shortcuts: ReadonlyArray<{ readonly stageId: string; readonly description:
     ],
   },
   {
+    stageId: 'intermediate-misplaced-private',
+    description: 'sendMail・logDeliveryを抽出し、renderTemplateをpublicにするだけ',
+    steps: [
+      { extract: { from: 'notifyShipment', fragmentIds: ['frag-send-mail'], name: 'sendMail' } },
+      { extract: { from: 'notifyShipment', fragmentIds: ['frag-log-delivery'], name: 'logDelivery' } },
+      { changeVisibility: { method: 'renderTemplate', class: 'TemplateEngine', visibility: 'public' } },
+    ],
+  },
+  {
     stageId: 'advanced-collapse-hierarchy',
     description: '継承を外すだけで、メソッドを1クラスにまとめない',
     steps: [{ setSuperclass: { class: 'CsvExporter', superclass: null } }],

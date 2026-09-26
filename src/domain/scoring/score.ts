@@ -1,13 +1,13 @@
 import type { Codebase } from '../codebase/Codebase';
 import { classDependencies, type ClassDependency } from '../codebase/dependencies';
 import type { Stage } from '../stage/Stage';
-import { findEncapsulationViolations, findFeatureEnvy } from './fieldAccess';
+import { findEncapsulationViolations, findFeatureEnvy, findOpenSetters } from './fieldAccess';
 import { findContractViolations, findStubMethods } from './interfaceContracts';
 import { findEmptyContainers, findUnusedPrivateMethods } from './leftovers';
 import { findLineLimitViolations } from './lineLimits';
 import { findLoneSuperclasses } from './loneSuperclass';
 import { findResponsibilityViolations } from './responsibilities';
-import { findVisibilityViolations } from './visibility';
+import { countedVisibilityViolations } from './visibility';
 
 export type ScoreRule =
   | 'line-limit'
@@ -58,14 +58,14 @@ export function scoreCodebase(
     coupling: findCouplingViolations(dependencies, stage.dependencyLimit).length,
     cycle: dependencies.filter((dependency) => dependency.cyclic).length,
     responsibility: findResponsibilityViolations(codebase, stage.responsibilityLimit).length,
-    visibility: stage.visibilityEnforced === true ? findVisibilityViolations(codebase).length : 0,
+    visibility: countedVisibilityViolations(codebase, stage.visibilityEnforced).length,
     empty: findEmptyContainers(codebase).length,
     unused: findUnusedPrivateMethods(codebase).length,
     'lone-superclass': findLoneSuperclasses(codebase).length,
     stub: findStubMethods(codebase).length,
     contract: findContractViolations(codebase).length,
     'feature-envy': findFeatureEnvy(codebase).length,
-    encapsulation: findEncapsulationViolations(codebase).length,
+    encapsulation: findEncapsulationViolations(codebase).length + findOpenSetters(codebase).length,
   };
   const deductions = (
     [

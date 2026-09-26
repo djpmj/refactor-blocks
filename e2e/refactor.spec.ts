@@ -1026,9 +1026,10 @@ test('越境した private メソッドの呼び出しは減点され、呼び�
   await page.goto('/');
   await page.getByLabel('ステージ').selectOption({ label: '中級3: 越境する private メソッド' });
   await expect(page.getByRole('heading', { name: '中級3: 越境する private メソッド' })).toBeVisible();
-  await expect(page.getByTestId('score')).toContainText('80点');
+  await expect(page.getByTestId('score')).toContainText('70点');
   await expect(page.getByTestId('score')).toContainText('行数 -10');
   await expect(page.getByTestId('score')).toContainText('アクセス制御 -10');
+  await expect(page.getByTestId('score')).toContainText('結合度 -10');
 
   // Act: notifyShipment からメール送信・ログ記録を抽出する
   await page.getByTestId('method-notifyShipment').click();
@@ -1041,8 +1042,13 @@ test('越境した private メソッドの呼び出しは減点され、呼び�
   await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
 
   // Act: renderTemplate を呼び出し元の NotificationService へドラッグで移す
+  // 結合度の減点行が増えた分キャンバスが縦に伸びるので、ドラッグ元がビューポートの外に出ないようFit Viewで収める
   const source = page.getByTestId('method-renderTemplate');
   const target = page.getByTestId('class-NotificationService');
+  await expect(async () => {
+    await page.getByRole('button', { name: 'Fit View' }).click();
+    await expect(source).toBeInViewport();
+  }).toPass();
   const from = await source.boundingBox();
   const to = await target.boundingBox();
   if (from === null || to === null) throw new Error('要素の位置を取得できません');

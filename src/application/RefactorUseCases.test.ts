@@ -5,10 +5,12 @@ import {
   addClassUseCase,
   addFileUseCase,
   addInterfaceUseCase,
+  changeVisibilityUseCase,
   deleteMethodUseCase,
   describeAddClassError,
   describeAddFileError,
   describeAddInterfaceError,
+  describeChangeVisibilityError,
   describeDeleteClassError,
   describeDeleteFileError,
   describeDeleteMethodError,
@@ -439,6 +441,8 @@ describe('エラーメッセージ', () => {
       describeMoveFieldError('duplicate-field-name'),
       describeDeleteClassError('has-fields'),
       describeDeleteFileError('has-fields'),
+      describeChangeVisibilityError('contract-method'),
+      describeChangeVisibilityError('widening-not-needed'),
     ];
 
     // Assert
@@ -458,7 +462,69 @@ describe('エラーメッセージ', () => {
       '移動先に同じ名前のフィールドがあります',
       'フィールドを持つクラスは削除できません。先にフィールドを別のクラスへ移してください',
       'フィールドを持つクラスがあるファイルは削除できません。先にフィールドを別のクラスへ移してください',
+      '中身のないメソッド(インターフェースの約束)の可視性は変えられません',
+      'public は他のクラスから、protected は子クラスから呼ばれているメソッドにだけ選べます',
     ]);
+  });
+});
+
+/** changeVisibilityUseCase用: class-a の method-target(private)を class-b の method-b が呼ぶ。 */
+function codebaseWithVisibilityTarget(): Codebase {
+  return {
+    files: [
+      {
+        id: 'file',
+        path: 'src/all.ts',
+        classes: [
+          {
+            id: 'class-a',
+            name: 'A',
+            methods: [{ id: 'method-target', name: 'target', visibility: 'private', fragments: [{ id: 'f-target', label: 'do', lines: 1, responsibility: 'x' }] }],
+          },
+          {
+            id: 'class-b',
+            name: 'B',
+            methods: [{ id: 'method-b', name: 'run', visibility: 'public', fragments: [{ id: 'f-b', label: 'call', lines: 1, responsibility: 'x', uses: ['method-target'] }] }],
+          },
+        ],
+      },
+    ],
+  };
+}
+
+describe('changeVisibilityUseCase', () => {
+  it('同じ可視性を選ぶと何も変えずに成功扱いにする', () => {
+    // Arrange
+    const codebase = codebaseWithVisibilityTarget();
+
+    // Act
+    const result = changeVisibilityUseCase(codebase, 'method-target', 'private');
+
+    // Assert
+    expect(result).toEqual({ ok: true, value: codebase });
+  });
+
+  it('他クラスから呼ばれているメソッドを public にできる', () => {
+    // Arrange
+    const codebase = codebaseWithVisibilityTarget();
+
+    // Act
+    const result = changeVisibilityUseCase(codebase, 'method-target', 'public');
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    expect(findMethod(result.value, 'method-target')?.visibility).toBe('public');
+  });
+
+  it('同じ可視性以外のエラーはそのまま返す', () => {
+    // Arrange
+    const codebase = codebaseWithVisibilityTarget();
+
+    // Act
+    const result = changeVisibilityUseCase(codebase, 'method-missing', 'public');
+
+    // Assert
+    expect(result).toEqual({ ok: false, error: 'method-not-found' });
   });
 });
 

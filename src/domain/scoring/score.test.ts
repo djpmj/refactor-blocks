@@ -400,6 +400,40 @@ describe('scoreCodebase', () => {
     expect(score.deductions[11]).toEqual({ rule: 'encapsulation', count: 1, points: 10 });
   });
 
+  it('公開されたsetter1つにつき10点減点する(encapsulationに数える)', () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [
+        {
+          id: 'file',
+          path: 'src/all.ts',
+          classes: [
+            {
+              id: 'class-a',
+              name: 'A',
+              fields: [{ id: 'field-a1', name: 'a1', visibility: 'private' }],
+              methods: [
+                {
+                  id: 'method-set',
+                  name: 'setA1',
+                  visibility: 'public',
+                  fragments: [{ id: 'f-set', label: 'set', lines: 1, responsibility: 'accessor', accessor: true, writes: ['field-a1'] }],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    // Act
+    const score = scoreCodebase(codebase, { ...LOOSE, dependencyLimit: 1 });
+
+    // Assert
+    expect(score.total).toBe(90);
+    expect(score.deductions[11]).toEqual({ rule: 'encapsulation', count: 1, points: 10 });
+  });
+
   it('減点の合計が100点を超えても0点で止まる', () => {
     // Arrange
     const codebase = codebaseOf({ A: ['method-B'], B: ['method-C'], C: ['method-A'] });

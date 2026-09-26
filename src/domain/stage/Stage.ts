@@ -20,8 +20,8 @@ export type Stage = {
   readonly codebase: Codebase;
   /** リファクタリング後に出す変更依頼。責務は初期のコードベースに存在するものを選ぶ。 */
   readonly changeRequests: readonly ChangeRequest[];
-  /** private メソッドが自クラス以外から呼ばれていないかを採点するかどうか。省略時は false。
-   *  既存ステージの模範解答(Move Method で private メソッドを移す手順)を壊さないため、
-   *  この採点を有効にするステージだけが明示的に true を書く。 */
+  /** private / protected のメソッドが届かないクラスから呼ばれていないかを採点するかどうか(protectedは持ち主と子孫クラスから呼べる)。省略時は false。
+   *  越境は、呼ばれる側を public にしても消える(可視性の操作は全ステージで使える)。Move Method で直させたいステージは、
+   *  依存の上限など別の採点で public にするだけでは100点にならないようにする(中級3は dependencyLimit: 0)。 */
   readonly visibilityEnforced?: boolean;
 };

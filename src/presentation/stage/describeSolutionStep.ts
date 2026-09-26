@@ -50,6 +50,12 @@ function describeMoveField({ field, fromClass, toClass }: MoveFieldStep): string
   return `${fromClass} のフィールド ${field} を ${toClass} へドラッグして移そう(Move Field)`;
 }
 
+type ChangeVisibilityStep = Extract<SolutionStep, { readonly changeVisibility: unknown }>['changeVisibility'];
+
+function describeChangeVisibility({ class: className, method, visibility }: ChangeVisibilityStep): string {
+  return `${className} の ${method} を、メソッドエディタの「可視性」で ${visibility} にしよう`;
+}
+
 type StructuralStep = Exclude<
   SolutionStep,
   | { readonly extract: unknown }
@@ -57,6 +63,7 @@ type StructuralStep = Exclude<
   | { readonly merge: unknown }
   | { readonly deleteMethod: unknown }
   | { readonly moveField: unknown }
+  | { readonly changeVisibility: unknown }
 >;
 
 /** ファイル・クラス・継承関係の組み替え(処理の中身を伴わない手)のヒント文。 */
@@ -90,6 +97,9 @@ export function describeSolutionStep(codebase: Codebase, step: SolutionStep): st
   }
   if ('moveField' in step) {
     return describeMoveField(step.moveField);
+  }
+  if ('changeVisibility' in step) {
+    return describeChangeVisibility(step.changeVisibility);
   }
   if ('merge' in step) {
     const { methodA, methodAClass, methodB, methodBClass, name } = step.merge;

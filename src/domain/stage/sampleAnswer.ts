@@ -1,6 +1,7 @@
 import { addClass } from '../codebase/addClass';
 import { addFile } from '../codebase/addFile';
-import { allClasses, fieldsOf, type Codebase } from '../codebase/Codebase';
+import { allClasses, fieldsOf, type Codebase, type Visibility } from '../codebase/Codebase';
+import { changeVisibility } from '../codebase/changeVisibility';
 import { deleteFile } from '../codebase/deleteFile';
 import { deleteMethod } from '../codebase/deleteMethod';
 import { extractMethod } from '../codebase/extractMethod';
@@ -40,6 +41,14 @@ export type SolutionStep =
         /** 同名フィールドが複数クラスにありうるため必須。 */
         readonly fromClass: string;
         readonly toClass: string;
+      };
+    }
+  | {
+      readonly changeVisibility: {
+        readonly method: string;
+        /** 同名メソッドが複数クラスにありうるため必須。 */
+        readonly class: string;
+        readonly visibility: Visibility;
       };
     }
   | {
@@ -107,6 +116,7 @@ type StructuralStep = Exclude<
   | { readonly merge: unknown }
   | { readonly deleteMethod: unknown }
   | { readonly moveField: unknown }
+  | { readonly changeVisibility: unknown }
 >;
 
 /** ファイル・クラス・継承/実装関係の組み替え(処理の中身を伴わない手)を適用する。 */
@@ -163,6 +173,10 @@ function applyStep(codebase: Codebase, step: SolutionStep, newId: string): Codeb
   if ('moveField' in step) {
     const { field, fromClass, toClass } = step.moveField;
     return unwrap(moveField(codebase, fieldIdByName(codebase, field, fromClass), classIdByName(codebase, toClass)));
+  }
+  if ('changeVisibility' in step) {
+    const { method, class: className, visibility } = step.changeVisibility;
+    return unwrap(changeVisibility(codebase, methodIdByName(codebase, method, className), visibility));
   }
   return applyStructuralStep(codebase, step, newId);
 }
