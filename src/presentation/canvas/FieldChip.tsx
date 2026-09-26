@@ -22,6 +22,7 @@ export function FieldChip({ field }: Readonly<{ field: Field }>) {
   const label = `フィールド ${field.name}(${field.visibility})。ドラッグで別クラスへ移動`;
   return (
     <button
+      data-field-id={field.id}
       ref={setNodeRef}
       type="button"
       className="field-chip-button nodrag nopan"

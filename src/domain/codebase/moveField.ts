@@ -1,4 +1,4 @@
-import { fieldsOf, findClass, findClassOfField, findField, mapClasses, type Codebase } from './Codebase';
+import { allClasses, type CodeClass, type Field, fieldsOf, findClass, findClassOfField, findField, mapClasses, type Codebase } from './Codebase';
 import { err, ok, type Result } from '../shared/Result';
 
 export type MoveFieldError = 'field-not-found' | 'class-not-found' | 'same-class' | 'duplicate-field-name';
@@ -10,8 +10,8 @@ export function moveField(codebase: Codebase, fieldId: string, targetClassId: st
   if (field === undefined || sourceClass === undefined) return err('field-not-found');
   const targetClass = findClass(codebase, targetClassId);
   if (targetClass === undefined) return err('class-not-found');
-  if (sourceClass.id === targetClass.id) return err('same-class');
-  if (fieldsOf(targetClass).some((existing) => existing.name === field.name)) return err('duplicate-field-name');
+  const error = targetError(sourceClass, field, targetClass);
+  if (error !== null) return err(error);
 
   return ok(
     mapClasses(codebase, (codeClass) => {
@@ -25,4 +25,18 @@ export function moveField(codebase: Codebase, fieldId: string, targetClassId: st
       return codeClass;
     }),
   );
+}
+
+function targetError(sourceClass: CodeClass, field: Field, targetClass: CodeClass): MoveFieldError | null {
+  if (sourceClass.id === targetClass.id) return 'same-class';
+  if (fieldsOf(targetClass).some((existing) => existing.name === field.name)) return 'duplicate-field-name';
+  return null;
+}
+
+/** 移動できるクラスをファイル順・宣言順で返す。 */
+export function moveFieldTargets(codebase: Codebase, fieldId: string): CodeClass[] {
+  const field = findField(codebase, fieldId);
+  const sourceClass = findClassOfField(codebase, fieldId);
+  if (field === undefined || sourceClass === undefined) return [];
+  return allClasses(codebase).filter((target) => targetError(sourceClass, field, target) === null);
 }

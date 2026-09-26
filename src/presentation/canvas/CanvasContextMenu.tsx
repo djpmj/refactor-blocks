@@ -1,6 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject, type SubmitEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { findClass, findSuperclass } from '../../domain/codebase/Codebase';
+import { moveMethodTargets } from '../../domain/codebase/moveMethod';
+import { moveFieldTargets } from '../../domain/codebase/moveField';
 import { availableParents } from '../../domain/codebase/setSuperclass';
 import { useGameStore, useGameStoreApi, type GameStore } from '../store/useGameStore';
 import { clampMenuPosition, type Point } from './clampMenuPosition';
@@ -75,6 +77,7 @@ function usePositionWithinViewport(menuRef: RefObject<HTMLElement | null>, x: nu
 type MenuItem =
   | { kind: 'form'; mode: FormMode; label: string }
   | { kind: 'action'; run: () => void; label: string }
+  | { kind: 'move-submenu'; label: string }
   | { kind: 'extends-submenu'; label: string }
   | { kind: 'implements-submenu'; label: string };
 
@@ -82,7 +85,9 @@ type MenuItem =
 function menuItemsFor(target: ContextMenuTarget, onClose: () => void, api: GameStore): MenuItem[] {
   const { deleteClass, deleteFile } = api.getState();
   const { classId, fileId } = target;
+  const moveItems: MenuItem[] = target.member === null ? [] : [{ kind: 'move-submenu', label: '別のクラスへ移動' }];
   return [
+    ...moveItems,
     ...(fileId === null ? [] : [{ kind: 'form' as const, mode: 'class' as const, label: 'このファイルにクラスを追加' }]),
     { kind: 'form', mode: 'file', label: 'ファイルを追加' },
     ...(classId === null ? [] : [{ kind: 'form' as const, mode: 'renameClass' as const, label: 'クラスの名前を変更' }]),
@@ -133,7 +138,6 @@ function useSubmenuPosition(triggerRef: RefObject<HTMLElement | null>, submenuRe
 
 type SubmenuTriggerProps = {
   label: string;
-  autoFocus: boolean;
   open: boolean;
   setOpen: (open: boolean) => void;
   wrapperRef: RefObject<HTMLDivElement | null>;
@@ -142,7 +146,7 @@ type SubmenuTriggerProps = {
 };
 
 /** ホバー(またはフォーカス)すると候補を右側に出すサブメニューの見た目の共通部分。 */
-function SubmenuTrigger({ label, autoFocus, open, setOpen, wrapperRef, triggerRef, children }: Readonly<SubmenuTriggerProps>) {
+function SubmenuTrigger({ label, open, setOpen, wrapperRef, triggerRef, children }: Readonly<SubmenuTriggerProps>) {
   return (
     <div
       ref={wrapperRef}
@@ -166,7 +170,6 @@ function SubmenuTrigger({ label, autoFocus, open, setOpen, wrapperRef, triggerRe
         role="menuitem"
         aria-haspopup="menu"
         aria-expanded={open}
-        autoFocus={autoFocus}
         onClick={() => {
           // ホバーで既に開いていることがあるので、開閉のトグルにはしない(トグルだとホバー直後のクリックで閉じてしまう)
           setOpen(true);
@@ -179,13 +182,13 @@ function SubmenuTrigger({ label, autoFocus, open, setOpen, wrapperRef, triggerRe
   );
 }
 
-type ExtendsMenuItemProps = { target: ContextMenuTarget; label: string; autoFocus: boolean; onClose: () => void };
+type ExtendsMenuItemProps = { target: ContextMenuTarget; label: string; onClose: () => void };
 
 /**
  * 「継承元を設定」の項目。候補をクリックすればその場で決まり、メニューを閉じる(1クラスに1つしか持てないため)。
  * 候補から、すでに実装先(implements)になっている相手を除く。
  */
-function ExtendsMenuItem({ target, label, autoFocus, onClose }: Readonly<ExtendsMenuItemProps>) {
+function ExtendsMenuItem({ target, label, onClose }: Readonly<ExtendsMenuItemProps>) {
   const codebase = useGameStore((state) => state.codebase);
   const { setSuperclass } = useGameStoreApi().getState();
   const [open, setOpen] = useState(false);
@@ -206,7 +209,7 @@ function ExtendsMenuItem({ target, label, autoFocus, onClose }: Readonly<Extends
     .map((candidate) => candidate.name);
 
   return (
-    <SubmenuTrigger label={label} autoFocus={autoFocus} open={open} setOpen={setOpen} wrapperRef={wrapperRef} triggerRef={triggerRef}>
+    <SubmenuTrigger label={label} open={open} setOpen={setOpen} wrapperRef={wrapperRef} triggerRef={triggerRef}>
       <div ref={submenuRef} role="menu" aria-label={label} className="context-menu context-menu__submenu" style={{ left: position.x, top: position.y }}>
         <button type="button" role="menuitem" aria-current={currentName === ''} onClick={() => select('')}>
           (解除)
@@ -221,14 +224,44 @@ function ExtendsMenuItem({ target, label, autoFocus, onClose }: Readonly<Extends
   );
 }
 
-type ImplementsMenuItemProps = { target: ContextMenuTarget; label: string; autoFocus: boolean };
+function MoveMenuItem({ target, label, onClose }: Readonly<ExtendsMenuItemProps>) {
+  const codebase = useGameStore((state) => state.codebase);
+  const { moveMethod, moveField } = useGameStoreApi().getState();
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const submenuRef = useRef<HTMLDivElement>(null);
+  const position = useSubmenuPosition(triggerRef, submenuRef, open);
+  const member = target.member;
+  if (member === null) return null;
+  const candidates = member.kind === 'method' ? moveMethodTargets(codebase, member.id) : moveFieldTargets(codebase, member.id);
+  if (candidates.length === 0) return null;
+  const select = (classId: string) => {
+    if (member.kind === 'method') moveMethod(member.id, classId);
+    else moveField(member.id, classId);
+    onClose();
+  };
+  return (
+    <SubmenuTrigger label={label} open={open} setOpen={setOpen} wrapperRef={wrapperRef} triggerRef={triggerRef}>
+      <div ref={submenuRef} role="menu" aria-label={label} className="context-menu context-menu__submenu" style={{ left: position.x, top: position.y }}>
+        {candidates.map((candidate) => (
+          <button key={candidate.id} type="button" role="menuitem" onClick={() => select(candidate.id)}>
+            {candidate.name}
+          </button>
+        ))}
+      </div>
+    </SubmenuTrigger>
+  );
+}
+
+type ImplementsMenuItemProps = { target: ContextMenuTarget; label: string };
 
 /**
  * 「実装するインターフェースを設定」の項目。チェック式(menuitemcheckbox)で、複数選べる。
  * 押しても閉じず、続けて別のインターフェースを付け外しできる(Esc・外側クリックで閉じる)。
  * 候補から、継承元(extends)になっている相手を除く。
  */
-function ImplementsMenuItem({ target, label, autoFocus }: Readonly<ImplementsMenuItemProps>) {
+function ImplementsMenuItem({ target, label }: Readonly<ImplementsMenuItemProps>) {
   const codebase = useGameStore((state) => state.codebase);
   const { addInterface, removeInterface } = useGameStoreApi().getState();
   const [open, setOpen] = useState(false);
@@ -243,7 +276,7 @@ function ImplementsMenuItem({ target, label, autoFocus }: Readonly<ImplementsMen
   const candidates = availableParents(codebase, codeClass.id).filter((candidate) => candidate.id !== codeClass.superclassId);
 
   return (
-    <SubmenuTrigger label={label} autoFocus={autoFocus} open={open} setOpen={setOpen} wrapperRef={wrapperRef} triggerRef={triggerRef}>
+    <SubmenuTrigger label={label} open={open} setOpen={setOpen} wrapperRef={wrapperRef} triggerRef={triggerRef}>
       <div ref={submenuRef} role="menu" aria-label={label} className="context-menu context-menu__submenu" style={{ left: position.x, top: position.y }}>
         {candidates.map((candidate) => {
           const checked = implementedIds.has(candidate.id);
@@ -272,21 +305,28 @@ function ImplementsMenuItem({ target, label, autoFocus }: Readonly<ImplementsMen
 type MenuItemsProps = { items: readonly MenuItem[]; target: ContextMenuTarget; onSelectForm: (mode: FormMode) => void; onClose: () => void };
 
 function MenuItems({ items, target, onSelectForm, onClose }: Readonly<MenuItemsProps>) {
+  const menuRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    // nullを返す項目を飛ばし、実際に描画された先頭項目にフォーカスする。
+    menuRef.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
+  }, [target]);
   return (
-    <div role="menu" aria-label="キャンバスのメニュー">
-      {items.map((item, index) => {
+    <div ref={menuRef} role="menu" aria-label="キャンバスのメニュー">
+      {items.map((item) => {
+        if (item.kind === 'move-submenu') {
+          return <MoveMenuItem key={item.kind} target={target} label={item.label} onClose={onClose} />;
+        }
         if (item.kind === 'extends-submenu') {
-          return <ExtendsMenuItem key={item.kind} target={target} label={item.label} autoFocus={index === 0} onClose={onClose} />;
+          return <ExtendsMenuItem key={item.kind} target={target} label={item.label} onClose={onClose} />;
         }
         if (item.kind === 'implements-submenu') {
-          return <ImplementsMenuItem key={item.kind} target={target} label={item.label} autoFocus={index === 0} />;
+          return <ImplementsMenuItem key={item.kind} target={target} label={item.label} />;
         }
         return (
           <button
             key={item.kind === 'form' ? item.mode : item.label}
             type="button"
             role="menuitem"
-            autoFocus={index === 0}
             onClick={() => {
               if (item.kind === 'form') onSelectForm(item.mode);
               else item.run();
@@ -364,13 +404,13 @@ function MenuForm({ target, mode, onDone }: Readonly<MenuFormProps>) {
 }
 
 /** キャンバスの右クリックメニュー。クラス・ファイルの追加と名前の変更を、その場で名前を入れて行う。 */
-export function CanvasContextMenu({ target, onClose }: Readonly<{ target: ContextMenuTarget; onClose: () => void }>) {
+export function CanvasContextMenu({ target, onClose, onDismiss }: Readonly<{ target: ContextMenuTarget; onClose: () => void; onDismiss: () => void }>) {
   const file = useGameStore((state) => state.codebase.files.find((candidate) => candidate.id === target.fileId));
   const api = useGameStoreApi();
   const [mode, setMode] = useState<Mode>('menu');
   const menuRef = useRef<HTMLDivElement>(null);
 
-  useCloseOnOutside(menuRef, onClose);
+  useCloseOnOutside(menuRef, onDismiss);
   const position = usePositionWithinViewport(menuRef, target.x, target.y, mode);
 
   return createPortal(
