@@ -84,6 +84,10 @@ Claudeはこのリポジトリでの会話・報告・コミットメッセー�
 3ロールに分けて進めるためのサブエージェント定義が `.claude/agents/` にある(Claude Codeを使う場合)。
 まとめて回したいときは `feature-harness` skill(`.claude/skills/feature-harness/SKILL.md`)を使う。
 
+上記を、役割ごとに別セッション(別のGitHub Actionsジョブ・別のCLI呼び出し)へさらに分割した
+大規模パイプライン(機能探索→仕様設計→ユーザ確定→最終仕様→Codex実装→Codexレビュー→
+Claudeレビュー→評価)を `.github/workflows/pipeline.yml` で回せる。詳細は `docs/pipeline/README.md` を参照。
+
 ## 自動開発(auto-dev)
 
 `docs/auto-dev/TASKS.md` にタスクを追記しておくと、`.github/workflows/auto-dev.yml` が
