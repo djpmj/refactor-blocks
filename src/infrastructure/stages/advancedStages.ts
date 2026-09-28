@@ -951,6 +951,208 @@ const valueObjectStage: Stage = {
   },
 };
 
+const templateMethodStage: Stage = {
+  id: 'advanced-template-method',
+  level: 'advanced',
+  title: '上級8: 取り込みの手順を Template Method にまとめる',
+  description: 'ネットショップの注文取り込み。取引先ごとに CSV と JSON で注文ファイルが届き、CsvOrderImporter と JsonOrderImporter が「ファイルを読み込む → 注文データに変換する → 検証する → 保存する」をそれぞれ持っている。違うのは変換だけで、残りの3手順はコピペ。OrderImporter には parse の宣言(中身のない protected メソッド)だけが用意されている。',
+  goal: '共通の3手順は抽出して統合し OrderImporter へ移そう。変換だけは子に parse として残し、OrderImporter を継承させてから parse を protected にしよう。最後に呼び出しだけになった2つの importOrders も統合して OrderImporter へ移そう。上級1と違い、親が手順を持ち、子は違う1手順だけを書く。メソッドは60行以内、1クラスの責務は3種類まで、依存先は1クラスまで',
+  limits: {
+    method: 60,
+    class: 150,
+    file: 250,
+  },
+  dependencyLimit: 1,
+  responsibilityLimit: 3,
+  changeRequests: [
+    {
+      id: 'req-add-xml',
+      title: 'XMLでも取り込めるようにして',
+      description: '新しい取引先はXMLで注文ファイルを送ってくる。CSV・JSONの取り込みはこれまでどおり使う。',
+      responsibility: 'order-parse',
+      linesPerSite: 30,
+      kind: 'extend',
+      partName: 'parse',
+    },
+    {
+      id: 'req-order-validation',
+      title: '注文の検証ルールを見直して',
+      description: '注文日が未来日付の注文を取り込まないようにしたい。',
+      responsibility: 'order-validation',
+      linesPerSite: 5,
+      partName: 'rejectFutureOrderDate',
+    },
+  ],
+  codebase: {
+    files: [
+      {
+        id: 'file-import-controller',
+        path: 'src/order/ImportController.ts',
+        classes: [
+          {
+            id: 'class-import-controller',
+            name: 'ImportController',
+            methods: [
+              {
+                id: 'method-upload',
+                name: 'upload',
+                visibility: 'public',
+                fragments: [
+                  {
+                    id: 'frag-detect-format',
+                    label: 'アップロードされたファイルの形式を判定する',
+                    lines: 20,
+                    responsibility: 'http',
+                    suggestedName: 'detectFormat',
+                  },
+                  {
+                    id: 'frag-dispatch-csv',
+                    label: 'CSVなら CsvOrderImporter で取り込む',
+                    lines: 4,
+                    responsibility: 'import-dispatch',
+                    uses: [
+                      'method-import-csv',
+                    ],
+                    suggestedName: 'importCsv',
+                  },
+                  {
+                    id: 'frag-dispatch-json',
+                    label: 'JSONなら JsonOrderImporter で取り込む',
+                    lines: 4,
+                    responsibility: 'import-dispatch',
+                    uses: [
+                      'method-import-json',
+                    ],
+                    suggestedName: 'importJson',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'file-csv-order-importer',
+        path: 'src/order/CsvOrderImporter.ts',
+        classes: [
+          {
+            id: 'class-csv-order-importer',
+            name: 'CsvOrderImporter',
+            methods: [
+              {
+                id: 'method-import-csv',
+                name: 'importOrders',
+                visibility: 'public',
+                fragments: [
+                  {
+                    id: 'frag-csv-read',
+                    label: 'ファイルを開いて1行ずつ読み込む',
+                    lines: 24,
+                    responsibility: 'file-read',
+                    duplicateGroup: 'order-import-read',
+                    suggestedName: 'readLines',
+                  },
+                  {
+                    id: 'frag-csv-parse',
+                    label: 'CSVの列を注文データに変換する',
+                    lines: 38,
+                    responsibility: 'order-parse',
+                    suggestedName: 'parse',
+                  },
+                  {
+                    id: 'frag-csv-validate',
+                    label: '必須項目と金額を検証する',
+                    lines: 26,
+                    responsibility: 'order-validation',
+                    duplicateGroup: 'order-import-validate',
+                    suggestedName: 'validateOrders',
+                  },
+                  {
+                    id: 'frag-csv-save',
+                    label: '注文をまとめて保存する',
+                    lines: 18,
+                    responsibility: 'persistence',
+                    duplicateGroup: 'order-import-save',
+                    suggestedName: 'saveOrders',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'file-json-order-importer',
+        path: 'src/order/JsonOrderImporter.ts',
+        classes: [
+          {
+            id: 'class-json-order-importer',
+            name: 'JsonOrderImporter',
+            methods: [
+              {
+                id: 'method-import-json',
+                name: 'importOrders',
+                visibility: 'public',
+                fragments: [
+                  {
+                    id: 'frag-json-read',
+                    label: 'ファイルを開いて1行ずつ読み込む',
+                    lines: 22,
+                    responsibility: 'file-read',
+                    duplicateGroup: 'order-import-read',
+                    suggestedName: 'readLines',
+                  },
+                  {
+                    id: 'frag-json-parse',
+                    label: 'JSONの項目を注文データに変換する',
+                    lines: 34,
+                    responsibility: 'order-parse',
+                    suggestedName: 'parse',
+                  },
+                  {
+                    id: 'frag-json-validate',
+                    label: '必須項目と金額を検証する',
+                    lines: 26,
+                    responsibility: 'order-validation',
+                    duplicateGroup: 'order-import-validate',
+                    suggestedName: 'validateOrders',
+                  },
+                  {
+                    id: 'frag-json-save',
+                    label: '注文をまとめて保存する',
+                    lines: 18,
+                    responsibility: 'persistence',
+                    duplicateGroup: 'order-import-save',
+                    suggestedName: 'saveOrders',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'file-order-importer',
+        path: 'src/order/OrderImporter.ts',
+        classes: [
+          {
+            id: 'class-order-importer',
+            name: 'OrderImporter',
+            methods: [
+              {
+                id: 'method-order-importer-parse',
+                name: 'parse',
+                visibility: 'protected',
+                fragments: [],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+};
+
 export const advancedStages: readonly Stage[] = [
   notifierHierarchyStage,
   paymentGatewayInterfaceStage,
@@ -959,4 +1161,5 @@ export const advancedStages: readonly Stage[] = [
   collapseHierarchyStage,
   interfaceSegregationStage,
   valueObjectStage,
+  templateMethodStage,
 ];

@@ -1,3 +1,4 @@
+import { resolvesToOwnDeclaration } from '../codebase/overrides';
 import { allClasses, extendsChainIds, findMethod, type Codebase } from '../codebase/Codebase';
 import { methodOwnerMap } from '../codebase/dependencies';
 
@@ -10,7 +11,7 @@ export type VisibilityViolation = {
 /** 呼び出しが届かないかどうか。private は自クラス以外なら届かない。protected は持ち主の子孫(自分を含む)でなければ届かない。 */
 function violationKind(codebase: Codebase, ownerClassId: string, callerClassId: string, visibility: string | undefined): 'private' | 'protected' | undefined {
   if (visibility === 'private') return 'private';
-  // ponytail: 親が子の protected フックを呼ぶ Template Method は違反に数える。フックを題材にするステージを作るとき、親の抽象宣言を表す項目と一緒に見直す
+  // ponytail: 抽象宣言のない親→子の protected 呼び出しは違反のまま。デフォルト実装付きフックを扱うときに見直す
   if (visibility === 'protected' && !extendsChainIds(codebase, callerClassId).has(ownerClassId)) return 'protected';
   return undefined;
 }
@@ -29,6 +30,7 @@ export function findVisibilityViolations(codebase: Codebase): VisibilityViolatio
       const callerClassId = codeClass.id;
       const ownerClassId = owners.get(methodId);
       if (ownerClassId === undefined || ownerClassId === callerClassId) continue;
+      if (resolvesToOwnDeclaration(codebase, callerClassId, methodId)) continue;
       const kind = violationKind(codebase, ownerClassId, callerClassId, findMethod(codebase, methodId)?.visibility);
       if (kind === undefined) continue;
       const key = `${methodId} ${callerClassId}`;

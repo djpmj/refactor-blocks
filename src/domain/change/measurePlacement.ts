@@ -1,5 +1,5 @@
 import { withoutTray } from '../blank/tray';
-import { allClasses, fieldsOf, findClass, isInterfaceLike, parentIds, type CodeClass, type Codebase } from '../codebase/Codebase';
+import { allClasses, fieldsOf, findClass, isAbstractLike, isInterfaceLike, parentIds, type CodeClass, type Codebase } from '../codebase/Codebase';
 import { classDependencies } from '../codebase/dependencies';
 import { err, ok, type Result } from '../shared/Result';
 import type { ChangeRequest } from './ChangeRequest';
@@ -104,7 +104,7 @@ function measureAttachment(base: Codebase, design: Codebase, partClass: CodeClas
   const ancestors = existingAncestors(base, design, partClass);
   const nearest = ancestors.at(0);
   if (nearest === undefined || !ancestors.some((ancestor) => calledIds.has(ancestor.id))) return { attachment: 'none' };
-  return { attachment: isInterfaceLike(nearest) ? 'abstract' : 'concrete', attachedClassId: nearest.id };
+  return { attachment: isInterfaceLike(nearest) || isAbstractLike(nearest) ? 'abstract' : 'concrete', attachedClassId: nearest.id };
 }
 
 /**

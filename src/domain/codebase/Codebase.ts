@@ -182,3 +182,8 @@ export function findField(codebase: Codebase, fieldId: string): Field | undefine
 export function findClassOfField(codebase: Codebase, fieldId: string): CodeClass | undefined {
   return allClasses(codebase).find((codeClass) => fieldsOf(codeClass).some((field) => field.id === fieldId));
 }
+
+/** protected の空宣言を持つクラスは抽象クラス役。 */
+export function isAbstractLike(codeClass: CodeClass): boolean {
+  return codeClass.methods.some((method) => method.visibility === 'protected' && method.fragments.length === 0);
+}

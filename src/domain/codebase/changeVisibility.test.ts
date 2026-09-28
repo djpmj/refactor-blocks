@@ -258,3 +258,32 @@ describe('changeVisibility', () => {
     expect(codebase).toEqual(codebaseWith({ targetVisibility: 'public' }));
   });
 });
+
+function abstractImplementation(visibility: 'private' | 'public', superclassId: string | undefined = 'parent'): Codebase {
+  return { files: [{ id: 'file', path: 'src/Import.ts', classes: [
+    { id: 'parent', name: 'Parent', methods: [
+      { id: 'declaration', name: 'parse', visibility: 'protected', fragments: [] },
+      { id: 'run', name: 'run', visibility: 'public', fragments: [frag('call', ['parse'])] },
+    ] },
+    { id: 'child', name: 'Child', superclassId, methods: [{ id: 'parse', name: 'parse', visibility, fragments: [frag('body')] }] },
+  ] }] };
+}
+
+it.each(['private', 'public'] as const)('親の抽象宣言を実装する %s は protected に変更できる', (visibility) => {
+  // Arrange
+  const base = abstractImplementation(visibility);
+  const before = structuredClone(base);
+  // Act
+  const result = changeVisibility(base, 'parse', 'protected');
+  // Assert
+  if (!result.ok) throw new Error(result.error);
+  expect(findMethod(result.value, 'parse')?.visibility).toBe('protected');
+  expect(base).toEqual(before);
+});
+
+it('同名の抽象宣言があっても継承していなければ protected へ広げない', () => {
+  // Arrange
+  const base = abstractImplementation('private', 'missing');
+  // Act / Assert
+  expect(changeVisibility(base, 'parse', 'protected')).toEqual({ ok: false, error: 'widening-not-needed' });
+});

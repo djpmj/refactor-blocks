@@ -1,3 +1,4 @@
+import { resolvesToOwnDeclaration } from './overrides';
 import { allClasses, extendsChainIds, findClassOfMethod, findMethod, mapClasses, type Codebase, type Visibility } from './Codebase';
 import { err, ok, type Result } from '../shared/Result';
 
@@ -34,10 +35,24 @@ function checkNarrowing(codebase: Codebase, visibility: Visibility, ownerClassId
   return breaksCaller ? 'narrowing-breaks-callers' : undefined;
 }
 
+/** 変更後の可視性で、抽象宣言経由の呼び出しも考慮して前提条件を調べる。 */
+function visibilityError(codebase: Codebase, methodId: string, ownerClassId: string, widening: boolean): ChangeVisibilityError | undefined {
+  const visibility = findMethod(codebase, methodId)?.visibility;
+  if (visibility === undefined) return 'method-not-found';
+  const callers = callerClassIdsOf(codebase, methodId, ownerClassId);
+  if (widening) {
+    const implementsDeclaration = allClasses(codebase).some((owner) => resolvesToOwnDeclaration(codebase, owner.id, methodId));
+    return implementsDeclaration ? undefined : checkWidening(codebase, visibility, ownerClassId, callers);
+  }
+  const directCallers = callers.filter((id) => !resolvesToOwnDeclaration(codebase, id, methodId));
+  return checkNarrowing(codebase, visibility, ownerClassId, directCallers);
+}
+
 /**
  * メソッドの可視性を変える。元の Codebase は変更しない。
  * 中身のない(fragments: [])メソッドは変えない。広げる(private → protected → public の向き)ときは、
  * public なら持ち主以外のクラスから、protected なら持ち主の子孫クラスから呼ばれていることを求める。
+ * 親の抽象宣言を実装するときも可視性を広げられる。抽象宣言経由の呼び出しは変更後の可視性で解決する。
  * 狭めるときは、狭めた後の可視性では届かない呼び出し元(持ち主以外 / 子孫以外)が1つもないことを求める。
  */
 export function changeVisibility(codebase: Codebase, methodId: string, visibility: Visibility): Result<Codebase, ChangeVisibilityError> {
@@ -47,17 +62,11 @@ export function changeVisibility(codebase: Codebase, methodId: string, visibilit
   if (method.visibility === visibility) return err('same-visibility');
   if (method.fragments.length === 0) return err('contract-method');
 
-  const callerClassIds = callerClassIdsOf(codebase, methodId, ownerClass.id);
+  const updated = mapClasses(codebase, (codeClass) => ({
+    ...codeClass,
+    methods: codeClass.methods.map((candidate) => (candidate.id === methodId ? { ...candidate, visibility } : candidate)),
+  }));
   const widening = VISIBILITY_RANK[visibility] > VISIBILITY_RANK[method.visibility];
-  const error = widening
-    ? checkWidening(codebase, visibility, ownerClass.id, callerClassIds)
-    : checkNarrowing(codebase, visibility, ownerClass.id, callerClassIds);
-  if (error !== undefined) return err(error);
-
-  return ok(
-    mapClasses(codebase, (codeClass) => ({
-      ...codeClass,
-      methods: codeClass.methods.map((candidate) => (candidate.id === methodId ? { ...candidate, visibility } : candidate)),
-    })),
-  );
+  const error = visibilityError(updated, methodId, ownerClass.id, widening);
+  return error === undefined ? ok(updated) : err(error);
 }
