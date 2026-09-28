@@ -1582,3 +1582,55 @@ test('移動メニュー: 開き直したメニューに古いフォーカス復
   await page.keyboard.press('Enter');
   await expect(page.getByTestId('class-Subscription').getByTestId('field-trialDays')).toBeVisible();
 });
+
+test('上級8: 呼び出しだけの importOrders を似た処理を持つメソッドから統合する', async ({ page }) => {
+  // Arrange: 各形式の4手順を抽出する
+  await page.goto('/');
+  await page.getByLabel('ステージ').selectOption('advanced-template-method');
+  for (const [owner, parseLabel] of [
+    ['CsvOrderImporter', 'CSVの列を注文データに変換する'],
+    ['JsonOrderImporter', 'JSONの項目を注文データに変換する'],
+  ]) {
+    for (const [label, name] of [
+      ['ファイルを開いて1行ずつ読み込む', 'readLines'],
+      ['必須項目と金額を検証する', 'validateOrders'],
+      ['注文をまとめて保存する', 'saveOrders'],
+      [parseLabel, 'parse'],
+    ]) {
+      await page.getByTestId(`class-${owner}`).getByTestId('method-importOrders').click();
+      await page.getByLabel(label).check();
+      await page.getByLabel('新しいメソッド名').fill(name);
+      await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+    }
+  }
+  for (const name of ['readLines', 'validateOrders', 'saveOrders']) {
+    await page.getByTestId('class-CsvOrderImporter').getByTestId(`method-${name}`).click();
+    await page.getByLabel('統合後のメソッド名').fill(name);
+    await page.getByTestId(`merge-candidate-${name}`).click();
+  }
+  for (const owner of ['CsvOrderImporter', 'JsonOrderImporter']) {
+    await page.getByTestId(`class-header-${owner}`).click({ button: 'right' });
+    const menu = page.getByTestId('context-menu');
+    await menu.getByRole('menuitem', { name: '継承元を設定' }).click();
+    await menu.getByRole('menuitem', { name: 'OrderImporter', exact: true }).click();
+    await page.getByTestId(`class-${owner}`).getByTestId('method-parse').click();
+    await page.getByLabel('メソッド parse の可視性').selectOption('protected');
+  }
+
+  // Act
+  await page.getByTestId('class-CsvOrderImporter').getByTestId('method-importOrders').click();
+  await expect(page.getByText('似た処理を持つメソッド', { exact: true })).toBeVisible();
+  await page.getByLabel('統合後のメソッド名').fill('importOrders');
+  await page.getByTestId('merge-candidate-importOrders').click();
+
+  // Assert: public を保持し、共通の骨組みが1つになる
+  await expect(page.getByTestId('method-importOrders')).toHaveCount(1);
+  await expect(page.getByLabel('メソッド importOrders の可視性')).toHaveValue('public');
+  for (const name of ['importOrders', 'readLines', 'validateOrders', 'saveOrders']) {
+    await page.getByTestId(`method-${name}`).click({ button: 'right' });
+    const menu = page.getByTestId('context-menu');
+    await menu.getByRole('menuitem', { name: 'OrderImporter', exact: true }).click();
+    await expect(page.getByTestId('class-OrderImporter').getByTestId(`method-${name}`)).toBeVisible();
+  }
+  await expect(page.getByTestId('score')).toContainText('100点');
+});

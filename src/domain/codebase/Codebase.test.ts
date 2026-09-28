@@ -1,3 +1,4 @@
+import { isAbstractLike } from "./Codebase";
 import { describe, expect, it } from 'vitest';
 import {
   accessorFieldAccess,
@@ -508,5 +509,24 @@ describe('findClassOfField', () => {
 
     // Assert
     expect(result).toBeUndefined();
+  });
+});
+
+describe('isAbstractLike', () => {
+  it.each([
+    ['protected', [], true],
+    ['public', [], false],
+    ['private', [], false],
+    ['protected', [{ id: 'body', label: '処理', lines: 1, responsibility: 'parse' }], false],
+  ] as const)('%s / %j の宣言を判定する', (visibility, fragments, expected) => {
+    // Arrange
+    const owner = { id: 'base', name: 'Base', methods: [{ id: 'parse', name: 'parse', visibility, fragments }] };
+    // Act / Assert
+    expect(isAbstractLike(owner)).toBe(expected);
+  });
+
+  it('空クラスは抽象クラスではない', () => {
+    // Arrange / Act / Assert
+    expect(isAbstractLike({ id: 'empty', name: 'Empty', methods: [] })).toBe(false);
   });
 });

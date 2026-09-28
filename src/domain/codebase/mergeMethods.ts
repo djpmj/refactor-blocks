@@ -31,13 +31,32 @@ export type MergeCandidate = {
   readonly ownerClassId: string;
 };
 
-/** 処理の形(duplicateGroupの並び)が完全に一致するかどうか。片方だけ未設定・値違いは不一致。 */
-function sameShape(methodA: Method, methodB: Method): boolean {
+/** 呼び出すメソッド名の並びが一致するか。参照切れは一致とみなさない。 */
+function sameCalls(codebase: Codebase, fragmentA: Fragment, fragmentB: Fragment): boolean {
+  if (fragmentA.responsibility !== 'call' || fragmentB.responsibility !== 'call') return false;
+  const usesA = fragmentA.uses ?? [];
+  const usesB = fragmentB.uses ?? [];
+  return usesA.length > 0 && usesA.length === usesB.length && usesA.every((id, index) => {
+    const method = findMethod(codebase, id);
+    return method !== undefined && method.name === findMethod(codebase, usesB[index])?.name;
+  });
+}
+
+/** duplicateGroup または呼び出すメソッド名の並びで、各処理の一致を調べる。 */
+function sameShape(codebase: Codebase, methodA: Method, methodB: Method): boolean {
   if (methodA.fragments.length !== methodB.fragments.length) return false;
   return methodA.fragments.every((fragmentA, index) => {
+    const fragmentB = methodB.fragments[index];
     const group = fragmentA.duplicateGroup;
-    return group !== undefined && group === methodB.fragments[index].duplicateGroup;
+    return (group !== undefined && group === fragmentB.duplicateGroup) || sameCalls(codebase, fragmentA, fragmentB);
   });
+}
+
+function mergeableVisibility(methodA: Method, methodB: Method): boolean {
+  if (methodA.visibility !== methodB.visibility) return false;
+  if (methodA.visibility === 'private') return true;
+  return [methodA, methodB].every((method) => method.fragments.length > 0
+    && method.fragments.every((fragment) => fragment.responsibility === 'call'));
 }
 
 type Validated = { readonly methodA: Method; readonly ownerA: CodeClass; readonly methodB: Method; readonly ownerB: CodeClass };
@@ -50,8 +69,8 @@ function validate(codebase: Codebase, request: MergeMethodsRequest): Result<Vali
   if (methodA === undefined || ownerA === undefined || methodB === undefined || ownerB === undefined) return err('method-not-found');
   if (request.methodAId === request.methodBId) return err('same-method');
   if (ownerA.id === ownerB.id) return err('same-class');
-  if (methodA.visibility !== 'private' || methodB.visibility !== 'private') return err('not-private');
-  if (!sameShape(methodA, methodB)) return err('shape-mismatch');
+  if (!mergeableVisibility(methodA, methodB)) return err('not-private');
+  if (!sameShape(codebase, methodA, methodB)) return err('shape-mismatch');
   const name = request.newMethodName.trim();
   if (name === '') return err('empty-method-name');
   if (ownerA.methods.some((method) => method.id !== methodA.id && method.name === name)) return err('duplicate-method-name');
@@ -112,7 +131,7 @@ function replaceMethods(codebase: Codebase, validated: Validated, merged: Method
 }
 
 /**
- * Merge Methods: 別クラスにある、形が完全に一致した2つのprivateメソッドを1つに統合する。
+ * Merge Methods: 別クラスにある、形が一致するprivateメソッド、または同じ可視性の呼び出し行だけの骨組みを1つに統合する。
  * 統合結果は常にメソッドAの所属クラスに、Aがあった位置で置き換わる(統合先クラスは選ばせない)。
  */
 export function mergeMethods(codebase: Codebase, request: MergeMethodsRequest): Result<Codebase, MergeMethodsError> {
@@ -122,14 +141,14 @@ export function mergeMethods(codebase: Codebase, request: MergeMethodsRequest): 
   const merged: Method = {
     id: request.newMethodId,
     name: request.newMethodName.trim(),
-    visibility: 'private',
+    visibility: methodA.visibility,
     fragments: methodA.fragments.map((fragmentA, index) => mergeFragment(request.newMethodId, index, fragmentA, methodB.fragments[index])),
   };
   const replaced = replaceMethods(codebase, validated.value, merged);
   return ok(rewireCallers(replaced, methodA.id, methodB.id, request.newMethodId));
 }
 
-/** 選んだメソッドと処理の形(duplicateGroupの並び)が一致する、別クラスのprivateメソッドを列挙する。 */
+/** 選んだメソッドと処理の形・可視性の統合条件が一致する、別クラスの候補を列挙する。 */
 export function findMergeCandidates(codebase: Codebase, methodId: string): MergeCandidate[] {
   const method = findMethod(codebase, methodId);
   const owner = findClassOfMethod(codebase, methodId);
@@ -137,7 +156,7 @@ export function findMergeCandidates(codebase: Codebase, methodId: string): Merge
   return allClasses(codebase).flatMap((codeClass) => {
     if (codeClass.id === owner.id) return [];
     return codeClass.methods
-      .filter((candidate) => candidate.visibility === 'private' && sameShape(method, candidate))
+      .filter((candidate) => mergeableVisibility(method, candidate) && sameShape(codebase, method, candidate))
       .map((candidate) => ({ method: candidate, ownerClassId: codeClass.id }));
   });
 }

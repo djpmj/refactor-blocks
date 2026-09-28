@@ -287,3 +287,14 @@ describe('measurePlacement: つながり方(gatewayCodebase)', () => {
     expect(result.attachment).toBe('none');
   });
 });
+
+it('中身のある骨組みと protected 空宣言を持つ基底への継承は abstract', () => {
+  // Arrange
+  const base = mapClasses(gatewayCodebase(), (owner) => owner.id === 'class-gateway' ? {
+    ...owner, methods: [method('method-gateway-charge', 'charge', [fragment('body', 4, 'call')]),
+      { id: 'parse', name: 'parse', visibility: 'protected', fragments: [] }],
+  } : owner);
+  const implemented = toNewClass(base, gatewayRequest, { name: 'Gateway', kind: 'extends' });
+  // Act / Assert
+  expect(placement(base, implemented, gatewayRequest).attachment).toBe('abstract');
+});

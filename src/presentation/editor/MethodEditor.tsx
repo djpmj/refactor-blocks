@@ -161,7 +161,7 @@ function VisibilitySelect({ method }: Readonly<{ method: Method }>) {
           ))}
         </select>
       </label>
-      <p className="method-editor__visibility-hint">public は他のクラスから、protected は子クラスから呼ばれているときだけ選べます</p>
+      <p className="method-editor__visibility-hint">可視性を広げるには呼び出し元が必要です。親の抽象宣言を実装する場合も public / protected を選べます</p>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { findClass, findMethod, type CodeClass, type CodeFile, type Codebase, type Fragment, type Method, type Visibility } from './Codebase';
+import { findClass, findMethod, mapClasses, type CodeClass, type CodeFile, type Codebase, type Fragment, type Method, type Visibility } from './Codebase';
 import { findMergeCandidates, mergeMethods, type MergeMethodsRequest } from './mergeMethods';
 
 function fragment(id: string, overrides: Partial<Fragment> = {}): Fragment {
@@ -249,4 +249,72 @@ describe('findMergeCandidates', () => {
     // Assert
     expect(candidates.map((candidate) => candidate.method.id)).toEqual(['method-a', 'method-a-other', 'method-c']);
   });
+});
+
+function skeletonFixture(visibility: Visibility = 'public', otherVisibility: Visibility = visibility, otherName = 'parse'): Codebase {
+  const calls = (id: string): Fragment[] => ['read', `${id}-parse`, 'validate', 'save'].map((target, index) =>
+    fragment(`${id}-${index}`, { responsibility: 'call', lines: 1, uses: [target] }));
+  return { files: [file('file', 'src/Import.ts', [
+    codeClass('a', 'Csv', [method('a', 'importOrders', calls('a'), visibility), method('a-parse', 'parse', [])]),
+    codeClass('b', 'Json', [method('b', 'importOrders', calls('b'), otherVisibility), method('b-parse', otherName, [])]),
+    codeClass('common', 'Common', ['read', 'validate', 'save'].map((id) => method(id, id, []))),
+    codeClass('controller', 'Controller', [method('upload', 'upload', [fragment('dispatch', { uses: ['a', 'b'] })])]),
+  ])] };
+}
+
+const skeletonRequest: MergeMethodsRequest = { methodAId: 'a', methodBId: 'b', newMethodId: 'merged', newMethodName: 'importOrders' };
+
+describe('呼び出し行の統合', () => {
+  it.each<Visibility>(['public', 'protected', 'private'])('%s の骨組みを可視性を保って統合する', (visibility) => {
+    // Arrange
+    const base = skeletonFixture(visibility);
+    const before = structuredClone(base);
+    // Act
+    const result = mergeMethods(base, skeletonRequest);
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    expect(findMethod(result.value, 'merged')?.visibility).toBe(visibility);
+    expect(findMethod(result.value, 'merged')?.fragments[1].uses).toEqual(['a-parse', 'b-parse']);
+    expect(findMethod(result.value, 'upload')?.fragments[0].uses).toEqual(['merged']);
+    expect(findMergeCandidates(base, 'a').map((candidate) => candidate.method.id)).toEqual(['b']);
+    expect(base).toEqual(before);
+  });
+
+  it.each([
+    ['名前違い', skeletonFixture('public', 'public', 'decode'), 'shape-mismatch'],
+    ['可視性違い', skeletonFixture('public', 'private'), 'not-private'],
+  ] as const)('%s は統合も候補表示もしない', (_label, base, error) => {
+    // Arrange / Act
+    const result = mergeMethods(base, skeletonRequest);
+    // Assert
+    expect(result).toEqual({ ok: false, error });
+    expect(findMergeCandidates(base, 'a')).toEqual([]);
+  });
+
+  it('public の本物の処理が混ざると統合しない', () => {
+    // Arrange
+    const base = skeletonFixture();
+    const withRealFragment = (item: Method): Method => ({
+      ...item, fragments: [...item.fragments, fragment(`${item.id}-real`, { duplicateGroup: 'real' })],
+    });
+    const mixed = mapClasses(base, (owner) => ({ ...owner, methods: owner.methods.map(withRealFragment) }));
+    // Act / Assert
+    expect(mergeMethods(mixed, skeletonRequest)).toEqual({ ok: false, error: 'not-private' });
+    expect(findMergeCandidates(mixed, 'a')).toEqual([]);
+  });
+});
+
+
+it.each([
+  ['参照切れ', ['missing']],
+  ['順序違い', ['save', 'read']],
+  ['呼び先なし', []],
+] as const)('呼び出しの%sは形の一致とみなさない', (_label, targets) => {
+  // Arrange
+  const replaceCalls = (item: Method): Method => item.id === 'a' || item.id === 'b' ? {
+    ...item, fragments: [fragment(`${item.id}-call`, { responsibility: 'call', uses: item.id === 'a' ? ['read', 'save'] : targets })],
+  } : item;
+  const base = mapClasses(skeletonFixture(), (owner) => ({ ...owner, methods: owner.methods.map(replaceCalls) }));
+  // Act / Assert
+  expect(mergeMethods(base, skeletonRequest)).toEqual({ ok: false, error: 'shape-mismatch' });
 });

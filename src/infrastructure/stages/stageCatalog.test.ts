@@ -3,7 +3,7 @@ import { changeKindOf, type ChangeRequest } from '../../domain/change/ChangeRequ
 import { findChangeSites } from '../../domain/change/findChangeSites';
 import { measureChange } from '../../domain/change/measureChange';
 import { averageScore, scoreChange } from '../../domain/change/scoreChange';
-import { allClasses, fieldsOf, isInterfaceLike, touchedFieldIds, type Codebase } from '../../domain/codebase/Codebase';
+import { allClasses, fieldsOf, isAbstractLike, isInterfaceLike, touchedFieldIds, type Codebase } from '../../domain/codebase/Codebase';
 import { methodLines } from '../../domain/codebase/lineCount';
 import { scoreCodebase } from '../../domain/scoring/score';
 import type { Result } from '../../domain/shared/Result';
@@ -11,8 +11,21 @@ import { applySolutionSteps, sampleAnswerSteps, type SolutionStep } from '../../
 import type { Stage } from '../../domain/stage/Stage';
 import { stages } from './stageCatalog';
 
+const templateSolution = sampleAnswerSteps['advanced-template-method'] ?? [];
+
 /** ステージの狙いを飛ばした手順。これで100点になってしまうなら、ステージの数値の作りが甘い。 */
 const shortcuts: ReadonlyArray<{ readonly stageId: string; readonly description: string; readonly steps: readonly SolutionStep[] }> = [
+  {
+    stageId: 'advanced-template-method',
+    description: '共通3手順だけ親へ移し、骨組みを子に残す',
+    steps: templateSolution.filter((step) => !('merge' in step && step.merge.name === 'importOrders')
+      && !('move' in step && step.move.method === 'importOrders')),
+  },
+  {
+    stageId: 'advanced-template-method',
+    description: 'parse を private のまま骨組みを親へ移す',
+    steps: templateSolution.filter((step) => !('changeVisibility' in step)),
+  },
   {
     stageId: 'beginner-user-controller',
     description: 'Mailer を使わず、DBとメールの処理をまとめて UserRepository へ移す',
@@ -442,11 +455,11 @@ function methodNamesOf(stage: Stage): string[] {
   return allClasses(stage.codebase).flatMap((codeClass) => codeClass.methods.map((method) => method.name));
 }
 
-/** インターフェース役のクラスが宣言している契約メソッド名。extendの部品名がこれと同じなら、実装を宣言する意図の一致で許される。 */
+/** インターフェース役・抽象クラスが宣言している契約メソッド名。extendの部品名がこれと同じなら、実装を宣言する意図の一致で許される。 */
 function contractMethodNamesOf(stage: Stage): string[] {
   return allClasses(stage.codebase)
-    .filter(isInterfaceLike)
-    .flatMap((codeClass) => codeClass.methods.map((method) => method.name));
+    .filter((owner) => isInterfaceLike(owner) || isAbstractLike(owner))
+    .flatMap((codeClass) => codeClass.methods.filter((method) => method.fragments.length === 0).map((method) => method.name));
 }
 
 /** modifyの依頼は、部品名が初期コードのどのメソッド名とも重ならない。 */
@@ -457,7 +470,7 @@ function clashingModifyPartNames(stage: Stage): string[] {
     .filter((name) => methodNames.includes(name));
 }
 
-/** extendの依頼は、部品名がインターフェース役の契約名と同じか、どのメソッド名とも重ならないかのどちらか。 */
+/** extendの依頼は、部品名がインターフェース役・抽象クラスの契約名と同じか、どのメソッド名とも重ならないかのどちらか。 */
 function invalidExtendPartNames(stage: Stage): string[] {
   const methodNames = methodNamesOf(stage);
   const contractNames = contractMethodNamesOf(stage);
@@ -589,7 +602,7 @@ describe('stageCatalog', () => {
       expect(scoreCodebase(solved, stage)).toEqual(expect.objectContaining({ total: 100 }));
     });
 
-    it('変更依頼が2件以上あり、どれも初期のコードに変更箇所がある', () => {
+    it('依頼が2件以上あり、ルール変更の依頼は初期のコードに変更箇所がある', () => {
       // Arrange
       const changeRequests = modifyRequests(stage);
 
@@ -597,7 +610,8 @@ describe('stageCatalog', () => {
       const everyRequestHasSites = allRequestsHaveSites(stage);
 
       // Assert
-      expect(changeRequests.length).toBeGreaterThanOrEqual(2);
+      expect(stage.changeRequests.length).toBeGreaterThanOrEqual(2);
+      expect(changeRequests.length).toBeGreaterThanOrEqual(1);
       expect(everyRequestHasSites).toBe(true);
     });
 
@@ -617,7 +631,7 @@ describe('stageCatalog', () => {
       expect(clashes).toEqual([]);
     });
 
-    it('extendの依頼は、partName が初期コードのインターフェース役の契約名と同じか、どのメソッド名とも重ならない', () => {
+    it('extendの依頼は、partName が初期コードのインターフェース役・抽象クラスの契約名と同じか、どのメソッド名とも重ならない', () => {
       // Arrange / Act
       const invalid = invalidExtendPartNames(stage);
 
