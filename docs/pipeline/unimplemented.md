@@ -4,4 +4,4 @@
 
 | 機能 | 現在の段階 | 機能候補 | 仕様草案 |
 | --- | --- | --- | --- |
-| 取り込みの手順を Template Method にまとめる (`template-method-stage`) | 仕様確定済み・最終仕様待ち | [探索結果](template-method-stage/01-discovered.md) | [草案](template-method-stage/02-draft-spec.md) |
+| 右クリックメニューからクラスを別ファイルへ移動 (`move-class-via-context-menu`) | 仕様確定済み・最終仕様待ち | [探索結果](move-class-via-context-menu/01-discovered.md) | [草案](move-class-via-context-menu/02-draft-spec.md) |

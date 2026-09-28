@@ -5,3 +5,4 @@
 | 機能 | 機能候補 | 仕様草案 | 確定仕様 | 評価 |
 | --- | --- | --- | --- | --- |
 | 右クリックメニューからメソッド・フィールドを移動 (`move-via-context-menu`) | [探索結果](move-via-context-menu/01-discovered.md) | [草案](move-via-context-menu/02-draft-spec.md) | [仕様](../specs/move-via-context-menu.md) | [評価](move-via-context-menu/06-evaluation.md) |
+| 取り込みの手順を Template Method にまとめる (`template-method-stage`) | [探索結果](template-method-stage/01-discovered.md) | [草案](template-method-stage/02-draft-spec.md) | [仕様](../specs/template-method-stage.md) | [評価](template-method-stage/06-evaluation.md) |
