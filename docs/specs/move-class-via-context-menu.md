@@ -1,0 +1,113 @@
+# 仕様書: 右クリックメニューから移動先のファイルを選んでクラスを移す
+
+- slug: `move-class-via-context-menu`
+- 元になった探索: `docs/pipeline/move-class-via-context-menu/01-discovered.md`
+- 元になった草案: `docs/pipeline/move-class-via-context-menu/02-draft-spec.md`
+- 確定した回答: `docs/pipeline/move-class-via-context-menu/03-confirmed-answers.md`
+- 形をそろえる前例: `docs/specs/move-via-context-menu.md`(メソッド・フィールドのメニュー移動)
+
+## 1. 背景・目的
+
+- クラスを別ファイルへ移す操作(ファイル分け)は、今はクラスヘッダーを dnd-kit でドラッグするしか手段が無い。
+  キーボード・スクリーンリーダーからは移動先ファイルの候補が分からず、ファイルの箱が離れているとマウスでも運びにくい。
+- ponytail の「手を抜かないもの」にアクセシビリティ(キーボード操作を含む)がある。メソッド・フィールドは
+  `move-via-context-menu` でメニューから移せるようになったので、ファイル分けにも同じ手段を用意する。
+
+**本当に新しい仕組みが要るか**: 要らない。移動そのものは既存のストア操作 `moveClass`(`apply` 経由なので
+Undo・エラー表示もそのまま効く)を呼ぶだけ。メニューの部品も既存の `SubmenuTrigger` を使い、`MoveMenuItem`
+と同じ形で書く。新しく要るのは「移動先候補の絞り込み(domain)」と「メニュー項目1つ(presentation)」だけ。
+右クリック対象の判定(`ContextMenuTarget`)・フォーカス復帰(`dismiss`)は前回作ったものがそのまま使える。
+
+## 2. 変更対象ファイル一覧
+
+| 種別 | パス | 層 | 役割 |
+| --- | --- | --- | --- |
+| 変更 | `src/domain/codebase/moveClass.ts` | domain | 移動先候補 `moveClassTargets` を追加 |
+| 変更 | `src/domain/codebase/moveClass.test.ts` | domain | 上記のテスト(先に書く) |
+| 変更 | `src/presentation/canvas/CanvasContextMenu.tsx` | presentation | 「別のファイルへ移動」サブメニュー(`MoveClassMenuItem`)を追加 |
+| 変更 | `e2e/refactor.spec.ts` | (E2E) | メニュー経由のクラス移動(マウス・キーボード)を守るテストを追加 |
+
+`application` 層・`infrastructure` 層・ストア(`useGameStore.ts`)・`useCanvasContextMenu.ts`・`ClassNode.tsx`・
+`CodebaseCanvas.tsx` の `useDropHandler` は変更しない見込み。
+
+## 3. データ/型の変更
+
+ドメインモデル・永続化スキーマ・`ContextMenuTarget` の変更は無し。
+
+### メニュー項目
+
+`CanvasContextMenu.tsx` の `MenuItem` に `{ kind: 'move-class-submenu'; label: '別のファイルへ移動' }` を足す。
+項目名は、クラスヘッダーの既存の `aria-label`(`… を別ファイルへ移動`)と、メソッドの「別のクラスへ移動」にそろえる。
+
+- **出す条件**: クラスヘッダー(クラスノードのメソッド・フィールド以外の部分)を右クリックしたときだけ
+  (`classId !== null && member === null`)。メソッド・フィールドのチップ、ファイル、余白を右クリックしたときは出さない。
+  メソッド上の「別のクラスへ移動」と並ばず紛らわしくないようにするため
+- **置く位置**: メニューの**先頭**。開いた時点で先頭にフォーカスが入り、サブメニューも開く(前回の「別のクラスへ移動」と同じ)。
+  これまでの先頭項目(「このファイルにクラスを追加」)は2番目になる
+
+`MoveClassMenuItem` は `MoveMenuItem` と同じ形で書く:
+
+- 候補(`moveClassTargets` の結果)をボタン(`role="menuitem"`)で並べる。表示は**ファイルのパスそのまま**
+  (例: `src/shipping/ShippingService.ts`)。キャンバスのファイルの箱・メニュー上部のキャプションと同じ表記で、
+  同名ファイルが別ディレクトリにあっても区別できる
+- 押したら `moveClass(classId, file.id)` を呼び、メニューを閉じる(`onClose`。フォーカスは戻さない。前回と同じ)
+- 候補が0件(ファイルが1つだけなど)のときは**項目自体を出さない**(`MoveMenuItem` と同じく `null` を返す)
+- 「新しいファイルへ移動」(`moveClassToNewFile`)は**入れない**。既存ファイルへの移動だけにする
+  (前回もメソッドの「新しいクラスへ移動」は入れておらず揃う)
+
+### キーボードでメニューを開く
+
+追加コードは書かない。クラスヘッダーは dnd-kit の `useDraggable` の `attributes` で `tabIndex=0` が付いておりフォーカスできるので、
+フォーカスして Shift+F10 を押せばブラウザ標準の `contextmenu` イベントで既存の `onNodeContextMenu` が開く(前回と同じ仕組み)。
+E2Eで確かめ、**効かなければ実装者は独自実装に進まず報告する**。
+
+### メニューを閉じたときのフォーカス
+
+既存の `dismiss` / `close` をそのまま使う。Escape・外側クリックでは開く前の要素(クラスヘッダー)へ戻り、移動を実行した場合は戻さない。
+(前回の評価の指摘1「外側クリックで入力欄のフォーカスを奪い返す」は、今回の変更範囲に含めない。スコープ外を参照)
+
+## 4. TDD対象の純粋関数
+
+### `moveClassTargets(codebase, classId): CodeFile[]`(`src/domain/codebase/moveClass.ts`)
+
+`moveClass(codebase, classId, そのファイルID)` が成功するファイルの一覧。`codebase.files` の順。
+
+- 正常系: クラスが今あるファイル以外のファイルを、すべて `files` の順で返す
+- 正常系: クラスが1つも無い(空の)ファイルも候補に含む(移動先として正しい)
+- 正常系: ファイルが1つしか無ければ `[]`
+- 異常系: 存在しないクラスIDなら `[]`
+- 元の `codebase` を変更しない
+
+実装は `moveClass` と判定を二重に持たないこと(`moveMethod` の `targetError` と同じく、「同じファイルか」の判定を小さな関数に切り出して両方から呼ぶ、など)。
+
+## 5. 受け入れ基準
+
+- [ ] 上記の純粋関数のテストを先に書き(Red)、実装して通る(Green)
+- [ ] クラスヘッダーを右クリックすると、メニューの先頭に「別のファイルへ移動」があり、候補を選ぶとそのファイルの箱にクラスが移り、元のファイルから消える
+- [ ] 移動後にメニューが閉じ、Ctrl+Z で元に戻せる(ストアの `apply` 経由であること)
+- [ ] 今クラスがあるファイルは候補に出ない
+- [ ] 候補はファイルのパスそのまま(例: `src/shipping/ShippingService.ts`)で `codebase.files` の順に並び、「新しいファイルへ移動」の候補は無い
+- [ ] ファイル・余白・メソッド/フィールドのチップを右クリックしたときは「別のファイルへ移動」が出ない。それらの場所の既存の項目は変わらない
+- [ ] 移動先候補が無い(ファイルが1つだけ)とき、「別のファイルへ移動」の項目自体が出ない
+- [ ] クラスヘッダーにフォーカスして Shift+F10 でメニューが開き、Tab/Enter のキーボードだけで移動を完了できる
+- [ ] Escape で閉じたとき、フォーカスがクラスヘッダーへ戻る
+- [ ] E2E(`e2e/refactor.spec.ts`)に次を追加し通る
+  - クラスヘッダーを右クリック → 「別のファイルへ移動」→ 候補クリックで移動し、Ctrl+Z で戻る
+  - ヘッダーにフォーカス → `press('Shift+F10')` → Tab/Enter で移動できる(効かなければ独自実装せず報告)
+  - 出さない場所(ファイル・余白・メソッド)で項目が0件
+  - ファイルが1つだけのとき、項目が出ない
+- [ ] 既存のE2E(ドラッグ&ドロップ・「別のクラスへ移動」)がすべて通る。先頭項目が「別のファイルへ移動」に変わることで
+  既存テストの前提(先頭が「このファイルにクラスを追加」など)が崩れる場合は、新しい並びに合わせてテストを直してよい
+- [ ] `npm run check`(lint + typecheck + test)が通る
+
+## 6. スコープ外
+
+- 前回評価(`docs/pipeline/move-via-context-menu/06-evaluation.md`)の suggestion 1〜5(外側クリック時のフォーカス復帰条件、`dismiss` の `useCallback` 化、`returnFocus` の置き場所、`ExtendsMenuItemProps` の名前、テストの分割)。
+  ただし `MoveClassMenuItem` の props 型も同じ形なので、`ExtendsMenuItemProps` を3つ目の部品にまで流用するのが気になる場合は、
+  名前を `SubmenuItemProps` に変える程度(型名の置き換えのみ)は実装者の判断で行ってよい
+- 「新しいファイルへ移動」(`moveClassToNewFile`)のメニュー化(01-discovered.md の分割案どおり後回し)
+- 候補をディレクトリごとに見出しで区切る・検索欄を付けること。ファイルが数十個のステージが出てきたら考える
+- 移動後に移動先クラスのヘッダーへフォーカスを移すこと
+- メニュー内の矢印キー移動(roving tabindex)。既存メニューもTab移動なのでそろえる
+- ドラッグ&ドロップ側の挙動変更
+- 移動先ファイルに同名クラスがあるときの判定追加(クラス名はコードベース全体で一意なので、`moveClass` にも無い判定は足さない)
