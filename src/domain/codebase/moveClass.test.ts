@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { moveClass } from './moveClass';
+import { moveClass, moveClassTargets } from './moveClass';
 import { sampleCodebase } from './testFixtures';
 
 describe('moveClass', () => {
@@ -40,5 +40,49 @@ describe('moveClass', () => {
 
     // Assert
     expect(result).toEqual({ ok: false, error: expected });
+  });
+});
+
+describe('moveClassTargets', () => {
+  it('元のファイルを除き、空ファイルも含めてfilesの順で返す', () => {
+    // Arrange
+    const sample = sampleCodebase();
+    const codebase = { files: [
+      { id: 'empty-before', path: 'src/before.ts', classes: [] },
+      ...sample.files,
+      { id: 'empty-after', path: 'src/after.ts', classes: [] },
+    ] };
+    const before = structuredClone(codebase);
+
+    // Act
+    const targets = moveClassTargets(codebase, 'class-order');
+
+    // Assert
+    expect(targets).toEqual([codebase.files[0], codebase.files[2], codebase.files[3]]);
+    expect(targets).toEqual(codebase.files.filter((file) => moveClass(codebase, 'class-order', file.id).ok));
+    expect(codebase).toEqual(before);
+  });
+
+  it('ファイルが1つだけなら候補はない', () => {
+    // Arrange
+    const codebase = { files: [sampleCodebase().files[0]] };
+
+    // Act
+    const targets = moveClassTargets(codebase, 'class-order');
+
+    // Assert
+    expect(targets).toEqual([]);
+  });
+
+  it('存在しないクラスIDなら候補はない', () => {
+    // Arrange
+    const codebase = sampleCodebase();
+
+    // Act
+    const targets = moveClassTargets(codebase, 'missing');
+
+    // Assert
+    expect(targets).toEqual([]);
+    expect(codebase).toEqual(sampleCodebase());
   });
 });

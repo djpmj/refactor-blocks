@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject, type SubmitEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { findClass, findSuperclass } from '../../domain/codebase/Codebase';
+import { moveClassTargets } from '../../domain/codebase/moveClass';
 import { moveMethodTargets } from '../../domain/codebase/moveMethod';
 import { moveFieldTargets } from '../../domain/codebase/moveField';
 import { availableParents } from '../../domain/codebase/setSuperclass';
@@ -78,6 +79,7 @@ type MenuItem =
   | { kind: 'form'; mode: FormMode; label: string }
   | { kind: 'action'; run: () => void; label: string }
   | { kind: 'move-submenu'; label: string }
+  | { kind: 'move-class-submenu'; label: string }
   | { kind: 'extends-submenu'; label: string }
   | { kind: 'implements-submenu'; label: string };
 
@@ -86,6 +88,7 @@ function menuItemsFor(target: ContextMenuTarget, onClose: () => void, api: GameS
   const { deleteClass, deleteFile } = api.getState();
   const { classId, fileId } = target;
   const moveItems: MenuItem[] = target.member === null ? [] : [{ kind: 'move-submenu', label: '別のクラスへ移動' }];
+  if (classId !== null && target.member === null) moveItems.push({ kind: 'move-class-submenu', label: '別のファイルへ移動' });
   return [
     ...moveItems,
     ...(fileId === null ? [] : [{ kind: 'form' as const, mode: 'class' as const, label: 'このファイルにクラスを追加' }]),
@@ -182,13 +185,13 @@ function SubmenuTrigger({ label, open, setOpen, wrapperRef, triggerRef, children
   );
 }
 
-type ExtendsMenuItemProps = { target: ContextMenuTarget; label: string; onClose: () => void };
+type SubmenuItemProps = { target: ContextMenuTarget; label: string; onClose: () => void };
 
 /**
  * 「継承元を設定」の項目。候補をクリックすればその場で決まり、メニューを閉じる(1クラスに1つしか持てないため)。
  * 候補から、すでに実装先(implements)になっている相手を除く。
  */
-function ExtendsMenuItem({ target, label, onClose }: Readonly<ExtendsMenuItemProps>) {
+function ExtendsMenuItem({ target, label, onClose }: Readonly<SubmenuItemProps>) {
   const codebase = useGameStore((state) => state.codebase);
   const { setSuperclass } = useGameStoreApi().getState();
   const [open, setOpen] = useState(false);
@@ -224,7 +227,7 @@ function ExtendsMenuItem({ target, label, onClose }: Readonly<ExtendsMenuItemPro
   );
 }
 
-function MoveMenuItem({ target, label, onClose }: Readonly<ExtendsMenuItemProps>) {
+function MoveMenuItem({ target, label, onClose }: Readonly<SubmenuItemProps>) {
   const codebase = useGameStore((state) => state.codebase);
   const { moveMethod, moveField } = useGameStoreApi().getState();
   const [open, setOpen] = useState(false);
@@ -247,6 +250,35 @@ function MoveMenuItem({ target, label, onClose }: Readonly<ExtendsMenuItemProps>
         {candidates.map((candidate) => (
           <button key={candidate.id} type="button" role="menuitem" onClick={() => select(candidate.id)}>
             {candidate.name}
+          </button>
+        ))}
+      </div>
+    </SubmenuTrigger>
+  );
+}
+
+function MoveClassMenuItem({ target, label, onClose }: Readonly<SubmenuItemProps>) {
+  const codebase = useGameStore((state) => state.codebase);
+  const { moveClass } = useGameStoreApi().getState();
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const submenuRef = useRef<HTMLDivElement>(null);
+  const position = useSubmenuPosition(triggerRef, submenuRef, open);
+  const classId = target.classId;
+  if (classId === null) return null;
+  const candidates = moveClassTargets(codebase, classId);
+  if (candidates.length === 0) return null;
+  const select = (fileId: string) => {
+    moveClass(classId, fileId);
+    onClose();
+  };
+  return (
+    <SubmenuTrigger label={label} open={open} setOpen={setOpen} wrapperRef={wrapperRef} triggerRef={triggerRef}>
+      <div ref={submenuRef} role="menu" aria-label={label} className="context-menu context-menu__submenu" style={{ left: position.x, top: position.y }}>
+        {candidates.map((candidate) => (
+          <button key={candidate.id} type="button" role="menuitem" onClick={() => select(candidate.id)}>
+            {candidate.path}
           </button>
         ))}
       </div>
@@ -313,6 +345,9 @@ function MenuItems({ items, target, onSelectForm, onClose }: Readonly<MenuItemsP
   return (
     <div ref={menuRef} role="menu" aria-label="キャンバスのメニュー">
       {items.map((item) => {
+        if (item.kind === 'move-class-submenu') {
+          return <MoveClassMenuItem key={item.kind} target={target} label={item.label} onClose={onClose} />;
+        }
         if (item.kind === 'move-submenu') {
           return <MoveMenuItem key={item.kind} target={target} label={item.label} onClose={onClose} />;
         }

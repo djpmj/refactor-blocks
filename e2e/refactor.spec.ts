@@ -616,7 +616,7 @@ test('継承元を設定にカーソルを合わせるだけで、クリック�
   await menu.getByRole('menuitem', { name: '継承元を設定' }).hover();
 
   // Assert
-  await expect(menu.getByRole('menuitem', { name: 'OrderService' })).toBeVisible();
+  await expect(menu.getByRole('menuitem', { name: 'OrderService', exact: true })).toBeVisible();
 });
 
 test('継承の輪ができる相手は、継承元の候補一覧から外れる', async ({ page }) => {
@@ -1633,4 +1633,110 @@ test('上級8: 呼び出しだけの importOrders を似た処理を持つメソ
     await expect(page.getByTestId('class-OrderImporter').getByTestId(`method-${name}`)).toBeVisible();
   }
   await expect(page.getByTestId('score')).toContainText('100点');
+});
+
+test('クラス移動メニュー: パス順の候補をクリックして空ファイルへ移動し、Ctrl+Zで戻せる', async ({ page }) => {
+  // Arrange
+  await openOrderStage(page);
+  await addFileFromMenu(page, 'src/other/TaxCalculator.ts');
+  const header = page.getByTestId('class-header-TaxCalculator');
+  const source = page.getByTestId('file-src/tax/TaxCalculator.ts');
+  const target = page.getByTestId('file-src/other/TaxCalculator.ts');
+  await expect(target.getByText('ここにクラスをドロップ')).toBeVisible();
+
+  // Act
+  await header.click({ button: 'right' });
+  const menu = page.getByTestId('context-menu');
+  await expect(menu.getByRole('menuitem').first()).toHaveText('別のファイルへ移動');
+  await expect(menu.getByRole('menuitem').first()).toBeFocused();
+  const candidates = menu.getByRole('menu', { name: '別のファイルへ移動', exact: true });
+  await expect(candidates.getByRole('menuitem')).toHaveText(['src/order/OrderService.ts', 'src/other/TaxCalculator.ts']);
+  await candidates.getByRole('menuitem', { name: 'src/other/TaxCalculator.ts', exact: true }).click();
+
+  // Assert
+  await expect(menu).toHaveCount(0);
+  await expect(source.getByText('ここにクラスをドロップ')).toBeVisible();
+  await expect(target.getByText('ここにクラスをドロップ')).toHaveCount(0);
+  await expect(page.getByTestId('class-TaxCalculator')).toHaveCount(1);
+  await header.click({ button: 'right' });
+  await expect(menu.locator('.context-menu__caption')).toHaveText('src/other/TaxCalculator.ts');
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Control+z');
+  await expect(source.getByText('ここにクラスをドロップ')).toHaveCount(0);
+  await expect(target.getByText('ここにクラスをドロップ')).toBeVisible();
+});
+
+test('クラス移動メニュー: Shift+F10とTab/Enterで移動でき、Escapeでヘッダーに戻る', async ({ page }) => {
+  // Arrange
+  await openOrderStage(page);
+  const header = page.getByTestId('class-header-TaxCalculator');
+  await header.focus();
+
+  // Act
+  await header.press('Shift+F10');
+  const menu = page.getByTestId('context-menu');
+  await expect(menu.getByRole('menuitem', { name: '別のファイルへ移動' })).toBeFocused();
+  await page.keyboard.press('Escape');
+
+  // Assert
+  await expect(menu).toHaveCount(0);
+  await expect(header).toBeFocused();
+
+  // Act
+  await header.press('Shift+F10');
+  await page.keyboard.press('Tab');
+  await expect(menu.getByRole('menuitem', { name: 'src/order/OrderService.ts', exact: true })).toBeFocused();
+  await page.keyboard.press('Enter');
+
+  // Assert
+  await expect(menu).toHaveCount(0);
+  await expect(page.getByTestId('file-src/tax/TaxCalculator.ts').getByText('ここにクラスをドロップ')).toBeVisible();
+  await header.press('Shift+F10');
+  await expect(menu.locator('.context-menu__caption')).toHaveText('src/order/OrderService.ts');
+});
+
+test('クラス移動メニュー: ファイル・余白・メソッド・フィールドには項目を出さない', async ({ page }) => {
+  // Arrange
+  await openFeatureEnvyStage(page);
+  const menu = page.getByTestId('context-menu');
+
+  for (const target of [
+    page.locator('.file-node__header').first(),
+    page.getByTestId('method-renewSubscription'),
+    page.getByTestId('field-trialDays'),
+  ]) {
+    // Act
+    await target.click({ button: 'right', position: { x: 5, y: 5 } });
+
+    // Assert
+    await expect(menu).toBeVisible();
+    await expect(menu.getByRole('menuitem', { name: '別のファイルへ移動' })).toHaveCount(0);
+    await expect(menu.getByRole('menuitem', { name: 'このファイルにクラスを追加' })).toBeVisible();
+    await page.keyboard.press('Escape');
+  }
+
+  // Act
+  const point = await emptyPanePoint(page);
+  await page.mouse.click(point.x, point.y, { button: 'right' });
+
+  // Assert
+  await expect(menu).toBeVisible();
+  await expect(menu.getByRole('menuitem')).toHaveText(['ファイルを追加']);
+});
+
+test('クラス移動メニュー: ファイルが1つだけなら項目を出さず既存の先頭項目にフォーカスする', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  const header = page.getByTestId('class-header-ReportService');
+  await header.focus();
+
+  // Act
+  await header.press('Shift+F10');
+
+  // Assert
+  const menu = page.getByTestId('context-menu');
+  await expect(menu).toBeVisible();
+  await expect(menu.getByRole('menuitem', { name: '別のファイルへ移動' })).toHaveCount(0);
+  await expect(menu.getByRole('menuitem').first()).toHaveText('このファイルにクラスを追加');
+  await expect(menu.getByRole('menuitem').first()).toBeFocused();
 });
