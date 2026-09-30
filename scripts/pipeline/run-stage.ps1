@@ -44,14 +44,19 @@ function Invoke-Native {
 # 移植しない。Orca経由の実行は人がターミナルを開いて生の出力をそのまま見られる前提(セッション共有)
 # なので、暴走に気づいたら `orca terminal send --interrupt` 等で人が止められる。もし無人運用
 # (Scheduled Automations)で頻繁に暴走するようなら、そのときに時間打ち切りを足す。
+# --permission-mode acceptEdits + --permission-prompts none で実機テストしたところ、
+# Windows(PowerShell)上ではBashツールのgitコマンドが「権限チェックで解析できず自動拒否」
+# され、エージェントがコミットを実行せず提案だけして終わる不具合が2回連続で再現した
+# (このセッションには承認する人がいないため、noneだと拒否のまま進めなくなる)。
+# --allowedTools による使えるツール自体の絞り込みは維持されるので、bypassPermissionsで
+# 個々の呼び出しごとの承認チェックだけを外す。
 function Invoke-ClaudeAgent {
     param([string]$Prompt, [string]$Model, [string]$AllowedTools)
     Invoke-Native -Exe 'claude' -ArgList @(
         '-p', $Prompt,
         '--model', $Model,
         '--allowedTools', $AllowedTools,
-        '--permission-mode', 'acceptEdits',
-        '--permission-prompts', 'none'
+        '--permission-mode', 'bypassPermissions'
     )
 }
 
