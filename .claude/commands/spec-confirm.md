@@ -1,6 +1,6 @@
 ---
 description: docs/pipeline/*/02-draft-spec.md の未決事項をユーザーに選ばせ、03-confirmed-answers.md として確定させる
-allowed-tools: Read, Write, Glob, Bash(git:*), Bash(gh workflow run:*)
+allowed-tools: Read, Write, Glob, Bash(git:*), Bash(orca terminal create:*)
 ---
 
 開発パイプライン(`docs/pipeline/README.md`)の「ユーザ確定」ステップを行います。
@@ -22,14 +22,16 @@ allowed-tools: Read, Write, Glob, Bash(git:*), Bash(gh workflow run:*)
    `git add docs/pipeline/<slug>/03-confirmed-answers.md`・コミット
    (コミットメッセージ末尾に `Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>` を付ける)・
    `git push origin HEAD:master` を実行する。承認が得られなければコミットまでで止める。
-6. pushできたら、`gh workflow run pipeline.yml -f stage=final-spec -f slug=<slug>` を実行して
-   `final-spec` ステージを起動する(claude-code-actionは`push`イベントを受け付けないため、
-   pushトリガーには頼らず、ここから明示的に`workflow_dispatch`で呼び出す)。
+6. pushできたら、`orca terminal create --worktree name:pipeline-master --command "powershell.exe
+   -NoProfile -ExecutionPolicy Bypass -File scripts/pipeline/run-stage.ps1 -Stage final-spec
+   -Slug <slug>"` を実行して `final-spec` ステージを起動する(ヘッドレスな `claude -p` 実行は人に質問できないため、pushトリガーには
+   頼らず、ここから明示的に次ステージ用のターミナルを起動する)。
 
 ## 注意
 
-- ここは開発パイプラインの中で**唯一の対話ステップ**です。GitHub Actions側は人に質問できないため、
-  このコマンドで確定させた内容がそのまま `final-spec` ステージ(次のフェーズ)に渡ります。
-  曖昧なまま進めず、ユーザーの回答を過不足なく反映してください。
+- ここは開発パイプラインの中で**唯一の対話ステップ**です。discover〜evaluateの各ステージは
+  ヘッドレスな `claude -p`/`codex exec` で動くため人に質問できません。このコマンドで確定させた
+  内容がそのまま `final-spec` ステージ(次のフェーズ)に渡ります。曖昧なまま進めず、ユーザーの
+  回答を過不足なく反映してください。
 - 未決事項に対してこちらから勝手に「妥当な案」を決めて進めない。必ず `AskUserQuestion` かテキストで
   ユーザー本人に選ばせる。

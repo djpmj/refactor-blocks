@@ -1,8 +1,12 @@
 # 開発パイプライン: 機能探索 → 仕様設計 → ユーザ確定 → 最終仕様 → 実装 → レビュー → 評価
 
 `docs/specs/README.md` の開発ハーネス(仕様設計→実装→評価、同一セッション内でサブエージェントを呼ぶ形)を、
-役割ごとに**別セッション**(別のGitHub Actionsジョブ実行、または別のCLI呼び出し)に分割したもの。
-`.github/workflows/pipeline.yml` が1つのステートマシンとして各ステージを順に起動する。
+役割ごとに**別プロセス**(Orcaが起動する別ターミナル)に分割したもの。`scripts/pipeline/run-stage.ps1`
+が1つのステートマシンとして各ステージを順に実行する。
+
+Orca(StablyAIのAgent Development Environment、ローカルPCにインストール・ログイン済み)が、
+このスクリプトを実行するターミナルのランチャー役を担う。`claude`/`codex` CLIはこのPC上の実ログイン
+セッションのまま起動されるため、GitHub Actions版で必要だったSecretsの登録・失効時の再登録は不要になった。
 
 ## 機能の一覧
 
@@ -14,7 +18,7 @@
 ## 全体の流れ
 
 ```
-1. discover(機能探索、Claude)
+1. discover(機能探索、Claude Opus 5.5)
    → docs/pipeline/<slug>/01-discovered.md
 2. spec-draft(仕様設計、Claude Opus 5.5)
    → docs/pipeline/<slug>/02-draft-spec.md(未決事項は選択肢付き)
@@ -36,26 +40,46 @@
 ```
 
 各ステージが読み書きするmdファイルが、そのまま次のステージへの引き継ぎ資料になる。
-すべてのステージは `workflow_dispatch`(`gh workflow run pipeline.yml -f stage=... -f slug=...`)
-からしか起動しない(`push`/`pull_request` イベントは使わない。claude-code-actionが
-`workflow_dispatch` 以外のイベント種別を受け付けないため)。ステージ間の連鎖は、前段のステップが
-成功した最後に次段を `gh workflow run` で明示的に呼ぶことで行う(discoverの最後・final-specの
-最後・codex-reviewの最後・claude-review合格時)。`/spec-confirm` コマンドの最後も同様に
-`final-spec` を呼ぶ。連鎖が止まっても、mdファイルさえ残っていれば手動で次のステージを
-`workflow_dispatch` から再実行できる。
+
+## 実行方法(Orca経由)
+
+すべてのステージは `scripts/pipeline/run-stage.ps1 -Stage <stage> -Slug <slug>`(discoverのみslug不要)
+を、Orca管理下のworktreeの中で実行する。手動で最初の1段(discover)を起動するには:
+
+```powershell
+orca terminal create --worktree name:pipeline-master --command "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/pipeline/run-stage.ps1 -Stage discover"
+```
+
+`pipeline-master` という名前のworktreeが無ければスクリプトが初回に自動で作る
+(`orca worktree create --repo name:refactor-blocks --name pipeline-master --base-branch master`)。
+各ステージが成功すると、スクリプト自身が最後に次ステージ用のターミナルを `orca terminal create` で
+起動して連鎖する(旧GitHub Actions版の `gh workflow run pipeline.yml -f stage=...` に相当)。
+連鎖が止まっても、mdファイルさえ残っていれば同じコマンドを手動で再実行すれば途中から再開できる。
+
+ステージとworktreeの対応:
+
+| ステージ | 実行worktree | 対象ブランチ |
+| --- | --- | --- |
+| discover / spec-draft / final-spec / evaluate | `pipeline-master`(専用worktree) | `master`(直接push) |
+| implement / codex-review / claude-review | `pipeline-<slug>`(専用worktree) | `pipeline/<slug>` |
+
+master系ステージは、Orcaのworktreeが独自ブランチを切る仕様のため、毎回 `git fetch origin master` +
+`git reset --hard origin/master` で同期してから作業し、pushだけ明示的に `origin/master` へ向ける。
+slug系ステージも同様に、ローカルブランチ名に関係なく常に `origin/pipeline/<slug>` と同期する
+(rework時は既存ブランチを、初回は `master` を起点にする)。
 
 ## 各役割定義
 
-GitHub Actions側のプロンプトは、以下の `.claude/agents/*.md` の内容をそのまま埋め込んで使う。
+各ステージのプロンプトは、以下の `.claude/agents/*.md` の内容をそのまま埋め込んで使う。
 役割の中身(何を守るか・何をしてはいけないか)を二重管理しないため。
 
 | ステージ | 役割定義 | 実行者 |
 | --- | --- | --- |
-| discover | `.claude/agents/feature-scout.md` | Claude(claude-code-action) |
-| spec-draft | `.claude/agents/spec-designer.md` | Claude Opus 5.5 |
-| final-spec | `.claude/agents/final-spec-writer.md` | Claude Opus 5.5 |
-| implement / codex-review | (エージェント定義なし。`codex exec` / `codex exec review` を直接呼ぶ) | Codex CLI |
-| claude-review / evaluate | `.claude/agents/evaluator.md` | Claude Sonnet 5 / Opus 5.5 |
+| discover | `.claude/agents/feature-scout.md` | Claude Opus 5.5(`claude -p`) |
+| spec-draft | `.claude/agents/spec-designer.md` | Claude Opus 5.5(`claude -p`) |
+| final-spec | `.claude/agents/final-spec-writer.md` | Claude Opus 5.5(`claude -p`) |
+| implement / codex-review | (エージェント定義なし。`codex exec` を直接呼ぶ) | Codex CLI |
+| claude-review / evaluate | `.claude/agents/evaluator.md` | Claude Sonnet 5 / Opus 5.5(`claude -p`) |
 
 `.claude/agents/implementer.md` はこのパイプラインでは使わない(Codexに置き換わったため)。
 同一セッション内で小規模な機能を作る場合の `feature-harness` skill では引き続き使う。
@@ -63,8 +87,8 @@ GitHub Actions側のプロンプトは、以下の `.claude/agents/*.md` の内�
 ## ローカルコマンド: `/spec-confirm`
 
 `spec-draft` ステージが書いた `docs/pipeline/<slug>/02-draft-spec.md` の「未決事項」を、
-ユーザーが対話で1問ずつ選んで確定させるためのスラッシュコマンド。GitHub Actions側では
-ユーザー入力を取れないため、ここだけはローカルのClaude Codeセッションで実行する。
+ユーザーが対話で1問ずつ選んで確定させるためのスラッシュコマンド。ヘッドレスな `claude -p` 実行は
+ユーザー入力を取れないため、ここだけは通常のClaude Codeセッションで対話的に実行する。
 
 ```
 /spec-confirm
@@ -72,62 +96,51 @@ GitHub Actions側のプロンプトは、以下の `.claude/agents/*.md` の内�
 
 `03-confirmed-answers.md` を書いてコミットした後、pushしてよいかユーザーに確認する
 (`auto-dev.md` コマンドと同じ流儀。無断でpushしない)。push後、このコマンド自身が
-`gh workflow run pipeline.yml -f stage=final-spec -f slug=<slug>` を実行して次のステージを起動する。
+`orca terminal create --worktree name:pipeline-master --command "powershell.exe -NoProfile
+-ExecutionPolicy Bypass -File scripts/pipeline/run-stage.ps1 -Stage final-spec -Slug <slug>"`
+を実行して次のステージを起動する。
 
-## 必要なSecrets
+## 前提となるツールのログイン
 
-| Secret名 | 用途 | 未登録のときの挙動 |
+| ツール | 用途 | 未ログインのときの挙動 |
 | --- | --- | --- |
-| `CLAUDE_CODE_OAUTH_TOKEN` | Claudeを使う全ステージ(既存の `auto-dev.yml` と共用) | 該当ステージが失敗する |
-| `CODEX_AUTH_JSON_B64` | `implement`/`codex-review` ステージでのCodex認証(ChatGPT Plusのセッション) | Codexステージが失敗する |
+| `claude`(Claude Code CLI) | discover/spec-draft/final-spec/claude-review/evaluate | 該当ステージが失敗する |
+| `codex`(Codex CLI) | implement/codex-review(ChatGPT Plusのセッション) | 該当ステージが失敗する |
+| `gh`(GitHub CLI) | Issue/PR作成・マージ | 該当コマンドが失敗する |
+| `orca` | 次ステージの起動 | 連鎖が止まる(mdファイルは残るので手動で再実行できる) |
 
-Codexは **APIキーではなくChatGPT Plusのセッションを使う**(API従量課金ではなく、契約済みの
-Plusプランを使うため)。GitHub Actions上のヘッドレス環境ではブラウザログインができないため、
-ローカルでログイン済みの認証情報(`auth.json`)をSecretsに入れておき、CI側でそのファイルを
-復元してから `codex exec` を実行する。
+いずれもこのPC上で `claude`/`codex login`/`gh auth login` を一度済ませておけば、以降はOrcaが
+その実ログインセッションのままターミナルを起動する。GitHub Actions版で必要だった
+「`auth.json` をBase64化してSecretsに登録する」運用は不要(セッションそのものをリポジトリの外に
+持ち出さないため、フォークPRでの悪用リスクも構造的に発生しない)。
 
-### `CODEX_AUTH_JSON_B64` の作り方
+## 自動起動(discoverの定期実行)について
 
-1. 自分のPCで `codex login` を済ませておく(`codex login status` で `Logged in using ChatGPT` と出ればOK)
-2. `codex doctor` の出力にある `CODEX_HOME available` の行、または環境変数 `CODEX_HOME`
-   (未設定なら既定で `%USERPROFILE%\.codex` / `~/.codex`)から、その中の `auth.json` の場所を確認する
-3. `auth.json` の中身をBase64化してSecretに登録する(PowerShellの例):
-   ```powershell
-   $authPath = if ($env:CODEX_HOME) { Join-Path $env:CODEX_HOME 'auth.json' } else { Join-Path $env:USERPROFILE '.codex\auth.json' }
-   $b64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($authPath))
-   $b64 | gh secret set CODEX_AUTH_JSON_B64 --repo <owner>/<repo>
-   ```
-   (`gh secret set` はパイプ経由で値を渡せるので、値がターミナルの画面やコマンド履歴に残らない)
+discoverステージは、Orcaの Scheduled Automations で定期実行できる。例えば毎日 JST 3:00 に起動するには:
 
-### 注意(セキュリティ・運用)
+```powershell
+orca automations create `
+  --name "refactor-blocks discover" `
+  --trigger daily --time 03:00 --timezone Asia/Tokyo `
+  --workspace name:pipeline-master `
+  --provider claude `
+  --prompt "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/pipeline/run-stage.ps1 -Stage discover"
+```
 
-- `auth.json` は自分のChatGPT/OpenAIアカウントのセッションそのものなので、パスワードと同じ扱いで
-  他人に見せない・公開リポジトリの誰でも読めるログに出さない
-- このワークフローはフォークからのPull Requestでは実行されない前提で設計している
-  (フォークPRでSecretsを使うワークフローを動かすと、第三者にセッションを悪用され得る。
-  `pull_request_target` 等でフォークPRからも動かす変更はしないこと)
-- セッションには有効期限があるため、しばらく経ってCodexステージが認証エラーで失敗し始めたら、
-  ローカルで `codex login` をやり直し、上記の手順で `CODEX_AUTH_JSON_B64` を登録し直す
-  (自動更新の仕組みは持たせていない。既知の運用コストとして許容する)
+作成後は `orca automations run <id>` で即時実行して動作を確認してから、`orca automations edit <id>
+--enabled` で有効化する。まずは手動起動(上記コマンド)で1機能分パイプラインを通しで確認してから
+定期実行を有効にすること。
 
-登録手順: リポジトリの Settings → Secrets and variables → Actions、または `gh secret set` で登録する。
-
-## 自動起動(schedule)について
-
-`auto-dev.yml` と同じく、`pipeline.yml` の `discover` ステージの `schedule` トリガーは
-最初はコメントアウトしてある。上記のSecretsを登録し、パイプライン全体を一度手動で
-通しで確認できたら、コメントを外して定期実行を有効化する。
+将来、別マシンにRemote Orca Serverを常時起動しておけば、discoverの定期実行や外出先からの
+`/spec-confirm` 対応がしやすくなる(今回は未対応。ローカル1台での利用を前提にしている)。
 
 ## 自動マージについて
 
 `claude-review` に合格すると、`gh pr merge --squash --delete-branch` でそのPRを**自動でマージする**
 (ユーザーの選択により、手動マージの安全弁は設けていない。Codexが書いてClaudeがレビューしたコードが、
-人の目を介さずmasterに入る設計であることに注意)。マージ直後に `claude-review` ジョブ自身が
-`gh workflow run pipeline.yml -f stage=evaluate -f slug=<slug>` を実行し、`evaluate` ステージを
-起動する(`pull_request` イベントのトリガーは使わない。前述のとおりclaude-code-actionが
-未対応のため)。
+人の目を介さずmasterに入る設計であることに注意)。マージ直後に `claude-review` の処理自身が
+`evaluate` ステージ用のターミナルを起動する。
 
-マージには「Settings → Actions → General → Allow GitHub Actions to create and approve pull
-requests」の有効化に加え、`master` にブランチ保護(必須レビューなど)が設定されている場合は
-それを緩めるか `gh pr merge --admin` への変更が必要になる場合がある(このワークフローは
-`--admin` は使わない。保護ルールに阻まれて失敗したら、その旨がジョブのログに出る)。
+マージには、`master` にブランチ保護(必須レビューなど)が設定されている場合はそれを緩める必要が
+ある場合がある(このスクリプトは `--admin` は使わない。保護ルールに阻まれて失敗したら、そのステージの
+出力にその旨が出る)。
