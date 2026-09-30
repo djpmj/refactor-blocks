@@ -118,6 +118,21 @@ function Get-NewSlugFromLastCommit {
     return $Matches[1]
 }
 
+# pipeline-master / pipeline-<slug> は複数ステージが使い回す共有worktreeなので、
+# ここでpush済みを確認せずに次ステージを起動すると、次ステージの同期処理
+# (git reset --hard / git checkout -B)が「まだpushされていないローカルコミット」を
+# 黙って消してしまう(実際にこのバグでdiscoverの成果を1回失った)。エージェントに
+# pushを指示しても実行を忘れる/失敗することがあるため、ここで必ず検証する。
+function Assert-Pushed {
+    param([string]$RemoteRef)
+    git fetch origin | Out-Null
+    $localHead = git rev-parse HEAD
+    $remoteHead = git rev-parse $RemoteRef
+    if ($localHead -ne $remoteHead) {
+        throw "pushが確認できません(HEAD: $localHead / ${RemoteRef}: $remoteHead)。エージェントがpushを完了できなかった可能性があります。手動で確認してください。"
+    }
+}
+
 switch ($Stage) {
 
     'discover' {
@@ -132,6 +147,7 @@ git add し、「機能探索: <タイトル>」のような日本語のコミ�
 (末尾に "$CoAuthor" を付ける)でコミットして、git push origin HEAD:master を実行してください。
 "@
         Invoke-ClaudeAgent -Prompt $prompt -Model 'claude-opus-5-5' -AllowedTools 'Read,Write,Glob,Grep,Bash(git:*)'
+        Assert-Pushed -RemoteRef 'origin/master'
         $newSlug = Get-NewSlugFromLastCommit -Pattern 'docs/pipeline/*/01-discovered.md'
         Start-NextStage -Worktree 'pipeline-master' -Stage 'spec-draft' -Slug $newSlug
     }
@@ -151,6 +167,7 @@ docs/pipeline/$Slug/02-draft-spec.md として書いてください
 (末尾に "$CoAuthor" を付ける)でコミットして、git push origin HEAD:master を実行してください。
 "@
         Invoke-ClaudeAgent -Prompt $prompt -Model 'claude-opus-5-5' -AllowedTools 'Read,Write,Glob,Grep,Bash(git:*)'
+        Assert-Pushed -RemoteRef 'origin/master'
         Invoke-Native -Exe 'gh' -ArgList @(
             'issue', 'create',
             '--title', "仕様確定待ち: $Slug",
@@ -172,6 +189,7 @@ docs/specs/$Slug.md と docs/pipeline/$Slug/04-final-spec.md を書いてくだ�
 (末尾に "$CoAuthor" を付ける)でコミットして、git push origin HEAD:master を実行してください。
 "@
         Invoke-ClaudeAgent -Prompt $prompt -Model 'claude-opus-5-5' -AllowedTools 'Read,Write,Glob,Grep,Bash(git:*)'
+        Assert-Pushed -RemoteRef 'origin/master'
         Start-NextStage -Worktree 'pipeline-master' -Stage 'implement' -Slug $Slug
     }
 
@@ -223,9 +241,10 @@ docs/specs/$Slug.md と docs/pipeline/$Slug/04-final-spec.md を書いてくだ�
         $hasChanges = ($LASTEXITCODE -ne 0)
         if ($hasChanges) {
             $msg = if ($script:IsRework) { "Codex実装: $Slug のレビュー指摘に対応" } else { "Codex実装: $Slug" }
-            git commit -m $msg
+            Invoke-Native -Exe 'git' -ArgList @('commit', '-m', $msg)
         }
-        git push origin "pipeline/$Slug"
+        Invoke-Native -Exe 'git' -ArgList @('push', 'origin', "pipeline/$Slug")
+        Assert-Pushed -RemoteRef "origin/pipeline/$Slug"
 
         $prCount = gh pr list --head "pipeline/$Slug" --json number --jq '.[0].number'
         if (-not $prCount) {
@@ -254,9 +273,10 @@ docs/specs/$Slug.md と docs/pipeline/$Slug/04-final-spec.md を書いてくだ�
         $notesPath = "docs/pipeline/$Slug/05-review-notes.md"
         $header = "`n## $(Get-Date -Format 'yyyy-MM-dd HH:mm') — Codex自己レビュー`n`n"
         Add-Content -Path $notesPath -Encoding UTF8 -Value ($header + (Get-Content $verdictFile -Raw -Encoding UTF8))
-        git add $notesPath
-        git commit -m "Codex自己レビュー: $Slug"
-        git push origin "pipeline/$Slug"
+        Invoke-Native -Exe 'git' -ArgList @('add', $notesPath)
+        Invoke-Native -Exe 'git' -ArgList @('commit', '-m', "Codex自己レビュー: $Slug")
+        Invoke-Native -Exe 'git' -ArgList @('push', 'origin', "pipeline/$Slug")
+        Assert-Pushed -RemoteRef "origin/pipeline/$Slug"
 
         $lastLine = Get-Content $verdictFile -Tail 1 -Encoding UTF8
         if ($lastLine -match 'NEEDS_FIX') {
@@ -286,6 +306,7 @@ docs/pipeline/$Slug/05-review-notes.md に追記してください
 (末尾に "$CoAuthor" を付ける)でコミットして、git push origin HEAD を実行してください。
 "@
         Invoke-ClaudeAgent -Prompt $prompt -Model 'claude-sonnet-5' -AllowedTools 'Read,Write,Glob,Grep,Bash(npm:*),Bash(git:*)'
+        Assert-Pushed -RemoteRef "origin/pipeline/$Slug"
 
         $notesPath = "docs/pipeline/$Slug/05-review-notes.md"
         $verdictLine = (Get-Content $notesPath -Encoding UTF8 | Select-String -Pattern '^## 判定: .*$' | Select-Object -Last 1).Line
@@ -318,5 +339,6 @@ docs/pipeline/$Slug/06-evaluation.md に書いてください。
 (末尾に "$CoAuthor" を付ける)でコミットして、git push origin HEAD:master を実行してください。
 "@
         Invoke-ClaudeAgent -Prompt $prompt -Model 'claude-opus-5-5' -AllowedTools 'Read,Write,Glob,Grep,Bash(npm:*),Bash(git:*)'
+        Assert-Pushed -RemoteRef 'origin/master'
     }
 }
