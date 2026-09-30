@@ -149,7 +149,7 @@ docs/pipeline/README.md の「discover」ステージを実行してください
 機能を1件選んだら docs/pipeline/<slug>/01-discovered.md を書き、
 (docs/pipeline/USER_FIXES.md から採用した場合はその見出しの書き換えも含めて)
 git add し、「機能探索: <タイトル>」のような日本語のコミットメッセージ
-(末尾に "$CoAuthor" を付ける)でコミットして、git push origin HEAD:master を実行してください。
+(末尾に「$CoAuthor」を付ける)でコミットして、git push origin HEAD:master を実行してください。
 "@
         Invoke-ClaudeAgent -Prompt $prompt -Model 'claude-opus-5-5' -AllowedTools 'Read,Write,Glob,Grep,Bash(git:*)'
         Assert-Pushed -RemoteRef 'origin/master'
@@ -169,7 +169,7 @@ docs/pipeline/$Slug/02-draft-spec.md として書いてください
 (spec-designer.mdの「未決事項の書式」に従うこと)。
 
 書けたら git add し、「仕様設計(草案): $Slug」のようなコミットメッセージ
-(末尾に "$CoAuthor" を付ける)でコミットして、git push origin HEAD:master を実行してください。
+(末尾に「$CoAuthor」を付ける)でコミットして、git push origin HEAD:master を実行してください。
 "@
         Invoke-ClaudeAgent -Prompt $prompt -Model 'claude-opus-5-5' -AllowedTools 'Read,Write,Glob,Grep,Bash(git:*)'
         Assert-Pushed -RemoteRef 'origin/master'
@@ -191,7 +191,7 @@ docs/pipeline/$Slug/02-draft-spec.md と docs/pipeline/$Slug/03-confirmed-answer
 docs/specs/$Slug.md と docs/pipeline/$Slug/04-final-spec.md を書いてください。
 
 書けたら git add し、「最終仕様: $Slug」のようなコミットメッセージ
-(末尾に "$CoAuthor" を付ける)でコミットして、git push origin HEAD:master を実行してください。
+(末尾に「$CoAuthor」を付ける)でコミットして、git push origin HEAD:master を実行してください。
 "@
         Invoke-ClaudeAgent -Prompt $prompt -Model 'claude-opus-5-5' -AllowedTools 'Read,Write,Glob,Grep,Bash(git:*)'
         Assert-Pushed -RemoteRef 'origin/master'
@@ -308,7 +308,7 @@ docs/pipeline/$Slug/05-review-notes.md に追記してください
 (末尾の判定見出しの文言は変えないこと)。
 
 書けたら git add し、「Claudeレビュー: $Slug」のようなコミットメッセージ
-(末尾に "$CoAuthor" を付ける)でコミットして、git push origin HEAD を実行してください。
+(末尾に「$CoAuthor」を付ける)でコミットして、git push origin HEAD を実行してください。
 "@
         Invoke-ClaudeAgent -Prompt $prompt -Model 'claude-sonnet-5' -AllowedTools 'Read,Write,Glob,Grep,Bash(npm:*),Bash(git:*)'
         Assert-Pushed -RemoteRef "origin/pipeline/$Slug"
@@ -341,7 +341,7 @@ git log でコミット履歴を確認できる)を対象として評価し、
 docs/pipeline/$Slug/06-evaluation.md に書いてください。
 
 書けたら git add し、「評価: $Slug」のようなコミットメッセージ
-(末尾に "$CoAuthor" を付ける)でコミットして、git push origin HEAD:master を実行してください。
+(末尾に「$CoAuthor」を付ける)でコミットして、git push origin HEAD:master を実行してください。
 "@
         Invoke-ClaudeAgent -Prompt $prompt -Model 'claude-opus-5-5' -AllowedTools 'Read,Write,Glob,Grep,Bash(npm:*),Bash(git:*)'
         Assert-Pushed -RemoteRef 'origin/master'
