@@ -50,10 +50,14 @@ function Invoke-Native {
 # (このセッションには承認する人がいないため、noneだと拒否のまま進めなくなる)。
 # --allowedTools による使えるツール自体の絞り込みは維持されるので、bypassPermissionsで
 # 個々の呼び出しごとの承認チェックだけを外す。
+# 長い複数行プロンプトを `-p <text>` の引数として渡すと、claude.ps1 ラッパー経由で
+# 途中(末尾付近)から切れる不具合が実機で2回再現した(エージェントが「指示文が途中で
+# 切れていたのでpushしなかった」と自己申告した)。標準入力経由なら全文渡ることを
+# 動作確認済みなので、プロンプトは引数ではなく標準入力で渡す。
 function Invoke-ClaudeAgent {
     param([string]$Prompt, [string]$Model, [string]$AllowedTools)
-    Invoke-Native -Exe 'claude' -ArgList @(
-        '-p', $Prompt,
+    Invoke-Native -Exe 'claude' -StdinText $Prompt -ArgList @(
+        '-p',
         '--model', $Model,
         '--allowedTools', $AllowedTools,
         '--permission-mode', 'bypassPermissions'
