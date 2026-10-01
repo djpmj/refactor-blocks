@@ -295,7 +295,7 @@ docs/specs/$Slug.md と docs/pipeline/$Slug/04-final-spec.md を書いてくだ�
         $verdictFile = Join-Path $env:TEMP 'codex-verdict.md'
         Invoke-Native -Exe 'codex' -ArgList @(
             'exec',
-            'docs/specs/' + $Slug + '.md の受け入れ基準と、CLAUDE.mdのDDD構成・eslint規約に照らして、master からのこのブランチの差分(git diff master...HEAD)をレビューしてください。指摘があれば具体的な指摘を書いてください。最後に、直すべき指摘(blocker)が1件でもあれば最後の1行だけに NEEDS_FIX と書き、無ければ最後の1行だけに PASS と書いてください。',
+            "docs/specs/$Slug.md の受け入れ基準と、CLAUDE.mdのDDD構成・eslint規約に照らして、master からのこのブランチの差分(git diff master...HEAD)をレビューしてください。指摘があれば具体的な指摘を書いてください。最後に、直すべき指摘(blocker)が1件でもあれば最後の1行だけに NEEDS_FIX と書き、無ければ最後の1行だけに PASS と書いてください。",
             '--approve-for-me', '--skip-git-repo-check', '-o', $verdictFile
         )
 
