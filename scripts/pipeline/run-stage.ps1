@@ -27,6 +27,10 @@ $RepoSelector = 'name:refactor-blocks'
 $CoAuthor = 'Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>'
 $BotUserName = 'refactor-blocks-pipeline'
 $BotUserEmail = 'refactor-blocks-pipeline@localhost'
+# codex-review/claude-reviewがNEEDS_FIX/要修正を出し続けてimplementへ無限に差し戻す事故が
+# 実機で発生した(同じ指摘を5ラウンド繰り返し、収束しなかった)。実装コミットの数で素朴に
+# 回数制限し、超えたら自動ループを止めて人に委ねる。
+$MaxImplementAttempts = 3
 
 function Invoke-Native {
     param([string]$Exe, [string[]]$ArgList, [string]$StdinText)
@@ -139,6 +143,29 @@ function Start-NextStage {
     orca terminal create --worktree "name:$Worktree" --command $cmd --json | Out-Null
 }
 
+# "Codex実装"で始まるコミット数(初回+差し戻しのやり直し)を数える。
+# ブランチ上のコミットメッセージだけを見る素朴な数え方で十分(厳密なラウンド管理はしない)。
+function Get-ImplementAttemptCount {
+    $subjects = git log --format=%s
+    $matches = $subjects | Where-Object { $_ -match '^Codex実装' }
+    return @($matches).Count
+}
+
+# codex-review/claude-reviewのNEEDS_FIX/要修正でimplementへ差し戻す前に呼ぶ。
+# 上限を超えていたら、ラベルは付けたうえで差し戻さずIssueを作って止める
+# (同じ指摘を繰り返すだけで収束しない暴走を、人が気づける形に変える)。
+function Stop-IfLoopStuck {
+    param([string]$Slug, [string]$NotesPath)
+    $attempts = Get-ImplementAttemptCount
+    if ($attempts -lt $MaxImplementAttempts) { return $false }
+    Invoke-Native -Exe 'gh' -ArgList @(
+        'issue', 'create',
+        '--title', "レビューループが収束しませんでした: $Slug",
+        '--body', "pipeline/$Slug のimplement→レビューの往復が $attempts 回になりました(上限 $MaxImplementAttempts)。docs/pipeline/$Slug/$NotesPath の指摘が解消されていません。自動ループは止めたので、PRを手動で確認してください。"
+    )
+    return $true
+}
+
 function Get-NewSlugFromLastCommit {
     param([string]$Pattern)
     $file = (git log -1 --diff-filter=A --name-only --pretty=format: -- $Pattern | Select-Object -First 1)
@@ -236,6 +263,9 @@ docs/specs/$Slug.md と docs/pipeline/$Slug/04-final-spec.md を書いてくだ�
         if (Test-Path $reviewNotes) {
             $promptLines += ''
             $promptLines += '以下はこれまでのレビュー指摘です。特に blocker を優先して直してください。'
+            $promptLines += '同じ blocker に対して過去のラウンドで「環境の問題で確認できなかった」等の説明を' +
+                '書いている場合、その説明をそのまま繰り返して終わらせず、今回のセッションで実際にもう一度' +
+                '手順を試してください(解消できないなら、具体的に何を試して何が起きたかを新しく書くこと)。'
             $promptLines += ''
             $promptLines += (Get-Content $reviewNotes -Raw -Encoding UTF8)
         }
@@ -310,7 +340,9 @@ docs/specs/$Slug.md と docs/pipeline/$Slug/04-final-spec.md を書いてくだ�
         $lastLine = Get-Content $verdictFile -Tail 1 -Encoding UTF8
         if ($lastLine -match 'NEEDS_FIX') {
             Invoke-BestEffort -Exe 'gh' -ArgList @('pr', 'edit', "pipeline/$Slug", '--add-label', 'changes-requested', '--remove-label', 'codex-approved')
-            Start-NextStage -Worktree "pipeline-$Slug" -Stage 'implement' -Slug $Slug
+            if (-not (Stop-IfLoopStuck -Slug $Slug -NotesPath '05-review-notes.md')) {
+                Start-NextStage -Worktree "pipeline-$Slug" -Stage 'implement' -Slug $Slug
+            }
         } else {
             Invoke-BestEffort -Exe 'gh' -ArgList @('pr', 'edit', "pipeline/$Slug", '--add-label', 'codex-approved', '--remove-label', 'changes-requested')
             Start-NextStage -Worktree "pipeline-$Slug" -Stage 'claude-review' -Slug $Slug
@@ -341,8 +373,12 @@ docs/pipeline/$Slug/05-review-notes.md に追記してください
         $verdictLine = (Get-Content $notesPath -Encoding UTF8 | Select-String -Pattern '^## 判定: .*$' | Select-Object -Last 1).Line
         if ($verdictLine -eq '## 判定: 要修正') {
             Invoke-BestEffort -Exe 'gh' -ArgList @('pr', 'edit', "pipeline/$Slug", '--add-label', 'changes-requested', '--remove-label', 'claude-approved')
-            Invoke-Native -Exe 'gh' -ArgList @('pr', 'comment', "pipeline/$Slug", '--body', "Claudeレビューで修正が必要な指摘がありました。docs/pipeline/$Slug/05-review-notes.md を参照してください。Codexによる再実装を起動します。")
-            Start-NextStage -Worktree "pipeline-$Slug" -Stage 'implement' -Slug $Slug
+            if (Stop-IfLoopStuck -Slug $Slug -NotesPath '05-review-notes.md') {
+                Invoke-Native -Exe 'gh' -ArgList @('pr', 'comment', "pipeline/$Slug", '--body', "Claudeレビューで修正が必要な指摘がありましたが、実装の差し戻しが上限($MaxImplementAttempts 回)に達したため自動ループを止めました。docs/pipeline/$Slug/05-review-notes.md を参照してください。")
+            } else {
+                Invoke-Native -Exe 'gh' -ArgList @('pr', 'comment', "pipeline/$Slug", '--body', "Claudeレビューで修正が必要な指摘がありました。docs/pipeline/$Slug/05-review-notes.md を参照してください。Codexによる再実装を起動します。")
+                Start-NextStage -Worktree "pipeline-$Slug" -Stage 'implement' -Slug $Slug
+            }
         } else {
             Invoke-BestEffort -Exe 'gh' -ArgList @('pr', 'edit', "pipeline/$Slug", '--add-label', 'claude-approved', '--remove-label', 'changes-requested')
             Invoke-Native -Exe 'gh' -ArgList @('pr', 'comment', "pipeline/$Slug", '--body', "Claudeレビューが完了しました。指摘はありません。自動マージします。マージ後に評価ステージが自動で起動します。")

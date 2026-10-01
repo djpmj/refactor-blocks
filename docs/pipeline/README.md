@@ -32,6 +32,10 @@ Orca(StablyAIのAgent Development Environment、ローカルPCにインストー
    → 指摘があれば 5 に差し戻し、無ければ codex-approved ラベルを付けて 7 へ
 7. claude-review(Claude Sonnet 5によるレビュー)
    → 指摘があれば 5 に差し戻し、無ければ claude-approved ラベルを付けて**自動マージ**する
+
+   5↔6↔7 の往復は `Codex実装` コミットの数で数え、`$MaxImplementAttempts`(既定3)を超えたら
+   自動では差し戻さず、ラベルは付けたままIssueを作って止める(同じ指摘が解消されず無限に往復する
+   事故が実機で発生したため)。止まったPRは人が内容を確認して直す。
 8. evaluate(評価、Claude Opus 5.5。PRマージ後に起動)
    → docs/pipeline/<slug>/06-evaluation.md
 9. [ユーザーが実機で動かして直してほしい内容を発見]
