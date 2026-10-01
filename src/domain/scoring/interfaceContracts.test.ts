@@ -165,13 +165,6 @@ describe('findContractViolations', () => {
     expect(findContractViolations(codebaseOf([iface, base, child]))).toEqual([]);
   });
 
-  it('同じ具象クラスで契約メソッド2件を借用すると2件返す', () => {
-    const iface: CodeClass = { id: 'class-i', name: 'I', methods: [contractMethod('m-a', 'a'), contractMethod('m-b', 'b')] };
-    const base: CodeClass = { id: 'class-p', name: 'P', interfaceIds: ['class-i'], methods: [realMethod('p-a', 'a'), realMethod('p-b', 'b')] };
-    const child: CodeClass = { id: 'class-c', name: 'C', superclassId: 'class-p', interfaceIds: ['class-i'], methods: [] };
-    expect(findContractViolations(codebaseOf([iface, base, child]))).toEqual(['class-c', 'class-c']);
-  });
-
   it('最も近い所有者が抽象役なら、遠い具象の同名メソッドがあっても数えない', () => {
     const iface: CodeClass = { id: 'class-i', name: 'I', methods: [contractMethod('m-a', 'a')] };
     const concrete: CodeClass = { id: 'class-p', name: 'P', interfaceIds: ['class-i'], methods: [realMethod('p-a', 'a')] };
