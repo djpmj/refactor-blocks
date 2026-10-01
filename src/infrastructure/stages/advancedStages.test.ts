@@ -11,7 +11,7 @@ import { addInterface } from '../../domain/codebase/setSuperclass';
 import { allClasses, findClass, findInterfaces, findSuperclass, isStubMethod, type CodeClass, type Codebase } from '../../domain/codebase/Codebase';
 import { classDependencies } from '../../domain/codebase/dependencies';
 import { scoreCodebase } from '../../domain/scoring/score';
-import { sampleAnswerCodebase } from '../../domain/stage/sampleAnswer';
+import { applySolutionSteps, sampleAnswerCodebase, type SolutionStep } from '../../domain/stage/sampleAnswer';
 import type { Result } from '../../domain/shared/Result';
 import { advancedStages } from './advancedStages';
 
@@ -525,5 +525,27 @@ describe('advanced-interface-segregation', () => {
     expect(taskAssigneeAfter.classesTouched).toBe(2);
     expect(threadReplyBefore.classesTouched).toBe(4);
     expect(threadReplyAfter.classesTouched).toBe(3);
+  });
+
+  it('空実装を消して ChatworkClient を継承元にしても、具象クラスからの借用で100点にならない', () => {
+    // Arrange
+    const steps: SolutionStep[] = [
+      { deleteMethod: { method: 'createTask', fromClass: 'SlackClient' } },
+      { deleteMethod: { method: 'completeTask', fromClass: 'SlackClient' } },
+      { deleteMethod: { method: 'createTask', fromClass: 'TeamsClient' } },
+      { deleteMethod: { method: 'completeTask', fromClass: 'TeamsClient' } },
+      { deleteMethod: { method: 'postMessage', fromClass: 'BacklogClient' } },
+      { setSuperclass: { class: 'SlackClient', superclass: 'ChatworkClient' } },
+      { setSuperclass: { class: 'TeamsClient', superclass: 'ChatworkClient' } },
+      { setSuperclass: { class: 'BacklogClient', superclass: 'ChatworkClient' } },
+    ];
+    const codebase = applySolutionSteps(stage.codebase, steps);
+
+    // Act
+    const score = scoreCodebase(codebase, stage);
+
+    // Assert
+    expect(score.total).toBe(50);
+    expect(score.deductions.filter((deduction) => deduction.count > 0)).toEqual([{ rule: 'contract', count: 5, points: 50 }]);
   });
 });
