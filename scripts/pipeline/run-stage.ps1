@@ -40,6 +40,12 @@ function Invoke-Native {
     }
 }
 
+# ラベルの付け外しなど、失敗しても処理を止めたくない呼び出し用(旧pipeline.ymlの `|| true` 相当)。
+function Invoke-BestEffort {
+    param([string]$Exe, [string[]]$ArgList)
+    try { & $Exe @ArgList } catch {}
+}
+
 # ponytail: GitHub Actions版にあった timeout-minutes(暴走したジョブを強制終了する安全策)は
 # 移植しない。Orca経由の実行は人がターミナルを開いて生の出力をそのまま見られる前提(セッション共有)
 # なので、暴走に気づいたら `orca terminal send --interrupt` 等で人が止められる。もし無人運用
@@ -101,7 +107,10 @@ function Sync-SlugWorktree {
     Set-BotGitIdentity
     git fetch origin
     $branch = "pipeline/$Slug"
-    git rev-parse --verify "origin/$branch" 2>$null
+    # $ErrorActionPreference = 'Stop' の下では、git rev-parse --verify のstderr出力
+    # (ブランチが無いときの"fatal: ...")が 2>$null で抑制される前に終端エラーとして
+    # 扱われてしまう不具合が実機で再現した。stderrを出さない show-ref で存在確認する。
+    git show-ref --verify --quiet "refs/remotes/origin/$branch"
     if ($LASTEXITCODE -eq 0) {
         git checkout -B $branch "origin/$branch"
         $script:IsRework = $true
@@ -289,10 +298,10 @@ docs/specs/$Slug.md と docs/pipeline/$Slug/04-final-spec.md を書いてくだ�
 
         $lastLine = Get-Content $verdictFile -Tail 1 -Encoding UTF8
         if ($lastLine -match 'NEEDS_FIX') {
-            gh pr edit "pipeline/$Slug" --add-label changes-requested --remove-label codex-approved 2>$null
+            Invoke-BestEffort -Exe 'gh' -ArgList @('pr', 'edit', "pipeline/$Slug", '--add-label', 'changes-requested', '--remove-label', 'codex-approved')
             Start-NextStage -Worktree "pipeline-$Slug" -Stage 'implement' -Slug $Slug
         } else {
-            gh pr edit "pipeline/$Slug" --add-label codex-approved --remove-label changes-requested 2>$null
+            Invoke-BestEffort -Exe 'gh' -ArgList @('pr', 'edit', "pipeline/$Slug", '--add-label', 'codex-approved', '--remove-label', 'changes-requested')
             Start-NextStage -Worktree "pipeline-$Slug" -Stage 'claude-review' -Slug $Slug
         }
     }
@@ -320,13 +329,13 @@ docs/pipeline/$Slug/05-review-notes.md に追記してください
         $notesPath = "docs/pipeline/$Slug/05-review-notes.md"
         $verdictLine = (Get-Content $notesPath -Encoding UTF8 | Select-String -Pattern '^## 判定: .*$' | Select-Object -Last 1).Line
         if ($verdictLine -eq '## 判定: 要修正') {
-            gh pr edit "pipeline/$Slug" --add-label changes-requested --remove-label claude-approved 2>$null
-            gh pr comment "pipeline/$Slug" --body "Claudeレビューで修正が必要な指摘がありました。docs/pipeline/$Slug/05-review-notes.md を参照してください。Codexによる再実装を起動します。"
+            Invoke-BestEffort -Exe 'gh' -ArgList @('pr', 'edit', "pipeline/$Slug", '--add-label', 'changes-requested', '--remove-label', 'claude-approved')
+            Invoke-Native -Exe 'gh' -ArgList @('pr', 'comment', "pipeline/$Slug", '--body', "Claudeレビューで修正が必要な指摘がありました。docs/pipeline/$Slug/05-review-notes.md を参照してください。Codexによる再実装を起動します。")
             Start-NextStage -Worktree "pipeline-$Slug" -Stage 'implement' -Slug $Slug
         } else {
-            gh pr edit "pipeline/$Slug" --add-label claude-approved --remove-label changes-requested 2>$null
-            gh pr comment "pipeline/$Slug" --body "Claudeレビューが完了しました。指摘はありません。自動マージします。マージ後に評価ステージが自動で起動します。"
-            gh pr merge "pipeline/$Slug" --squash --delete-branch
+            Invoke-BestEffort -Exe 'gh' -ArgList @('pr', 'edit', "pipeline/$Slug", '--add-label', 'claude-approved', '--remove-label', 'changes-requested')
+            Invoke-Native -Exe 'gh' -ArgList @('pr', 'comment', "pipeline/$Slug", '--body', "Claudeレビューが完了しました。指摘はありません。自動マージします。マージ後に評価ステージが自動で起動します。")
+            Invoke-Native -Exe 'gh' -ArgList @('pr', 'merge', "pipeline/$Slug", '--squash', '--delete-branch')
             Start-NextStage -Worktree 'pipeline-master' -Stage 'evaluate' -Slug $Slug
         }
     }
