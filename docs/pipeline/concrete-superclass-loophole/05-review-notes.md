@@ -77,3 +77,11 @@ NEEDS_FIX
 このほか、DDDの層配置やESLint規約に反する指摘はありません。仕様4.1項目3の「同じクラスで2件」も、既存のテストで確認されています。
 
 NEEDS_FIX
+
+## 2026-10-01 22:52 — Codex自己レビュー
+
+**blocker — 修正前のRed確認が受け入れ基準を満たしたと確認できません。** 仕様の受け入れ基準は、実装前に4.1・4.2のテストを実行し、4.2で `total: 100` が返ることをPR説明に記載するよう求めています。差分の [05-review-notes.md](/C:/Users/syuny/orca/workspaces/refactor-blocks/pipeline-concrete-superclass-loophole/docs/pipeline/concrete-superclass-loophole/05-review-notes.md) には、Nodeのバージョン問題で実装前の確認を完了できなかったとあります。
+
+そのほか、4.1項目3の「同じ子クラスで2件」は追加テストで確認されています。DDDの層配置とESLint規約に反する問題は見当たりません。`run-stage.ps1` の変更は機能と無関係な小規模変更ですが、blockerではありません。
+
+NEEDS_FIX
