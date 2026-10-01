@@ -129,6 +129,20 @@ describe('findContractViolations', () => {
     expect(findContractViolations(codebaseOf([iface, base, child]))).toEqual(['class-c']);
   });
 
+  it('具象の親から契約メソッド2つを借りると子クラスを2件返す', () => {
+    // Arrange
+    const iface: CodeClass = { id: 'class-i', name: 'I', methods: [contractMethod('m-a', 'a'), contractMethod('m-b', 'b')] };
+    const base: CodeClass = { id: 'class-p', name: 'P', interfaceIds: ['class-i'], methods: [realMethod('p-a', 'a'), realMethod('p-b', 'b')] };
+    const child: CodeClass = { id: 'class-c', name: 'C', superclassId: 'class-p', interfaceIds: ['class-i'], methods: [] };
+    const codebase = codebaseOf([iface, base, child]);
+
+    // Act
+    const result = findContractViolations(codebase);
+
+    // Assert
+    expect(result).toEqual(['class-c', 'class-c']);
+  });
+
   it('借用した契約メソッドごとに数え、クラス出現順で返す', () => {
     const iface: CodeClass = { id: 'class-i', name: 'I', methods: [contractMethod('m-a', 'a'), contractMethod('m-b', 'b')] };
     const base: CodeClass = { id: 'class-p', name: 'P', interfaceIds: ['class-i'], methods: [realMethod('p-a', 'a'), realMethod('p-b', 'b')] };
