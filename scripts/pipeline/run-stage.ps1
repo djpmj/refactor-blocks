@@ -71,20 +71,25 @@ function Invoke-ClaudeAgent {
 }
 
 function Set-BotGitIdentity {
-    git config user.name $BotUserName
-    git config user.email $BotUserEmail
+    git config user.name $BotUserName *> $null
+    git config user.email $BotUserEmail *> $null
 }
 
 # discover/spec-draft/final-spec/evaluate は専用worktree上で直接masterへコミット・pushする。
 # Orcaのworktreeは常に独自ブランチを切るため、masterという名前のローカルブランチは使わず、
 # 毎回 origin/master の内容にリセットしてから作業し、pushだけ明示的にmasterへ向ける。
+#
+# *> $null でgit呼び出しの出力を必ず捨てる: PowerShellの関数は、リダイレクトしていない
+# 出力を呼び出し元へ全部流す(戻り値の一部として混ざる)。このため `$wtPath = Sync-...`
+# のように戻り値を受け取ると、gitの"Switched to a new branch"等の出力が$wtPathに混入し、
+# 後続のJoin-Pathで壊れたパスになる不具合が実機で再現した。
 function Sync-MasterWorktree {
     $wtPath = Get-OrCreateWorktree -Name 'pipeline-master'
     Set-Location $wtPath
     Set-BotGitIdentity
-    git fetch origin master
-    git reset --hard origin/master
-    git clean -fd
+    git fetch origin master *> $null
+    git reset --hard origin/master *> $null
+    git clean -fd *> $null
     return $wtPath
 }
 
@@ -105,17 +110,17 @@ function Sync-SlugWorktree {
     $wtPath = Get-OrCreateWorktree -Name "pipeline-$Slug"
     Set-Location $wtPath
     Set-BotGitIdentity
-    git fetch origin
+    git fetch origin *> $null
     $branch = "pipeline/$Slug"
     # $ErrorActionPreference = 'Stop' の下では、git rev-parse --verify のstderr出力
     # (ブランチが無いときの"fatal: ...")が 2>$null で抑制される前に終端エラーとして
     # 扱われてしまう不具合が実機で再現した。stderrを出さない show-ref で存在確認する。
     git show-ref --verify --quiet "refs/remotes/origin/$branch"
     if ($LASTEXITCODE -eq 0) {
-        git checkout -B $branch "origin/$branch"
+        git checkout -B $branch "origin/$branch" *> $null
         $script:IsRework = $true
     } else {
-        git checkout -B $branch origin/master
+        git checkout -B $branch origin/master *> $null
         $script:IsRework = $false
     }
     return $wtPath
