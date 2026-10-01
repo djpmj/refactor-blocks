@@ -61,3 +61,11 @@ blockerが2件(受け入れ基準の「修正前Red確認」未達、仕様4.1�
 完全には満たしていない。実装ロジック自体に誤りは見つからなかった。
 
 ## 判定: 要修正
+
+## 2026-10-01 22:42 — Codex自己レビュー
+
+**blocker — 修正前のRed確認が未達です。** 受け入れ基準は、実装前に追加テストが失敗し、特に4.2で `total: 100` を確認することを求めています。差分内の [05-review-notes.md](/C:/Users/syuny/orca/workspaces/refactor-blocks/pipeline-concrete-superclass-loophole/docs/pipeline/concrete-superclass-loophole/05-review-notes.md) には、Nodeバージョンの問題で実装前のRed確認を完了できなかったと記載されています。修正前に基準どおりの失敗を確認した記録が必要です。
+
+このほか、差分からDDDの層境界やESLint規約に反する問題は見つかりませんでした。仕様4.1の「同じクラスで2件」のケースも、`同じ具象クラスで契約メソッド2件を借用すると2件返す` テストで確認されています。
+
+NEEDS_FIX
