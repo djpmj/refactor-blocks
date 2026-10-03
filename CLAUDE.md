@@ -80,19 +80,10 @@ Claudeはこのリポジトリでの会話・報告・コミットメッセー�
 
 ## 開発ハーネス(仕様設計・実装・評価)
 
-開発の3つの経路(仕様ベースの開発・機能案ブレスト・auto-dev)の全体像は
+開発の2つの経路(仕様ベースの開発・機能案ブレスト)の全体像は
 `docs/DEVELOPMENT.md` の図を参照。新機能を追加するときの進め方を `docs/specs/README.md` にまとめている。仕様設計者・実装者・評価者の
 3ロールに分けて進めるためのエージェント定義が `.claude/agents/` にある(Claude Codeを使う場合)。
 仕様からまとめて回したいときは `feature-harness` skill(`.claude/skills/feature-harness/SKILL.md`)を使い、Issue/PRや確定仕様の実装・評価には `/implement` コマンドを使う。このコマンドは独立した実装者・評価者セッションを使う。
-
-## 自動開発(auto-dev)
-
-`docs/auto-dev/TASKS.md` にタスクを追記しておくと、`.github/workflows/auto-dev.yml` が
-未完了タスク(`### [ ]`)を上から順に実装・`npm run check`・コミット・pushし、`docs/auto-dev/IMPLEMENTATION_LOG.md`
-に記録する。定期実行(schedule)は、リポジトリのSecretsに `CLAUDE_CODE_OAUTH_TOKEN` を登録してから
-ワークフロー内のコメントを外して有効にする(それまでは手動実行 `workflow_dispatch` のみ)。
-`npm run check` を通せなかったタスクは `### [!]`(保留)に書き換えられIssueが作られる。
-対話セッションで同じ流れを手動起動したいときは `/auto-dev` コマンド(`.claude/commands/auto-dev.md`)を使う。
 
 ## Lint
 

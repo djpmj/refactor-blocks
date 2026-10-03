@@ -7,7 +7,8 @@
 
 ここはあくまで**ブレストの置き場**であり、`docs/specs/README.md` の開発ハーネス
 (仕様設計→実装→評価)とは別物。ここに出た案を実際に進めたい場合は、人が選んで
-`docs/specs/<slug>.md` を書くか `docs/auto-dev/TASKS.md` に転記する(自動では転記しない)。
+`/spec-to-issue` コマンドか `feature-harness` skillで `docs/specs/<slug>.md` を書く
+(自動では転記しない)。
 
 ## ファイル形式
 

@@ -1,8 +1,8 @@
 # 開発フロー全体像
 
-このリポジトリでの開発には、独立した3つの経路がある。以前あった「大規模パイプライン」
-(discover→spec-draft→final-spec→implement→codex-review→claude-review→evaluateの7段)は
-削除済みで、現在は下記の3経路に統一されている。
+このリポジトリでの開発には、独立した2つの経路がある。以前あった「大規模パイプライン」
+(discover→spec-draft→final-spec→implement→codex-review→claude-review→evaluateの7段)と
+タスクリスト駆動の「auto-dev」は削除済みで、現在は下記の2経路に統一されている。
 
 ## ① 仕様ベースの開発(メインフロー)
 
@@ -49,35 +49,16 @@ flowchart LR
     Cron["GitHub Actions: feature-ideas.yml<br/>(毎日06:00 JSTに自動実行)"]
     Cron --> Ideas["docs/feature-ideas/IDEAS.md<br/>(1ファイルに日付見出しで追記・10個の機能案を列挙するだけ)"]
     Ideas -.->|"人が選んで手で転記"| SpecToIssue2["/spec-to-issue または feature-harness"]
-    Ideas -.->|"人が選んで手で転記"| Tasks2["docs/auto-dev/TASKS.md"]
 ```
 
-**ポイント**: ここは純粋なアイデア出しで、自動では①③のどちらにも繋がらない。気になる案があれば
-人が手で転記する(詳細は [docs/feature-ideas/README.md](feature-ideas/README.md))。
-
-## ③ タスクリスト駆動のauto-dev(仕様書を経由しない別経路)
-
-```mermaid
-flowchart TD
-    Tasks["docs/auto-dev/TASKS.md にタスクを追記"]
-    Tasks --> Trigger["auto-dev.yml(定期実行予定・現在は手動)<br/>または /auto-dev コマンド(対話セッション)"]
-    Trigger --> Pick["未完了(### [ ])タスクを1件選ぶ"]
-    Pick --> Run["実装 → npm run check"]
-    Run -->|"成功"| Done["### [x] にしてIMPLEMENTATION_LOG.mdへ追記<br/>直接masterへpush"]
-    Run -->|"失敗"| Hold["### [!](保留)にしてIssue作成"]
-    Done --> Pick
-    Hold --> Pick
-```
-
-**ポイント**: ①とは完全に別経路。`docs/specs/` を経由せず、タスクを直接実装してmasterへpushする
-(PR・レビューのステップが無い)。小さな改善・雑務向け。
+**ポイント**: ここは純粋なアイデア出しで、自動では①に繋がらない。気になる案があれば
+人が手で`/spec-to-issue`か`feature-harness`に転記する(詳細は [docs/feature-ideas/README.md](feature-ideas/README.md))。
 
 ## 全体の使い分け
 
 | 状況 | 使うもの |
 | --- | --- |
 | 新機能を仕様からきちんと作りたい | ①(`/spec-to-issue` か `feature-harness`) |
-| ネタが無くてアイデアだけ欲しい | ②(毎日の機能案ブレスト。手で①か③に転記) |
-| 小さな雑務・改善を溜めて流したい | ③(`docs/auto-dev/TASKS.md`) |
+| ネタが無くてアイデアだけ欲しい | ②(毎日の機能案ブレスト。手で①に転記) |
 | 既存PRをレビューしたい | `/review-pr <PR番号>` |
 | Issue/PR・仕様書・実装依頼を実装・修正したい | `/implement <Issue/PR番号・仕様書パス>` |
