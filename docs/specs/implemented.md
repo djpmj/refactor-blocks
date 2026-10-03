@@ -39,3 +39,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [over-split-scoring](over-split-scoring.md) | 「やりすぎ」検知(極小メソッド・極小クラスの減点) |
 | [method-editor-tab-style](method-editor-tab-style.md) | メソッドエディタの「編集/コード」タブに見た目のスタイルを当てる |
 | [call-fragment-code](call-fragment-code.md) | call Fragment を `// 未入力` ではなく呼び出し文で表示する |
+| [resizable-sidebar](resizable-sidebar.md) | 右サイドバーの幅をドラッグ・キーボードで変更できるようにする |

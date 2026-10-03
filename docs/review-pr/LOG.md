@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-03 19:20 UTC PR #41 右サイドバーの幅を変更できるようにする (#32)
+
+- 判定: 合格(blocker無し。suggestion: pointercancel時のドラッグ状態クリア)
+- 確認した内容: master取り込み後 npm test 995件 ✅ / npm run lint ✅ / npm run typecheck ✅ / E2Eはローカルにブラウザが無く未実行、PRのCI(e2e)pass
+- マージ: squash & delete-branch
+
 ## 2026-10-03 19:10 UTC PR #38 call Fragment を呼び出し文で表示する (#31)
 
 - 判定: 合格(blocker無し)
