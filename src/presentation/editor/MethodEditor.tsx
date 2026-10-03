@@ -229,9 +229,9 @@ function MethodEditorBody({ method }: Readonly<{ method: Method }>) {
       <h2 className="method-editor__title">
         {owner?.name ?? '?'}.{method.name}() <span className="line-badge">{methodLines(method)}行</span>
       </h2>
-      <div role="tablist" aria-label="メソッド表示">
-        <button type="button" role="tab" aria-selected={activeTab === 'edit'} onClick={() => { setActiveTab('edit'); }}>編集</button>
-        <button type="button" role="tab" aria-selected={activeTab === 'code'} onClick={() => { setActiveTab('code'); }}>コード</button>
+      <div className="method-editor__tabs" role="tablist" aria-label="メソッド表示">
+        <button className="method-editor__tab" type="button" role="tab" aria-selected={activeTab === 'edit'} onClick={() => { setActiveTab('edit'); }}>編集</button>
+        <button className="method-editor__tab" type="button" role="tab" aria-selected={activeTab === 'code'} onClick={() => { setActiveTab('code'); }}>コード</button>
       </div>
       {activeTab === 'code' ? <ClassCodePreview codebase={codebase} classId={owner?.id ?? ''} /> : (
         <div role="tabpanel" aria-label="編集">
