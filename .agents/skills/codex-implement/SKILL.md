@@ -1,35 +1,39 @@
 ---
 name: codex-implement
-description: Implement a GitHub issue or pull request review feedback using Codex CLI, run checks and self review, then prepare a pull request update or creation. Use when asked to implement an issue or address PR feedback through the repository workflow.
+description: 「実装してください」と依頼されたとき、またはGitHubのIssue番号・プルリクエスト番号を指定されたときに起動します。IssueやPRの内容・レビュー指摘を実装し、チェックとセルフレビューを行って、プルリクエストの更新または作成を準備します。
 ---
 
-# Implement an issue or PR feedback
+# Issueまたはプルリクエストの指摘を実装する
 
-Use `$codex-implement <issue-or-pr-number>` to start this workflow. Prioritize feedback on an existing PR over implementing new issue work. If the supplied number is an issue, first look for a linked PR and address its review and conversation feedback; if no PR exists, implement the issue. If no number is provided, ask for one.
+`$codex-implement <issue-or-pr-number>` でこのワークフローを開始します。ユーザーが「実装してください」と依頼した場合もこのスキルを起動します。対象のIssueまたはPR番号が会話やリポジトリの文脈から分からないときは、番号を尋ねます。番号がIssueなら、関連するプルリクエストを探し、存在する場合はそのレビュー指摘と会話コメントへの対応を優先します。関連するプルリクエストがなければ、Issueの内容を実装します。番号が指定されていない場合は、ユーザーに番号を尋ねます。
 
-The workflow runs in the current worktree. Codex CLI must perform both implementation and self review. Do not substitute your own code changes or review verdict for Codex's work.
+このワークフローは現在のワークツリーで実行します。実装とセルフレビューは、このスキルを実行するエージェントが行います。
 
-## Steps
+## 手順
 
-1. Resolve the supplied number and check for an existing PR before starting issue implementation. When a PR exists, its review and conversation feedback takes priority; also gather the linked issue's acceptance criteria when available. Only proceed as issue-only work when no linked PR exists.
-   - Try `gh pr view <number> --json number,title,body,headRefName,closingIssuesReferences,reviews,comments`.
-   - If it is a PR, use `closingIssuesReferences` to identify its issue, then run `gh issue view <issue-number> --json title,body`.
-   - If it is not a PR, run `gh issue view <number> --json title,body`, then `gh issue develop <number> --list` to find a branch. Search for its PR with `gh pr list --head <branch> --json number,title,headRefName,closingIssuesReferences,reviews,comments`.
-2. Use the existing PR's `headRefName` or the issue branch found above. If no branch exists, ask the user before creating one with `gh issue develop <issue-number> --checkout`.
-3. Switch to the branch: run `git fetch origin`, then `git checkout -B <branch> origin/<branch>`.
-4. Run `npm ci`.
-5. If a PR exists, collect every review `body` (especially reviews with `state` `CHANGES_REQUESTED`) and every conversation comment body. Treat all of them as in-scope feedback, regardless of whether the workflow started from the issue or PR number.
-6. Have Codex CLI implement the issue acceptance criteria and address every collected comment. Follow `CLAUDE.md` development rules, including the DDD layers, TDD in `domain` and `application`, and `eslint.config.js` conventions. Run `npm run check` and resolve failures. Invoke Codex with a prompt through stdin, for example `codex exec - --approve-for-me --skip-git-repo-check -o <temporary-file>`.
-7. Have Codex CLI self-review `git diff origin/master...HEAD` against the acceptance criteria, all collected feedback, and `CLAUDE.md`. Follow the `codex-review` stage policy in `scripts/pipeline/run-stage.ps1`: end with `NEEDS_FIX` if there is a blocker, otherwise `PASS`. For `NEEDS_FIX`, pass its findings back to Codex and repeat implementation and review. Stop and report if it does not converge after about 2–3 attempts.
-8. After `PASS`, summarize the changes and ask the user to approve committing and pushing. After approval, run `git add -A`, commit with a message such as `Codex実装: <issue title>` and trailer `Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>`, then run `git push -u origin <branch>`.
-9. An existing PR is updated by the push. If none exists, after approval create one with `gh pr create --base master --head <branch> --title "<issue title>" --body "Closes #<issue-number>\n\n<Codex final self-review summary>"`.
+1. 指定された番号を確認し、既存のプルリクエストがないか調べます。プルリクエストがある場合は、そのレビュー指摘と会話コメントを優先し、関連Issueの受け入れ条件も確認します。関連するプルリクエストがない場合に限り、Issue単独の作業として進めます。
+   - まず `gh pr view <number> --json number,title,body,headRefName,closingIssuesReferences,reviews,comments` を実行します。
+   - 対象がプルリクエストなら、`closingIssuesReferences` から関連Issueを特定し、`gh issue view <issue-number> --json title,body` を実行します。
+   - プルリクエストでなければ、`gh issue view <number> --json title,body` を実行し、続けて `gh issue develop <number> --list` でブランチを確認します。そのブランチのプルリクエストを `gh pr list --head <branch> --json number,title,headRefName,closingIssuesReferences,reviews,comments` で検索します。
+2. 既存のプルリクエストがある場合はその `headRefName` を、Issueのブランチが見つかった場合はそのブランチを使用します。ブランチが存在しない場合は、`gh issue develop <issue-number> --checkout` で作成する前にユーザーに確認します。
+3. ブランチに切り替えます。`git fetch origin` を実行し、続けて `git checkout -B <branch> origin/<branch>` を実行します。
+4. `npm ci` を実行します。
+5. プルリクエストがある場合は、すべてのレビューの `body`（特に `state` が `CHANGES_REQUESTED` のレビュー）と、会話コメントの本文をすべて収集します。作業の開始がIssue番号かプルリクエスト番号かにかかわらず、収集した内容はすべて対応対象です。
+6. Issueの受け入れ条件を満たし、収集したコメントすべてに対応します。`CLAUDE.md` の開発ルールに従い、DDDのレイヤー構成、`domain` と `application` でのTDD、`eslint.config.js` の規約を守ります。`npm run check` を実行し、失敗があれば解消します。
+7. 受け入れ条件、収集したすべての指摘、`CLAUDE.md` に照らして `git diff origin/master...HEAD` をセルフレビューします。`scripts/pipeline/run-stage.ps1` にある `codex-review` ステージの判定規則に従い、ブロッカーがあれば `NEEDS_FIX`、なければ `PASS` で終わらせます。`NEEDS_FIX` の場合は指摘に基づいて実装を修正し、レビューを繰り返します。およそ2～3回試しても収束しない場合は、作業を止めて報告します。
+8. `PASS` の後、変更内容を要約し、コミットとプッシュを行ってよいかユーザーに確認します。承認されたら `git add -A` を実行し、たとえば `実装 <issue title>` のようなメッセージと、次のトレーラーを付けてコミットします。
+   `Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>`
+   続けて `git push -u origin <branch>` を実行します。
+9. 既存のプルリクエストがある場合、プッシュによって更新されます。既存のプルリクエストがない場合は、承認後に次のコマンドで作成します。
+   `gh pr create --base master --head <branch> --title "<issue title>" --body "Closes #<issue-number>\n\n<セルフレビューの最終要約>"`
 
-## Report
+## 報告
 
-Report the PR URL, all feedback addressed, and any findings fixed during self-review. Mention that `/review-pr <pr-number>` can be used for the next review step.
+プルリクエストのURL、対応した指摘、セルフレビューで見つけて修正した内容を報告します。次のレビュー手順には `/review-pr <pr-number>` を使えることも伝えます。
 
-## Constraints
+## 制約
 
-- Do not push, create a PR, or update an existing PR without user approval.
-- Do not omit any discovered review or conversation feedback.
-- Codex CLI owns implementation and self-review; do not claim its review passed unless it returned `PASS`.
+- ユーザーの承認なしに、プッシュ、プルリクエストの作成、既存プルリクエストの更新を行ってはいけません。
+- 見つかったレビュー指摘や会話コメントを省略してはいけません。
+- セルフレビューで `PASS` と判定できていないのに、レビューに合格したと報告してはいけません。
+
