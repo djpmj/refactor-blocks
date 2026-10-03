@@ -85,8 +85,8 @@ slug系ステージも同様に、ローカルブランチ名に関係なく常�
 | implement / codex-review | (エージェント定義なし。`codex exec` を直接呼ぶ) | Codex CLI |
 | claude-review / evaluate | `.claude/agents/evaluator.md` | Claude Sonnet 5 / Opus 5.5(`claude -p`) |
 
-`.claude/agents/implementer.md` はこのパイプラインでは使わない(Codexに置き換わったため)。
-同一セッション内で小規模な機能を作る場合の `feature-harness` skill では引き続き使う。
+`.claude/agents/implementer.md` はこのパイプライン・`feature-harness` skillのどちらでも使わない。実装は常にCodexが行う
+(`docs/specs/README.md` 参照)。
 
 ## ローカルコマンド: `/spec-confirm`
 
