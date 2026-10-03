@@ -17,6 +17,7 @@ import { findMergeCandidates, type MergeCandidate } from '../../domain/codebase/
 import { methodLines } from '../../domain/codebase/lineCount';
 import { suggestMethodName } from '../../domain/codebase/suggestMethodName';
 import { ChangeMemo } from '../change/ChangeMemo';
+import { ClassCodePreview } from './ClassCodePreview';
 import { useGameStore } from '../store/useGameStore';
 
 function toggle(selected: ReadonlySet<string>, id: string): Set<string> {
@@ -205,6 +206,7 @@ function MethodEditorBody({ method }: Readonly<{ method: Method }>) {
   const mergeCandidates = useMemo(() => findMergeCandidates(codebase, method.id), [codebase, method.id]);
   const extractMethod = useGameStore((state) => state.extractMethod);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
+  const [activeTab, setActiveTab] = useState<'edit' | 'code'>('edit');
   // null のあいだは選んだ処理から名前を自動で考え、プレイヤーが入力したらその名前を優先する
   const [customName, setCustomName] = useState<string | null>(null);
   const newName =
@@ -227,22 +229,30 @@ function MethodEditorBody({ method }: Readonly<{ method: Method }>) {
       <h2 className="method-editor__title">
         {owner?.name ?? '?'}.{method.name}() <span className="line-badge">{methodLines(method)}行</span>
       </h2>
-      <FragmentList codebase={codebase} method={method} selected={selected} onToggle={(id) => { setSelected(toggle(selected, id)); }} />
-      <div className="method-editor__extract">
-        <input
-          aria-label="新しいメソッド名"
-          placeholder="処理を選ぶと名前を自動で考えます"
-          value={newName}
-          onChange={(event) => {
-            setCustomName(event.target.value);
-          }}
-        />
-        <button type="button" onClick={handleExtract}>
-          選んだ処理をメソッドとして抽出
-        </button>
+      <div role="tablist" aria-label="メソッド表示">
+        <button type="button" role="tab" aria-selected={activeTab === 'edit'} onClick={() => { setActiveTab('edit'); }}>編集</button>
+        <button type="button" role="tab" aria-selected={activeTab === 'code'} onClick={() => { setActiveTab('code'); }}>コード</button>
       </div>
-      {mergeCandidates.length > 0 ? <MergeSection method={method} candidates={mergeCandidates} /> : null}
-      <MethodActions method={method} />
+      {activeTab === 'code' ? <ClassCodePreview codebase={codebase} classId={owner?.id ?? ''} /> : (
+        <div role="tabpanel" aria-label="編集">
+          <FragmentList codebase={codebase} method={method} selected={selected} onToggle={(id) => { setSelected(toggle(selected, id)); }} />
+          <div className="method-editor__extract">
+            <input
+              aria-label="新しいメソッド名"
+              placeholder="処理を選ぶと名前を自動で考えます"
+              value={newName}
+              onChange={(event) => {
+                setCustomName(event.target.value);
+              }}
+            />
+            <button type="button" onClick={handleExtract}>
+              選んだ処理をメソッドとして抽出
+            </button>
+          </div>
+          {mergeCandidates.length > 0 ? <MergeSection method={method} candidates={mergeCandidates} /> : null}
+          <MethodActions method={method} />
+        </div>
+      )}
     </>
   );
 }

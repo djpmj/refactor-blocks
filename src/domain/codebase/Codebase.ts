@@ -1,5 +1,8 @@
 export type Visibility = 'public' | 'private' | 'protected';
 
+/** コードプレビューに対応する言語。 */
+export type CodeLanguage = 'csharp';
+
 /**
  * メソッドの中の、切り出し可能な処理のまとまり。
  * responsibility は採点用の隠しタグで、プレイヤーには表示しない(例: 'validation' / 'tax' / 'io')。
@@ -9,6 +12,8 @@ export type Visibility = 'public' | 'private' | 'protected';
 export type Fragment = {
   readonly id: string;
   readonly label: string;
+  /** ソースコード表示用。ゲーム上の行数とは独立して扱う。 */
+  readonly code?: Partial<Record<CodeLanguage, string>>;
   readonly lines: number;
   readonly responsibility: string;
   readonly uses?: readonly string[];
