@@ -1,9 +1,6 @@
 # 仕様書: インターフェース役を extends にすると「実装漏れ」の採点をすり抜ける抜け道を塞ぐ
 
 - slug: `extends-interface-loophole`
-- 元になった探索: `docs/pipeline/extends-interface-loophole/01-discovered.md`
-- 元になった草案: `docs/pipeline/extends-interface-loophole/02-draft-spec.md`
-- 確定した回答: `docs/pipeline/extends-interface-loophole/03-confirmed-answers.md`
 
 ## 確定した方針(要約)
 

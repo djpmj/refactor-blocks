@@ -4,7 +4,7 @@
 
 ## 仕様書の状態
 
-`docs/specs/<slug>.md` がどの作成経路(大規模パイプライン・`feature-harness` skill・`/spec-to-issue` コマンドなど)で作られたかは問わず、状態は以下の3つの一覧で一元管理する。
+`docs/specs/<slug>.md` がどの作成経路(`feature-harness` skill・`/spec-to-issue` コマンドなど)で作られたかは問わず、状態は以下の3つの一覧で一元管理する。
 
 - [draft.md](draft.md) — 未決事項が残っていてユーザー確定が済んでいない仕様書
 - [unimplemented.md](unimplemented.md) — 内容は確定したが、実装がまだ `master` にマージされていない仕様書
@@ -15,7 +15,7 @@
 ## フェーズ
 
 1. **仕様設計**(`.claude/agents/spec-designer.md`) — 要求を読み解き、`docs/specs/<機能名>.md` に実装可能な仕様書を書く。コードは書かない。
-2. **実装**(Codex CLI) — 承認された仕様書(`docs/specs/<機能名>.md`)だけを渡し、TDD(Red→Green→Refactor)でコードを書かせる。仕様にない拡張はしない。`.claude/agents/implementer.md` は使わない(大規模パイプライン `docs/pipeline/README.md` の `implement` ステージと実行者をそろえている)。
+2. **実装**(Codex CLI) — 承認された仕様書(`docs/specs/<機能名>.md`)だけを渡し、TDD(Red→Green→Refactor)でコードを書かせる。仕様にない拡張はしない。`.claude/agents/implementer.md` は使わない(実装は常にCodexに統一する方針のため)。
 3. **評価**(`.claude/agents/evaluator.md`) — 実装の文脈を共有しない独立した視点で、`npm test` / `npm run lint` / `npm run typecheck` を実際に実行し、仕様の受け入れ基準を満たしているかをレビューする。コードは直さない。
 
 ## 呼び出し方

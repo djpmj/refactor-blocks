@@ -1,9 +1,6 @@
 # 仕様書: クラス・ファイルの削除で本物の処理が消えないようにする(削除で点が上がる抜け道・切り出したメソッドの取りこぼしを塞ぐ)
 
 - slug: `delete-class-code-guard`
-- 元になった探索: `docs/pipeline/delete-class-code-guard/01-discovered.md`
-- 元になった草案: `docs/pipeline/delete-class-code-guard/02-draft-spec.md`
-- 確定した回答: `docs/pipeline/delete-class-code-guard/03-confirmed-answers.md`(未決事項1〜4すべて推奨案Aで確定)
 
 ## 1. 背景・目的
 

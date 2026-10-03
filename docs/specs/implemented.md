@@ -1,6 +1,6 @@
 # 実装済みの仕様書
 
-実装が `master` にマージ済みの仕様書の一覧。作成経路(大規模パイプライン・`feature-harness`
+実装が `master` にマージ済みの仕様書の一覧。作成経路(`feature-harness`
 skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にある仕様書はすべてここに集約する。
 
 ## 一覧

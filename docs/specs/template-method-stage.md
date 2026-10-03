@@ -1,7 +1,6 @@
 # 最終仕様: 上級8「取り込みの手順を Template Method にまとめる」
 
 - slug: `template-method-stage`
-- 元: `docs/pipeline/template-method-stage/02-draft-spec.md`(草案)、`docs/pipeline/template-method-stage/03-confirmed-answers.md`(確定回答: 未決事項1〜4すべて選択肢A)
 
 ## 1. 背景・目的
 

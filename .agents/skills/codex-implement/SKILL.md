@@ -20,7 +20,7 @@ description: 「実装してください」と依頼されたとき、またはG
 4. `npm ci` を実行します。
 5. プルリクエストがある場合は、すべてのレビューの `body`（特に `state` が `CHANGES_REQUESTED` のレビュー）と、会話コメントの本文をすべて収集します。作業の開始がIssue番号かプルリクエスト番号かにかかわらず、収集した内容はすべて対応対象です。
 6. Issueの受け入れ条件を満たし、収集したコメントすべてに対応します。`CLAUDE.md` の開発ルールに従い、DDDのレイヤー構成、`domain` と `application` でのTDD、`eslint.config.js` の規約を守ります。`npm run check` を実行し、失敗があれば解消します。
-7. 受け入れ条件、収集したすべての指摘、`CLAUDE.md` に照らして `git diff origin/master...HEAD` をセルフレビューします。`scripts/pipeline/run-stage.ps1` にある `codex-review` ステージの判定規則に従い、ブロッカーがあれば `NEEDS_FIX`、なければ `PASS` で終わらせます。`NEEDS_FIX` の場合は指摘に基づいて実装を修正し、レビューを繰り返します。およそ2～3回試しても収束しない場合は、作業を止めて報告します。
+7. 受け入れ条件、収集したすべての指摘、`CLAUDE.md` に照らして `git diff origin/master...HEAD` をセルフレビューします。直すべき指摘(blocker)が1件でもあれば `NEEDS_FIX`、なければ `PASS` で終わらせます。`NEEDS_FIX` の場合は指摘に基づいて実装を修正し、レビューを繰り返します。およそ2～3回試しても収束しない場合は、作業を止めて報告します。
 8. `PASS` の後、変更内容を要約し、コミットとプッシュを行ってよいかユーザーに確認します。承認されたら `git add -A` を実行し、たとえば `実装 <issue title>` のようなメッセージと、次のトレーラーを付けてコミットします。
    `Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>`
    続けて `git push -u origin <branch>` を実行します。

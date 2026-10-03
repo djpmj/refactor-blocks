@@ -1,9 +1,6 @@
 # 仕様書: 右クリックメニューから移動先のファイルを選んでクラスを移す
 
 - slug: `move-class-via-context-menu`
-- 元になった探索: `docs/pipeline/move-class-via-context-menu/01-discovered.md`
-- 元になった草案: `docs/pipeline/move-class-via-context-menu/02-draft-spec.md`
-- 確定した回答: `docs/pipeline/move-class-via-context-menu/03-confirmed-answers.md`
 - 形をそろえる前例: `docs/specs/move-via-context-menu.md`(メソッド・フィールドのメニュー移動)
 
 ## 1. 背景・目的
@@ -102,10 +99,10 @@ E2Eで確かめ、**効かなければ実装者は独自実装に進まず報告
 
 ## 6. スコープ外
 
-- 前回評価(`docs/pipeline/move-via-context-menu/06-evaluation.md`)の suggestion 1〜5(外側クリック時のフォーカス復帰条件、`dismiss` の `useCallback` 化、`returnFocus` の置き場所、`ExtendsMenuItemProps` の名前、テストの分割)。
+- 前回評価の suggestion 1〜5(外側クリック時のフォーカス復帰条件、`dismiss` の `useCallback` 化、`returnFocus` の置き場所、`ExtendsMenuItemProps` の名前、テストの分割)。
   ただし `MoveClassMenuItem` の props 型も同じ形なので、`ExtendsMenuItemProps` を3つ目の部品にまで流用するのが気になる場合は、
   名前を `SubmenuItemProps` に変える程度(型名の置き換えのみ)は実装者の判断で行ってよい
-- 「新しいファイルへ移動」(`moveClassToNewFile`)のメニュー化(01-discovered.md の分割案どおり後回し)
+- 「新しいファイルへ移動」(`moveClassToNewFile`)のメニュー化(以前の分割案どおり後回し)
 - 候補をディレクトリごとに見出しで区切る・検索欄を付けること。ファイルが数十個のステージが出てきたら考える
 - 移動後に移動先クラスのヘッダーへフォーカスを移すこと
 - メニュー内の矢印キー移動(roving tabindex)。既存メニューもTab移動なのでそろえる

@@ -39,7 +39,7 @@ jobs:
                リファクタリング操作・採点の2段構えなど)を読む。
             2. 重複した案を出さないよう、以下に目を通す:
                - `docs/feature-ideas/` 配下の既存ファイル(直近7日分程度で十分、全件でなくてよい)
-               - `docs/pipeline/implemented.md` と `docs/pipeline/unimplemented.md`
+               - `docs/specs/implemented.md` と `docs/specs/unimplemented.md`
                - `docs/specs/` 配下の既存仕様書の一覧(ファイル名だけでよい、全文を読まなくてよい)
                - `src/infrastructure/stages/` のステージ一覧
             3. 上記と重複しない、`refactor-blocks` に足しうる新機能案を10個考える。
@@ -54,7 +54,7 @@ jobs:
             5. 作成したファイルだけを `git add` し、「機能案ブレストを追記」のような
                日本語のコミットメッセージでコミットし、`git push origin HEAD:master` する。
 
-            `src/` 配下のコードや `docs/specs/`・`docs/pipeline/` の既存ファイルは変更しないこと。
+            `src/` 配下のコードや `docs/specs/` の既存ファイル(今回作成するファイルを除く)は変更しないこと。
           claude_args: |
             --max-turns 50
             --allowedTools "Read,Write,Glob,Grep,Bash(git:*),Bash(date:*)"

@@ -1,9 +1,6 @@
 # 仕様書: 具象クラスを extends して契約の実装を「借りる」抜け道を塞ぐ
 
 - slug: `concrete-superclass-loophole`
-- 元になった探索: `docs/pipeline/concrete-superclass-loophole/01-discovered.md`
-- 草案: `docs/pipeline/concrete-superclass-loophole/02-draft-spec.md`
-- ユーザ確定: `docs/pipeline/concrete-superclass-loophole/03-confirmed-answers.md`
 - 前例・再現手順の出どころ: `docs/specs/extends-interface-loophole.md`(1章「別の抜け道」・6章)
 
 ## 1. 背景・目的

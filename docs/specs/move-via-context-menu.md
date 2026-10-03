@@ -1,9 +1,6 @@
 # 仕様書: 右クリックメニューから移動先のクラスを選んでメソッド・フィールドを移す
 
 - slug: `move-via-context-menu`
-- 元になった探索: `docs/pipeline/move-via-context-menu/01-discovered.md`
-- 元になった草案: `docs/pipeline/move-via-context-menu/02-draft-spec.md`
-- 確定した回答: `docs/pipeline/move-via-context-menu/03-confirmed-answers.md`
 
 ## 1. 背景・目的
 
