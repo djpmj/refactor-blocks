@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Codebase } from './Codebase';
+import { extractMethod } from './extractMethod';
 import { generateClassSource } from './generateClassSource';
+import { renameMethod } from './renameMethod';
 
 describe('generateClassSource', () => {
   it('renders the class, method, and fragment code in order', () => {
@@ -28,6 +30,93 @@ describe('generateClassSource', () => {
     const source = generateClassSource(codebase, 'c', 'csharp');
     // Assert
     expect(source).toContain('// 未入力: 未実装処理');
+  });
+
+  it('renders calls for call fragments using the current names of referenced methods', () => {
+    // Arrange
+    const codebase: Codebase = { files: [{ id: 'f', path: 'x', classes: [{ id: 'c', name: 'Thing', methods: [
+      { id: 'caller', name: 'run', visibility: 'public', fragments: [{ id: 'call', label: 'old label', lines: 1, responsibility: 'call', uses: ['target'] }] },
+      { id: 'target', name: 'work', visibility: 'private', fragments: [] },
+    ] }] }] };
+    // Act
+    const source = generateClassSource(codebase, 'c', 'csharp');
+    // Assert
+    expect(source).toContain('work();');
+    expect(source).not.toContain('未入力');
+  });
+
+  it('renders multiple calls in uses order', () => {
+    // Arrange
+    const codebase: Codebase = { files: [{ id: 'f', path: 'x', classes: [{ id: 'c', name: 'Thing', methods: [
+      { id: 'caller', name: 'run', visibility: 'public', fragments: [{ id: 'call', label: 'calls', lines: 1, responsibility: 'call', uses: ['a', 'b'] }] },
+      { id: 'a', name: 'a', visibility: 'private', fragments: [] },
+      { id: 'b', name: 'b', visibility: 'private', fragments: [] },
+    ] }] }] };
+    // Act
+    const source = generateClassSource(codebase, 'c', 'csharp');
+    // Assert
+    expect(source.indexOf('a();')).toBeLessThan(source.indexOf('b();'));
+    expect(source).toContain('        a();\n        b();');
+  });
+
+  it('prefers explicit code on call fragments', () => {
+    // Arrange
+    const codebase: Codebase = { files: [{ id: 'f', path: 'x', classes: [{ id: 'c', name: 'Thing', methods: [
+      { id: 'caller', name: 'run', visibility: 'public', fragments: [{ id: 'call', label: 'calls', lines: 1, responsibility: 'call', uses: ['target'], code: { csharp: 'customCall();' } }] },
+      { id: 'target', name: 'target', visibility: 'private', fragments: [] },
+    ] }] }] };
+    // Act
+    const source = generateClassSource(codebase, 'c', 'csharp');
+    // Assert
+    expect(source).toContain('customCall();');
+    expect(source).not.toContain('        target();');
+  });
+
+  it('keeps the placeholder for call fragments with empty or unresolved uses', () => {
+    // Arrange
+    const codebase: Codebase = { files: [{ id: 'f', path: 'x', classes: [{ id: 'c', name: 'Thing', methods: [
+      { id: 'caller', name: 'run', visibility: 'public', fragments: [
+        { id: 'empty', label: 'empty target', lines: 1, responsibility: 'call', uses: [] },
+        { id: 'missing', label: 'missing target', lines: 1, responsibility: 'call', uses: ['gone'] },
+      ] },
+    ] }] }] };
+    // Act
+    const source = generateClassSource(codebase, 'c', 'csharp');
+    // Assert
+    expect(source).toContain('// 未入力: empty target');
+    expect(source).toContain('// 未入力: missing target');
+  });
+
+  it('renders renamed extracted methods through their call fragments', () => {
+    // Arrange
+    const original: Codebase = { files: [{ id: 'f', path: 'x', classes: [{ id: 'c', name: 'Thing', methods: [
+      { id: 'source', name: 'run', visibility: 'public', fragments: [
+        { id: 'before', label: 'before', lines: 1, responsibility: 'x', code: { csharp: 'before();' } },
+        { id: 'selected', label: 'selected', lines: 1, responsibility: 'x', code: { csharp: 'selected();' } },
+      ] },
+    ] }] }] };
+    const extracted = extractMethod(original, { sourceMethodId: 'source', fragmentIds: ['selected'], newMethodId: 'new', newMethodName: 'oldName' });
+    if (!extracted.ok) throw new Error('extract should succeed');
+    const renamed = renameMethod(extracted.value, 'new', 'newName');
+    if (!renamed.ok) throw new Error('rename should succeed');
+    // Act
+    const source = generateClassSource(renamed.value, 'c', 'csharp');
+    // Assert
+    expect(source).toContain('newName();');
+    expect(source).not.toContain('oldName();');
+  });
+
+  it('does not infer calls for non-call fragments even when uses resolve', () => {
+    // Arrange
+    const codebase: Codebase = { files: [{ id: 'f', path: 'x', classes: [{ id: 'c', name: 'Thing', methods: [
+      { id: 'caller', name: 'run', visibility: 'public', fragments: [{ id: 'work', label: 'work', lines: 1, responsibility: 'x', uses: ['target'] }] },
+      { id: 'target', name: 'target', visibility: 'private', fragments: [] },
+    ] }] }] };
+    // Act
+    const source = generateClassSource(codebase, 'c', 'csharp');
+    // Assert
+    expect(source).toContain('// 未入力: work');
+    expect(source).not.toContain('        target();');
   });
 
   it('renders fields in declaration order', () => {
