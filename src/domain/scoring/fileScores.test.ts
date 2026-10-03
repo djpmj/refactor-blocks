@@ -30,6 +30,24 @@ function classOf(name: string, uses: readonly string[]): CodeClass {
 }
 
 describe("fileDeductions", () => {
+  it("極小メソッドと極小クラスをそのファイルに計上する", () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [{ id: "file-tiny", path: "src/tiny.ts", classes: [{
+        id: "class-tiny", name: "Tiny", methods: [{
+          id: "method-tiny", name: "run", visibility: "public",
+          fragments: [{ id: "fragment-tiny", label: "work", lines: 1, responsibility: "work" }],
+        }],
+      }] }],
+    };
+
+    // Act
+    const deductions = fileDeductions(codebase, LOOSE);
+
+    // Assert
+    expect(deductions.get("file-tiny")).toBe(20);
+  });
+
   it("子が1つだけの基底クラスは、その基底クラスがあるファイルの減点になる", () => {
     // Arrange
     const codebase: Codebase = {
@@ -149,7 +167,7 @@ describe("fileDeductions", () => {
               id: "class-c",
               name: "C",
               interfaceIds: ["class-i"],
-              methods: [{ id: "method-other", name: "other", visibility: "public", fragments: [{ id: "f-other", label: "do", lines: 1, responsibility: "x" }] }],
+              methods: [{ id: "method-other", name: "other", visibility: "public", fragments: [{ id: "f-other", label: "do", lines: 3, responsibility: "x" }] }],
             },
           ],
         },
@@ -179,7 +197,7 @@ describe("fileDeductions", () => {
                   id: "method-a",
                   name: "run",
                   visibility: "public",
-                  fragments: [{ id: "f-a", label: "do", lines: 1, responsibility: "x", reads: ["field-b1", "field-b2"] }],
+                  fragments: [{ id: "f-a", label: "do", lines: 3, responsibility: "x", reads: ["field-b1", "field-b2"] }],
                 },
               ],
             },
@@ -227,7 +245,7 @@ describe("fileDeductions", () => {
                   id: "method-a",
                   name: "run",
                   visibility: "public",
-                  fragments: [{ id: "f-a", label: "do", lines: 1, responsibility: "x", writes: ["field-b1"] }],
+                  fragments: [{ id: "f-a", label: "do", lines: 3, responsibility: "x", writes: ["field-b1"] }],
                 },
               ],
             },
@@ -361,8 +379,8 @@ describe("fileDeductions", () => {
                 { id: "field-city", name: "city", visibility: "private" },
               ],
               methods: [
-                { id: "method-pay", name: "calcPay", visibility: "public", fragments: [{ id: "f-pay", label: "pay", lines: 1, responsibility: "a", reads: ["field-pay"] }] },
-                { id: "method-city", name: "formatCity", visibility: "public", fragments: [{ id: "f-city", label: "city", lines: 1, responsibility: "a", reads: ["field-city"] }] },
+                { id: "method-pay", name: "calcPay", visibility: "public", fragments: [{ id: "f-pay", label: "pay", lines: 3, responsibility: "a", reads: ["field-pay"] }] },
+                { id: "method-city", name: "formatCity", visibility: "public", fragments: [{ id: "f-city", label: "city", lines: 3, responsibility: "a", reads: ["field-city"] }] },
               ],
             },
           ],

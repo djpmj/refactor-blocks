@@ -7,7 +7,7 @@ export type ResponsibilityViolation = {
 };
 
 /** 抽出したメソッドの呼び出し行。処理そのものではないので責務としては数えない。 */
-const CALL_RESPONSIBILITY = 'call';
+export const CALL_RESPONSIBILITY = 'call';
 
 /** 1クラスの中の処理が持つ責務(Fragment の responsibility)の種類数が、上限を超えているクラスを列挙する。 */
 export function findResponsibilityViolations(codebase: Codebase, limit: number): ResponsibilityViolation[] {

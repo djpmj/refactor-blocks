@@ -8,6 +8,7 @@ import { findEmptyContainers, findUnusedPrivateMethods } from "./leftovers";
 import { findLineLimitViolations } from "./lineLimits";
 import { findLoneSuperclasses } from "./loneSuperclass";
 import { findResponsibilityViolations } from "./responsibilities";
+import { findThinClasses, findTrivialMethods } from "./overExtraction";
 import { findCouplingViolations, POINTS_PER_VIOLATION } from "./score";
 import { countedVisibilityViolations } from "./visibility";
 
@@ -54,6 +55,8 @@ export function fileDeductions(
     ...findOpenSetters(codebase),
     ...countedVisibilityViolations(codebase, stage.visibilityEnforced).map((violation) => violation.callerClassId),
     ...findLowCohesionClasses(codebase).map((violation) => violation.classId),
+    ...findTrivialMethods(codebase),
+    ...findThinClasses(codebase),
   ];
   const owners = fileIdByTargetId(codebase);
   const points = new Map(
