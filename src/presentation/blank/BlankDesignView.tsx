@@ -5,6 +5,7 @@ import { CodebaseCanvas } from '../canvas/CodebaseCanvas';
 import { MethodEditor } from '../editor/MethodEditor';
 import { createGameStore, GameStoreContext, useGameStore } from '../store/useGameStore';
 import { useUndoRedoShortcut } from '../useUndoRedoShortcut';
+import { useResizableSidebarWidth } from '../useResizableSidebarWidth';
 import { BlankDesignPanel } from './BlankDesignPanel';
 import { BlankDesignResultPanel } from './BlankDesignResultPanel';
 
@@ -17,6 +18,7 @@ const blankStore = createGameStore(blankDesignProblems);
 function BlankDesignBody({ active }: Readonly<{ active: boolean }>) {
   const codebase = useGameStore((state) => state.codebase);
   const [reviewing, setReviewing] = useState(false);
+  const { width, handleProps } = useResizableSidebarWidth();
   const reviewButtonRef = useRef<HTMLButtonElement>(null);
   useUndoRedoShortcut(active);
   // 答え合わせを開いている間は、配置を変えるたびに結果を計算し直す(試行錯誤しやすいように)
@@ -34,18 +36,21 @@ function BlankDesignBody({ active }: Readonly<{ active: boolean }>) {
         <section className="app__canvas" aria-label="コードベース">
           <CodebaseCanvas active={active} />
         </section>
-        {reviewing && review !== null ? (
-          <BlankDesignResultPanel
-            problem={problem}
-            review={review}
-            onClose={() => {
-              setReviewing(false);
-              reviewButtonRef.current?.focus();
-            }}
-          />
-        ) : (
-          <MethodEditor />
-        )}
+        <div className="sidebar-resizable" style={{ width }}>
+          <div className="sidebar-resizable__handle" {...handleProps} />
+          {reviewing && review !== null ? (
+            <BlankDesignResultPanel
+              problem={problem}
+              review={review}
+              onClose={() => {
+                setReviewing(false);
+                reviewButtonRef.current?.focus();
+              }}
+            />
+          ) : (
+            <MethodEditor />
+          )}
+        </div>
       </main>
     </>
   );

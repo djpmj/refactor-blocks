@@ -7,6 +7,7 @@ import { ComparisonQuizView } from './quiz/ComparisonQuizView';
 import { StagePanel } from './stage/StagePanel';
 import { useGameStore } from './store/useGameStore';
 import { useUndoRedoShortcut } from './useUndoRedoShortcut';
+import { useResizableSidebarWidth } from './useResizableSidebarWidth';
 
 type Mode = 'refactor' | 'quiz' | 'blank';
 
@@ -14,6 +15,7 @@ const MODE_LABEL: Record<Mode, string> = { refactor: 'リファクタリング',
 
 function RefactorView({ active }: Readonly<{ active: boolean }>) {
   const investigating = useGameStore((state) => state.changeSession !== null);
+  const { width, handleProps } = useResizableSidebarWidth();
   useUndoRedoShortcut(active);
   return (
     <StagePanel>
@@ -21,7 +23,10 @@ function RefactorView({ active }: Readonly<{ active: boolean }>) {
         <section className="app__canvas" aria-label="コードベース">
           <CodebaseCanvas active={active} />
         </section>
-        {investigating ? <ChangeRequestPanel /> : <MethodEditor />}
+        <div className="sidebar-resizable" style={{ width }}>
+          <div className="sidebar-resizable__handle" {...handleProps} />
+          {investigating ? <ChangeRequestPanel /> : <MethodEditor />}
+        </div>
       </main>
     </StagePanel>
   );
