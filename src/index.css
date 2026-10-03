@@ -127,6 +127,9 @@ input.class-node__name { width: 14ch; }
 .file-mark { font-size: 14px; margin-right: 6px; }
 
 .method-editor { width: 360px; padding: 16px; background: var(--surface); border-left: 1px solid var(--border); overflow-y: auto; }
+.method-editor__tabs { display: flex; gap: 4px; }
+.method-editor__tab { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 8px; padding: 4px 12px; font-size: 13px; cursor: pointer; }
+.method-editor__tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
 .method-editor__title { font-size: 15px; font-family: ui-monospace, monospace; }
 .method-editor__hint { color: var(--muted); font-size: 13px; }
 .method-editor__message { color: var(--danger); font-size: 13px; }
