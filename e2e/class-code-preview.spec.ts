@@ -3,7 +3,8 @@ import { expect, test } from '@playwright/test';
 test('コードタブにチュートリアル1のクラスソースを表示する', async ({ page }) => {
   // Arrange
   await page.goto('/');
-  await page.getByText('printMonthlyReport', { exact: true }).first().click();
+  await page.getByLabel('ステージ').selectOption({ label: 'チュートリアル1: 長いメソッドを分ける' });
+  await page.getByTestId('method-printMonthlyReport').click();
 
   // Act
   await page.getByRole('tab', { name: 'コード' }).click();
