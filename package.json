@@ -44,5 +44,9 @@
     "typescript-eslint": "^8.68.0",
     "vite": "^8.2.2",
     "vitest": "^5.0.1"
+  },
+  "optionalDependencies": {
+    "@rolldown/binding-linux-x64-gnu": "1.2.12",
+    "jscpd-linux-x64-gnu": "5.4.0"
   }
 }
