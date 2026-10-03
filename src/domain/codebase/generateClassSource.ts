@@ -1,10 +1,16 @@
-import { fieldsOf, findClass, parentIds, type CodeLanguage, type Codebase, type CodeClass } from './Codebase';
+import { fieldsOf, findClass, findMethod, parentIds, type CodeLanguage, type Codebase, type CodeClass } from './Codebase';
+import { CALL_RESPONSIBILITY } from '../scoring/responsibilities';
 
-function renderMethod(method: CodeClass['methods'][number], language: CodeLanguage): string[] {
+function renderMethod(codebase: Codebase, method: CodeClass['methods'][number], language: CodeLanguage): string[] {
   const declaration = `    ${method.visibility} void ${method.name}()`;
   if (method.fragments.length === 0) return [`${declaration};`];
   const body = method.fragments.flatMap((fragment) => {
-    const code = fragment.code?.[language];
+    const explicitCode = fragment.code?.[language];
+    const calledMethods = fragment.responsibility === CALL_RESPONSIBILITY
+      ? (fragment.uses ?? []).map((methodId) => findMethod(codebase, methodId)).filter((calledMethod) => calledMethod !== undefined)
+      : [];
+    const inferredCode = calledMethods.map((calledMethod) => `${calledMethod.name}();`).join('\n');
+    const code = explicitCode ?? (inferredCode === '' ? undefined : inferredCode);
     return (code ?? `// 未入力: ${fragment.label}`).split('\n').map((line) => `        ${line}`);
   });
   return [`${declaration} {`, ...body, '    }'];
@@ -18,7 +24,7 @@ export function generateClassSource(codebase: Codebase, classId: string, languag
   const inheritance = parents.length === 0 ? '' : ` : ${parents.join(', ')}`;
   const members = [
     ...fieldsOf(codeClass).map((field) => `    ${field.visibility} object ${field.name};`),
-    ...codeClass.methods.flatMap((method) => renderMethod(method, language)),
+    ...codeClass.methods.flatMap((method) => renderMethod(codebase, method, language)),
   ];
   return [`public class ${codeClass.name}${inheritance}`, '{', ...members, '}'].join('\n');
 }
