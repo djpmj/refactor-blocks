@@ -39,7 +39,7 @@ jobs:
                リファクタリング操作・採点の2段構えなど)を読む。
             2. 重複した案を出さないよう、以下に目を通す:
                - `docs/feature-ideas/IDEAS.md` の既存内容(直近7日分程度で十分、全件でなくてよい)
-               - `docs/specs/implemented.md` と `docs/specs/unimplemented.md`
+               - `docs/specs/implemented.md`
                - `docs/specs/` 配下の既存仕様書の一覧(ファイル名だけでよい、全文を読まなくてよい)
                - `src/infrastructure/stages/` のステージ一覧
             3. 上記と重複しない、`refactor-blocks` に足しうる新機能案を10個考える。
