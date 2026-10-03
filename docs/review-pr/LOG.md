@@ -6,12 +6,29 @@
 
 ## 書式
 
+### 自動マージした場合
+
 ```
 ## YYYY-MM-DD HH:MM UTC PR #<番号> <タイトル>
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅(必要に応じてE2Eも)
 - マージ: squash & delete-branch
+```
+
+### `.github/workflows/` 配下を含み自動マージを見送った場合
+
+`claude_code_oauth_token` が使うGitHub Appには GitHub の `workflows` 権限が無く、
+`.github/workflows/` 配下を変更するPRのマージはGraphQL API側で必ず拒否される
+(`refusing to allow a GitHub App to create or update workflow ... without 'workflows' permission`)。
+このケースは承認コメントのみ投稿し、`gh pr merge` は実行しない(失敗するのを承知で試行しない)。
+
+```
+## YYYY-MM-DD HH:MM UTC PR #<番号> <タイトル>
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅
+- マージ: 見送り(.github/workflows/配下を含むためGitHub Appの権限で自動マージ不可。人が手動でマージする)
 ```
 
 - 新しい記録は「## ログ一覧」見出し直後(一覧の先頭)に追記する
