@@ -40,3 +40,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [method-editor-tab-style](method-editor-tab-style.md) | メソッドエディタの「編集/コード」タブに見た目のスタイルを当てる |
 | [call-fragment-code](call-fragment-code.md) | call Fragment を `// 未入力` ではなく呼び出し文で表示する |
 | [resizable-sidebar](resizable-sidebar.md) | 右サイドバーの幅をドラッグ・キーボードで変更できるようにする |
+| [sidebar-toggle-position](sidebar-toggle-position.md) | 左サイドバーの開閉ボタンをサイドバーの境界へ移す |

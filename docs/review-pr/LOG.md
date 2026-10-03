@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-03 19:30 UTC PR #47 左サイドバー開閉ボタンを境界へ移す (#35)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: master取り込み後 npm test 995件 ✅ / npm run lint ✅ / npm run typecheck ✅ / E2Eはローカルにブラウザが無く未実行、PRのCI(e2e)pass
+- マージ: squash & delete-branch
+
 ## 2026-10-03 19:20 UTC PR #41 右サイドバーの幅を変更できるようにする (#32)
 
 - 判定: 合格(blocker無し。suggestion: pointercancel時のドラッグ状態クリア)
