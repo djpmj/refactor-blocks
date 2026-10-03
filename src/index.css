@@ -138,7 +138,10 @@ input.class-node__name { width: 14ch; }
 .line-badge--over { color: var(--danger); font-weight: 700; }
 .file-mark { font-size: 14px; margin-right: 6px; }
 
-.method-editor { width: 360px; padding: 16px; background: var(--surface); border-left: 1px solid var(--border); overflow-y: auto; }
+.sidebar-resizable { display: flex; flex: none; min-width: 0; }
+.sidebar-resizable__handle { width: 6px; flex: none; cursor: col-resize; touch-action: none; background: transparent; }
+.sidebar-resizable__handle:hover, .sidebar-resizable__handle:focus-visible { background: var(--accent); outline: none; }
+.method-editor { flex: 1; min-width: 0; padding: 16px; background: var(--surface); border-left: 1px solid var(--border); overflow-y: auto; }
 .method-editor__tabs { display: flex; gap: 4px; }
 .method-editor__tab { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 8px; padding: 4px 12px; font-size: 13px; cursor: pointer; }
 .method-editor__tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
