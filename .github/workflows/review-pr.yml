@@ -23,11 +23,11 @@ jobs:
       issues: write
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: "npm"
@@ -62,14 +62,21 @@ jobs:
                (Dependabotの依存更新PRなど)は、受け入れ基準の代わりに `CLAUDE.md` の開発ルールと、
                実行結果(lint/typecheck/test)が通ることを判断基準にする。
             4. **blockerが無い場合**: `.claude/commands/review-pr.md` 手順5に従い、
-               `gh pr review <番号> --approve --body "<判定と実行結果の要約>"` でコメントし、
-               `gh pr merge <番号> --squash --delete-branch` でマージし、関連Issueが自動クローズ
-               されていなければ `gh issue close <issue番号>` で閉じる。このワークフローは
-               ヘッドレス実行でユーザーにその場で確認を取れないため、同手順にある
+               `gh pr review <番号> --approve --body "<判定と実行結果の要約>"` でコメントする。
+               このワークフローはヘッドレス実行でユーザーにその場で確認を取れないため、同手順にある
                「ユーザーに確認してから行う」は適用せず、承認・マージ・Issueクローズをそのまま
-               自動で実行してよい。
-               続けて、何を確認してマージしたかを `docs/review-pr/LOG.md` の書式(ファイル冒頭)
-               に従って「## ログ一覧」見出し直後に追記する。記録が30件を超えていたら、古いものから
+               自動で実行してよい。続けて `gh pr diff <番号> --name-only` で変更ファイルを確認し、
+               `.github/workflows/` 配下を**含まない**場合のみ
+               `gh pr merge <番号> --squash --delete-branch` でマージし、関連Issueが自動クローズ
+               されていなければ `gh issue close <issue番号>` で閉じる。
+               `.github/workflows/` 配下を**含む**場合は `gh pr merge` を実行しない
+               (このワークフローが使うGitHub Appには `workflows` 権限が無く、GraphQL側で
+               `refusing to allow a GitHub App to create or update workflow ... without
+               'workflows' permission` として必ず失敗するため、失敗すると分かっている操作を
+               試行しない。承認コメントのみ投稿し、人が手動でマージする)。
+               続けて、何を確認してどう判断したかを `docs/review-pr/LOG.md` の書式(ファイル冒頭、
+               自動マージした場合/`.github/workflows/`を含み見送った場合の2パターンがある)に従って
+               「## ログ一覧」見出し直後に追記する。記録が30件を超えていたら、古いものから
                削除して直近30件までに収める。`git add docs/review-pr/LOG.md` し、
                「PR #<番号>のレビューログを追記」のような日本語コミットメッセージ(末尾に
                `Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>`)でコミットし、
@@ -84,3 +91,12 @@ jobs:
           claude_args: |
             --max-turns 200
             --allowedTools "Read,Write,Edit,Glob,Grep,Bash(git:*),Bash(npm:*),Bash(gh pr:*),Bash(gh issue:*)"
+
+      - name: Upload Claude execution log
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: claude-execution-output
+          path: /home/runner/work/_temp/claude-execution-output.json
+          if-no-files-found: warn
+          retention-days: 7

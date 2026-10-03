@@ -18,15 +18,15 @@ flowchart TD
     Harness --> DraftSpec["docs/specs/&lt;slug&gt;.md 草案を作成"]
     DraftSpec --> Undecided{"未決事項が残っている?"}
     Undecided -->|"はい"| DraftList["docs/specs/draft.md に記載<br/>ユーザーに確認して確定させる"]
-    DraftList --> UnimplList["docs/specs/unimplemented.md に移動"]
-    Undecided -->|"いいえ"| UnimplList
+    DraftList --> ReadyIssue["未決事項を解決し、仕様書パスを記したIssueを作成"]
+    Undecided -->|"いいえ"| ReadyIssue
 
     GhIssue --> Impl
-    UnimplList --> Impl
+    ReadyIssue --> Impl
 
-    Impl["codex-implementエージェント<br/>(独立Claudeセッション)"]
-    Impl -->|"npm run check"| ReviewInline["evaluatorエージェント<br/>(別の独立Claudeセッション)"]
-    Impl -->|"/implement &lt;Issue/PR/仕様書&gt;"| ReviewInline
+    Entry["Codex: $implement (引数なし)<br/>Claude Code: /implement &lt;Issue/PR/仕様書&gt;"] --> Impl
+    Impl["codex-implementエージェント<br/>(独立スレッド)"]
+    Impl -->|"npm run check"| ReviewInline["evaluatorエージェント<br/>(別の独立スレッド)"]
     ReviewPr["/review-pr &lt;PR番号&gt; または<br/>review-pr.yml(6時間ごとに自動実行)<br/>(evaluatorと同じ観点で独立レビュー)"]
 
     ReviewInline --> Blocker{"NEEDS_FIX?"}
@@ -34,13 +34,12 @@ flowchart TD
     Blocker -->|"あり: 指摘を返して修正"| Impl
     Blocker -->|"なし"| Merge["完了・マージ"]
 
-    Merge --> ImplList["docs/specs/implemented.md に移動"]
+    Merge --> ImplList["docs/specs/implemented.md に追加"]
 ```
 
-**ポイント**: 仕様書の入口は2つ(`/spec-to-issue`=対話で即確定、`feature-harness`=未決事項を残せる)だが、
-実装・評価は `/implement` が別々のClaudeセッションを起動し、評価が `PASS` になるまで修正ループを回す。
-利用者はオーケストレーターのコマンドだけを実行する。仕様書の状態は `docs/specs/draft.md → unimplemented.md → implemented.md`
-の3ファイルで追跡する(詳細は [docs/specs/README.md](specs/README.md))。
+**ポイント**: Claude Code では仕様書の入口が2つ(`/spec-to-issue`=対話で即確定、`feature-harness`=未決事項を残せる)。
+Codex では引数なしの `$implement` が既存の未完了対象を順に処理する。Claude Code では `/implement` に対象を指定する。どちらも実装者と評価者の別々のスレッドで評価・修正ループを回す。
+利用者はオーケストレーターのコマンドだけを実行する。実装待ちの仕様書パスは Issue 本文で管理し、草案と実装済みの状態は `docs/specs/draft.md` と `docs/specs/implemented.md` で追跡する(詳細は [docs/specs/README.md](specs/README.md))。
 PRレビューは `review-pr.yml` が6時間ごとに全openPR(Dependabot含む)を自動レビューし、
 blockerが無ければ自動マージする。何を確認してマージしたかは [docs/review-pr/LOG.md](review-pr/LOG.md)
 に記録される(ヘッドレス実行でその場のユーザー確認が無いための事後追跡用)。
@@ -65,4 +64,4 @@ flowchart LR
 | ネタが無くてアイデアだけ欲しい | ②(毎日の機能案ブレスト。手で①に転記) |
 | 既存PRをレビューしたい(今すぐ・手動) | `/review-pr <PR番号>` |
 | 既存PRのレビュー・自動マージ(定期実行) | `review-pr.yml`(6時間ごと。手動実行は `workflow_dispatch`) |
-| Issue/PR・仕様書・実装依頼を実装・修正したい | `/implement <Issue/PR番号・仕様書パス>` |
+| Issue/PR・仕様書・実装依頼を実装・修正したい | Codex: `$implement` (既存の未完了対象を順に処理)、Claude Code: `/implement <Issue/PR番号・仕様書パス>` |
