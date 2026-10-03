@@ -1671,7 +1671,8 @@ test('移動メニュー: クラス・ファイル・余白では移動項目を
     page.locator('.react-flow__pane'),
   ]) {
     // Act
-    await target.click({ button: 'right', position: { x: 5, y: 5 } });
+    // キャンバス左端にはサイドバー開閉ハンドルが重なるため、その右側を使う。
+    await target.click({ button: 'right', position: { x: 30, y: 5 } });
 
     // Assert
     await expect(menu).toBeVisible();
