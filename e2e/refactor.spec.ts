@@ -1,5 +1,56 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
+test('右サイドバーの幅をドラッグとキーボードで調整し、白紙設計でも使える', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  const sidebar = page.locator('.sidebar-resizable').first();
+  const handle = page.getByRole('separator', { name: 'サイドバーの幅を変更' }).first();
+  await expect(sidebar).toHaveCSS('width', '360px');
+
+  // Act: 左端ハンドルを左へドラッグして幅を広げる
+  const handleBox = await handle.boundingBox();
+  if (handleBox === null) throw new Error('サイドバーのハンドルが見つかりません');
+  await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(handleBox.x - 400, handleBox.y + handleBox.height / 2, { steps: 5 });
+  await page.mouse.up();
+
+  // Assert: 最大幅で止まる
+  await expect(handle).toHaveAttribute('aria-valuenow', '640');
+  await expect(sidebar).toHaveCSS('width', '640px');
+
+  // Act: 右へドラッグして最小幅まで狭める
+  const expandedHandleBox = await handle.boundingBox();
+  if (expandedHandleBox === null) throw new Error('サイドバーのハンドルが見つかりません');
+  await page.mouse.move(expandedHandleBox.x + expandedHandleBox.width / 2, expandedHandleBox.y + expandedHandleBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(expandedHandleBox.x + 400, expandedHandleBox.y + expandedHandleBox.height / 2, { steps: 5 });
+  await page.mouse.up();
+  await expect(handle).toHaveAttribute('aria-valuenow', '280');
+
+  // Act: キーボードでも幅を調整し、ページ再読み込みで初期値に戻す
+  await handle.focus();
+  for (let step = 0; step < 30; step += 1) await page.keyboard.press('ArrowLeft');
+
+  // Assert
+  await expect(handle).toHaveAttribute('aria-valuenow', '640');
+  await page.reload();
+  await expect(page.getByRole('separator', { name: 'サイドバーの幅を変更' })).toHaveAttribute('aria-valuenow', '360');
+
+  // Act: 白紙設計画面の右パネルもキーボードで広げる
+  await page.getByTestId('mode-blank').click();
+  const blankHandle = page.getByTestId('blank-view').getByRole('separator', { name: 'サイドバーの幅を変更' });
+  await blankHandle.focus();
+  await page.keyboard.press('ArrowLeft');
+
+  // Assert
+  await expect(blankHandle).toHaveAttribute('aria-valuenow', '376');
+
+  // Assert: 右パネルのない設計くらべ画面にはハンドルを表示しない
+  await page.getByTestId('mode-quiz').click();
+  await expect(page.getByRole('separator', { name: 'サイドバーの幅を変更' })).toHaveCount(0);
+});
+
 /** 既存のテストは OrderService を分解するチュートリアル2を前提にしている。 */
 async function openOrderStage(page: Page) {
   await page.goto('/');
