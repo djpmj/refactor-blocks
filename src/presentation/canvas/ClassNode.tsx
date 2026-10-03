@@ -1,28 +1,66 @@
-import { useDroppable } from '@dnd-kit/core';
-import type { NodeProps } from '@xyflow/react';
-import { findClass } from '../../domain/codebase/Codebase';
-import { classLines } from '../../domain/codebase/lineCount';
-import { useGameStore } from '../store/useGameStore';
-import { classDropId } from './dndIds';
-import type { ClassFlowNode } from './layoutCodebase';
-import { MethodChip } from './MethodChip';
+import { useDraggable, useDroppable } from "@dnd-kit/core";
+import type { NodeProps } from "@xyflow/react";
+import { fieldsOf, findClass, findInterfaces, findSuperclass, type CodeClass } from "../../domain/codebase/Codebase";
+import { classDependencies, cyclicClassIds } from "../../domain/codebase/dependencies";
+import { classLines } from "../../domain/codebase/lineCount";
+import { useGameStore } from "../store/useGameStore";
+import { classDragId, classDropId } from "./dndIds";
+import { DependencyHandles } from "./DependencyHandles";
+import { FieldChip } from "./FieldChip";
+import { InlineEditableLabel } from "./InlineEditableLabel";
+import type { ClassFlowNode } from "./layoutCodebase";
+import { MethodChip } from "./MethodChip";
+import { useShowDetails } from "./semanticZoom";
+import { SuperclassLabel } from "./SuperclassLabel";
 
-export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
-  const codeClass = useGameStore((state) => findClass(state.codebase, data.classId));
-  const limit = useGameStore((state) => state.stage.limits.class);
-  const { setNodeRef, isOver } = useDroppable({ id: classDropId(data.classId) });
-  if (codeClass === undefined) return null;
-  const lines = classLines(codeClass);
+/** 循環依存に関与しているクラスの印。色だけに頼らずアイコンとラベルでも伝える。ズームで詳細を隠していても出す。 */
+function CyclicMark() {
+  const label = "循環依存にあります";
   return (
-    <div
-      ref={setNodeRef}
-      className={isOver ? 'class-node class-node--drop-target' : 'class-node'}
-      data-testid={`class-${codeClass.name}`}
-    >
-      <div className="class-node__header">
-        <span className="class-node__name">{codeClass.name}</span>
-        <span className={lines > limit ? 'line-badge line-badge--over' : 'line-badge'}>{lines}行</span>
-      </div>
+    <span className="cyclic-mark" role="img" aria-label={label} title={label} data-testid="cyclic-mark">
+      🔁
+    </span>
+  );
+}
+
+/** ドロップ先・循環依存の強調を両立できるよう、該当するクラス名だけを組み立てる。 */
+function classNodeClassName({ isOver, isCyclic }: Readonly<{ isOver: boolean; isCyclic: boolean }>): string {
+  return ["class-node", isOver ? "class-node--drop-target" : null, isCyclic ? "class-node--cyclic" : null]
+    .filter(Boolean)
+    .join(" ");
+}
+
+/** クラス名と、親クラス(継承元/実装先)があれば "extends 親クラス名" か "implements 親クラス名" を添える。 */
+function ClassNameLabel({ classId, name }: Readonly<{ classId: string; name: string }>) {
+  const codebase = useGameStore((state) => state.codebase);
+  const superclass = findSuperclass(codebase, classId);
+  const interfaceNames = findInterfaces(codebase, classId).map((codeClass) => codeClass.name);
+  const renameClass = useGameStore((state) => state.renameClass);
+  return (
+    <span className="class-node__name-group">
+      <InlineEditableLabel
+        value={name}
+        ariaLabel="クラス名"
+        className="class-node__name"
+        onSubmit={(newName) => renameClass(classId, newName)}
+      />
+      <SuperclassLabel superclassName={superclass?.name} interfaceNames={interfaceNames} />
+    </span>
+  );
+}
+
+/** フィールド(あれば)とメソッドの一覧。詳細表示(showDetails)のときだけ描く。 */
+function ClassBody({ codeClass }: Readonly<{ codeClass: CodeClass }>) {
+  const fields = fieldsOf(codeClass);
+  return (
+    <>
+      {fields.length === 0 ? null : (
+        <div className="class-node__fields" aria-label="フィールド">
+          {fields.map((field) => (
+            <FieldChip key={field.id} field={field} />
+          ))}
+        </div>
+      )}
       <div className="class-node__methods">
         {codeClass.methods.length === 0 ? (
           <div className="class-node__empty">ここにメソッドをドロップ</div>
@@ -30,6 +68,57 @@ export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
           codeClass.methods.map((method) => <MethodChip key={method.id} method={method} />)
         )}
       </div>
+    </>
+  );
+}
+
+export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
+  const codeClass = useGameStore((state) =>
+    findClass(state.codebase, data.classId),
+  );
+  const isCyclic = useGameStore((state) =>
+    cyclicClassIds(classDependencies(state.codebase)).has(data.classId),
+  );
+  const limit = useGameStore((state) => state.stage.limits.class);
+  const showDetails = useShowDetails();
+  const { setNodeRef, isOver } = useDroppable({
+    id: classDropId(data.classId),
+  });
+  // ヘッダーを掴むとクラスごと別ファイルへドラッグできる
+  const {
+    setNodeRef: setDragRef,
+    attributes,
+    listeners,
+    isDragging,
+  } = useDraggable({ id: classDragId(data.classId) });
+  if (codeClass === undefined) return null;
+  const lines = classLines(codeClass);
+  return (
+    <div ref={setNodeRef} className={classNodeClassName({ isOver, isCyclic })} data-testid={`class-${codeClass.name}`}>
+      {/* 依存の矢印の接続点。つなぐ操作はさせないので見た目には出さない。 */}
+      <DependencyHandles />
+      <div
+        ref={setDragRef}
+        className="class-node__header nodrag nopan"
+        style={{ opacity: isDragging ? 0.3 : 1 }}
+        data-testid={`class-header-${codeClass.name}`}
+        aria-label={`${codeClass.name} を別ファイルへ移動`}
+        {...attributes}
+        {...listeners}
+      >
+        <ClassNameLabel classId={data.classId} name={codeClass.name} />
+        {isCyclic ? <CyclicMark /> : null}
+        {showDetails ? (
+          <span
+            className={
+              lines > limit ? "line-badge line-badge--over" : "line-badge"
+            }
+          >
+            {lines}行
+          </span>
+        ) : null}
+      </div>
+      {showDetails ? <ClassBody codeClass={codeClass} /> : null}
     </div>
   );
 }

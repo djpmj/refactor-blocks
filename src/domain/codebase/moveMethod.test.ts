@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { findClassOfMethod } from './Codebase';
-import { moveMethod } from './moveMethod';
+import { findClassOfMethod, type Codebase } from './Codebase';
+import { moveMethod, moveMethodTargets } from './moveMethod';
 import { sampleCodebase } from './testFixtures';
 
 describe('moveMethod', () => {
@@ -62,5 +62,42 @@ describe('moveMethod', () => {
 
     // Assert
     expect(result).toEqual({ ok: false, error: expected });
+  });
+});
+
+describe('moveMethodTargets', () => {
+  it('移動元と同名メンバーを除き、ファイル順・宣言順に返し、元を変更しない', () => {
+    // Arrange
+    const base = sampleCodebase();
+    const source = base.files[0].classes[0];
+    const first = { id: 'first', name: 'First', methods: [] };
+    const contract: Codebase['files'][number]['classes'][number] = { id: 'contract', name: 'Contract', methods: [{ id: 'contract-run', name: 'contractRun', visibility: 'public', fragments: [] }] };
+    const duplicate = { ...source, id: 'duplicate', methods: source.methods.map((member) => ({ ...member, id: member.id + '-copy' })) };
+    const codebase: Codebase = {
+      files: [
+        { ...base.files[0], classes: [source, first, duplicate] },
+        { id: 'second-file', path: 'second.ts', classes: [contract, { id: 'last', name: 'Last', methods: [] }] },
+      ],
+    };
+    const before = structuredClone(codebase);
+
+    // Act
+    const targets = moveMethodTargets(codebase, 'method-place');
+
+    // Assert
+    expect(targets.map((target) => target.id)).toEqual(['first', 'contract', 'last']);
+    expect(codebase).toEqual(before);
+  });
+
+  it.each(['method-place', 'missing'])('移動先がないかIDが存在しなければ空配列: %s', (memberId) => {
+    // Arrange
+    const base = sampleCodebase();
+    const codebase = { files: [{ ...base.files[0], classes: [base.files[0].classes[0]] }] };
+
+    // Act
+    const targets = moveMethodTargets(memberId === 'missing' ? base : codebase, memberId);
+
+    // Assert
+    expect(targets).toEqual([]);
   });
 });

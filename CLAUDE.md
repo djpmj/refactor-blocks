@@ -1,5 +1,7 @@
 # Refactor Blocks(リポジトリ名: refactor-blocks)
 
+Claudeはこのリポジトリでの会話・報告・コミットメッセージ以外の説明を、常に日本語で行う。
+
 メソッド分け・クラス分け・ファイル分けを、Scratchのようなドラッグ&ドロップで練習するリファクタリング学習ゲーム。
 対象プレイヤーは新卒〜4年目くらいのエンジニア。
 
@@ -54,20 +56,35 @@
 ただし、ドラッグ&ドロップ・抽出などプレイヤーの操作に関わる変更は、PlaywrightのE2Eテストを追加・更新する。
 カバレッジは `domain`/`application` 層に閾値をかけている(`vite.config.ts`)。
 
+## 実装方針: ponytail(怠け者のシニア開発者)
+
+[ponytail](https://github.com/DietrichGebert/ponytail)(MIT)の考え方を取り込んでいる。怠けるのは「書くコードの量」であって、「理解」ではない。
+変更が触るコードを読み、実際の処理の流れを追ってから、次の階段を上から順に確かめ、最初に成り立った段で止まる。
+
+1. そもそも作る必要があるか?(YAGNI。推測で必要そうなものは作らず、一言そう書く)
+2. このリポジトリにもうあるか?(`Result`・`lineCount` など既存のヘルパー・型・パターンを再利用する)
+3. JavaScript/TypeScriptの標準機能でできるか?
+4. ブラウザ・CSS・React Flow/dnd-kitの標準機能でできるか?
+5. インストール済みの依存(Zustand・React Flow・dnd-kit)で解決できるか?(新しい依存は極力足さない)
+6. 短く書けるか?(ただし `eslint.config.js` のルールと読みやすさが優先。コードゴルフはしない)
+7. ここまで来て初めて、動く最小限のコードを書く
+
+- 頼まれていない抽象化・設定・「将来のため」の足場は作らない。追加より削除、賢さより退屈さ、ファイルは最小限。
+- バグ修正は症状ではなく原因を直す。触る関数の呼び出し元をすべてgrepし、共通の関数で1回直す。
+- 既知の上限がある意図的な手抜き(O(n²)の走査、素朴なヒューリスティックなど)には `// ponytail: <上限>、<いつ・どう直すか>` のコメントを残す。
+  一覧は `/ponytail-review debt` で出せる。
+- 手を抜かないもの: 問題の理解、信頼境界での入力検証(ステージ定義の読み込み・AI講評APIの応答など)、データ消失を防ぐエラー処理、セキュリティ、アクセシビリティ(キーボード操作を含む)、明示的に頼まれたもの。
+- **このリポジトリで明示的に決めているルールはponytailより優先する。** DDDの4層構成・`Result`型・TDD(テストを先に書く)・
+  E2Eテスト・lintルールは「頼まれた」ものなので、ponytailを理由に省かない。怠けるのはそれぞれの層の中身の量。
+- 報告は「コード → 省いたもの・いつ足すか」を短く。求められていない長い設計説明は書かない。
+
 ## 開発ハーネス(仕様設計・実装・評価)
 
-新機能を追加するときの進め方を `docs/specs/README.md` にまとめている。仕様設計者・実装者・評価者の
-3ロールに分けて進めるためのサブエージェント定義が `.claude/agents/` にある(Claude Codeを使う場合)。
-まとめて回したいときは `feature-harness` skill(`.claude/skills/feature-harness/SKILL.md`)を使う。
-
-## 自動開発(auto-dev)
-
-`docs/auto-dev/TASKS.md` にタスクを追記しておくと、`.github/workflows/auto-dev.yml` が
-未完了タスク(`### [ ]`)を上から順に実装・`npm run check`・コミット・pushし、`docs/auto-dev/IMPLEMENTATION_LOG.md`
-に記録する。定期実行(schedule)は、リポジトリのSecretsに `CLAUDE_CODE_OAUTH_TOKEN` を登録してから
-ワークフロー内のコメントを外して有効にする(それまでは手動実行 `workflow_dispatch` のみ)。
-`npm run check` を通せなかったタスクは `### [!]`(保留)に書き換えられIssueが作られる。
-対話セッションで同じ流れを手動起動したいときは `/auto-dev` コマンド(`.claude/commands/auto-dev.md`)を使う。
+開発の2つの経路(仕様ベースの開発・機能案ブレスト)の全体像は
+`docs/DEVELOPMENT.md` の図を参照。新機能を追加するときの進め方を `docs/specs/README.md` にまとめている。仕様設計者・実装者・評価者の
+3ロールに分けて進めるためのエージェント定義が `.claude/agents/` にある(Claude Codeを使う場合)。
+Claude Code では、仕様からまとめて回したいときは `feature-harness` skill(`.claude/skills/feature-harness/SKILL.md`)を使い、Issue/PRや確定仕様の実装・評価には `/implement` コマンドを使う。
+Codex では `$implement` を使う。Codex 用の入口は `.agents/skills/implement/SKILL.md`、エージェント定義は `.codex/agents/` にある。両方とも実装者と評価者を独立したスレッドで動かす。
 
 ## Lint
 

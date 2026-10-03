@@ -15,7 +15,8 @@ const complexityRules = {
 
 export default tseslint.config(
   {
-    ignores: ['node_modules/**', 'dist/**', '.claude/worktrees/**', 'coverage/**'],
+    // workers/ はアプリ本体と別デプロイ(Cloudflare Workers)の独立したパッケージなので対象外にする
+    ignores: ['node_modules/**', 'dist/**', '.claude/worktrees/**', 'coverage/**', 'workers/**'],
   },
   {
     files: ['src/**/*.ts', 'src/**/*.tsx'],

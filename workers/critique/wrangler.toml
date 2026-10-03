@@ -1,0 +1,12 @@
+name = "refactor-blocks-critique"
+main = "src/index.ts"
+compatibility_date = "2026-01-01"
+
+[observability]
+enabled = true
+
+# 認証なしで誰でも呼べるプロキシなので、IPごとに1分間10回までに制限する(乱用によるAPI費用を防ぐ)
+[[ratelimits]]
+name = "CRITIQUE_RATE_LIMITER"
+namespace_id = "1001"
+simple = { limit = 10, period = 60 }
