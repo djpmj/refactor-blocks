@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-03 19:10 UTC PR #38 call Fragment を呼び出し文で表示する (#31)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test 992件 ✅ / npm run lint ✅ / npm run typecheck ✅ / E2Eはローカルにブラウザが無く未実行、PRのCI(e2e)pass
+- マージ: squash & delete-branch
+
 ## 2026-10-03 11:01 UTC PR #8 chore(deps): Bump actions/checkout from 4 to 7
 
 - 判定: 合格(blocker無し。review-pr.ymlがCIでレビュー・承認済み)
