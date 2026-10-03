@@ -1,0 +1,60 @@
+name: Scheduled Feature Ideas
+
+on:
+  # CLAUDE_CODE_OAUTH_TOKEN をリポジトリのSecretsに登録したら、下のscheduleのコメントを外して定期実行を有効にする。
+  # schedule:
+  #   # 毎日 06:00 JST (= 前日 21:00 UTC)
+  #   - cron: "0 21 * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: feature-ideas
+  cancel-in-progress: false
+
+jobs:
+  feature-ideas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Claude Code feature ideas brainstorm
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            REPO: ${{ github.repository }}
+
+            あなたはこのリポジトリ(refactor-blocks)の機能案ブレスト担当です。
+            実装や仕様設計は行わず、**アイデアを列挙するだけ**の作業です。
+
+            まず `git config user.name "github-actions[bot]"` と
+            `git config user.email "github-actions[bot]@users.noreply.github.com"` を設定する。
+
+            1. `CLAUDE.md` のゲームデザイン方針(対象プレイヤー・画面構成・DDD構成・
+               リファクタリング操作・採点の2段構えなど)を読む。
+            2. 重複した案を出さないよう、以下に目を通す:
+               - `docs/feature-ideas/` 配下の既存ファイル(直近7日分程度で十分、全件でなくてよい)
+               - `docs/pipeline/implemented.md` と `docs/pipeline/unimplemented.md`
+               - `docs/specs/` 配下の既存仕様書の一覧(ファイル名だけでよい、全文を読まなくてよい)
+               - `src/infrastructure/stages/` のステージ一覧
+            3. 上記と重複しない、`refactor-blocks` に足しうる新機能案を10個考える。
+               対象プレイヤー(新卒〜4年目のエンジニア)がリファクタリングの実践を学べる題材
+               (責務の分割、凝集度、結合度、循環依存、デザインパターン、採点ロジックの改善、
+               UI/操作性の改善など)を広く検討してよい。実装の詳細設計(型定義・受け入れ基準)
+               までは踏み込まず、1件あたり概要と狙いが分かる程度の粒度にする。
+            4. 今日の日付(UTC日付をそのまま使ってよい、`date -u +%Y-%m-%d` で取得)を
+               ファイル名にした `docs/feature-ideas/YYYY-MM-DD.md` を新規作成する。
+               書式は `docs/feature-ideas/README.md` の「ファイル形式」に従う。
+               同名ファイルが既に存在する場合は上書きしてよい(1日に複数回実行された場合)。
+            5. 作成したファイルだけを `git add` し、「機能案ブレストを追記」のような
+               日本語のコミットメッセージでコミットし、`git push origin HEAD:master` する。
+
+            `src/` 配下のコードや `docs/specs/`・`docs/pipeline/` の既存ファイルは変更しないこと。
+          claude_args: |
+            --max-turns 50
+            --allowedTools "Read,Write,Glob,Grep,Bash(git:*),Bash(date:*)"
