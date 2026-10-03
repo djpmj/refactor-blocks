@@ -73,18 +73,6 @@ describe('measurePlacement: ルールの変更(sampleCodebase)', () => {
     expect(result).toEqual({ ok: false, error: 'unplaced-part' });
   });
 
-  it('部品のクラスごと消しても unplaced-part', () => {
-    // Arrange
-    const base = sampleCodebase();
-    const implemented = unwrap(deleteClass(toNewClass(base, taxRequest), newIds.classId));
-
-    // Act
-    const result = measurePlacement(base, implemented, taxRequest);
-
-    // Assert
-    expect(result).toEqual({ ok: false, error: 'unplaced-part' });
-  });
-
   it('OrderService へ置くと、そのクラスを触り、無関係な責務が2種類同居する', () => {
     // Arrange
     const base = sampleCodebase();
@@ -170,15 +158,15 @@ describe('measurePlacement: ルールの変更(sampleCodebase)', () => {
     // Arrange
     const base = sampleCodebase();
     const withParent = unwrap(setSuperclass(toNewClass(base, taxRequest), 'class-tax', 'OrderService'));
-    const withoutOrder = unwrap(deleteClass(toNewClass(base, taxRequest), 'class-order'));
+    const withoutTax = unwrap(deleteClass(toNewClass(base, taxRequest), 'class-tax'));
 
     // Act
     const changed = placement(base, withParent, taxRequest);
-    const deleted = placement(base, withoutOrder, taxRequest);
+    const deleted = placement(base, withoutTax, taxRequest);
 
     // Assert
     expect(changed.modifiedClassIds).toEqual(['class-tax']);
-    expect(deleted.modifiedClassIds).toEqual(['class-order']);
+    expect(deleted.modifiedClassIds).toEqual(['class-tax']);
   });
 
   it("'call' の責務は無関係な責務に数えない", () => {

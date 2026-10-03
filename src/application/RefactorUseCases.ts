@@ -285,12 +285,14 @@ const REMOVE_INTERFACE_ERROR_MESSAGES: Record<RemoveInterfaceError, string> = {
 const DELETE_CLASS_ERROR_MESSAGES: Record<DeleteClassError, string> = {
   'class-not-found': '削除するクラスが見つかりません',
   'has-fields': 'フィールドを持つクラスは削除できません。先にフィールドを別のクラスへ移してください',
+  'has-code': '処理が残っているクラスは削除できません。先にメソッドを別のクラスへ移してください',
 };
 
 const DELETE_FILE_ERROR_MESSAGES: Record<DeleteFileError, string> = {
   'file-not-found': '削除するファイルが見つかりません',
   'last-file': '最後の1ファイルは削除できません',
   'has-fields': 'フィールドを持つクラスがあるファイルは削除できません。先にフィールドを別のクラスへ移してください',
+  'has-code': '処理が残っているクラスがあるファイルは削除できません。先にメソッドを別のクラスへ移してください',
 };
 
 const DELETE_METHOD_ERROR_MESSAGES: Record<DeleteMethodError, string> = {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { findMethod, type Codebase } from './Codebase';
+import { findMethod, mapClasses, type Codebase } from './Codebase';
 import { deleteClass } from './deleteClass';
 import { extractMethod } from './extractMethod';
 import { sampleCodebase } from './testFixtures';
@@ -22,6 +22,12 @@ function extractedIntoOwnClass(): Codebase {
       { ...taxFile, classes: [...taxFile.classes, { id: 'class-tax-logic', name: 'TaxLogic', methods: [taxMethod] }] },
     ],
   };
+}
+
+function makeTaxLogicPublic(codeClass: Codebase['files'][number]['classes'][number]) {
+  if (codeClass.id !== 'class-tax-logic') return codeClass;
+  const methods = codeClass.methods.map((method) => ({ ...method, visibility: 'public' as const }));
+  return { ...codeClass, methods };
 }
 
 describe('deleteClass', () => {
@@ -48,6 +54,57 @@ describe('deleteClass', () => {
     expect(codebase).toEqual(sampleCodebase());
   });
 
+  it('空実装だけを持つクラスは削除できる', () => {
+    // Arrange
+    const base = sampleCodebase();
+    const codebase: Codebase = { files: [base.files[0], { ...base.files[1], classes: [{ ...base.files[1].classes[0], methods: [{ id: 'method-stub', name: 'stub', visibility: 'public', fragments: [{ id: 'f-stub', label: 'stub', lines: 2, responsibility: 'misc', stub: true }] }] }] }] };
+    // Act
+    const result = deleteClass(codebase, 'class-tax');
+    // Assert
+    expect(result.ok).toBe(true);
+  });
+
+  it('本物の処理が残るクラスは削除できない', () => {
+    // Arrange
+    const codebase = sampleCodebase();
+    // Act
+    const result = deleteClass(codebase, 'class-order');
+    // Assert
+    expect(result).toEqual({ ok: false, error: 'has-code' });
+  });
+
+  it('public にした切り出しメソッドは戻らず、処理も失わない', () => {
+    // Arrange
+    const base = extractedIntoOwnClass();
+    const codebase = mapClasses(base, makeTaxLogicPublic);
+    const snapshot = structuredClone(codebase);
+    // Act
+    const result = deleteClass(codebase, 'class-tax-logic');
+    // Assert
+    expect(result).toEqual({ ok: false, error: 'has-code' });
+    expect(codebase).toEqual(snapshot);
+  });
+
+  it('契約メソッドを持つクラスは削除できない', () => {
+    // Arrange
+    const base = sampleCodebase();
+    const codebase: Codebase = { files: [base.files[0], { ...base.files[1], classes: [{ ...base.files[1].classes[0], methods: [{ id: 'contract', name: 'contract', visibility: 'public', fragments: [] }] }] }] };
+    // Act
+    const result = deleteClass(codebase, 'class-tax');
+    // Assert
+    expect(result).toEqual({ ok: false, error: 'has-code' });
+  });
+
+  it('空実装と本物の処理が混ざるクラスは削除できない', () => {
+    // Arrange
+    const base = sampleCodebase();
+    const codebase: Codebase = { files: [base.files[0], { ...base.files[1], classes: [{ ...base.files[1].classes[0], methods: [base.files[0].classes[0].methods[0], { id: 'stub', name: 'stub', visibility: 'public', fragments: [{ id: 'stub-f', label: 'stub', lines: 1, responsibility: 'misc', stub: true }] }] }] }] };
+    // Act
+    const result = deleteClass(codebase, 'class-tax');
+    // Assert
+    expect(result).toEqual({ ok: false, error: 'has-code' });
+  });
+
   it('切り出したメソッドを含むクラスを削除すると、呼び出し元の元のメソッドに処理が戻ってから消える', () => {
     // Arrange
     const codebase = extractedIntoOwnClass();
@@ -66,7 +123,7 @@ describe('deleteClass', () => {
     expect(result.value.files[1].classes.some((codeClass) => codeClass.id === 'class-tax-logic')).toBe(false);
   });
 
-  it('呼び出し元も削除対象の同じクラスにある場合は、戻さずそのまま消える', () => {
+  it('呼び出し元も削除対象の同じクラスにある場合は処理が残るため削除できない', () => {
     // Arrange
     const extracted = extractMethod(sampleCodebase(), {
       sourceMethodId: 'method-place',
@@ -80,8 +137,7 @@ describe('deleteClass', () => {
     const result = deleteClass(extracted.value, 'class-order');
 
     // Assert
-    if (!result.ok) throw new Error(result.error);
-    expect(result.value.files[0].classes).toEqual([]);
+    expect(result).toEqual({ ok: false, error: 'has-code' });
   });
 
   it('存在しないクラスを指定するとエラーになる', () => {
@@ -115,12 +171,10 @@ describe('deleteClass', () => {
   it('フィールドを移し終えたクラス(fieldsが空配列)は削除できる', () => {
     // Arrange
     const base = sampleCodebase();
-    const codebase: Codebase = {
-      files: [{ ...base.files[0], classes: [{ ...base.files[0].classes[0], fields: [] }] }, base.files[1]],
-    };
+    const codebase: Codebase = { files: [base.files[0], { ...base.files[1], classes: [{ ...base.files[1].classes[0], fields: [] }] }] };
 
     // Act
-    const result = deleteClass(codebase, 'class-order');
+    const result = deleteClass(codebase, 'class-tax');
 
     // Assert
     expect(result.ok).toBe(true);

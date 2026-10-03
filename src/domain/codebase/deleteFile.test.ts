@@ -28,6 +28,58 @@ describe('deleteFile', () => {
     expect(codebase).toEqual(sampleCodebase());
   });
 
+  it('本物の処理を持つクラスがあるファイルは削除できない', () => {
+    // Arrange
+    const codebase = sampleCodebase();
+    // Act
+    const result = deleteFile(codebase, 'file-order');
+    // Assert
+    expect(result).toEqual({ ok: false, error: 'has-code' });
+  });
+
+  it('public にした切り出しメソッドがあるファイルは拒み、入力を変更しない', () => {
+    // Arrange
+    const extracted = extractMethod(sampleCodebase(), {
+      sourceMethodId: 'method-place', fragmentIds: ['f-tax'], newMethodId: 'method-tax', newMethodName: 'calculateTax',
+    });
+    if (!extracted.ok) throw new Error(extracted.error);
+    const [orderFile, taxFile] = extracted.value.files;
+    const [orderClass] = orderFile.classes;
+    const [placeMethod, taxMethod] = orderClass.methods;
+    const codebase: Codebase = {
+      files: [
+        { ...orderFile, classes: [{ ...orderClass, methods: [placeMethod] }] },
+        { ...taxFile, classes: [...taxFile.classes, { id: 'class-tax-logic', name: 'TaxLogic', methods: [{ ...taxMethod, visibility: 'public' }] }] },
+      ],
+    };
+    const snapshot = structuredClone(codebase);
+    // Act
+    const result = deleteFile(codebase, 'file-tax');
+    // Assert
+    expect(result).toEqual({ ok: false, error: 'has-code' });
+    expect(codebase).toEqual(snapshot);
+  });
+
+  it('空実装だけを持つクラスがあるファイルは削除できる', () => {
+    // Arrange
+    const base = sampleCodebase();
+    const codebase: Codebase = { files: [base.files[0], { ...base.files[1], classes: [{ ...base.files[1].classes[0], methods: [{ id: 'stub', name: 'stub', visibility: 'public', fragments: [{ id: 'stub-f', label: 'stub', lines: 1, responsibility: 'misc', stub: true }] }] }] }] };
+    // Act
+    const result = deleteFile(codebase, 'file-tax');
+    // Assert
+    expect(result.ok).toBe(true);
+  });
+
+  it('ファイル内の2つ目のクラスに処理があれば削除できない', () => {
+    // Arrange
+    const base = sampleCodebase();
+    const codebase: Codebase = { files: [{ ...base.files[1], classes: [base.files[1].classes[0], { id: 'class-extra', name: 'Extra', methods: base.files[0].classes[0].methods }] }, base.files[0]] };
+    // Act
+    const result = deleteFile(codebase, 'file-tax');
+    // Assert
+    expect(result).toEqual({ ok: false, error: 'has-code' });
+  });
+
   it('切り出したメソッドを含むクラスがあるファイルを削除すると、呼び出し元に処理が戻ってから消える', () => {
     // Arrange: 呼び出し元(file-order)とは別のfile-taxに、抽出したメソッドを持つクラスを置く
     const extracted = extractMethod(sampleCodebase(), {

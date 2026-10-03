@@ -441,6 +441,8 @@ describe('エラーメッセージ', () => {
       describeMoveFieldError('duplicate-field-name'),
       describeDeleteClassError('has-fields'),
       describeDeleteFileError('has-fields'),
+      describeDeleteClassError('has-code'),
+      describeDeleteFileError('has-code'),
       describeChangeVisibilityError('contract-method'),
       describeChangeVisibilityError('widening-not-needed'),
     ];
@@ -462,6 +464,8 @@ describe('エラーメッセージ', () => {
       '移動先に同じ名前のフィールドがあります',
       'フィールドを持つクラスは削除できません。先にフィールドを別のクラスへ移してください',
       'フィールドを持つクラスがあるファイルは削除できません。先にフィールドを別のクラスへ移してください',
+      '処理が残っているクラスは削除できません。先にメソッドを別のクラスへ移してください',
+      '処理が残っているクラスがあるファイルは削除できません。先にメソッドを別のクラスへ移してください',
       '中身のないメソッド(インターフェースの約束)の可視性は変えられません',
       'public は他のクラスから、protected は子クラスから呼ばれているメソッドにだけ選べます',
     ]);

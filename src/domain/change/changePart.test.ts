@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { TRAY_FILE_ID } from '../blank/tray';
-import { deleteClass } from '../codebase/deleteClass';
 import { moveMethod } from '../codebase/moveMethod';
 import { sampleCodebase } from '../codebase/testFixtures';
 import { changeKindOf, type ChangeRequest } from './ChangeRequest';
@@ -61,20 +60,20 @@ describe('withChangePart', () => {
 });
 
 describe('isChangePartPlaced', () => {
-  it('置き場にある間は false、クラスへ移すと true、そのクラスを消すと false', () => {
+  it('置き場にある間は false、クラスへ移すと true、置き場へ戻すと false', () => {
     // Arrange
     const start = withChangePart(sampleCodebase(), request);
 
     // Act
     const moved = moveMethod(start, 'method-part-req-tax', 'class-tax');
     if (!moved.ok) throw new Error('成功するはず');
-    const deleted = deleteClass(moved.value, 'class-tax');
-    if (!deleted.ok) throw new Error('成功するはず');
+    const returned = moveMethod(moved.value, 'method-part-req-tax', 'class-blank-tray');
+    if (!returned.ok) throw new Error('成功するはず');
 
     // Assert
     expect(isChangePartPlaced(start, request)).toBe(false);
     expect(isChangePartPlaced(moved.value, request)).toBe(true);
-    expect(isChangePartPlaced(deleted.value, request)).toBe(false);
+    expect(isChangePartPlaced(returned.value, request)).toBe(false);
   });
 });
 
