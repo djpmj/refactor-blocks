@@ -74,6 +74,9 @@ jobs:
                `refusing to allow a GitHub App to create or update workflow ... without
                'workflows' permission` として必ず失敗するため、失敗すると分かっている操作を
                試行しない。承認コメントのみ投稿し、人が手動でマージする)。
+               マージしたPRに対応する `docs/specs/<slug>.md` があれば、`docs/specs/implemented.md` の
+               「## 一覧」表に1行追加してコミットに含める(`.claude/commands/review-pr.md` 手順5参照。
+               仕様書が無いPRではこの追記をしない)。
                続けて、何を確認してどう判断したかを `docs/review-pr/LOG.md` の書式(ファイル冒頭、
                自動マージした場合/`.github/workflows/`を含み見送った場合の2パターンがある)に従って
                「## ログ一覧」見出し直後に追記する。記録が30件を超えていたら、古いものから

@@ -43,6 +43,11 @@ allowed-tools: Read, Glob, Grep, Bash(git:*), Bash(npm:*), Bash(gh pr:*), Bash(g
      (`--body` にレビュー要約を残すことで、承認コメントの代わりにする)
    - 関連Issueが自動クローズされていなければ(`gh issue view <issue番号>` で確認)、
      `gh issue close <issue番号>` で閉じる
+   - マージしたPRに対応する `docs/specs/<slug>.md` があれば、`docs/specs/implemented.md` の
+     「## 一覧」表に `| [<slug>](<slug>.md) | <機能の一言説明> |` の形式で1行追加し(末尾に追記)、
+     `master` にいることを確認してから(手順2参照)`git add docs/specs/implemented.md` し
+     「<slug>を実装済み一覧に追加」のような日本語コミットメッセージでコミット・push する。
+     仕様書が無いPR(dependabotの依存更新・プロセス文書のみの変更など)はこの手順を行わない
    - `gh pr merge` が「ローカルブランチの削除に失敗した」エラーを返しても、PRのマージ自体
      (`gh pr view <番号> --json state,mergedAt` で `MERGED` を確認)が成功していればよい。
      そのローカルブランチがgit worktreeで別ディレクトリにチェックアウトされているとき
