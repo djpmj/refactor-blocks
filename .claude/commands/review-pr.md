@@ -3,12 +3,22 @@ description: プルリクエストの内容をレビューし、実装への指�
 allowed-tools: Read, Glob, Grep, Bash(git:*), Bash(npm:*), Bash(gh pr:*), Bash(gh issue:*)
 ---
 
-`$ARGUMENTS` で渡されたPR番号(無ければユーザーに尋ねる)を、`.claude/agents/evaluator.md` と
+`$ARGUMENTS` で渡されたPR番号を、`.claude/agents/evaluator.md` と
 同じ観点(仕様との整合性・DDDレイヤー境界・lint/testの実際の実行・ponytail観点の過剰設計チェック)で
-**独立した立場**でレビューし、問題が無ければマージします。
+**独立した立場**でレビューし、問題が無ければマージします。PR番号が指定されていなければ、
+オープンな全PRを対象にします(下記手順0)。
 
 ## 手順
 
+0. **PR番号が指定されていないとき**: `gh pr list --state open --json number,title,headRefName,isDraft,updatedAt`
+   でオープンなPRを一覧する。ドラフトPRは対象外にする。対象PRが無ければ何もせず終了する。
+   各PRについて `gh pr view <番号> --json reviews,commits` を見て、このレビュー
+   (Claude Code経由のレビュー、または `.github/workflows/review-pr.yml` による自動レビュー)が
+   現在の最新コミットに対して既に行われているかを確認する。**前回レビューで指摘(blocker)した後、
+   それに対応する新しいコミットが無いPRはスキップしてよい**(一度指摘して対応されていない内容を
+   何度も同じように指摘しない)。残ったPRを番号・タイトルの一覧でユーザーに見せ、1件ずつ
+   下記の手順1〜6を実行する。
+   PR番号が指定されているときはこの手順を飛ばし、そのPR1件だけに手順1〜6を適用する。
 1. `gh pr view <番号> --json number,title,headRefName,body` でPR情報を取得する。
    本文に `Closes #<issue番号>` があれば `gh issue view <issue番号>` でIssue本文(仕様)も取得する。
    `docs/specs/<slug>.md` が存在すればそちらも仕様として読む。
@@ -20,12 +30,12 @@ allowed-tools: Read, Glob, Grep, Bash(git:*), Bash(npm:*), Bash(gh pr:*), Bash(g
    指摘は `.claude/agents/evaluator.md` の出力形式(重大度 blocker/suggestion・該当ファイル:行・
    問題の内容・推奨対応)でまとめる。
 
-5. **blockerが無い場合**:
-   - 判定(合格)と指摘内容(suggestionがあれば併記)をユーザーに報告し、マージしてよいか確認する
-   - 承認されたら `gh pr review <番号> --approve --body "<要約>"` のうえ、
+5. **blockerが無い場合**: 確認を取らずそのまま進めてよい。
+   - `gh pr review <番号> --approve --body "<要約>"` のうえ、
      `gh pr merge <番号> --squash --delete-branch` でマージする
    - 関連Issueが自動クローズされていなければ(`gh issue view <issue番号>` で確認)、
-     ユーザーに確認のうえ `gh issue close <issue番号>` で閉じる
+     `gh issue close <issue番号>` で閉じる
+   - 判定(合格)と指摘内容(suggestionがあれば併記)・マージ結果をユーザーに報告する(事後報告でよい)
 
 6. **blockerがある場合**:
    - マージしない。指摘内容をユーザーに提示し、PRに投稿してよいか確認したうえで
@@ -37,5 +47,6 @@ allowed-tools: Read, Glob, Grep, Bash(git:*), Bash(npm:*), Bash(gh pr:*), Bash(g
 - レビューの指摘はIssue・仕様書に書かれた受け入れ基準と、`CLAUDE.md` の既存ルールに基づいて行う
   (個人的な好みで不合格にしない)。
 - コードの修正は行わない(指摘のみ。修正は `/implement` の修正ループで行う)。
-- レビューコメントの投稿・マージ・Issueのクローズは、いずれもユーザーに確認してから行う
+- **blockerが無い場合の承認・マージ・Issueクローズはユーザーに確認せずそのまま実行してよい**
+  (結果は事後報告する)。**blockerがある場合**の指摘コメント投稿は、従来どおりユーザーに確認してから行う
   (無断で実行しない)。
