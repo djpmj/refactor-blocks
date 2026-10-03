@@ -36,3 +36,5 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [extends-interface-loophole](extends-interface-loophole.md) | インターフェース役を extends にすると「実装漏れ」の採点をすり抜ける抜け道を塞ぐ |
 | [concrete-superclass-loophole](concrete-superclass-loophole.md) | 具象クラスを extends して契約の実装を「借りる」抜け道を塞ぐ |
 | [class-code-preview-tab](class-code-preview-tab.md) | メソッドエディタにコードプレビュータブを追加する |
+| [over-split-scoring](over-split-scoring.md) | 「やりすぎ」検知(極小メソッド・極小クラスの減点) |
+| [method-editor-tab-style](method-editor-tab-style.md) | メソッドエディタの「編集/コード」タブに見た目のスタイルを当てる |
