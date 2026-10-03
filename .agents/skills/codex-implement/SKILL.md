@@ -5,13 +5,13 @@ description: Implement a GitHub issue or pull request review feedback using Code
 
 # Implement an issue or PR feedback
 
-Use `$codex-implement <issue-or-pr-number>` to start this workflow. If no number is provided, ask for one.
+Use `$codex-implement <issue-or-pr-number>` to start this workflow. Prioritize feedback on an existing PR over implementing new issue work. If the supplied number is an issue, first look for a linked PR and address its review and conversation feedback; if no PR exists, implement the issue. If no number is provided, ask for one.
 
 The workflow runs in the current worktree. Codex CLI must perform both implementation and self review. Do not substitute your own code changes or review verdict for Codex's work.
 
 ## Steps
 
-1. Resolve the supplied number and gather the issue acceptance criteria and any linked PR feedback.
+1. Resolve the supplied number and check for an existing PR before starting issue implementation. When a PR exists, its review and conversation feedback takes priority; also gather the linked issue's acceptance criteria when available. Only proceed as issue-only work when no linked PR exists.
    - Try `gh pr view <number> --json number,title,body,headRefName,closingIssuesReferences,reviews,comments`.
    - If it is a PR, use `closingIssuesReferences` to identify its issue, then run `gh issue view <issue-number> --json title,body`.
    - If it is not a PR, run `gh issue view <number> --json title,body`, then `gh issue develop <number> --list` to find a branch. Search for its PR with `gh pr list --head <branch> --json number,title,headRefName,closingIssuesReferences,reviews,comments`.
