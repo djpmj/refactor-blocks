@@ -37,6 +37,159 @@ describe('findStubMethods', () => {
 });
 
 describe('findContractViolations', () => {
+  it('具象のextends先祖から借りた契約メソッドを減点する', () => {
+    // Arrange
+    const iface: CodeClass = { id: 'class-i', name: 'I', methods: [contractMethod('a', 'a'), contractMethod('b', 'b')] };
+    const base: CodeClass = { id: 'class-p', name: 'P', interfaceIds: ['class-i'], methods: [realMethod('pa', 'a'), realMethod('pb', 'b')] };
+    const child: CodeClass = { id: 'class-c', name: 'C', superclassId: 'class-p', interfaceIds: ['class-i'], methods: [realMethod('ca', 'a')] };
+
+    // Act
+    const result = findContractViolations(codebaseOf([iface, base, child]));
+
+    // Assert
+    expect(result).toEqual(['class-c']);
+  });
+
+  it('具象先祖の実装がインターフェース経由で届けば借用を減点する', () => {
+    // Arrange
+    const iface: CodeClass = { id: 'class-i', name: 'I', methods: [contractMethod('a', 'a')] };
+    const base: CodeClass = { id: 'class-p', name: 'P', interfaceIds: ['class-i'], methods: [realMethod('pa', 'a')] };
+    const child: CodeClass = { id: 'class-c', name: 'C', superclassId: 'class-p', methods: [] };
+
+    // Act
+    const result = findContractViolations(codebaseOf([iface, base, child]));
+
+    // Assert
+    expect(result).toEqual(['class-c']);
+  });
+
+  it('借りた複数の契約メソッドを契約名ごとに数える', () => {
+    // Arrange
+    const iface: CodeClass = { id: 'class-i', name: 'I', methods: [contractMethod('a', 'a'), contractMethod('b', 'b')] };
+    const base: CodeClass = { id: 'class-p', name: 'P', interfaceIds: ['class-i'], methods: [realMethod('pa', 'a'), realMethod('pb', 'b')] };
+    const child: CodeClass = { id: 'class-c', name: 'C', superclassId: 'class-p', methods: [] };
+
+    // Act
+    const result = findContractViolations(codebaseOf([iface, base, child]));
+
+    // Assert
+    expect(result).toEqual(['class-c', 'class-c']);
+  });
+
+  it('子クラス自身が契約メソッドを実装していれば借用にしない', () => {
+    // Arrange
+    const iface: CodeClass = { id: 'class-i', name: 'I', methods: [contractMethod('a', 'a'), contractMethod('b', 'b')] };
+    const base: CodeClass = { id: 'class-p', name: 'P', interfaceIds: ['class-i'], methods: [realMethod('pa', 'a'), realMethod('pb', 'b')] };
+    const child: CodeClass = { id: 'class-c', name: 'C', superclassId: 'class-p', interfaceIds: ['class-i'], methods: [realMethod('ca', 'a'), realMethod('cb', 'b')] };
+
+    // Act
+    const result = findContractViolations(codebaseOf([iface, base, child]));
+
+    // Assert
+    expect(result).toEqual([]);
+  });
+
+  it('抽象役のextends先祖から借りた契約は減点しない', () => {
+    // Arrange
+    const iface: CodeClass = { id: 'class-i', name: 'I', methods: [contractMethod('a', 'a')] };
+    const base: CodeClass = { id: 'class-p', name: 'P', interfaceIds: ['class-i'], methods: [realMethod('pa', 'a'), contractMethod('template', 'template', 'protected')] };
+    const child: CodeClass = { id: 'class-c', name: 'C', superclassId: 'class-p', methods: [] };
+
+    // Act
+    const result = findContractViolations(codebaseOf([iface, base, child]));
+
+    // Assert
+    expect(result).toEqual([]);
+  });
+
+  it('extends鎖の各段で借りた契約を近い所有者ごとに数える', () => {
+    // Arrange
+    const iface: CodeClass = { id: 'class-i', name: 'I', methods: [contractMethod('a', 'a'), contractMethod('b', 'b')] };
+    const base: CodeClass = { id: 'class-p', name: 'P', interfaceIds: ['class-i'], methods: [realMethod('pa', 'a'), realMethod('pb', 'b')] };
+    const middle: CodeClass = { id: 'class-q', name: 'Q', superclassId: 'class-p', methods: [realMethod('qa', 'a')] };
+    const child: CodeClass = { id: 'class-c', name: 'C', superclassId: 'class-q', methods: [] };
+
+    // Act
+    const result = findContractViolations(codebaseOf([iface, base, middle, child]));
+
+    // Assert
+    expect(result).toEqual(['class-q', 'class-c', 'class-c']);
+  });
+
+  it('最も近い所有者が抽象役なら遠い具象の同名メソッドでも借用にしない', () => {
+    // Arrange
+    const iface: CodeClass = { id: 'class-i', name: 'I', methods: [contractMethod('a', 'a')] };
+    const concrete: CodeClass = { id: 'class-p', name: 'P', interfaceIds: ['class-i'], methods: [realMethod('pa', 'a')] };
+    const abstract: CodeClass = { id: 'class-q', name: 'Q', superclassId: 'class-p', methods: [realMethod('qa', 'a'), contractMethod('template', 'template', 'protected')] };
+    const child: CodeClass = { id: 'class-c', name: 'C', superclassId: 'class-q', methods: [] };
+
+    // Act
+    const result = findContractViolations(codebaseOf([iface, concrete, abstract, child]));
+
+    // Assert
+    expect(result).toEqual([]);
+  });
+
+  it('extendsしたインターフェース役の契約を検査する', () => {
+    const iface: CodeClass = { id: 'class-i', name: 'I', methods: [contractMethod('a', 'a'), contractMethod('b', 'b')] };
+    const impl: CodeClass = { id: 'class-c', name: 'C', superclassId: 'class-i', methods: [realMethod('a-c', 'a')] };
+    expect(findContractViolations(codebaseOf([iface, impl]))).toEqual(['class-c']);
+  });
+
+  it('extendsしたインターフェース役の契約を実装していれば違反にしない', () => {
+    const iface: CodeClass = { id: 'class-i', name: 'I', methods: [contractMethod('a', 'a'), contractMethod('b', 'b')] };
+    const impl: CodeClass = { id: 'class-c', name: 'C', superclassId: 'class-i', methods: [realMethod('a-c', 'a'), realMethod('b-c', 'b')] };
+    expect(findContractViolations(codebaseOf([iface, impl]))).toEqual([]);
+  });
+
+  it('extendsしたインターフェース役の契約は空実装でも満たす', () => {
+    const iface: CodeClass = { id: 'class-i', name: 'I', methods: [contractMethod('a', 'a')] };
+    const impl: CodeClass = { id: 'class-c', name: 'C', superclassId: 'class-i', methods: [{ id: 'a-c', name: 'a', visibility: 'public', fragments: [{ id: 'f', label: 'stub', lines: 1, responsibility: 'x', stub: true }] }] };
+    expect(findContractViolations(codebaseOf([iface, impl]))).toEqual([]);
+  });
+
+  it('インターフェース役の先祖の契約名を実装済みに数えない', () => {
+    const iface: CodeClass = { id: 'class-i', name: 'I', methods: [contractMethod('a', 'a'), contractMethod('b', 'b')] };
+    const impl: CodeClass = { id: 'class-c', name: 'C', superclassId: 'class-i', methods: [realMethod('run', 'run')] };
+    expect(findContractViolations(codebaseOf([iface, impl]))).toEqual(['class-c', 'class-c']);
+  });
+
+  it('Bは実装漏れ、Cは具象の先祖Bからの借用で両方減点される', () => {
+    const iface: CodeClass = { id: 'class-i', name: 'I', methods: [contractMethod('a', 'a'), contractMethod('b', 'b')] };
+    const base: CodeClass = { id: 'class-b', name: 'B', superclassId: 'class-i', methods: [realMethod('a-b', 'a')] };
+    const child: CodeClass = { id: 'class-c', name: 'C', superclassId: 'class-b', methods: [realMethod('b-c', 'b')] };
+    expect(findContractViolations(codebaseOf([iface, base, child]))).toEqual(['class-b', 'class-c']);
+  });
+
+  it('implementsとextendsで同じ契約元が重複しても一度だけ調べる', () => {
+    const iface: CodeClass = { id: 'class-i', name: 'I', methods: [contractMethod('a', 'a'), contractMethod('b', 'b')] };
+    const impl: CodeClass = { id: 'class-c', name: 'C', superclassId: 'class-i', interfaceIds: ['class-i'], methods: [realMethod('a-c', 'a')] };
+    expect(findContractViolations(codebaseOf([iface, impl]))).toEqual(['class-c']);
+  });
+
+  it('インターフェース役同士のextendsは実装漏れを調べない', () => {
+    const iface: CodeClass = { id: 'class-i', name: 'I', methods: [contractMethod('a', 'a')] };
+    const child: CodeClass = { id: 'class-j', name: 'J', superclassId: 'class-i', methods: [contractMethod('x', 'x')] };
+    expect(findContractViolations(codebaseOf([iface, child]))).toEqual([]);
+  });
+
+  it('インターフェース役でない先祖は契約元として調べない', () => {
+    const base: CodeClass = { id: 'class-base', name: 'Base', methods: [realMethod('a-base', 'a')] };
+    const child: CodeClass = { id: 'class-c', name: 'C', superclassId: 'class-base', methods: [realMethod('other', 'other')] };
+    expect(findContractViolations(codebaseOf([base, child]))).toEqual([]);
+  });
+
+  it('extends先祖が削除されていても落ちない', () => {
+    const child: CodeClass = { id: 'class-c', name: 'C', superclassId: 'deleted', methods: [realMethod('other', 'other')] };
+    expect(() => findContractViolations(codebaseOf([child]))).not.toThrow();
+  });
+
+  it('extendsが循環していても終了する', () => {
+    const first: CodeClass = { id: 'class-a', name: 'A', superclassId: 'class-b', methods: [realMethod('a', 'a')] };
+    const second: CodeClass = { id: 'class-b', name: 'B', superclassId: 'class-a', methods: [realMethod('b', 'b')] };
+    expect(() => findContractViolations(codebaseOf([first, second]))).not.toThrow();
+  });
+
   it('実装先の契約をすべて同名で持っていれば空', () => {
     // Arrange
     const iface: CodeClass = { id: 'class-i', name: 'I', methods: [contractMethod('m-a', 'a'), contractMethod('m-b', 'b')] };
@@ -86,14 +239,14 @@ describe('findContractViolations', () => {
     expect(result).toEqual([]);
   });
 
-  it('extendsの先祖が持っていれば数えない', () => {
+  it('抽象役のextends先祖が持っていれば数えない', () => {
     // Arrange
     const iface: CodeClass = { id: 'class-i', name: 'I', methods: [contractMethod('m-a', 'a'), contractMethod('m-b', 'b')] };
     const base: CodeClass = {
       id: 'class-base',
       name: 'Base',
       interfaceIds: ['class-i'],
-      methods: [realMethod('method-base-a', 'a'), realMethod('method-base-b', 'b')],
+      methods: [realMethod('method-base-a', 'a'), realMethod('method-base-b', 'b'), contractMethod('template', 'template', 'protected')],
     };
     const impl: CodeClass = {
       id: 'class-c',

@@ -1,4 +1,4 @@
-import { allClasses, findClass, isInterfaceLike, isStubMethod, parentIds, type CodeClass, type Codebase } from '../codebase/Codebase';
+import { allClasses, extendsChainIds, findClass, isAbstractLike, isInterfaceLike, isStubMethod, parentIds, type CodeClass, type Codebase } from '../codebase/Codebase';
 
 /** isStubMethodなメソッドのIDを出現順に返す。 */
 export function findStubMethods(codebase: Codebase): string[] {
@@ -8,31 +8,46 @@ export function findStubMethods(codebase: Codebase): string[] {
     .map((method) => method.id);
 }
 
-/** クラス自身と、extends(superclassId)を辿った先祖が持つメソッド名。輪になっていても訪問済みで止まる。 */
+/** クラス自身と、実装を持つextends先祖が持つメソッド名。 */
 function extendsChainMethodNames(codebase: Codebase, classId: string): Set<string> {
   const names = new Set<string>();
-  const visited = new Set<string>();
-  let current: CodeClass | undefined = findClass(codebase, classId);
-  while (current !== undefined && !visited.has(current.id)) {
-    visited.add(current.id);
+  for (const id of extendsChainIds(codebase, classId)) {
+    const current = findClass(codebase, id);
+    if (current === undefined || (id !== classId && isInterfaceLike(current))) continue;
     for (const method of current.methods) names.add(method.name);
-    current = current.superclassId === undefined ? undefined : findClass(codebase, current.superclassId);
   }
   return names;
 }
 
+/** implementsした契約元に、具象クラスならextends先祖のインターフェース役も順に加える。 */
+function contractSourcesOf(codebase: Codebase, codeClass: CodeClass): CodeClass[] {
+  const sources = new Map<string, CodeClass>();
+  for (const id of codeClass.interfaceIds ?? []) {
+    const source = findClass(codebase, id);
+    if (source !== undefined && isInterfaceLike(source)) sources.set(source.id, source);
+  }
+  if (isInterfaceLike(codeClass)) return [...sources.values()];
+  const chainIds = extendsChainIds(codebase, codeClass.id);
+  chainIds.delete(codeClass.id);
+  for (const id of chainIds) {
+    const source = findClass(codebase, id);
+    if (source !== undefined && isInterfaceLike(source)) sources.set(source.id, source);
+  }
+  return [...sources.values()];
+}
+
 /**
- * 実装漏れ: クラスが implements しているインターフェース役のメソッド名のうち、自分と extends の先祖の
- * どれも同名のメソッドを持たないもの1つにつき、実装クラスのID。空実装も「持っている」に数える。
+ * 実装漏れ: implementsしたインターフェース役と、具象クラスならextends先祖のインターフェース役の契約を調べる。
+ * 自分とextends先祖の実装メソッド名が契約に無いもの1つにつきクラスIDを返す。空実装も「持っている」に数える。
+ * インターフェース役自身のextends先祖契約は調べず、契約メソッド自体も実装として数えない。
  */
 function findMissingImplementations(codebase: Codebase): string[] {
   const violations: string[] = [];
   for (const codeClass of allClasses(codebase)) {
     const ownNames = extendsChainMethodNames(codebase, codeClass.id);
-    for (const interfaceId of codeClass.interfaceIds ?? []) {
-      const interfaceClass = findClass(codebase, interfaceId);
-      if (interfaceClass === undefined || !isInterfaceLike(interfaceClass)) continue;
-      for (const method of interfaceClass.methods) {
+    for (const source of contractSourcesOf(codebase, codeClass)) {
+      // ponytail: extends の途中のクラスも契約をすべて持つ必要がある(抽象クラスを表す項目が無いため)。abstract を表せるようになったら、子孫が持てば数えない形に見直す
+      for (const method of source.methods) {
         if (!ownNames.has(method.name)) violations.push(codeClass.id);
       }
     }
@@ -88,7 +103,47 @@ function findUndeclaredImplementations(codebase: Codebase): string[] {
   return violations;
 }
 
-/** 実装漏れ・インターフェースの外の契約メソッド・実装の宣言漏れをまとめて返す(1件 = 1要素)。 */
+function nearestOwnerOf(codebase: Codebase, classId: string, name: string): CodeClass | undefined {
+  const visited = new Set<string>([classId]);
+  let current = findClass(codebase, classId);
+  while (current?.superclassId !== undefined && !visited.has(current.superclassId)) {
+    visited.add(current.superclassId);
+    current = findClass(codebase, current.superclassId);
+    if (current?.methods.some((method) => method.name === name)) return current;
+  }
+  return undefined;
+}
+
+function reachableContractNames(codebase: Codebase, classId: string): Set<string> {
+  const names = new Set<string>();
+  for (const id of reachableParentIds(codebase, classId)) {
+    const parent = findClass(codebase, id);
+    if (parent === undefined || !isInterfaceLike(parent)) continue;
+    for (const method of parent.methods) names.add(method.name);
+  }
+  return names;
+}
+
+function isBorrowedContract(codebase: Codebase, codeClass: CodeClass, name: string): boolean {
+  if (codeClass.methods.some((method) => method.name === name)) return false;
+  const owner = nearestOwnerOf(codebase, codeClass.id, name);
+  return owner !== undefined && !isInterfaceLike(owner) && !isAbstractLike(owner);
+}
+
+function findBorrowedContracts(codebase: Codebase): string[] {
+  // ponytail: 抽象かどうかは isInterfaceLike / isAbstractLike で推すだけ(abstract を表す項目が無い)。protected の空宣言を足して抽象役に見せかける手は塞がない。abstract を表せるようになったらそれで見る
+  const violations: string[] = [];
+  for (const codeClass of allClasses(codebase)) {
+    if (isInterfaceLike(codeClass)) continue;
+    const contractNames = reachableContractNames(codebase, codeClass.id);
+    for (const name of contractNames) {
+      if (isBorrowedContract(codebase, codeClass, name)) violations.push(codeClass.id);
+    }
+  }
+  return violations;
+}
+
+/** 実装漏れ・インターフェースの外の契約メソッド・実装の宣言漏れ・具象の先祖からの契約の借用をまとめて返す(1件 = 1要素)。 */
 export function findContractViolations(codebase: Codebase): string[] {
-  return [...findMissingImplementations(codebase), ...findContractMethodsOutsideInterfaces(codebase), ...findUndeclaredImplementations(codebase)];
+  return [...findMissingImplementations(codebase), ...findContractMethodsOutsideInterfaces(codebase), ...findUndeclaredImplementations(codebase), ...findBorrowedContracts(codebase)];
 }
