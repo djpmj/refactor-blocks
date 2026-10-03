@@ -8,6 +8,7 @@ import { findEmptyContainers, findUnusedPrivateMethods } from './leftovers';
 import { findLineLimitViolations } from './lineLimits';
 import { findLoneSuperclasses } from './loneSuperclass';
 import { findResponsibilityViolations } from './responsibilities';
+import { findThinClasses, findTrivialMethods } from './overExtraction';
 import { countedVisibilityViolations } from './visibility';
 
 export type ScoreRule =
@@ -23,7 +24,9 @@ export type ScoreRule =
   | 'contract'
   | 'feature-envy'
   | 'encapsulation'
-  | 'cohesion';
+  | 'cohesion'
+  | 'trivial-method'
+  | 'thin-class';
 
 export type ScoreDeduction = {
   readonly rule: ScoreRule;
@@ -69,6 +72,8 @@ export function scoreCodebase(
     'feature-envy': findFeatureEnvy(codebase).length,
     encapsulation: findEncapsulationViolations(codebase).length + findOpenSetters(codebase).length,
     cohesion: findLowCohesionClasses(codebase).length,
+    'trivial-method': findTrivialMethods(codebase).length,
+    'thin-class': findThinClasses(codebase).length,
   };
   const deductions = (
     [
@@ -85,6 +90,8 @@ export function scoreCodebase(
       'feature-envy',
       'encapsulation',
       'cohesion',
+      'trivial-method',
+      'thin-class',
     ] as const
   ).map((rule): ScoreDeduction => ({ rule, count: counts[rule], points: counts[rule] * POINTS_PER_VIOLATION }));
   const deducted = deductions.reduce((sum, deduction) => sum + deduction.points, 0);

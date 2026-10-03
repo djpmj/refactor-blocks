@@ -14,6 +14,8 @@ export const RULE_LABEL: Record<ScoreRule, string> = {
   'feature-envy': '他クラスのデータを触りすぎ(Feature Envy)',
   encapsulation: 'カプセル化の破れ',
   cohesion: '無関係なデータの塊が同居(凝集度が低い)',
+  'trivial-method': '極小メソッドの量産',
+  'thin-class': '役割の薄い極小クラス',
 };
 
 export function describeScore(score: Score): string {

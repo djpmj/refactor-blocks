@@ -86,6 +86,8 @@ describe('scoreCodebase', () => {
         { rule: 'feature-envy', count: 0, points: 0 },
         { rule: 'encapsulation', count: 0, points: 0 },
         { rule: 'cohesion', count: 0, points: 0 },
+        { rule: 'trivial-method', count: 0, points: 0 },
+        { rule: 'thin-class', count: 0, points: 0 },
       ],
     });
   });
@@ -241,7 +243,7 @@ describe('scoreCodebase', () => {
               id: 'class-A',
               name: 'A',
               methods: [
-                { id: 'method-run', name: 'run', visibility: 'public', fragments: [{ id: 'f-run', label: 'do', lines: 1, responsibility: 'x' }] },
+                { id: 'method-run', name: 'run', visibility: 'public', fragments: [{ id: 'f-run', label: 'do', lines: 3, responsibility: 'x' }] },
                 { id: 'method-dead', name: 'dead', visibility: 'private', fragments: [] },
               ],
             },
@@ -310,7 +312,7 @@ describe('scoreCodebase', () => {
               id: 'class-c',
               name: 'C',
               interfaceIds: ['class-i'],
-              methods: [{ id: 'method-other', name: 'other', visibility: 'public', fragments: [{ id: 'f-other', label: 'do', lines: 1, responsibility: 'x' }] }],
+              methods: [{ id: 'method-other', name: 'other', visibility: 'public', fragments: [{ id: 'f-other', label: 'do', lines: 3, responsibility: 'x' }] }],
             },
           ],
         },
@@ -341,7 +343,7 @@ describe('scoreCodebase', () => {
                   id: 'method-a',
                   name: 'run',
                   visibility: 'public',
-                  fragments: [{ id: 'f-a', label: 'do', lines: 1, responsibility: 'x', reads: ['field-b1', 'field-b2'] }],
+                  fragments: [{ id: 'f-a', label: 'do', lines: 3, responsibility: 'x', reads: ['field-b1', 'field-b2'] }],
                 },
               ],
             },
@@ -383,7 +385,7 @@ describe('scoreCodebase', () => {
                   id: 'method-a',
                   name: 'run',
                   visibility: 'public',
-                  fragments: [{ id: 'f-a', label: 'do', lines: 1, responsibility: 'x', writes: ['field-b1'] }],
+                  fragments: [{ id: 'f-a', label: 'do', lines: 3, responsibility: 'x', writes: ['field-b1'] }],
                 },
               ],
             },
@@ -451,8 +453,8 @@ describe('scoreCodebase', () => {
                 { id: 'field-city', name: 'city', visibility: 'private' },
               ],
               methods: [
-                { id: 'method-pay', name: 'calcPay', visibility: 'public', fragments: [{ id: 'f-pay', label: 'pay', lines: 1, responsibility: 'a', reads: ['field-pay'] }] },
-                { id: 'method-city', name: 'formatCity', visibility: 'public', fragments: [{ id: 'f-city', label: 'city', lines: 1, responsibility: 'a', reads: ['field-city'] }] },
+                { id: 'method-pay', name: 'calcPay', visibility: 'public', fragments: [{ id: 'f-pay', label: 'pay', lines: 3, responsibility: 'a', reads: ['field-pay'] }] },
+                { id: 'method-city', name: 'formatCity', visibility: 'public', fragments: [{ id: 'f-city', label: 'city', lines: 3, responsibility: 'a', reads: ['field-city'] }] },
               ],
             },
           ],
@@ -477,5 +479,27 @@ describe('scoreCodebase', () => {
 
     // Assert
     expect(score.total).toBe(0);
+  });
+
+  it('極小メソッドと役割の薄い極小クラスを別々に10点減点する', () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [{ id: 'file', path: 'src/file.ts', classes: [{
+        id: 'class', name: 'Tiny', methods: [{
+          id: 'method', name: 'run', visibility: 'public',
+          fragments: [{ id: 'fragment', label: 'work', lines: 1, responsibility: 'work' }],
+        }],
+      }] }],
+    };
+
+    // Act
+    const score = scoreCodebase(codebase, { ...LOOSE, dependencyLimit: 1 });
+
+    // Assert
+    expect(score.total).toBe(80);
+    expect(score.deductions.slice(-2)).toEqual([
+      { rule: 'trivial-method', count: 1, points: 10 },
+      { rule: 'thin-class', count: 1, points: 10 },
+    ]);
   });
 });

@@ -16,15 +16,14 @@ function RefactorView({ active }: Readonly<{ active: boolean }>) {
   const investigating = useGameStore((state) => state.changeSession !== null);
   useUndoRedoShortcut(active);
   return (
-    <>
-      <StagePanel />
+    <StagePanel>
       <main className="app__body">
         <section className="app__canvas" aria-label="コードベース">
           <CodebaseCanvas active={active} />
         </section>
         {investigating ? <ChangeRequestPanel /> : <MethodEditor />}
       </main>
-    </>
+    </StagePanel>
   );
 }
 
