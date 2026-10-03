@@ -143,17 +143,6 @@ function StagePanelContent({ stage, children }: Readonly<{ stage: Stage; childre
   return (
     <>
       <header className="stage-panel">
-        <button
-          type="button"
-          className="icon-button"
-          aria-expanded={sidebarOpen}
-          aria-controls="stage-sidebar"
-          aria-label={sidebarOpen ? 'サイドバーを閉じる' : 'サイドバーを開く'}
-          title={sidebarOpen ? 'サイドバーを閉じる' : 'サイドバーを開く'}
-          onClick={() => setSidebarOpen((open) => !open)}
-        >
-          {sidebarOpen ? '«' : '»'}
-        </button>
         <h1 className="stage-panel__title">{stage.title}</h1>
         <StageSelect />
         <div className="stage-panel__spacer" />
@@ -162,7 +151,7 @@ function StagePanelContent({ stage, children }: Readonly<{ stage: Stage; childre
         <ScoreBadge score={score} />
       </header>
       <CritiqueResult />
-      <div className="app__body">
+      <div className={`app__body${sidebarOpen ? ' app__body--sidebar-open' : ''}`}>
         <aside id="stage-sidebar" className="sidebar" aria-label="課題とヒント" hidden={!sidebarOpen}>
           <h2 className="sidebar__title">課題とヒント</h2>
           <p className="stage-panel__goal">
@@ -175,6 +164,17 @@ function StagePanelContent({ stage, children }: Readonly<{ stage: Stage; childre
             <p data-testid="stage-description">{stage.description}</p>
           </details>
         </aside>
+        <button
+          type="button"
+          className="sidebar-toggle"
+          aria-expanded={sidebarOpen}
+          aria-controls="stage-sidebar"
+          aria-label={sidebarOpen ? 'サイドバーを閉じる' : 'サイドバーを開く'}
+          title={sidebarOpen ? 'サイドバーを閉じる' : 'サイドバーを開く'}
+          onClick={() => setSidebarOpen((open) => !open)}
+        >
+          {sidebarOpen ? '«' : '»'}
+        </button>
         <div className="workspace">
           <ActionToolbar stage={stage} isPerfect={score.total >= 100} />
           <div className="workspace__main">{children}</div>
