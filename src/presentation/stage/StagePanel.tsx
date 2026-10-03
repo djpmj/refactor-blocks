@@ -1,12 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
-import { scoreCodebase } from '../../domain/scoring/score';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { scoreCodebase, type Score } from '../../domain/scoring/score';
 import { sampleAnswerCodebase, sampleAnswerSteps } from '../../domain/stage/sampleAnswer';
 import type { Stage, StageLevel } from '../../domain/stage/Stage';
-import { CritiquePanel } from '../critique/CritiquePanel';
+import { CritiqueButton, CritiqueResult } from '../critique/CritiquePanel';
 import { CodebasePreviewDialog } from '../preview/CodebasePreviewDialog';
 import { useGameStore } from '../store/useGameStore';
 import { describeScore } from './describeScore';
-import { HintPanel } from './HintPanel';
+import { HintList } from './HintList';
+import { HintButton } from './HintPanel';
+import { useHints } from './useHints';
 
 const LEVEL_LABEL: Record<StageLevel, string> = {
   tutorial: 'チュートリアル',
@@ -71,11 +73,23 @@ function PreviewButtons({ stage, disabled }: Readonly<{ stage: Stage; disabled: 
   );
 }
 
-/** ステージの目標と、行数・結合度・循環依存・責務の混在から出した点数を表示する。責務の中身(responsibility の値)は見せない。 */
-export function StagePanel() {
-  const stage = useGameStore((state) => state.stage);
-  // 実装中は部品置き場入りのコードなので、点数と進捗は挑戦前のコードで数える
-  const codebase = useGameStore((state) => state.changeSession?.base ?? state.codebase);
+/** 点数を丸いゲージで見せる。詳細(減点の内訳)は隣のテキストに出す。 */
+function ScoreBadge({ score }: Readonly<{ score: Score }>) {
+  const degrees = Math.max(0, Math.min(100, score.total)) * 3.6;
+  return (
+    <div className="score-badge" aria-live="polite">
+      <div className="score-badge__ring" style={{ background: `conic-gradient(var(--accent) ${String(degrees)}deg, var(--border) 0)` }}>
+        <span className="score-badge__value">{score.total}点</span>
+      </div>
+      <span className="score-badge__detail" data-testid="score">
+        {describeScore(score)}
+      </span>
+    </div>
+  );
+}
+
+/** ツールバー(キャンバスの上): 変更依頼・やり直し系・図の確認。 */
+function ActionToolbar({ stage, isPerfect }: Readonly<{ stage: Stage; isPerfect: boolean }>) {
   const resetStage = useGameStore((state) => state.resetStage);
   const undo = useGameStore((state) => state.undo);
   const redo = useGameStore((state) => state.redo);
@@ -84,50 +98,93 @@ export function StagePanel() {
   const challenged = useGameStore((state) => state.lastChangeReport !== null);
   const canUndo = useGameStore((state) => state.history.past.length > 0);
   const canRedo = useGameStore((state) => state.history.future.length > 0);
+  return (
+    <div className="toolbar stage-panel__actions">
+      <button
+        type="button"
+        className="toolbar__primary"
+        data-testid="change-request-start"
+        onClick={startChangeRequests}
+        disabled={investigating || !isPerfect}
+        title={isPerfect ? undefined : '点数が100点になると挑戦できます'}
+      >
+        {challenged ? 'もう一度挑戦' : '変更依頼に挑戦'}
+      </button>
+      <button type="button" onClick={undo} disabled={!canUndo} title="Ctrl+Z">
+        元に戻す
+      </button>
+      <button type="button" onClick={redo} disabled={!canRedo} title="Ctrl+Y">
+        やり直し
+      </button>
+      <button type="button" className="stage-panel__reset" onClick={resetStage} disabled={investigating}>
+        最初に戻す
+      </button>
+      <PreviewButtons key={stage.id} stage={stage} disabled={investigating} />
+    </div>
+  );
+}
+
+/** ステージの目標と、行数・結合度・循環依存・責務の混在から出した点数を表示する。責務の中身(responsibility の値)は見せない。 */
+function StagePanelContent({ stage, children }: Readonly<{ stage: Stage; children: ReactNode }>) {
+  // 実装中は部品置き場入りのコードなので、点数と進捗は挑戦前のコードで数える
+  const codebase = useGameStore((state) => state.changeSession?.base ?? state.codebase);
+  const investigating = useGameStore((state) => state.changeSession !== null);
   const recordProgress = useGameStore((state) => state.recordProgress);
+  // ステージを切り替えたらヒントを閉じ直す。keyで作り直すとキャンバスまで作り直してしまうので、開いた数にステージIDを添える
+  const [revealed, setRevealed] = useState({ stageId: stage.id, count: 0 });
+  // 狭い画面ではキャンバスを優先して、最初は閉じておく(描画は残し、hiddenで隠すだけ)
+  const [sidebarOpen, setSidebarOpen] = useState(() => window.matchMedia('(min-width: 1400px)').matches);
+  const revealedCount = revealed.stageId === stage.id ? revealed.count : 0;
+  const { hints, total } = useHints(stage, revealedCount);
   const score = useMemo(() => scoreCodebase(codebase, stage), [codebase, stage]);
-  const isPerfect = score.total >= 100;
   useEffect(() => {
     recordProgress(stage.id, score.total);
   }, [stage.id, score.total, recordProgress]);
   return (
-    <header className="stage-panel">
-      <StageSelect />
-      <div className="stage-panel__heading">
-        <h1 className="stage-panel__title">{stage.title}</h1>
-        <p className="stage-panel__goal">{stage.goal}</p>
-        {/* ステージを切り替えたら畳んだ状態を戻して、新しい題材の説明を開いて見せる */}
-        <details key={stage.id} className="stage-panel__description" open>
-          <summary>どんなコード?</summary>
-          <p data-testid="stage-description">{stage.description}</p>
-        </details>
-      </div>
-      <div className="stage-panel__status" data-testid="score" aria-live="polite">
-        {describeScore(score)}
-      </div>
-      <CritiquePanel disabled={investigating} />
-      <HintPanel key={stage.id} stage={stage} disabled={investigating} />
-      <div className="stage-panel__actions">
+    <>
+      <header className="stage-panel">
         <button
           type="button"
-          data-testid="change-request-start"
-          onClick={startChangeRequests}
-          disabled={investigating || !isPerfect}
-          title={isPerfect ? undefined : '点数が100点になると挑戦できます'}
+          className="icon-button"
+          aria-expanded={sidebarOpen}
+          aria-controls="stage-sidebar"
+          aria-label={sidebarOpen ? 'サイドバーを閉じる' : 'サイドバーを開く'}
+          title={sidebarOpen ? 'サイドバーを閉じる' : 'サイドバーを開く'}
+          onClick={() => setSidebarOpen((open) => !open)}
         >
-          {challenged ? 'もう一度挑戦' : '変更依頼に挑戦'}
+          {sidebarOpen ? '«' : '»'}
         </button>
-        <button type="button" onClick={undo} disabled={!canUndo} title="Ctrl+Z">
-          元に戻す
-        </button>
-        <button type="button" onClick={redo} disabled={!canRedo} title="Ctrl+Y">
-          やり直し
-        </button>
-        <button type="button" className="stage-panel__reset" onClick={resetStage} disabled={investigating}>
-          最初に戻す
-        </button>
-        <PreviewButtons key={stage.id} stage={stage} disabled={investigating} />
+        <h1 className="stage-panel__title">{stage.title}</h1>
+        <StageSelect />
+        <div className="stage-panel__spacer" />
+        <CritiqueButton disabled={investigating} />
+        <HintButton revealed={revealedCount} total={total} disabled={investigating} onReveal={() => setRevealed({ stageId: stage.id, count: revealedCount + 1 })} />
+        <ScoreBadge score={score} />
+      </header>
+      <CritiqueResult />
+      <div className="app__body">
+        <aside id="stage-sidebar" className="sidebar" aria-label="課題とヒント" hidden={!sidebarOpen}>
+          <h2 className="sidebar__title">課題とヒント</h2>
+          <p className="stage-panel__goal">
+            <strong>課題: </strong>
+            {stage.goal}
+          </p>
+          <HintList hints={hints} />
+          <details className="stage-panel__description" open>
+            <summary>どんなコード?</summary>
+            <p data-testid="stage-description">{stage.description}</p>
+          </details>
+        </aside>
+        <div className="workspace">
+          <ActionToolbar stage={stage} isPerfect={score.total >= 100} />
+          <div className="workspace__main">{children}</div>
+        </div>
       </div>
-    </header>
+    </>
   );
+}
+
+export function StagePanel({ children }: Readonly<{ children: ReactNode }>) {
+  const stage = useGameStore((state) => state.stage);
+  return <StagePanelContent stage={stage}>{children}</StagePanelContent>;
 }
