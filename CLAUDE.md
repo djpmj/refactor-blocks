@@ -82,8 +82,8 @@ Claudeはこのリポジトリでの会話・報告・コミットメッセー�
 
 開発の3つの経路(仕様ベースの開発・機能案ブレスト・auto-dev)の全体像は
 `docs/DEVELOPMENT.md` の図を参照。新機能を追加するときの進め方を `docs/specs/README.md` にまとめている。仕様設計者・実装者・評価者の
-3ロールに分けて進めるためのサブエージェント定義が `.claude/agents/` にある(Claude Codeを使う場合)。
-まとめて回したいときは `feature-harness` skill(`.claude/skills/feature-harness/SKILL.md`)を使う。
+3ロールに分けて進めるためのエージェント定義が `.claude/agents/` にある(Claude Codeを使う場合)。
+仕様からまとめて回したいときは `feature-harness` skill(`.claude/skills/feature-harness/SKILL.md`)を使い、Issue/PRや確定仕様の実装・評価には `/implement` コマンドを使う。このコマンドは独立した実装者・評価者セッションを使う。
 
 ## 自動開発(auto-dev)
 

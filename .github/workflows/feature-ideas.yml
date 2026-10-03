@@ -1,10 +1,9 @@
 name: Scheduled Feature Ideas
 
 on:
-  # CLAUDE_CODE_OAUTH_TOKEN をリポジトリのSecretsに登録したら、下のscheduleのコメントを外して定期実行を有効にする。
-  # schedule:
-  #   # 毎日 06:00 JST (= 前日 21:00 UTC)
-  #   - cron: "0 21 * * *"
+  schedule:
+    # 毎日 06:00 JST (= 前日 21:00 UTC)
+    - cron: "0 21 * * *"
   workflow_dispatch: {}
 
 concurrency:
@@ -38,7 +37,7 @@ jobs:
             1. `CLAUDE.md` のゲームデザイン方針(対象プレイヤー・画面構成・DDD構成・
                リファクタリング操作・採点の2段構えなど)を読む。
             2. 重複した案を出さないよう、以下に目を通す:
-               - `docs/feature-ideas/` 配下の既存ファイル(直近7日分程度で十分、全件でなくてよい)
+               - `docs/feature-ideas/IDEAS.md` の既存内容(直近7日分程度で十分、全件でなくてよい)
                - `docs/specs/implemented.md` と `docs/specs/unimplemented.md`
                - `docs/specs/` 配下の既存仕様書の一覧(ファイル名だけでよい、全文を読まなくてよい)
                - `src/infrastructure/stages/` のステージ一覧
@@ -47,14 +46,18 @@ jobs:
                (責務の分割、凝集度、結合度、循環依存、デザインパターン、採点ロジックの改善、
                UI/操作性の改善など)を広く検討してよい。実装の詳細設計(型定義・受け入れ基準)
                までは踏み込まず、1件あたり概要と狙いが分かる程度の粒度にする。
-            4. 今日の日付(UTC日付をそのまま使ってよい、`date -u +%Y-%m-%d` で取得)を
-               ファイル名にした `docs/feature-ideas/YYYY-MM-DD.md` を新規作成する。
-               書式は `docs/feature-ideas/README.md` の「ファイル形式」に従う。
-               同名ファイルが既に存在する場合は上書きしてよい(1日に複数回実行された場合)。
-            5. 作成したファイルだけを `git add` し、「機能案ブレストを追記」のような
+            4. 今日の日付(UTC日付をそのまま使ってよい、`date -u +%Y-%m-%d` で取得)の見出しを、
+               書式は `docs/feature-ideas/README.md` の「ファイル形式」に従って作り、
+               `docs/feature-ideas/IDEAS.md` の先頭(`# 機能案のブレスト` 見出し直後)に追記する
+               (既存内容はすべて残す。追記のため既存ファイルを一度 `Read` してから `Write` で
+               全体を書き直す)。同じ日付の見出しが既にある場合(1日に複数回実行された場合)は
+               その日の見出しを置き換える(追記しない)。
+               日付見出しが30件を超えていたら、古いものから削除して直近30件までに収める
+               (削除した内容はgit履歴 `git log -p docs/feature-ideas/IDEAS.md` から参照できる)。
+            5. `docs/feature-ideas/IDEAS.md` だけを `git add` し、「機能案ブレストを追記」のような
                日本語のコミットメッセージでコミットし、`git push origin HEAD:master` する。
 
-            `src/` 配下のコードや `docs/specs/` の既存ファイル(今回作成するファイルを除く)は変更しないこと。
+            `src/` 配下のコードや `docs/specs/` の既存ファイルは変更しないこと。
           claude_args: |
             --max-turns 50
             --allowedTools "Read,Write,Glob,Grep,Bash(git:*),Bash(date:*)"

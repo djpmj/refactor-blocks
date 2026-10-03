@@ -24,33 +24,30 @@ flowchart TD
     GhIssue --> Impl
     UnimplList --> Impl
 
-    Impl["実装は常に Codex CLI(codex exec)"]
-    Impl -->|"feature-harness内でその場で呼ぶ"| CheckInline["npm run check"]
-    Impl -->|"/codex-implement &lt;issue/PR番号&gt;<br/>(GitHub起点)"| SelfReview["Codexが自己レビュー<br/>(NEEDS_FIX ⇄ PASS)"]
-    SelfReview --> PR["PR作成・更新"]
+    Impl["codex-implementエージェント<br/>(独立Claudeセッション)"]
+    Impl -->|"npm run check"| ReviewInline["evaluatorエージェント<br/>(別の独立Claudeセッション)"]
+    Impl -->|"/implement &lt;Issue/PR/仕様書&gt;"| ReviewInline
+    ReviewPr["/review-pr &lt;PR番号&gt;<br/>(evaluatorと同じ観点で独立レビュー)"]
 
-    CheckInline --> ReviewInline["evaluatorエージェントが独立レビュー<br/>(同じセッション内)"]
-    PR --> ReviewPr["/review-pr &lt;PR番号&gt;<br/>(evaluatorと同じ観点で独立レビュー)"]
-
-    ReviewInline --> Blocker{"blockerあり?"}
+    ReviewInline --> Blocker{"NEEDS_FIX?"}
     ReviewPr --> Blocker
-    Blocker -->|"あり"| Impl
+    Blocker -->|"あり: 指摘を返して修正"| Impl
     Blocker -->|"なし"| Merge["完了・マージ"]
 
     Merge --> ImplList["docs/specs/implemented.md に移動"]
 ```
 
 **ポイント**: 仕様書の入口は2つ(`/spec-to-issue`=対話で即確定、`feature-harness`=未決事項を残せる)だが、
-実装は必ずCodex CLI、評価は必ず独立したレビュー(evaluatorエージェントまたは`/review-pr`)という
-1本の流れに合流する。仕様書の状態は `docs/specs/draft.md → unimplemented.md → implemented.md`
+実装・評価は `/implement` が別々のClaudeセッションを起動し、評価が `PASS` になるまで修正ループを回す。
+利用者はオーケストレーターのコマンドだけを実行する。仕様書の状態は `docs/specs/draft.md → unimplemented.md → implemented.md`
 の3ファイルで追跡する(詳細は [docs/specs/README.md](specs/README.md))。
 
 ## ② 機能案のブレスト(実装には繋がらない)
 
 ```mermaid
 flowchart LR
-    Cron["GitHub Actions: feature-ideas.yml<br/>(毎日実行予定・現在はworkflow_dispatchのみ)"]
-    Cron --> Ideas["docs/feature-ideas/YYYY-MM-DD.md<br/>(10個の機能案を列挙するだけ)"]
+    Cron["GitHub Actions: feature-ideas.yml<br/>(毎日06:00 JSTに自動実行)"]
+    Cron --> Ideas["docs/feature-ideas/IDEAS.md<br/>(1ファイルに日付見出しで追記・10個の機能案を列挙するだけ)"]
     Ideas -.->|"人が選んで手で転記"| SpecToIssue2["/spec-to-issue または feature-harness"]
     Ideas -.->|"人が選んで手で転記"| Tasks2["docs/auto-dev/TASKS.md"]
 ```
@@ -83,4 +80,4 @@ flowchart TD
 | ネタが無くてアイデアだけ欲しい | ②(毎日の機能案ブレスト。手で①か③に転記) |
 | 小さな雑務・改善を溜めて流したい | ③(`docs/auto-dev/TASKS.md`) |
 | 既存PRをレビューしたい | `/review-pr <PR番号>` |
-| 既存Issue/PRを実装・修正したい | `/codex-implement <issue/PR番号>` |
+| Issue/PR・仕様書・実装依頼を実装・修正したい | `/implement <Issue/PR番号・仕様書パス>` |
