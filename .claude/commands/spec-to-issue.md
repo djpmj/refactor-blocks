@@ -25,6 +25,11 @@ allowed-tools: Read, Write, Glob, Grep, Bash(git:*), Bash(gh issue:*)
 6. 承認されたら、以下を順に実行する(各pushの前にユーザーに短く報告し、承認を得てから実行する):
    - `git add docs/specs/<slug>.md` し、「仕様: <slug>」のような日本語コミットメッセージ
      (末尾に `Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>`)でコミットする
+   - `git push origin HEAD:master` する**前**に、`git branch --show-current` で今のブランチが
+     `master` であることを確認する。別のIssue用featureブランチに乗ったままここに来ていたら、
+     先に `git checkout master && git pull origin master` し、そのうえで仕様書のコミットをやり直す
+     (featureブランチのまま push すると、そのブランチの未レビューコミットも一緒に `master` へ
+     混入する。`CLAUDE.md`「masterへの直接pushの安全策」を参照)
    - `git push origin HEAD:master` で仕様書をmasterに反映する
    - `gh issue create --title "<slug>" --body-file docs/specs/<slug>.md` でIssueを作成し、
      発行されたIssue番号を控える

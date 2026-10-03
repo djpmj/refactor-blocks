@@ -23,6 +23,11 @@ allowed-tools: Read, Glob, Grep, Bash(git:*), Bash(npm:*), Bash(gh pr:*), Bash(g
    本文に `Closes #<issue番号>` があれば `gh issue view <issue番号>` でIssue本文(仕様)も取得する。
    `docs/specs/<slug>.md` が存在すればそちらも仕様として読む。
 2. `git fetch origin` し、`git checkout <headRefName>` でPRのブランチに切り替える。`npm ci` する。
+   このコマンドの実行中(複数PRを順にチェックしている間)は、今どのブランチに乗っているかを
+   見失いやすい。レビューと無関係な変更(コマンド定義の修正など)を`master`へ直接pushする必要が
+   同時に生じたときは、必ず`git branch --show-current`で`master`であることを確認してから
+   pushする(`CLAUDE.md`「masterへの直接pushの安全策」を参照。PRのfeatureブランチに乗ったまま
+   `master`へpushすると、そのPRの未レビューコミットが混入する)。
 3. 以下を実際に実行して結果を確認する: `npm test` / `npm run lint` / `npm run typecheck`
    (ドラッグ&ドロップ等プレイヤー操作に関わる変更があれば `npm run test:e2e` も)。
 4. `git diff origin/master...HEAD` を読み、Issue/仕様書の受け入れ基準を満たしているか、
