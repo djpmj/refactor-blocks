@@ -139,9 +139,12 @@ input.class-node__name { width: 14ch; }
 .file-mark { font-size: 14px; margin-right: 6px; }
 
 .method-editor { width: 360px; padding: 16px; background: var(--surface); border-left: 1px solid var(--border); overflow-y: auto; }
-.method-editor__tabs { display: flex; gap: 4px; }
-.method-editor__tab { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 8px; padding: 4px 12px; font-size: 13px; cursor: pointer; }
-.method-editor__tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.method-editor__tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); }
+.method-editor__tab { flex: 1; display: flex; align-items: center; justify-content: center; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: var(--file-bg); color: var(--text); padding: 8px 12px 6px; font-size: 13px; cursor: pointer; }
+.method-editor__tab:not([aria-selected="true"]):hover { background: color-mix(in srgb, var(--file-bg) 92%, var(--text)); }
+.method-editor__tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.method-editor__tab[aria-selected="true"] { border-bottom-color: var(--accent); background: var(--surface); color: var(--text); font-weight: 700; }
+.method-editor__tab-icon { margin-right: 4px; color: var(--protected); font-family: monospace; }
 .method-editor__title { font-size: 15px; font-family: ui-monospace, monospace; }
 .method-editor__hint { color: var(--muted); font-size: 13px; }
 .method-editor__message { color: var(--danger); font-size: 13px; }
