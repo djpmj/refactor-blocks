@@ -193,6 +193,93 @@ test('メソッドを別クラスへドラッグ&ドロップすると移動す�
   await expect(target.getByTestId('method-calculateTax')).toBeVisible();
 });
 
+test('クラスヘッダーのメニューから別ファイルへ移動でき、Ctrl+Zで戻せる', async ({ page }) => {
+  // Arrange
+  await openOrderStage(page);
+  const source = page.getByTestId('class-header-OrderService');
+  await source.click({ button: 'right' });
+  const menu = page.getByTestId('context-menu');
+  const trigger = menu.getByRole('menuitem', { name: '別のファイルへ移動' });
+  await expect(trigger).toBeVisible();
+  await expect(menu.getByRole('menuitem').first()).toHaveText('別のファイルへ移動');
+  await trigger.hover();
+
+  // Act
+  await menu.getByRole('menuitem', { name: 'src/tax/TaxCalculator.ts', exact: true }).click();
+
+  // Assert
+  await expect(page.getByTestId('file-src/order/OrderService.ts')).toContainText('0行');
+  await expect(page.getByTestId('file-src/tax/TaxCalculator.ts')).toContainText('110行');
+  await expect(page.getByTestId('context-menu')).toHaveCount(0);
+
+  // Act: Undo
+  await page.keyboard.press('Control+z');
+
+  // Assert
+  await expect(page.getByTestId('file-src/order/OrderService.ts')).toContainText('108行');
+  await expect(page.getByTestId('file-src/tax/TaxCalculator.ts')).toContainText('2行');
+});
+
+test('クラスヘッダーではShift+F10とTab/Enterでファイルを選んで移動できる', async ({ page }) => {
+  // Arrange
+  await openOrderStage(page);
+  await page.getByTestId('class-header-OrderService').focus();
+
+  // Act
+  await page.keyboard.press('Shift+F10');
+
+  // Assert
+  const menu = page.getByTestId('context-menu');
+  await expect(menu.getByRole('menuitem').first()).toHaveText('別のファイルへ移動');
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('file-src/order/OrderService.ts')).toContainText('0行');
+  await expect(page.getByTestId('file-src/tax/TaxCalculator.ts')).toContainText('110行');
+});
+
+test('ファイル・メソッド・余白のメニューにはクラスのファイル移動項目を出さない', async ({ page }) => {
+  // Arrange
+  await openOrderStage(page);
+
+  // Act & Assert: method
+  await page.getByTestId('method-placeOrder').click({ button: 'right' });
+  let menu = page.getByTestId('context-menu');
+  await expect(menu.getByRole('menuitem', { name: '別のファイルへ移動' })).toHaveCount(0);
+  await expect(menu.getByRole('menuitem', { name: '別のクラスへ移動' })).toBeVisible();
+  await page.keyboard.press('Escape');
+
+  // Act & Assert: file
+  await page.getByTestId('file-src/order/OrderService.ts').locator('.file-node__header').click({ button: 'right' });
+  menu = page.getByTestId('context-menu');
+  await expect(menu.getByRole('menuitem', { name: '別のファイルへ移動' })).toHaveCount(0);
+  await page.keyboard.press('Escape');
+
+  // Act & Assert: empty canvas
+  const point = await emptyPanePoint(page);
+  await page.mouse.click(point.x, point.y, { button: 'right' });
+  menu = page.getByTestId('context-menu');
+  await expect(menu.getByRole('menuitem', { name: '別のファイルへ移動' })).toHaveCount(0);
+});
+
+test('ファイルが1つだけなら移動項目を出さず、Escapeでヘッダーへフォーカスを戻す', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await page.getByLabel('ステージ').selectOption({ label: 'チュートリアル1: 長いメソッドを分ける' });
+  const header = page.getByTestId('class-header-ReportService');
+  await header.click({ button: 'right' });
+
+  // Assert: このステージにはファイルが1つだけなので項目自体がない
+  const menu = page.getByTestId('context-menu');
+  await expect(menu.getByRole('menuitem', { name: '別のファイルへ移動' })).toHaveCount(0);
+
+  // Act: Escapeで閉じる
+  await page.keyboard.press('Escape');
+
+  // Assert
+  await expect(page.getByTestId('context-menu')).toHaveCount(0);
+  await expect(header).toBeFocused();
+});
+
 test('抽出したメソッドを別クラスへ移すと、クラス間に依存の矢印が引かれる', async ({ page }) => {
   // Arrange
   await openOrderStage(page);
@@ -538,7 +625,7 @@ test('クラスを右クリックして継承元を設定すると、継承の�
   await menu.getByRole('menuitem', { name: '継承元を設定' }).click();
 
   // Act
-  await menu.getByRole('menuitem', { name: 'OrderService' }).click();
+  await menu.getByRole('menuitem', { name: 'OrderService', exact: true }).click();
 
   // Assert
   const edge = page.getByTestId('rf__edge-inherit-class-tax-calculator-class-order-service');
@@ -616,7 +703,7 @@ test('継承元を設定にカーソルを合わせるだけで、クリック�
   await menu.getByRole('menuitem', { name: '継承元を設定' }).hover();
 
   // Assert
-  await expect(menu.getByRole('menuitem', { name: 'OrderService' })).toBeVisible();
+  await expect(menu.getByRole('menuitem', { name: 'OrderService', exact: true })).toBeVisible();
 });
 
 test('継承の輪ができる相手は、継承元の候補一覧から外れる', async ({ page }) => {
@@ -624,7 +711,7 @@ test('継承の輪ができる相手は、継承元の候補一覧から外れ�
   await openOrderStage(page);
   await page.getByTestId('class-header-TaxCalculator').click({ button: 'right' });
   await page.getByTestId('context-menu').getByRole('menuitem', { name: '継承元を設定' }).click();
-  await page.getByTestId('context-menu').getByRole('menuitem', { name: 'OrderService' }).click();
+  await page.getByTestId('context-menu').getByRole('menuitem', { name: 'OrderService', exact: true }).click();
   await page.getByTestId('class-header-OrderService').click({ button: 'right' });
   const menu = page.getByTestId('context-menu');
   await menu.getByRole('menuitem', { name: '継承元を設定' }).click();
@@ -1223,7 +1310,7 @@ test('上級ステージ: 共通処理を基底クラスへ移してから継承
   await page.mouse.up();
   await page.getByTestId('class-header-EmailNotifier').click({ button: 'right' });
   await page.getByTestId('context-menu').getByRole('menuitem', { name: '継承元を設定' }).click();
-  await page.getByTestId('context-menu').getByRole('menuitem', { name: 'NotifierBase' }).click();
+  await page.getByTestId('context-menu').getByRole('menuitem', { name: 'NotifierBase', exact: true }).click();
 
   // Assert
   await expect(target.getByTestId('method-buildEmailBody')).toBeVisible();

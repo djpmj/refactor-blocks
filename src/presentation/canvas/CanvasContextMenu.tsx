@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { findClass, findSuperclass } from '../../domain/codebase/Codebase';
 import { moveMethodTargets } from '../../domain/codebase/moveMethod';
 import { moveFieldTargets } from '../../domain/codebase/moveField';
+import { moveClassTargets } from '../../domain/codebase/moveClass';
 import { availableParents } from '../../domain/codebase/setSuperclass';
 import { useGameStore, useGameStoreApi, type GameStore } from '../store/useGameStore';
 import { clampMenuPosition, type Point } from './clampMenuPosition';
@@ -77,6 +78,7 @@ function usePositionWithinViewport(menuRef: RefObject<HTMLElement | null>, x: nu
 type MenuItem =
   | { kind: 'form'; mode: FormMode; label: string }
   | { kind: 'action'; run: () => void; label: string }
+  | { kind: 'move-class-submenu'; label: string }
   | { kind: 'move-submenu'; label: string }
   | { kind: 'extends-submenu'; label: string }
   | { kind: 'implements-submenu'; label: string };
@@ -85,8 +87,12 @@ type MenuItem =
 function menuItemsFor(target: ContextMenuTarget, onClose: () => void, api: GameStore): MenuItem[] {
   const { deleteClass, deleteFile } = api.getState();
   const { classId, fileId } = target;
+  const moveClassItems: MenuItem[] = classId !== null && target.member === null
+    ? [{ kind: 'move-class-submenu', label: '別のファイルへ移動' }]
+    : [];
   const moveItems: MenuItem[] = target.member === null ? [] : [{ kind: 'move-submenu', label: '別のクラスへ移動' }];
   return [
+    ...moveClassItems,
     ...moveItems,
     ...(fileId === null ? [] : [{ kind: 'form' as const, mode: 'class' as const, label: 'このファイルにクラスを追加' }]),
     { kind: 'form', mode: 'file', label: 'ファイルを追加' },
@@ -254,6 +260,36 @@ function MoveMenuItem({ target, label, onClose }: Readonly<ExtendsMenuItemProps>
   );
 }
 
+function MoveClassMenuItem({ target, label, onClose }: Readonly<ExtendsMenuItemProps>) {
+  const codebase = useGameStore((state) => state.codebase);
+  const { moveClass } = useGameStoreApi().getState();
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const submenuRef = useRef<HTMLDivElement>(null);
+  const position = useSubmenuPosition(triggerRef, submenuRef, open);
+  const classId = target.classId;
+  if (classId === null) return null;
+  const candidates = moveClassTargets(codebase, classId);
+  if (candidates.length === 0) return null;
+  const select = (fileId: string) => {
+    moveClass(classId, fileId);
+    onClose();
+  };
+
+  return (
+    <SubmenuTrigger label={label} open={open} setOpen={setOpen} wrapperRef={wrapperRef} triggerRef={triggerRef}>
+      <div ref={submenuRef} role="menu" aria-label={label} className="context-menu context-menu__submenu" style={{ left: position.x, top: position.y }}>
+        {candidates.map((candidate) => (
+          <button key={candidate.id} type="button" role="menuitem" onClick={() => select(candidate.id)}>
+            {candidate.path}
+          </button>
+        ))}
+      </div>
+    </SubmenuTrigger>
+  );
+}
+
 type ImplementsMenuItemProps = { target: ContextMenuTarget; label: string };
 
 /**
@@ -313,6 +349,9 @@ function MenuItems({ items, target, onSelectForm, onClose }: Readonly<MenuItemsP
   return (
     <div ref={menuRef} role="menu" aria-label="キャンバスのメニュー">
       {items.map((item) => {
+        if (item.kind === 'move-class-submenu') {
+          return <MoveClassMenuItem key={item.kind} target={target} label={item.label} onClose={onClose} />;
+        }
         if (item.kind === 'move-submenu') {
           return <MoveMenuItem key={item.kind} target={target} label={item.label} onClose={onClose} />;
         }
