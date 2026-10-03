@@ -2,6 +2,16 @@
 
 このリポジトリで新機能を追加するときは、役割を分けた3フェーズで進める。1人(1エージェント)が仕様も実装もレビューも兼ねると、思い込みに気づけないまま実装が仕様からズレたり、バグを見落としたりしやすいため。
 
+## 仕様書の状態
+
+`docs/specs/<slug>.md` がどの作成経路(大規模パイプライン・`feature-harness` skill・`/spec-to-issue` コマンドなど)で作られたかは問わず、状態は以下の3つの一覧で一元管理する。
+
+- [draft.md](draft.md) — 未決事項が残っていてユーザー確定が済んでいない仕様書
+- [unimplemented.md](unimplemented.md) — 内容は確定したが、実装がまだ `master` にマージされていない仕様書
+- [implemented.md](implemented.md) — 実装が `master` にマージ済みの仕様書
+
+新しい仕様書を書いたら `draft.md` に追加し、確定したら `unimplemented.md` へ、実装がマージされたら `implemented.md` へ移す。
+
 ## フェーズ
 
 1. **仕様設計**(`.claude/agents/spec-designer.md`) — 要求を読み解き、`docs/specs/<機能名>.md` に実装可能な仕様書を書く。コードは書かない。

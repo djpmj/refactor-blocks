@@ -1,0 +1,38 @@
+# 実装済みの仕様書
+
+実装が `master` にマージ済みの仕様書の一覧。作成経路(大規模パイプライン・`feature-harness`
+skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にある仕様書はすべてここに集約する。
+
+## 一覧
+
+| 仕様書 | 機能 |
+| --- | --- |
+| [dependency-scoring](dependency-scoring.md) | 依存関係と採点 |
+| [change-request](change-request.md) | 変更依頼(新機能追加課題) |
+| [visibility-scoring](visibility-scoring.md) | public/private アクセス制御の採点 |
+| [inheritance](inheritance.md) | 継承関係の表現と表示 |
+| [cyclic-dependency-class-highlight](cyclic-dependency-class-highlight.md) | 循環依存の可視化と警告(クラスノードの強調表示) |
+| [advanced-payment-gateway-interface](advanced-payment-gateway-interface.md) | 上級2: インターフェース越しの依存(決済ゲートウェイ)ステージ |
+| [advanced-discount-strategy](advanced-discount-strategy.md) | 上級3: if分岐をStrategyパターンへ組み替えるステージ |
+| [payment-gateway-true-dip](payment-gateway-true-dip.md) | 上級2 作り直し: 本物のDI/DIPを表現する決済ゲートウェイステージ |
+| [merge-duplicate-methods](merge-duplicate-methods.md) | 重複メソッドの統合(Merge Methods) |
+| [stage-progress-persistence](stage-progress-persistence.md) | ステージ進捗の保存(localStorage) |
+| [advanced-report-factory](advanced-report-factory.md) | 上級4: オブジェクト生成処理をFactoryへ集約する |
+| [stuck-player-hints](stuck-player-hints.md) | 詰まったときのヒント機能 |
+| [context-menu-viewport-clamp](context-menu-viewport-clamp.md) | 右クリックメニューをビューポート内に収める |
+| [volatility-axis-stages](volatility-axis-stages.md) | 中級4・中級5: 変わる場所しだいで正解が変わるステージ |
+| [design-comparison-quiz](design-comparison-quiz.md) | 設計くらべクイズ |
+| [lone-superclass-scoring](lone-superclass-scoring.md) | 子が1つしかない継承の減点と、上級5「使われない拡張ポイントを畳む」 |
+| [blank-design-mode](blank-design-mode.md) | 白紙設計モード |
+| [inline-edit-and-hover-submenu](inline-edit-and-hover-submenu.md) | キャンバスのその場編集と、継承元/インターフェースのホバーサブメニュー |
+| [implement-change-request](implement-change-request.md) | 変更依頼を「実装」させる(置き方の採点) |
+| [interface-segregation-stage](interface-segregation-stage.md) | 複数インターフェースの実装と、上級6「太ったインターフェースを役割ごとに分ける」(ISP) |
+| [fields-and-feature-envy](fields-and-feature-envy.md) | クラスのデータ(フィールド)と、中級6「他人のデータばかり触るメソッド」(Feature Envy / Tell, Don't Ask) |
+| [cohesion-value-object-anemic](cohesion-value-object-anemic.md) | フィールドの上に作る3ステージ: 貧血ドメインモデル(中級7)・Extract Class(中級8)・Value Object(上級7) |
+| [move-via-context-menu](move-via-context-menu.md) | 右クリックメニューから移動先のクラスを選んでメソッド・フィールドを移す |
+| [template-method-stage](template-method-stage.md) | 上級8「取り込みの手順を Template Method にまとめる」 |
+| [delete-class-code-guard](delete-class-code-guard.md) | クラス・ファイルの削除で本物の処理が消えないようにする |
+| [move-class-via-context-menu](move-class-via-context-menu.md) | 右クリックメニューから移動先のファイルを選んでクラスを移す |
+| [extends-interface-loophole](extends-interface-loophole.md) | インターフェース役を extends にすると「実装漏れ」の採点をすり抜ける抜け道を塞ぐ |
+| [concrete-superclass-loophole](concrete-superclass-loophole.md) | 具象クラスを extends して契約の実装を「借りる」抜け道を塞ぐ |
+| [class-code-preview-tab](class-code-preview-tab.md) | メソッドエディタにコードプレビュータブを追加する |
