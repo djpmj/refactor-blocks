@@ -31,10 +31,18 @@ allowed-tools: Read, Glob, Grep, Bash(git:*), Bash(npm:*), Bash(gh pr:*), Bash(g
    問題の内容・推奨対応)でまとめる。
 
 5. **blockerが無い場合**: 確認を取らずそのまま進めてよい。
-   - `gh pr review <番号> --approve --body "<要約>"` のうえ、
-     `gh pr merge <番号> --squash --delete-branch` でマージする
+   - `gh pr review <番号> --approve --body "<要約>"` を試す。PR作成者とレビュー実行アカウントが同じ
+     (例: `djpmj` 名義で作成したPRを同じ認証で見る)場合、GitHubの仕様上
+     `Can not approve your own pull request` で失敗する。その場合は承認を諦め、
+     `gh pr merge <番号> --squash --delete-branch --body "<要約>"` で直接マージする
+     (`--body` にレビュー要約を残すことで、承認コメントの代わりにする)
    - 関連Issueが自動クローズされていなければ(`gh issue view <issue番号>` で確認)、
      `gh issue close <issue番号>` で閉じる
+   - `gh pr merge` が「ローカルブランチの削除に失敗した」エラーを返しても、PRのマージ自体
+     (`gh pr view <番号> --json state,mergedAt` で `MERGED` を確認)が成功していればよい。
+     そのローカルブランチがgit worktreeで別ディレクトリにチェックアウトされているとき
+     (`/spec-to-issue` がworktreeを作ることがある)に起きる。`git worktree remove <パス>` で
+     worktreeを片付けてから `git branch -d <ブランチ名>` する
    - 判定(合格)と指摘内容(suggestionがあれば併記)・マージ結果をユーザーに報告する(事後報告でよい)
 
 6. **blockerがある場合**:
