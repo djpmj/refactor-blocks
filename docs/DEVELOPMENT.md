@@ -27,7 +27,7 @@ flowchart TD
     Impl["codex-implementエージェント<br/>(独立Claudeセッション)"]
     Impl -->|"npm run check"| ReviewInline["evaluatorエージェント<br/>(別の独立Claudeセッション)"]
     Impl -->|"/implement &lt;Issue/PR/仕様書&gt;"| ReviewInline
-    ReviewPr["/review-pr &lt;PR番号&gt;<br/>(evaluatorと同じ観点で独立レビュー)"]
+    ReviewPr["/review-pr &lt;PR番号&gt; または<br/>review-pr.yml(6時間ごとに自動実行)<br/>(evaluatorと同じ観点で独立レビュー)"]
 
     ReviewInline --> Blocker{"NEEDS_FIX?"}
     ReviewPr --> Blocker
@@ -41,6 +41,9 @@ flowchart TD
 実装・評価は `/implement` が別々のClaudeセッションを起動し、評価が `PASS` になるまで修正ループを回す。
 利用者はオーケストレーターのコマンドだけを実行する。仕様書の状態は `docs/specs/draft.md → unimplemented.md → implemented.md`
 の3ファイルで追跡する(詳細は [docs/specs/README.md](specs/README.md))。
+PRレビューは `review-pr.yml` が6時間ごとに全openPR(Dependabot含む)を自動レビューし、
+blockerが無ければ自動マージする。何を確認してマージしたかは [docs/review-pr/LOG.md](review-pr/LOG.md)
+に記録される(ヘッドレス実行でその場のユーザー確認が無いための事後追跡用)。
 
 ## ② 機能案のブレスト(実装には繋がらない)
 
@@ -60,5 +63,6 @@ flowchart LR
 | --- | --- |
 | 新機能を仕様からきちんと作りたい | ①(`/spec-to-issue` か `feature-harness`) |
 | ネタが無くてアイデアだけ欲しい | ②(毎日の機能案ブレスト。手で①に転記) |
-| 既存PRをレビューしたい | `/review-pr <PR番号>` |
+| 既存PRをレビューしたい(今すぐ・手動) | `/review-pr <PR番号>` |
+| 既存PRのレビュー・自動マージ(定期実行) | `review-pr.yml`(6時間ごと。手動実行は `workflow_dispatch`) |
 | Issue/PR・仕様書・実装依頼を実装・修正したい | `/implement <Issue/PR番号・仕様書パス>` |

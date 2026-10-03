@@ -1,0 +1,86 @@
+name: Scheduled PR Review
+
+on:
+  schedule:
+    # 毎日 01:00 / 07:00 / 13:00 / 19:00 JST(= 前日16:00 / 前日22:00 / 04:00 / 10:00 UTC)
+    - cron: "0 16 * * *"
+    - cron: "0 22 * * *"
+    - cron: "0 4 * * *"
+    - cron: "0 10 * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: review-pr
+  cancel-in-progress: false
+
+jobs:
+  review-pr:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - run: npm ci
+
+      - name: Run Claude Code PR review
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            REPO: ${{ github.repository }}
+
+            あなたはこのリポジトリのPRレビュー担当です。起動ごとに、オープンな
+            プルリクエストを一通りレビューし、指摘(blocker)が無ければ自動でマージします。
+            Dependabotが作成した依存更新PRも対象に含みます。
+
+            まず `git config user.name "github-actions[bot]"` と
+            `git config user.email "github-actions[bot]@users.noreply.github.com"` を設定する。
+
+            1. `gh pr list --state open --json number,title,headRefName,isDraft,updatedAt` で
+               オープンなPRを一覧する。ドラフトPRは対象外にする。対象PRが無ければ何もせず終了する。
+            2. 各PRについて、`gh pr view <番号> --json reviews,commits` で、このbot
+               (`github-actions[bot]`、またはClaude Code経由の直近のレビュー)による最新レビューが
+               現在の最新コミットに対して既に行われているか確認する。最新コミットへの変更が無い
+               (前回レビュー以降に新しいコミットが無い)PRはスキップする
+               (同じ内容を何度もレビュー・コメントしない)。
+            3. スキップしないPRは、`.claude/commands/review-pr.md` の手順2〜4(PR情報・Issue・
+               仕様書の取得、`npm ci`、`npm test`/`npm run lint`/`npm run typecheck`
+               [UIの操作に関わる変更があれば `npm run test:e2e` も]の実行、差分レビュー)に
+               そのまま従ってレビューする。ただし関連Issue・仕様書のどちらも無いPR
+               (Dependabotの依存更新PRなど)は、受け入れ基準の代わりに `CLAUDE.md` の開発ルールと、
+               実行結果(lint/typecheck/test)が通ることを判断基準にする。
+            4. **blockerが無い場合**: `.claude/commands/review-pr.md` 手順5に従い、
+               `gh pr review <番号> --approve --body "<判定と実行結果の要約>"` でコメントし、
+               `gh pr merge <番号> --squash --delete-branch` でマージし、関連Issueが自動クローズ
+               されていなければ `gh issue close <issue番号>` で閉じる。このワークフローは
+               ヘッドレス実行でユーザーにその場で確認を取れないため、同手順にある
+               「ユーザーに確認してから行う」は適用せず、承認・マージ・Issueクローズをそのまま
+               自動で実行してよい。
+               続けて、何を確認してマージしたかを `docs/review-pr/LOG.md` の書式(ファイル冒頭)
+               に従って「## ログ一覧」見出し直後に追記する。記録が30件を超えていたら、古いものから
+               削除して直近30件までに収める。`git add docs/review-pr/LOG.md` し、
+               「PR #<番号>のレビューログを追記」のような日本語コミットメッセージ(末尾に
+               `Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>`)でコミットし、
+               `git push origin HEAD:master` する。
+            5. **blockerがある場合**: `.claude/commands/review-pr.md` 手順6に従い、マージせず
+               `gh pr review <番号> --request-changes --body "<指摘内容>"` で指摘をコメントする
+               (この場合もユーザーへの確認は不要、そのまま投稿する)。`docs/review-pr/LOG.md`
+               には書かない。
+            6. 対象PRをすべて処理したら終了する(1回の起動で複数PRを処理してよい)。
+
+            `src/` 配下のコードは変更しない(レビューのみ。修正はPR作成者・`/implement` 側で行う)。
+          claude_args: |
+            --max-turns 200
+            --allowedTools "Read,Write,Edit,Glob,Grep,Bash(git:*),Bash(npm:*),Bash(gh pr:*),Bash(gh issue:*)"
