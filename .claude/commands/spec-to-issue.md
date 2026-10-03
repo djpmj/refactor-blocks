@@ -10,17 +10,19 @@ allowed-tools: Read, Write, Glob, Grep, Bash(git:*), Bash(gh issue:*)
 
 ## 手順
 
-1. 要求を整理する。`CLAUDE.md` のDDD構成(`src/domain`/`application`/`infrastructure`/`presentation`)と
+1. まず `docs/feature-ideas/IDEAS.md`(`.github/workflows/feature-ideas.yml` が定期実行して
+   書き込む機能案ブレストの記録)を `Read` で取得する。直近の日付見出し数件に目を通し、
+   今回の要求と関連する案があれば後の整理に使う(関連が無ければそれ以上は触れなくてよい)。
+2. 要求を整理する。`CLAUDE.md` のDDD構成(`src/domain`/`application`/`infrastructure`/`presentation`)と
    `docs/specs/` の既存仕様書を `Read`/`Grep`/`Glob` で調査し、似た機能・影響範囲を把握する。
-   `docs/feature-ideas/IDEAS.md`(機能案ブレストの記録)にも目を通し、関連する案があれば
-   その内容を踏まえて要求を整理する(無関係なら触れなくてよい)。
-2. 曖昧な点・設計判断が要る点は、仮定せずその場で `AskUserQuestion` か通常のテキストでユーザーに確認する
+   手順1で見つけた関連案があれば、その内容を踏まえて要求を整理する。
+3. 曖昧な点・設計判断が要る点は、仮定せずその場で `AskUserQuestion` か通常のテキストでユーザーに確認する
    (`.claude/agents/spec-designer.md` の「未決事項」をここで全て確定させる。後工程に先送りしない)。
-3. 固まった内容を、`.claude/agents/spec-designer.md` の「仕様書に必ず含める項目」
+4. 固まった内容を、`.claude/agents/spec-designer.md` の「仕様書に必ず含める項目」
    (背景・目的/変更対象ファイル一覧/データ・型の変更/TDD対象の純粋関数/受け入れ基準/スコープ外)
    に従って `docs/specs/<slug>.md` として `Write` する(`<slug>` は機能を表す英語kebab-case)。
-4. 仕様書の内容を3〜5行でユーザーに要約し、Issue化してよいか確認する。
-5. 承認されたら、以下を順に実行する(各pushの前にユーザーに短く報告し、承認を得てから実行する):
+5. 仕様書の内容を3〜5行でユーザーに要約し、Issue化してよいか確認する。
+6. 承認されたら、以下を順に実行する(各pushの前にユーザーに短く報告し、承認を得てから実行する):
    - `git add docs/specs/<slug>.md` し、「仕様: <slug>」のような日本語コミットメッセージ
      (末尾に `Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>`)でコミットする
    - `git push origin HEAD:master` で仕様書をmasterに反映する
