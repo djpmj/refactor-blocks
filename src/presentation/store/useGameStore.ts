@@ -147,6 +147,8 @@ type GameState = {
   selectStage: (stageId: string) => void;
   /** 前回の下書きから再開したか。次にコードが変わったら false に戻す。 */
   restoredDraft: boolean;
+  /** 下書きのあるステージID。ステージ一覧の「挑戦中」表示に使う(コードそのものは持たない)。 */
+  draftStageIds: readonly string[];
   progress: Progress;
   recordProgress: (stageId: string, score: number) => void;
 };
@@ -466,6 +468,7 @@ function autosaveDrafts(store: GameStore, holder: { drafts: Drafts }): void {
     if (state.codebase === prev.codebase && state.changeSession === prev.changeSession) return;
     holder.drafts = putDraft(holder.drafts, state.stage, state.changeSession?.base ?? state.codebase);
     saveDrafts(holder.drafts);
+    store.setState({ draftStageIds: Object.keys(holder.drafts) });
     // ステージを切り替えたときの復元は、お知らせを出すので戻さない
     if (state.restoredDraft && state.stage === prev.stage) store.setState({ restoredDraft: false });
   });
@@ -500,6 +503,7 @@ export function createGameStore(allStages: readonly Stage[], saveDraftsOn = true
       stage: firstStage,
       codebase: restored ?? firstStage.codebase,
       restoredDraft: restored !== undefined,
+      draftStageIds: Object.keys(holder.drafts),
       history: emptyHistory(),
       selectedMethodId: null,
       selectedFieldId: null,

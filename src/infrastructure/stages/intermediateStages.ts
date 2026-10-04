@@ -9,6 +9,7 @@ const cyclicDependencyStage: Stage = {
   id: 'intermediate-cyclic-dependency',
   level: 'intermediate',
   title: '中級1: 循環依存を断ち切る',
+  learns: ['循環依存', 'Move Method'],
   /** 100点になったときに見せる、この題材で分ける理由。 */
   why: '価格ルールを変えるとき、注文・顧客・在庫が互いに呼び合う経路まで確かめる必要があります。各データの扱いをそれぞれの役割に寄せると、変更の影響を追いやすくなります。',
   description:
@@ -119,6 +120,7 @@ const godFileStage: Stage = {
   id: 'intermediate-god-file',
   level: 'intermediate',
   title: '中級2: 何でも入った1つのファイル',
+  learns: ['ファイル分割', '責務の分離'],
   /** 100点になったときに見せる、この題材で分ける理由。 */
   why: '一つのファイルに複数の業務処理が集まると、小さな変更でも無関係な処理との絡みを読み解くことになります。役割で置き場所を分ければ、修正対象を見つけやすくなります。',
   description:
@@ -230,6 +232,7 @@ const misplacedPrivateStage: Stage = {
   id: 'intermediate-misplaced-private',
   level: 'intermediate',
   title: '中級3: 越境する private メソッド',
+  learns: ['カプセル化', 'private'],
   /** 100点になったときに見せる、この題材で分ける理由。 */
   why: '通知方法を変えるたびに、通知の組み立てとテンプレート処理の境界まで調べることになります。各処理を担当するクラスに置けば、変更先がはっきりします。',
   description:
@@ -378,6 +381,7 @@ const volatileTaxStage: Stage = {
   id: 'intermediate-volatile-tax',
   level: 'intermediate',
   title: '中級4: 変わるのは税の計算',
+  learns: ['変わる部分の分離', '責務の分離'],
   /** 100点になったときに見せる、この題材で分ける理由。 */
   why: '税ルールの更新が注文処理と一緒に置かれていると、税と無関係な注文手順まで変更のたびに読み直します。税の計算を独立させれば、制度変更をそこに集められます。',
   description:
@@ -396,6 +400,7 @@ const volatileFormatStage: Stage = {
   id: 'intermediate-volatile-format',
   level: 'intermediate',
   title: '中級5: 変わるのは帳票の形式',
+  learns: ['変わる部分の分離', '責務の分離'],
   /** 100点になったときに見せる、この題材で分ける理由。 */
   why: '出力形式を変えるたびに、データ取得や業務判断が混ざった処理を追うことになります。形式ごとの組み立てを分ければ、表示変更の影響を閉じ込められます。',
   description:
@@ -419,6 +424,7 @@ const featureEnvyStage: Stage = {
   id: 'intermediate-feature-envy',
   level: 'intermediate',
   title: '中級6: 他人のデータばかり触るメソッド',
+  learns: ['Feature Envy', 'Move Method'],
   /** 100点になったときに見せる、この題材で分ける理由。 */
   why: '契約内容を変えるたびに、契約データを持たないサービス側の処理を調べる必要があります。データを扱う側に振る舞いがまとまれば、変更先を見つけやすくなります。',
   description:
@@ -551,6 +557,7 @@ const anemicDomainModelStage: Stage = {
   id: 'intermediate-anemic-domain-model',
   level: 'intermediate',
   title: '中級7: getter/setter だけの口座クラス',
+  learns: ['貧血ドメインモデル', 'カプセル化'],
   /** 100点になったときに見せる、この題材で分ける理由。 */
   why: '注文ルールを変えると、データだけの注文クラスと判断を担うサービスの両方を行き来します。注文に関する判断がまとまれば、ルール変更の確認先を絞れます。',
   description:
@@ -725,6 +732,7 @@ const extractClassStage: Stage = {
   id: 'intermediate-extract-class',
   level: 'intermediate',
   title: '中級8: 給与と住所を抱えた社員クラス',
+  learns: ['Extract Class', '責務の分離'],
   /** 100点になったときに見せる、この題材で分ける理由。 */
   why: '一つのクラスに別々の理由で変わる処理が集まると、片方の変更でも全体の長さや関連を気にします。まとまりを分ければ、それぞれの変更を独立して追えます。',
   description:
@@ -844,6 +852,7 @@ const copyPasteTaxStage: Stage = {
   id: 'intermediate-copy-paste-tax',
   level: 'intermediate',
   title: '中級9: コピペされた消費税計算を1か所にまとめる',
+  learns: ['重複の排除', 'Merge Methods'],
   /** 100点になったときに見せる、この題材で分ける理由。 */
   why: '税率が変わるたびに3か所を同じように直す必要があり、1か所でも直し忘れると請求額が合わなくなります。1か所にまとめれば、直すのは1か所だけで、直し忘れが起きません。',
   description:
@@ -945,6 +954,7 @@ const memberRankBranchingStage: Stage = {
   id: 'intermediate-member-rank-branching',
   level: 'intermediate',
   title: '中級10: 会員ランクごとのif分岐をクラスに分ける',
+  learns: ['分岐の分離', '継承'],
   /** 100点になったときに見せる、この題材で分ける理由。 */
   why: '会員ランクが増えるたびに、価格と送料の2つのクラスを開いて分岐を足していました。ランクごとのクラスにしたので、新しいランクはクラスを1つ足すだけで済み、既存のコードを壊す心配がありません。',
   description:

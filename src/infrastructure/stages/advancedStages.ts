@@ -12,6 +12,7 @@ const notifierHierarchyStage: Stage = {
   id: 'advanced-notifier-hierarchy',
   level: 'advanced',
   title: '上級1: 通知クラスの共通処理を基底クラスへ集める',
+  learns: ['継承', '共通処理の集約'],
   /** 100点になったときに見せる、この題材で分ける理由。 */
   why: '通知先を追加するたび、既存の通知手順を継承したクラス全体への影響を確認することになります。通知先ごとの違いが表れていれば、新しい通知方法を既存処理から切り離せます。',
   description:
@@ -97,6 +98,7 @@ const paymentGatewayInterfaceStage: Stage = {
   id: 'advanced-payment-gateway-interface',
   level: 'advanced',
   title: '上級2: 決済ゲートウェイをインターフェース越しに呼ぶ',
+  learns: ['インターフェース', 'implements'],
   /** 100点になったときに見せる、この題材で分ける理由。 */
   why: '決済会社の仕様変更が注文処理に直接入り込むと、決済以外の流れまで壊さないか確認が必要です。接続方法を境界の向こうに置けば、会社ごとの変更を局所化できます。',
   description:
@@ -234,6 +236,7 @@ const discountStrategyStage: Stage = {
   id: 'advanced-discount-strategy',
   level: 'advanced',
   title: '上級3: 会員ランクの割引をStrategyパターンへ組み替える',
+  learns: ['Strategy', 'implements'],
   /** 100点になったときに見せる、この題材で分ける理由。 */
   why: '割引条件を変えるたびに、他の割引方式と注文処理の分岐まで読み解くことになります。方式ごとの計算が分かれていれば、変更するルールを個別に見られます。',
   description:
@@ -303,6 +306,7 @@ const reportFactoryStage: Stage = {
   id: 'advanced-report-factory',
   level: 'advanced',
   title: '上級4: レポート生成処理をFactoryへ集約する',
+  learns: ['Factory', '生成の集約'],
   /** 100点になったときに見せる、この題材で分ける理由。 */
   why: 'レポート形式を追加するたび、作成手順の条件分岐に既存形式の処理が積み重なります。形式の組み立てを分ければ、新しい形式の変更が既存の出力に触れにくくなります。',
   description:
@@ -386,6 +390,7 @@ const collapseHierarchyStage: Stage = {
   id: 'advanced-collapse-hierarchy',
   level: 'advanced',
   title: '上級5: 子が1つしかない継承を畳む',
+  learns: ['継承の見直し', 'Collapse Hierarchy'],
   /** 100点になったときに見せる、この題材で分ける理由。 */
   why: '出力形式ごとに変わる処理まで親クラスに置くと、形式変更が他の出力へ波及しないか心配になります。共通手順と形式固有の処理が分かれていれば、変更範囲を判断しやすくなります。',
   description:
@@ -500,6 +505,7 @@ const interfaceSegregationStage: Stage = {
   id: 'advanced-interface-segregation',
   level: 'advanced',
   title: '上級6: 太ったインターフェースを役割ごとに分ける',
+  learns: ['ISP', 'implements'],
   /** 100点になったときに見せる、この題材で分ける理由。 */
   why: 'チャットとタスク管理の契約が一緒だと、片方だけを扱う連携先にも不要な変更や実装が求められます。用途ごとに契約を分ければ、機能追加時に関係する連携先だけを見れば済みます。',
   description:
@@ -755,6 +761,7 @@ const valueObjectStage: Stage = {
   id: 'advanced-value-object',
   level: 'advanced',
   title: '上級7: 金額と通貨を Money にまとめる',
+  learns: ['Value Object', 'カプセル化'],
   /** 100点になったときに見せる、この題材で分ける理由。 */
   why: '金額の端数や通貨の扱いを変えるとき、数値を使う各処理に同じルールが散らばっていないか探すことになります。値とその振る舞いがまとまれば、金額ルールを一箇所で確認できます。',
   description:
@@ -969,6 +976,7 @@ const templateMethodStage: Stage = {
   id: 'advanced-template-method',
   level: 'advanced',
   title: '上級8: 取り込みの手順を Template Method にまとめる',
+  learns: ['Template Method', '継承'],
   /** 100点になったときに見せる、この題材で分ける理由。 */
   why: '取込手順の共通部分と形式ごとの違いが混ざると、形式追加のたびに既存の手順全体を編集することになります。共通の流れと形式固有の処理が分かれていれば、追加箇所が明確になります。',
   description: 'ネットショップの注文取り込み。取引先ごとに CSV と JSON で注文ファイルが届き、CsvOrderImporter と JsonOrderImporter が「ファイルを読み込む → 注文データに変換する → 検証する → 保存する」をそれぞれ持っている。違うのは変換だけで、残りの3手順はコピペ。OrderImporter には parse の宣言(中身のない protected メソッド)だけが用意されている。',
