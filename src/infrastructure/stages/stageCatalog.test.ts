@@ -8,7 +8,7 @@ import { allClasses, fieldsOf, isAbstractLike, isInterfaceLike, touchedFieldIds,
 import { methodLines } from '../../domain/codebase/lineCount';
 import { scoreCodebase } from '../../domain/scoring/score';
 import type { Result } from '../../domain/shared/Result';
-import { applySolutionSteps, sampleAnswerSteps, type SolutionStep } from '../../domain/stage/sampleAnswer';
+import { applySolutionSteps, sampleAnswerSteps, solutionSnapshots, type SolutionStep } from '../../domain/stage/sampleAnswer';
 import type { Stage } from '../../domain/stage/Stage';
 import { stages } from './stageCatalog';
 
@@ -635,6 +635,18 @@ describe('stageCatalog', () => {
 
       // Assert
       expect(scoreCodebase(solved, stage)).toEqual(expect.objectContaining({ total: 100 }));
+    });
+
+    it('solutionSnapshotsは手順の数+1個を返し、最後は100点になる', () => {
+      // Arrange
+      const steps = sampleAnswerSteps[stage.id] ?? [];
+
+      // Act
+      const snapshots = solutionSnapshots(stage.codebase, steps);
+
+      // Assert
+      expect(snapshots).toHaveLength(steps.length + 1);
+      expect(scoreCodebase(snapshots[snapshots.length - 1], stage).total).toBe(100);
     });
 
     it('依頼が2件以上あり、ルール変更の依頼は初期のコードに変更箇所がある', () => {

@@ -367,3 +367,9 @@ input.class-node__name { width: 14ch; }
 .stage-roadmap__status { font-size: 12px; }
 .stage-roadmap__recommend { font-weight: bold; color: var(--accent); }
 @media (width <= 600px) { .stage-roadmap__cards { grid-template-columns: 1fr; } }
+.sample-replay__status { display: flex; gap: 16px; padding: 8px 16px 0; font-weight: 700; }
+.sample-replay__description { margin: 0; padding: 4px 16px; }
+.sample-replay__perfect { margin: 0; padding: 0 16px; font-weight: 700; color: var(--accent); }
+.sample-replay__controls { display: flex; justify-content: center; gap: 8px; padding: 8px 16px; border-top: 1px solid var(--border); }
+.sample-replay__controls button { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 8px; padding: 4px 12px; cursor: pointer; }
+.sample-replay__controls button:disabled { opacity: 0.5; cursor: not-allowed; }

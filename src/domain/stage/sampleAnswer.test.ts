@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { allClasses, findClass, findClassOfMethod, type Codebase } from '../codebase/Codebase';
-import { applySolutionSteps, sampleAnswerCodebase, type SolutionStep } from './sampleAnswer';
+import { applySolutionSteps, sampleAnswerCodebase, solutionSnapshots, type SolutionStep } from './sampleAnswer';
 
 /** クラスA(メソッドrunに処理2つ)とクラスBを持つ最小のコードベース。 */
 function twoClassCodebase(): Codebase {
@@ -326,5 +326,60 @@ describe('sampleAnswerCodebase', () => {
 
     // Assert
     expect(act).toThrow();
+  });
+});
+
+describe('solutionSnapshots', () => {
+  const steps: SolutionStep[] = [
+    { extract: { from: 'run', fragmentIds: ['f2'], name: 'doY' } },
+    { move: { method: 'doY', toClass: 'B' } },
+  ];
+
+  it('手順が空なら、元のcodebaseだけを返す', () => {
+    // Arrange
+    const codebase = twoClassCodebase();
+
+    // Act
+    const result = solutionSnapshots(codebase, []);
+
+    // Assert
+    expect(result).toHaveLength(1);
+    expect(result[0]).toBe(codebase);
+  });
+
+  it('長さは手順の数+1で、先頭は元のcodebaseそのもの', () => {
+    // Arrange
+    const codebase = twoClassCodebase();
+
+    // Act
+    const result = solutionSnapshots(codebase, steps);
+
+    // Assert
+    expect(result).toHaveLength(3);
+    expect(result[0]).toBe(codebase);
+  });
+
+  it('添字iの要素は、先頭からi手を適用した結果と同じ', () => {
+    // Arrange
+    const codebase = twoClassCodebase();
+
+    // Act
+    const result = solutionSnapshots(codebase, steps);
+
+    // Assert
+    expect(result[1]).toEqual(applySolutionSteps(codebase, steps.slice(0, 1)));
+    expect(result[2]).toEqual(applySolutionSteps(codebase, steps));
+  });
+
+  it('元のcodebaseを変更しない', () => {
+    // Arrange
+    const codebase = twoClassCodebase();
+    const before = structuredClone(codebase);
+
+    // Act
+    solutionSnapshots(codebase, steps);
+
+    // Assert
+    expect(codebase).toEqual(before);
   });
 });

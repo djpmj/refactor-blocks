@@ -3,6 +3,7 @@ import { scoreCodebase, type Score } from '../../domain/scoring/score';
 import { sampleAnswerCodebase, sampleAnswerSteps } from '../../domain/stage/sampleAnswer';
 import type { Stage } from '../../domain/stage/Stage';
 import { CritiqueButton, CritiqueResult } from '../critique/CritiquePanel';
+import { SampleAnswerReplayDialog } from './SampleAnswerReplayDialog';
 import { CodebasePreviewDialog } from '../preview/CodebasePreviewDialog';
 import { OperationGuideDialog } from '../guide/OperationGuideDialog';
 import { useGuideShortcut } from '../guide/useGuideShortcut';
@@ -69,7 +70,9 @@ type PreviewKind = 'before' | 'sample';
 /** 「変更前」「解答例」の図を読み取り専用で見せるボタン。呼び出し側で key={stage.id} を付け、ステージを切り替えたら閉じるようにする。 */
 function PreviewButtons({ stage, disabled }: Readonly<{ stage: Stage; disabled: boolean }>) {
   const [preview, setPreview] = useState<PreviewKind | null>(null);
-  const hasSampleAnswer = sampleAnswerSteps[stage.id] !== undefined;
+  const [replaying, setReplaying] = useState(false);
+  const sampleSteps = sampleAnswerSteps[stage.id];
+  const hasSampleAnswer = sampleSteps !== undefined;
   const codebase = useMemo(() => {
     if (preview === 'before') return stage.codebase;
     if (preview === 'sample' && hasSampleAnswer) return sampleAnswerCodebase(stage);
@@ -83,6 +86,10 @@ function PreviewButtons({ stage, disabled }: Readonly<{ stage: Stage; disabled: 
       <button type="button" onClick={() => setPreview('sample')} disabled={disabled || !hasSampleAnswer} title={hasSampleAnswer ? undefined : 'このステージには解答例が未登録です'}>
         解答例の図を見る
       </button>
+      <button type="button" data-testid="sample-replay-open" onClick={() => setReplaying(true)} disabled={disabled || !hasSampleAnswer} title="模範解答の手順を1手ずつ見ます(答えが分かります)">
+        解答を再生
+      </button>
+      {replaying && sampleSteps !== undefined && <SampleAnswerReplayDialog stage={stage} steps={sampleSteps} onClose={() => setReplaying(false)} />}
       <CodebasePreviewDialog title={preview === 'sample' ? '解答例の図' : '変更前の図'} codebase={codebase} methodLimit={stage.limits.method} onClose={() => setPreview(null)} />
     </>
   );
