@@ -6,6 +6,7 @@ import { CritiqueButton, CritiqueResult } from '../critique/CritiquePanel';
 import { CodebasePreviewDialog } from '../preview/CodebasePreviewDialog';
 import { useGameStore } from '../store/useGameStore';
 import { describeScore } from './describeScore';
+import { ScoreBreakdown } from './ScoreBreakdown';
 import { HintList } from './HintList';
 import { HintButton } from './HintPanel';
 import { useHints } from './useHints';
@@ -149,6 +150,7 @@ function StagePanelContent({ stage, children }: Readonly<{ stage: Stage; childre
         <CritiqueButton disabled={investigating} />
         <HintButton revealed={revealedCount} total={total} disabled={investigating} onReveal={() => setRevealed({ stageId: stage.id, count: revealedCount + 1 })} />
         <ScoreBadge score={score} />
+        <ScoreBreakdown score={score} disabled={investigating} />
       </header>
       <CritiqueResult />
       <div className={`app__body${sidebarOpen ? ' app__body--sidebar-open' : ''}`}>

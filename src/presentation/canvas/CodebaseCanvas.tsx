@@ -12,8 +12,9 @@ import {
 import { Background, Controls, ReactFlow, useReactFlow, type EdgeTypes, type NodeChange, type NodeTypes, type ReactFlowInstance, type XYPosition } from '@xyflow/react';
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { findClass, findField, findFileOfClass, findMethod, type Codebase } from '../../domain/codebase/Codebase';
+import { findClass, findClassOfMethod, findField, findFileOfClass, findMethod, type Codebase } from '../../domain/codebase/Codebase';
 import { methodLines } from '../../domain/codebase/lineCount';
+import { violationTargets } from '../../domain/scoring/violationTargets';
 import { useGameStore } from '../store/useGameStore';
 import { CanvasContextMenu } from './CanvasContextMenu';
 import { ClassNode } from './ClassNode';
@@ -81,6 +82,30 @@ function FitViewOnLayoutChange({ stageId, fileCount }: Readonly<{ stageId: strin
   useEffect(() => {
     void fitView();
   }, [stageId, fileCount, fitView]);
+  return null;
+}
+
+function FitViewForRule({ codebase, nodes }: Readonly<{ codebase: Codebase; nodes: CodebaseFlowNode[] }>) {
+  const { fitView } = useReactFlow<CodebaseFlowNode>();
+  const stage = useGameStore((state) => state.stage);
+  const focusedRule = useGameStore((state) => state.focusedRule);
+  const focusRule = useGameStore((state) => state.focusRule);
+  useEffect(() => {
+    if (focusedRule === null) return;
+    const target = violationTargets(codebase, stage)[focusedRule];
+    const classIds = new Set(target.classIds);
+    for (const methodId of target.methodIds) {
+      const owner = findClassOfMethod(codebase, methodId);
+      if (owner !== undefined) classIds.add(owner.id);
+    }
+    const nodeIds = new Set([...target.fileIds, ...classIds]);
+    const targetNodes = nodes.filter((node) => nodeIds.has(node.id));
+    if (targetNodes.length === 0) {
+      focusRule(null);
+      return;
+    }
+    void fitView({ nodes: targetNodes, padding: 0.25, duration: 350, maxZoom: 0.9 });
+  }, [codebase, fitView, focusRule, focusedRule, nodes, stage]);
   return null;
 }
 
@@ -226,6 +251,7 @@ export function CodebaseCanvas({ active }: Readonly<{ active: boolean }>) {
         <Background gap={24} />
         <Controls showInteractive={false} />
         <FitViewOnLayoutChange stageId={stageId} fileCount={visibleFileCount} />
+        <FitViewForRule codebase={codebase} nodes={nodes} />
       </ReactFlow>
       <DraggingOverlay activeId={activeId} />
       {contextMenu.target === null ? null : (

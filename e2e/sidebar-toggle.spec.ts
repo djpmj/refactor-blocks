@@ -50,7 +50,7 @@ test('狭い画面でも閉じたサイドバーのボタンをキーボード�
   expect(buttonBox.x).toBeLessThan(40);
 
   // Act: ヘッダーの操作部品をTabで進み、Spaceで開く
-  for (let tab = 0; tab < 7; tab++) await page.keyboard.press('Tab');
+  for (let tab = 0; tab < 8; tab++) await page.keyboard.press('Tab');
   await expect(openButton).toBeFocused();
   await page.keyboard.press('Space');
 

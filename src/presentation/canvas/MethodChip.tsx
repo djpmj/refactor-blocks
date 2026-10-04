@@ -1,6 +1,7 @@
 import { useDraggable } from '@dnd-kit/core';
 import type { Method } from '../../domain/codebase/Codebase';
 import { methodLines } from '../../domain/codebase/lineCount';
+import { violationTargets } from '../../domain/scoring/violationTargets';
 import { useGameStore } from '../store/useGameStore';
 import { methodDragId } from './dndIds';
 import { useInlineEdit } from './useInlineEdit';
@@ -12,13 +13,15 @@ type MethodChipViewProps = {
   selected?: boolean;
   /** 直前の変更依頼で、このメソッドの変更が必要だった依頼の数。 */
   changeCount?: number;
+  flagged?: boolean;
 };
 
 /** ドラッグ中のオーバーレイでも使う見た目だけのコンポーネント。 */
-export function MethodChipView({ method, overLimit, selected = false, changeCount = 0 }: Readonly<MethodChipViewProps>) {
+export function MethodChipView({ method, overLimit, selected = false, changeCount = 0, flagged = false }: Readonly<MethodChipViewProps>) {
   const classNames = ['method-chip', `method-chip--${method.visibility}`];
   if (overLimit) classNames.push('method-chip--over');
   if (selected) classNames.push('method-chip--selected');
+  if (flagged) classNames.push('method-chip--flagged');
   return (
     <div className={classNames.join(' ')}>
       <span className="method-chip__visibility">{VISIBILITY_MARK[method.visibility]}</span>
@@ -39,6 +42,10 @@ export function MethodChipView({ method, overLimit, selected = false, changeCoun
  */
 export function MethodChip({ method }: Readonly<{ method: Method }>) {
   const limit = useGameStore((state) => state.stage.limits.method);
+  const flagged = useGameStore((state) => {
+    const rule = state.focusedRule;
+    return rule !== null && violationTargets(state.codebase, state.stage)[rule].methodIds.includes(method.id);
+  });
   const selected = useGameStore((state) => state.selectedMethodId === method.id);
   const selectMethod = useGameStore((state) => state.selectMethod);
   const inspectMethod = useGameStore((state) => state.inspectMethod);
@@ -56,7 +63,7 @@ export function MethodChip({ method }: Readonly<{ method: Method }>) {
   // buttonの中にinputを入れると無効なHTMLになるため、編集中は draggable なボタンごと入力欄に差し替える
   if (editing) {
     return (
-      <div className="method-chip nodrag nopan" data-testid={`method-${method.name}`}>
+      <div className={`method-chip nodrag nopan${flagged ? ' method-chip--flagged' : ''}`} data-testid={`method-${method.name}`}>
         <input {...inputProps} aria-label="メソッド名" className="method-chip__name-input" />
       </div>
     );
@@ -92,7 +99,7 @@ export function MethodChip({ method }: Readonly<{ method: Method }>) {
       {...attributes}
       {...listeners}
     >
-      <MethodChipView method={method} overLimit={methodLines(method) > limit} selected={selected} changeCount={changeCount} />
+      <MethodChipView method={method} overLimit={methodLines(method) > limit} selected={selected} changeCount={changeCount} flagged={flagged} />
     </button>
   );
 }
