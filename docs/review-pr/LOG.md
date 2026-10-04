@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-04 13:20 UTC PR #78 実装: why-split-change-pain
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(1059件) / npm run lint ✅ / npm run typecheck ✅ / E2E: レビュー環境にChromiumが無く実行不可(PR本文では116件通過)
+- マージ: squash & delete-branch
+
 ## 2026-10-04 12:30 UTC PR #77 操作ガイドを追加
 
 - 判定: 合格(blocker無し)
