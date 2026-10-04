@@ -1334,6 +1334,26 @@ test('中級3: renderTemplate を public にするとアクセス制御の減点
   await expect(score).toContainText('アクセス制御 -10');
 });
 
+test('上級7: 入口メソッドを private にした後、ステージ開始時の public に戻せる', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await page.getByLabel('ステージ').selectOption('advanced-value-object');
+  await page.getByTestId('method-submitExpense').click();
+  const visibility = page.getByLabel('メソッド submitExpense の可視性');
+
+  // Act
+  await visibility.selectOption('private');
+
+  // Assert
+  await expect(visibility.locator('option[value="public"]')).toHaveJSProperty('disabled', false);
+
+  // Act
+  await visibility.selectOption('public');
+
+  // Assert
+  await expect(visibility).toHaveValue('public');
+});
+
 test('中身のないメソッドには可視性の選択が出ない', async ({ page }) => {
   // Arrange
   await page.goto('/');

@@ -132,15 +132,16 @@ function isVisibility(value: string): value is Visibility {
 /** 可視性(public / protected / private)を選ぶ欄。選んでも前提条件を満たさない値は disabled にする。 */
 function VisibilitySelect({ method }: Readonly<{ method: Method }>) {
   const codebase = useGameStore((state) => state.codebase);
+  const originalCodebase = useGameStore((state) => state.stage.codebase);
   const changeVisibility = useGameStore((state) => state.changeVisibility);
   const disabled = useMemo(
     () =>
       new Set(
         VISIBILITY_OPTIONS.filter(
-          (visibility) => visibility !== method.visibility && !changeVisibilityUseCase(codebase, method.id, visibility).ok,
+          (visibility) => visibility !== method.visibility && !changeVisibilityUseCase(codebase, method.id, visibility, originalCodebase).ok,
         ),
       ),
-    [codebase, method.id, method.visibility],
+    [codebase, method.id, method.visibility, originalCodebase],
   );
   return (
     <div className="method-editor__visibility">
@@ -162,7 +163,7 @@ function VisibilitySelect({ method }: Readonly<{ method: Method }>) {
           ))}
         </select>
       </label>
-      <p className="method-editor__visibility-hint">可視性を広げるには呼び出し元が必要です。親の抽象宣言を実装する場合も public / protected を選べます</p>
+      <p className="method-editor__visibility-hint">可視性を広げるには呼び出し元が必要です。ステージ開始時の可視性にはいつでも戻せます。親の抽象宣言を実装する場合も public / protected を選べます</p>
     </div>
   );
 }

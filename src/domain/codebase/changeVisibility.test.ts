@@ -43,6 +43,81 @@ function codebaseWith(opts: {
 }
 
 describe('changeVisibility', () => {
+  it('ステージ開始時の可視性へは呼び出し元がなくても戻せる', () => {
+    // Arrange
+    const codebase = codebaseWith({ targetVisibility: 'private' });
+
+    // Act
+    const result = changeVisibility(codebase, 'method-target', 'public', 'public');
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    expect(findMethod(result.value, 'method-target')?.visibility).toBe('public');
+    expect(findMethod(codebase, 'method-target')?.visibility).toBe('private');
+    expect(result.value).not.toBe(codebase);
+  });
+
+  it('元の可視性が protected なら protected へだけ戻せる', () => {
+    // Arrange
+    const codebase = codebaseWith({ targetVisibility: 'private' });
+
+    // Act
+    const toProtected = changeVisibility(codebase, 'method-target', 'protected', 'protected');
+    const toPublic = changeVisibility(codebase, 'method-target', 'public', 'protected');
+
+    // Assert
+    expect(toProtected.ok).toBe(true);
+    expect(toPublic).toEqual({ ok: false, error: 'widening-not-needed' });
+  });
+
+  it('元の可視性が未指定なら従来どおり広げられない', () => {
+    // Arrange
+    const codebase = codebaseWith({ targetVisibility: 'private' });
+
+    // Act
+    const result = changeVisibility(codebase, 'method-target', 'public');
+
+    // Assert
+    expect(result).toEqual({ ok: false, error: 'widening-not-needed' });
+  });
+
+  it('protected から元の public へ呼び出し元なしで戻せる', () => {
+    // Arrange
+    const codebase = codebaseWith({ targetVisibility: 'protected' });
+
+    // Act
+    const result = changeVisibility(codebase, 'method-target', 'public', 'public');
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    expect(findMethod(result.value, 'method-target')?.visibility).toBe('public');
+  });
+
+  it('元の可視性でも契約メソッドと同じ可視性は変更できない', () => {
+    // Arrange
+    const contract = codebaseWith({ targetVisibility: 'private', fragments: [] });
+    const sameVisibility = codebaseWith({ targetVisibility: 'public' });
+
+    // Act
+    const contractResult = changeVisibility(contract, 'method-target', 'public', 'public');
+    const sameResult = changeVisibility(sameVisibility, 'method-target', 'public', 'public');
+
+    // Assert
+    expect(contractResult).toEqual({ ok: false, error: 'contract-method' });
+    expect(sameResult).toEqual({ ok: false, error: 'same-visibility' });
+  });
+
+  it('元の可視性を指定しても狭める変更は呼び出し元の検査を受ける', () => {
+    // Arrange
+    const codebase = codebaseWith({ targetVisibility: 'public', callsFromOther: true });
+
+    // Act
+    const result = changeVisibility(codebase, 'method-target', 'private', 'private');
+
+    // Assert
+    expect(result).toEqual({ ok: false, error: 'narrowing-breaks-callers' });
+  });
+
   it('private → public(他クラスから呼ばれている)→ 変わる', () => {
     // Arrange
     const codebase = codebaseWith({ targetVisibility: 'private', callsFromOther: true });

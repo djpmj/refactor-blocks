@@ -300,7 +300,8 @@ function moveActions(
       apply(moveFieldUseCase(get().codebase, fieldId, targetClassId), describeMoveFieldError);
     },
     changeVisibility: (methodId, visibility) => {
-      apply(changeVisibilityUseCase(get().codebase, methodId, visibility), describeChangeVisibilityError);
+      const state = get();
+      apply(changeVisibilityUseCase(state.codebase, methodId, visibility, state.stage.codebase), describeChangeVisibilityError);
     },
     moveClass: (classId, targetFileId) => {
       apply(moveClassUseCase(get().codebase, classId, targetFileId), describeMoveClassError);
