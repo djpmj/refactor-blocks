@@ -339,3 +339,12 @@ input.class-node__name { width: 14ch; }
 @media (max-width: 600px) {
   .operation-guide__item { grid-template-columns: 1fr; gap: 2px; }
 }
+
+.draft-restored {
+  margin: 0;
+  padding: 4px 12px;
+  font-size: 0.85rem;
+  color: var(--muted, inherit);
+  background: var(--surface, transparent);
+  border-bottom: 1px solid var(--border);
+}
