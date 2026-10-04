@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Codebase, Fragment } from "../../domain/codebase/Codebase";
-import { dependencyEdges, inheritanceEdges, layoutCodebase } from "./layoutCodebase";
+import { advancedStages } from "../../infrastructure/stages/advancedStages";
+import { dependencyEdges, handleSidesForFiles, inheritanceEdges, layoutCodebase, type FileRect } from "./layoutCodebase";
 
 function callFragment(id: string, uses: readonly string[]): Fragment {
   return { id, label: id, lines: 1, responsibility: "call", uses };
@@ -86,7 +87,74 @@ describe("layoutCodebase", () => {
   });
 });
 
+describe("handleSidesForFiles", () => {
+  const rect = (x: number, y: number): FileRect => ({ x, y, width: 100, height: 100 });
+
+  it.each([
+    ["right", rect(0, 0), rect(140, 0), ["right", "left"]],
+    ["left", rect(140, 0), rect(0, 0), ["left", "right"]],
+    ["below", rect(0, 0), rect(0, 140), ["bottom", "top"]],
+    ["above", rect(0, 140), rect(0, 0), ["top", "bottom"]],
+    ["diagonal with larger horizontal gap", rect(0, 0), rect(180, 130), ["right", "left"]],
+    ["diagonal with larger vertical gap", rect(0, 0), rect(130, 180), ["bottom", "top"]],
+  ] as const)("chooses sides when target is %s", (_label, source, target, expected) => {
+    // Arrange
+    const fileRects = new Map([["a", source], ["b", target]]);
+
+    // Act
+    const sides = handleSidesForFiles({ sourceFileId: "a", targetFileId: "b", sourceClassIndex: 0, targetClassIndex: 0 }, fileRects);
+
+    // Assert
+    expect(sides).toEqual(expected);
+  });
+
+  it("keeps same-file classes vertical by class order", () => {
+    // Arrange
+    const fileRects = new Map([["a", rect(0, 0)]]);
+
+    // Act
+    const sides = handleSidesForFiles({ sourceFileId: "a", targetFileId: "a", sourceClassIndex: 1, targetClassIndex: 0 }, fileRects);
+
+    // Assert
+    expect(sides).toEqual(["top", "bottom"]);
+  });
+
+  it("uses skip only when the center segment crosses an intervening file", () => {
+    // Arrange
+    const fileRects = new Map([
+      ["a", rect(0, 0)],
+      ["b", rect(140, 0)],
+      ["blocker", rect(70, 40)],
+      ["outside", rect(70, 130)],
+    ]);
+
+    // Act
+    const endpoints = { sourceFileId: "a", targetFileId: "b", sourceClassIndex: 0, targetClassIndex: 0 };
+    const blocked = handleSidesForFiles(endpoints, fileRects);
+    const clear = handleSidesForFiles(endpoints, new Map([["a", rect(0, 0)], ["b", rect(140, 0)], ["outside", rect(70, 130)]]));
+
+    // Assert
+    expect(blocked).toEqual(["skip", "skip"]);
+    expect(clear).toEqual(["right", "left"]);
+  });
+});
+
 describe("dependencyEdges", () => {
+  it("advanced-interface-segregation の自動配置は別層の依存を上下でつなぐ", () => {
+    // Arrange
+    const stage = advancedStages.find((candidate) => candidate.id === "advanced-interface-segregation");
+    if (stage === undefined) throw new Error("advanced-interface-segregation ステージが見つかりません");
+
+    // Act
+    const edges = dependencyEdges(stage.codebase);
+
+    // Assert
+    expect(edges.find((edge) => edge.source === "class-alert-notifier" && edge.target === "class-collaboration-tool")).toMatchObject({
+      sourceHandle: "source-bottom",
+      targetHandle: "target-top",
+    });
+  });
+
   it("層が違うときは、呼ぶ側の下端から呼ばれる側の上端へつなぐ", () => {
     // Arrange
     const codebase = codebaseOf([
@@ -208,6 +276,31 @@ describe("dependencyEdges", () => {
       type: "topRoute",
       data: { lane: 0 },
     });
+  });
+
+  it("skipレーンはドラッグ後の実際のx順で重なりを割り当てる", () => {
+    // Arrange
+    const codebase = codebaseOf([
+      ["a", "A", ["method-C"]],
+      ["b", "B", ["method-D"]],
+      ["c", "C", ["method-A"]],
+      ["d", "D", ["method-B"]],
+    ]);
+    const fileRects = new Map([
+      ["file-a", { x: 0, y: 0, width: 100, height: 100 }],
+      ["file-b", { x: 140, y: 0, width: 100, height: 100 }],
+      ["file-c", { x: 280, y: 0, width: 100, height: 100 }],
+      ["file-d", { x: 420, y: 0, width: 100, height: 100 }],
+    ]);
+
+    // Act
+    const edges = dependencyEdges(codebase, fileRects);
+
+    // Assert: A→C と B→D の区間はB/Cで重なるため、別レーンになる
+    const aToC = edges.find((edge) => edge.source === "class-A" && edge.target === "class-C");
+    const bToD = edges.find((edge) => edge.source === "class-B" && edge.target === "class-D");
+    expect(aToC).toMatchObject({ type: "topRoute", data: { lane: 0 } });
+    expect(bToD).toMatchObject({ type: "topRoute", data: { lane: 2 } });
   });
 });
 

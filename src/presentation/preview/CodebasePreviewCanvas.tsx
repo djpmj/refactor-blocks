@@ -1,7 +1,7 @@
 import { Background, Controls, ReactFlow, type EdgeTypes, type NodeTypes } from '@xyflow/react';
 import { useMemo } from 'react';
 import type { Codebase } from '../../domain/codebase/Codebase';
-import { dependencyEdges, inheritanceEdges, layoutCodebase } from '../canvas/layoutCodebase';
+import { dependencyEdges, fileRectsFromNodes, inheritanceEdges, layoutCodebase } from '../canvas/layoutCodebase';
 import { TopRouteEdge } from '../canvas/TopRouteEdge';
 import { CodebasePreviewProvider } from './CodebasePreviewContext';
 import { PreviewClassNode } from './PreviewClassNode';
@@ -19,11 +19,15 @@ type CodebasePreviewCanvasProps = {
 
 /** コードベースを読み取り専用で描くキャンバス。「解答例の図」と設計くらべで使う。 */
 export function CodebasePreviewCanvas({ codebase, methodLimit, wheelZoom = true }: CodebasePreviewCanvasProps) {
-  const edges = useMemo(() => [...dependencyEdges(codebase), ...inheritanceEdges(codebase)], [codebase]);
+  const nodes = useMemo(() => layoutCodebase(codebase), [codebase]);
+  const edges = useMemo(() => {
+    const fileRects = fileRectsFromNodes(nodes);
+    return [...dependencyEdges(codebase, fileRects), ...inheritanceEdges(codebase, fileRects)];
+  }, [codebase, nodes]);
   return (
     <CodebasePreviewProvider value={{ codebase, methodLimit }}>
       <ReactFlow
-        nodes={layoutCodebase(codebase)}
+        nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}

@@ -357,6 +357,44 @@ test('抽出したメソッドを別クラスへ移すと、クラス間に依�
   await expect(edge).toHaveCount(1);
 });
 
+test('ファイルを横並びにドラッグしている最中に依存矢印が左右のハンドルへ切り替わる', async ({ page }) => {
+  // Arrange
+  await openOrderStage(page);
+  await page.getByTestId('method-placeOrder').click();
+  await page.getByLabel('消費税を計算する(軽減税率あり)').check();
+  await page.getByLabel('新しいメソッド名').fill('calculateTax');
+  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+  await dragMethodToClass(page, 'method-calculateTax', 'class-TaxCalculator');
+  const movingFile = page.locator('.react-flow__node[data-id="file-tax-calculator"]');
+  const anchorFile = page.locator('.react-flow__node[data-id="file-order-service"]');
+  const movingBox = await movingFile.boundingBox();
+  const anchorBox = await anchorFile.boundingBox();
+  if (movingBox === null || anchorBox === null) throw new Error('ファイルの位置を取得できません');
+  const grabX = movingBox.x + 8;
+  const grabY = movingBox.y + 8;
+
+  // Act: TaxCalculator を OrderService の右隣へ動かし、離す前に辺を確認する
+  await page.mouse.move(grabX, grabY);
+  await page.mouse.down();
+  await page.mouse.move(grabX + 20, grabY, { steps: 5 });
+  await page.mouse.move(anchorBox.x + anchorBox.width + 48, anchorBox.y, { steps: 12 });
+
+  // Assert: 矢印の両端がsource-rightとtarget-leftハンドルの中心に接続している
+  const pathEnds = await page.evaluate<{ start: { x: number; y: number }; end: { x: number; y: number } } | null, undefined>(
+    `(() => { const path = document.querySelector('[data-testid="rf__edge-dep-class-order-service-class-tax-calculator"] .react-flow__edge-path'); if (!(path instanceof SVGPathElement)) return null; const matrix = path.getScreenCTM(); if (matrix === null) return null; const start = path.getPointAtLength(0).matrixTransform(matrix); const end = path.getPointAtLength(path.getTotalLength()).matrixTransform(matrix); return { start: { x: start.x, y: start.y }, end: { x: end.x, y: end.y } }; })()`,
+    undefined,
+  );
+  if (pathEnds === null) throw new Error('矢印の両端を取得できません');
+  const sourceHandle = await page.getByTestId('class-OrderService').locator('.class-node__handle--source-right').boundingBox();
+  const targetHandle = await page.getByTestId('class-TaxCalculator').locator('.class-node__handle--target-left').boundingBox();
+  if (sourceHandle === null || targetHandle === null) throw new Error('接続ハンドルの位置を取得できません');
+  expect(Math.abs(pathEnds.start.x - sourceHandle.x - sourceHandle.width / 2)).toBeLessThan(6);
+  expect(Math.abs(pathEnds.start.y - sourceHandle.y - sourceHandle.height / 2)).toBeLessThan(6);
+  expect(Math.abs(pathEnds.end.x - targetHandle.x - targetHandle.width / 2)).toBeLessThan(6);
+  expect(Math.abs(pathEnds.end.y - targetHandle.y - targetHandle.height / 2)).toBeLessThan(6);
+  await page.mouse.up();
+});
+
 test('ズームアウトするとファイル名とクラス名だけになり、ズームインするとメソッドと行数が戻る', async ({ page }) => {
   // Arrange
   await openOrderStage(page);
