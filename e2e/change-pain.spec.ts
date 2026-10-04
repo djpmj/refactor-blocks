@@ -51,6 +51,7 @@ test('100点で理由を見せてサイドバーを一度だけ自動で開く',
   const toggle = page.locator('.sidebar-toggle');
   await expect(page.getByTestId('score')).toContainText('100');
   await expect(reason).toContainText('税率');
+  await expect(reason).toContainText('読む量は');
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
 
   await page.getByRole('button', { name: 'サイドバーを閉じる' }).click();
@@ -63,4 +64,20 @@ test('100点で理由を見せてサイドバーを一度だけ自動で開く',
   await page.getByTestId('change-request-start').click();
   await expect(page.getByTestId('change-panel')).toBeVisible();
   await expect(page.locator('.change-pain')).toHaveCount(0);
+});
+
+test('長いメソッドを分けると目を通す行数が減る。100点で読む量の変化が出る', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/');
+  await page.getByLabel('ステージ').selectOption({ label: 'チュートリアル1: 長いメソッドを分ける' });
+  const card = page.getByRole('region', { name: 'もし、この変更が来たら?' });
+  await expect(card).toContainText('目を通す行数は今 86 行');
+  await expect(card).toContainText('ReportService.printMonthlyReport(86行)');
+
+  await page.getByTestId('method-printMonthlyReport').click();
+  await page.getByLabel('表のヘッダーを組み立てる').check();
+  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+  await expect(card).toContainText('目を通す行数は今 73 行');
+  await expect(card).toContainText('最初は 86 行でした');
+  await expect(card).toContainText('ReportService.printMonthlyReport(73行)');
 });
