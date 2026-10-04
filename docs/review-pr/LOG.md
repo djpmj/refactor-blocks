@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-04 04:00 UTC PR #46 メソッドエディタのタブをタブバーにする (#34)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(995件) / npm run lint ✅ / npm run typecheck ✅(前回指摘のコンフリクト解消を確認。CSSと aria-hidden アイコンのみの変更でE2Eは未実行、PR本文では94件成功と報告)
+- マージ: squash & delete-branch
+
 ## 2026-10-04 03:50 UTC PR #55 継承と実装の矢印を色と線種で分ける (#43)
 
 - 判定: 合格(blocker無し)
