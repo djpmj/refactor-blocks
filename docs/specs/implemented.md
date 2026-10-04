@@ -42,3 +42,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [resizable-sidebar](resizable-sidebar.md) | 右サイドバーの幅をドラッグ・キーボードで変更できるようにする |
 | [sidebar-toggle-position](sidebar-toggle-position.md) | 左サイドバーの開閉ボタンをサイドバーの境界へ移す |
 | [edge-handles-by-position](edge-handles-by-position.md) | 矢印の出入り口をファイルの実際の位置関係で決める |
+| [visibility-restore-original](visibility-restore-original.md) | ステージ開始時の可視性へは呼び出し元がなくても戻せる |

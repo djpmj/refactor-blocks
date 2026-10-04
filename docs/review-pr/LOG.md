@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-04 02:30 UTC PR #51 元のメソッド可視性へ戻せるようにする (#37)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅(E2EはChromium未導入で実行不可。差分を読んで確認)
+- マージ: squash & delete-branch
+
 ## 2026-10-04 02:15 UTC PR #50 ファイル位置に合わせて矢印の接続点を切り替える (#36)
 
 - 判定: 合格(blocker無し。suggestion: 古いdocコメントの残り・論理位置/矩形の二重ルートの一本化)
