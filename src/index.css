@@ -182,7 +182,8 @@ input.class-node__name { width: 14ch; }
 .class-node__handle--source-skip { left: 65%; top: -72px; }
 .class-node__handle--target-skip { left: 35%; top: -72px; }
 .react-flow__edge.edge--cyclic .react-flow__edge-path { stroke: var(--danger); stroke-width: 2; }
-.react-flow__edge.edge--inheritance .react-flow__edge-path { stroke: var(--accent); stroke-width: 2; }
+.react-flow__edge.edge--inheritance .react-flow__edge-path { stroke: var(--accent); stroke-width: 2.5; }
+#inheritance-arrow path { fill: var(--surface); stroke: var(--accent); stroke-width: 2; }
 .file-node--drop-target { border-color: var(--accent); }
 .file-node__empty { color: var(--muted); font-size: 12px; text-align: center; padding: 24px 0; }
 .class-node__header { cursor: grab; }
