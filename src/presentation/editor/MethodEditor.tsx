@@ -16,6 +16,7 @@ import { changeVisibilityUseCase } from '../../application/RefactorUseCases';
 import { findMergeCandidates, type MergeCandidate } from '../../domain/codebase/mergeMethods';
 import { methodLines } from '../../domain/codebase/lineCount';
 import { suggestMethodName } from '../../domain/codebase/suggestMethodName';
+import { showsVisibilityControl } from '../../domain/stage/showsVisibilityControl';
 import { ChangeMemo } from '../change/ChangeMemo';
 import { ClassCodePreview } from './ClassCodePreview';
 import { useGameStore } from '../store/useGameStore';
@@ -169,12 +170,12 @@ function VisibilitySelect({ method }: Readonly<{ method: Method }>) {
 }
 
 /** 呼び出し元へ戻す(private)・空実装のメソッドを削除、の2つのボタン。どちらも条件を満たすときだけ表示する。 */
-function MethodActions({ method }: Readonly<{ method: Method }>) {
+function MethodActions({ method, showVisibility }: Readonly<{ method: Method; showVisibility: boolean }>) {
   const inlineMethod = useGameStore((state) => state.inlineMethod);
   const deleteMethod = useGameStore((state) => state.deleteMethod);
   return (
     <>
-      {method.fragments.length > 0 ? <VisibilitySelect method={method} /> : null}
+      {showVisibility && method.fragments.length > 0 ? <VisibilitySelect method={method} /> : null}
       {method.visibility === 'private' ? (
         <button
           type="button"
@@ -200,7 +201,7 @@ function MethodActions({ method }: Readonly<{ method: Method }>) {
 }
 
 /** 選択中のメソッドの中身を表示し、処理のまとまりを選んで Extract Method する。 */
-function MethodEditorBody({ method }: Readonly<{ method: Method }>) {
+function MethodEditorBody({ method, showVisibility }: Readonly<{ method: Method; showVisibility: boolean }>) {
   const codebase = useGameStore((state) => state.codebase);
   const owner = findClassOfMethod(codebase, method.id);
   // codebaseが変わらない限り同じ配列参照を保つ(毎レンダー新しい配列を作るとZustandの購読が無限ループする)
@@ -251,14 +252,15 @@ function MethodEditorBody({ method }: Readonly<{ method: Method }>) {
             </button>
           </div>
           {mergeCandidates.length > 0 ? <MergeSection method={method} candidates={mergeCandidates} /> : null}
-          <MethodActions method={method} />
+          <MethodActions method={method} showVisibility={showVisibility} />
         </div>
       )}
     </>
   );
 }
 
-export function MethodEditor() {
+export function MethodEditor({ alwaysShowVisibility = false }: Readonly<{ alwaysShowVisibility?: boolean }>) {
+  const stage = useGameStore((state) => state.stage);
   const method = useGameStore((state) =>
     state.selectedMethodId === null ? undefined : findMethod(state.codebase, state.selectedMethodId),
   );
@@ -268,7 +270,7 @@ export function MethodEditor() {
       {method === undefined ? (
         <p className="method-editor__hint">メソッドをクリックすると、中の処理がここに表示されます</p>
       ) : (
-        <MethodEditorBody key={method.id} method={method} />
+        <MethodEditorBody key={method.id} method={method} showVisibility={alwaysShowVisibility || showsVisibilityControl(stage)} />
       )}
       <ChangeMemo />
       {message === null ? null : (

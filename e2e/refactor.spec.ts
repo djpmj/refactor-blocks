@@ -1334,12 +1334,12 @@ test('中級3: renderTemplate を public にするとアクセス制御の減点
   await expect(score).toContainText('アクセス制御 -10');
 });
 
-test('上級7: 入口メソッドを private にした後、ステージ開始時の public に戻せる', async ({ page }) => {
+test('上級8: upload を private にした後、ステージ開始時の public に戻せる', async ({ page }) => {
   // Arrange
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption('advanced-value-object');
-  await page.getByTestId('method-submitExpense').click();
-  const visibility = page.getByLabel('メソッド submitExpense の可視性');
+  await page.getByLabel('ステージ').selectOption({ label: '上級8: 取り込みの手順を Template Method にまとめる' });
+  await page.getByTestId('method-upload').click();
+  const visibility = page.getByLabel('メソッド upload の可視性');
 
   // Act
   await visibility.selectOption('private');

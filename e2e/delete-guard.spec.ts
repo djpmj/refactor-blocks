@@ -5,14 +5,14 @@ async function openStage(page: Page, label: string) {
   await page.getByLabel('ステージ').selectOption({ label });
 }
 
-async function dragMethodToClass(page: Page, methodId: string, classId: string) {
+async function dragMethodToEmptyCanvas(page: Page, methodId: string) {
   const source = await page.getByTestId(methodId).boundingBox();
-  const target = await page.getByTestId(classId).boundingBox();
-  if (source === null || target === null) throw new Error('要素の位置を取得できません');
+  const pane = await page.locator('.react-flow__pane').boundingBox();
+  if (source === null || pane === null) throw new Error('要素の位置を取得できません');
   await page.mouse.move(source.x + source.width / 2, source.y + source.height / 2);
   await page.mouse.down();
   await page.mouse.move(source.x + source.width / 2 + 20, source.y + source.height / 2, { steps: 5 });
-  await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2, { steps: 15 });
+  await page.mouse.move(pane.x + pane.width - 20, pane.y + pane.height - 20, { steps: 15 });
   await page.mouse.up();
 }
 
@@ -54,19 +54,19 @@ test('処理のあるファイルは削除できず、循環依存の減点が�
 });
 
 test('public にした抽出メソッドが残るクラスは削除できない', async ({ page }) => {
-  await openStage(page, 'チュートリアル2: 太った placeOrder');
-  await page.getByTestId('method-placeOrder').click();
-  await page.getByLabel('消費税を計算する(軽減税率あり)').check();
-  await page.getByLabel('新しいメソッド名').fill('calculateTax');
+  await openStage(page, '中級3: 越境する private メソッド');
+  await page.getByTestId('method-notifyShipment').click();
+  await page.getByLabel('通知に必要な情報を集める').check();
+  await page.getByLabel('新しいメソッド名').fill('gatherNotificationInfo');
   await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
-  await dragMethodToClass(page, 'method-calculateTax', 'class-TaxCalculator');
-  const visibility = page.getByLabel('メソッド calculateTax の可視性');
-  await clickInCanvas(page, 'method-calculateTax');
+  await dragMethodToEmptyCanvas(page, 'method-gatherNotificationInfo');
+  const visibility = page.getByLabel('メソッド gatherNotificationInfo の可視性');
+  await clickInCanvas(page, 'method-gatherNotificationInfo');
   await expect(visibility).toBeVisible();
   await visibility.selectOption('public');
-  await page.getByTestId('class-header-TaxCalculator').click({ button: 'right' });
+  await page.getByTestId('class-header-NewClass').click({ button: 'right' });
   await page.getByTestId('context-menu').getByRole('menuitem', { name: 'クラスを削除' }).click();
 
   await expect(page.getByRole('alert')).toHaveText('処理が残っているクラスは削除できません。先にメソッドを別のクラスへ移してください');
-  await expect(page.getByTestId('class-TaxCalculator').getByTestId('method-calculateTax')).toBeVisible();
+  await expect(page.getByTestId('class-NewClass').getByTestId('method-gatherNotificationInfo')).toBeVisible();
 });

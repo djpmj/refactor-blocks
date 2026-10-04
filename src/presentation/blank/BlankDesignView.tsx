@@ -48,7 +48,7 @@ function BlankDesignBody({ active }: Readonly<{ active: boolean }>) {
               }}
             />
           ) : (
-            <MethodEditor />
+            <MethodEditor alwaysShowVisibility />
           )}
         </div>
       </main>
