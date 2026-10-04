@@ -74,6 +74,22 @@ test('長いメソッドを分けると目を通す行数が減る。100点で�
   await expect(card).toContainText('目を通す行数は今 86 行');
   await expect(card).toContainText('ReportService.printMonthlyReport(86行)');
 
+  const locations = page.locator('.change-pain li');
+  const originalLocations = await locations.evaluateAll((items) => items.map((item) => ({
+    text: item.textContent,
+    childCount: item.childElementCount,
+  })));
+  await expect(locations).toHaveCount(1);
+  await expect.poll(() => locations.first().evaluate((item) => item.scrollWidth <= item.clientWidth)).toBe(true);
+  await page.setViewportSize({ width: 600, height: 900 });
+  await expect.poll(() => locations.first().evaluate((item) => item.scrollWidth <= item.clientWidth)).toBe(true);
+  expect(await locations.evaluateAll((items) => items.map((item) => ({
+    text: item.textContent,
+    childCount: item.childElementCount,
+  })))).toEqual(originalLocations);
+  await expect(card).toContainText('ReportService.printMonthlyReport(86行)');
+  await page.setViewportSize({ width: 1440, height: 900 });
+
   await page.getByTestId('method-printMonthlyReport').click();
   await page.getByLabel('表のヘッダーを組み立てる').check();
   await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
