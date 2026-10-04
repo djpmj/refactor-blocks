@@ -13,6 +13,7 @@ import { describeScore } from './describeScore';
 import { ScoreBreakdown } from './ScoreBreakdown';
 import { HintList } from './HintList';
 import { HintButton } from './HintPanel';
+import { ConceptCheckPanel } from './ConceptCheckPanel';
 import { ChangePainCard } from './ChangePainCard';
 import { ManualFixPanel } from './ManualFixPanel';
 import { LEVEL_LABEL } from './levelLabel';
@@ -218,6 +219,7 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
             <summary>どんなコード?</summary>
             <p data-testid="stage-description">{stage.description}</p>
           </details>
+          {!investigating && score.total >= 100 && <ConceptCheckPanel key={stage.id} checks={stage.checks} />}
         </aside>
         <button
           type="button"

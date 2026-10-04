@@ -5,6 +5,20 @@ import type { LineLimits } from '../scoring/lineLimits';
 /** ステージの難易度。ステージ選択ではこの順に並べる。 */
 export type StageLevel = 'tutorial' | 'beginner' | 'intermediate' | 'advanced';
 
+export type CheckChoice = {
+  readonly text: string;
+  /** この選択肢を選んだときに出す解説。 */
+  readonly explanation: string;
+};
+
+export type ConceptCheck = {
+  readonly id: string;
+  readonly question: string;
+  readonly choices: readonly CheckChoice[];
+  /** 正解の選択肢の添字(0始まり)。 */
+  readonly answer: number;
+};
+
 export type Stage = {
   readonly id: string;
   readonly level: StageLevel;
@@ -16,6 +30,8 @@ export type Stage = {
   readonly description: string;
   /** ステージ一覧に出す「学べること」。1〜3個の短い名前。 */
   readonly learns: readonly string[];
+  /** 100点になったときに出す理解度チェック。2〜3問。 */
+  readonly checks: readonly ConceptCheck[];
   readonly limits: LineLimits;
   /** 1クラスが依存してよいクラス数の上限。 */
   readonly dependencyLimit: number;

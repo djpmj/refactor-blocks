@@ -11,6 +11,8 @@ import { behaviorTests, runBehaviorTests } from '../../domain/testing/behaviorTe
 import type { Result } from '../../domain/shared/Result';
 import { applySolutionSteps, sampleAnswerSteps, solutionSnapshots, type SolutionStep } from '../../domain/stage/sampleAnswer';
 import type { Stage } from '../../domain/stage/Stage';
+import { blankDesignProblems } from '../blankDesigns/blankDesignProblems';
+import { validateCheck } from '../../domain/stage/conceptCheck';
 import { stages } from './stageCatalog';
 
 /** 赤になっているテストの失敗。onlyNonCompile なら、コンパイルエラー以外だけ。 */
@@ -550,6 +552,33 @@ describe('stageCatalog', () => {
     expect(count).toBeGreaterThanOrEqual(1);
     expect(count).toBeLessThanOrEqual(3);
     expect(blanks).toEqual([]);
+  });
+
+  const checkTargets = [...stages, ...blankDesignProblems].map((stage) => [stage.title, stage.checks] as const);
+
+  it.each(checkTargets)('%s: 理解度チェックが2〜3問あり、すべて書き方の決まりを満たす', (_title, checks) => {
+    // Arrange
+    const results = checks.map(validateCheck);
+
+    // Act
+    const errors = results.filter((result) => !result.ok);
+
+    // Assert
+    expect(checks.length).toBeGreaterThanOrEqual(2);
+    expect(checks.length).toBeLessThanOrEqual(3);
+    expect(errors).toEqual([]);
+  });
+
+  it.each(checkTargets)('%s: 理解度チェックのIDが重複せず、正解の位置が全問同じにならない', (_title, checks) => {
+    // Arrange
+    const ids = checks.map((check) => check.id);
+
+    // Act
+    const answers = new Set(checks.map((check) => check.answer));
+
+    // Assert
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(answers.size).toBeGreaterThan(1);
   });
 
   describe.each(stages.map((stage) => [stage.title, stage] as const))('%s', (_title, stage) => {
