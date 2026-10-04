@@ -9,6 +9,8 @@ export type Stage = {
   readonly id: string;
   readonly level: StageLevel;
   readonly title: string;
+  /** 100点になったときに見せる、この題材で分ける理由。 */
+  readonly why: string;
   readonly goal: string;
   /** どんなコードで、何が困っているのか。プレイヤーが題材を思い浮かべられるように書く。 */
   readonly description: string;
