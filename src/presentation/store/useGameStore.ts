@@ -11,13 +11,12 @@ import type { Stage } from '../../domain/stage/Stage';
 import { fetchCritique } from '../../infrastructure/critique/critiqueClient';
 import {
   addClassUseCase,
-  addFileUseCase,
+  addNewFileUseCase,
   addInterfaceUseCase,
   deleteClassUseCase,
   deleteFileUseCase,
   deleteMethodUseCase,
   describeAddClassError,
-  describeAddFileError,
   describeAddInterfaceError,
   describeDeleteClassError,
   describeDeleteFileError,
@@ -30,7 +29,6 @@ import {
   describeMoveFieldError,
   describeRemoveInterfaceError,
   describeRenameClassError,
-  describeRenameFileError,
   describeRenameMethodError,
   extractMethodUseCase,
   inlineMethodUseCase,
@@ -40,10 +38,10 @@ import {
   moveClassUseCase,
   moveFieldUseCase,
   moveMethodToNewClassUseCase,
+  moveMethodToNewClassInFileUseCase,
   moveMethodUseCase,
   removeInterfaceUseCase,
   renameClassUseCase,
-  renameFileUseCase,
   renameMethodUseCase,
   describeSetSuperclassError,
   setSuperclassUseCase,
@@ -108,12 +106,12 @@ type GameState = {
   mergeMethods: (methodAId: string, methodBId: string, newMethodName: string) => boolean;
   inlineMethod: (methodId: string) => void;
   addClass: (fileId: string, className: string) => boolean;
-  addFile: (path: string) => boolean;
+  addFile: () => void;
   moveClass: (classId: string, targetFileId: string) => void;
   moveClassToNewFile: (classId: string) => void;
   moveMethodToNewClass: (methodId: string) => void;
+  moveMethodToNewClassInFile: (methodId: string, fileId: string) => void;
   renameClass: (classId: string, newName: string) => boolean;
-  renameFile: (fileId: string, newPath: string) => boolean;
   renameMethod: (methodId: string, newName: string) => boolean;
   setSuperclass: (classId: string, superclassName: string | null) => boolean;
   addInterface: (classId: string, interfaceName: string) => boolean;
@@ -263,13 +261,10 @@ type Apply = <E>(result: Result<Codebase, E>, describe: (error: E) => string) =>
 function renameActions(
   apply: Apply,
   get: () => GameState,
-): Pick<GameState, 'renameClass' | 'renameFile' | 'renameMethod' | 'setSuperclass' | 'addInterface' | 'removeInterface'> {
+): Pick<GameState, 'renameClass' | 'renameMethod' | 'setSuperclass' | 'addInterface' | 'removeInterface'> {
   return {
     renameClass: (classId, newName) => {
       return apply(renameClassUseCase(get().codebase, classId, newName), describeRenameClassError);
-    },
-    renameFile: (fileId, newPath) => {
-      return apply(renameFileUseCase(get().codebase, fileId, newPath), describeRenameFileError);
     },
     renameMethod: (methodId, newName) => {
       return apply(renameMethodUseCase(get().codebase, methodId, newName), describeRenameMethodError);
@@ -290,7 +285,7 @@ function renameActions(
 function moveActions(
   apply: Apply,
   get: () => GameState,
-): Pick<GameState, 'moveMethod' | 'moveField' | 'changeVisibility' | 'moveClass' | 'moveClassToNewFile' | 'moveMethodToNewClass'> {
+): Pick<GameState, 'moveMethod' | 'moveField' | 'changeVisibility' | 'moveClass' | 'moveClassToNewFile' | 'moveMethodToNewClass' | 'moveMethodToNewClassInFile'> {
   const newId = () => crypto.randomUUID();
   return {
     moveMethod: (methodId, targetClassId) => {
@@ -311,6 +306,9 @@ function moveActions(
     },
     moveMethodToNewClass: (methodId) => {
       apply(moveMethodToNewClassUseCase(get().codebase, methodId, newId), describeMoveOutError);
+    },
+    moveMethodToNewClassInFile: (methodId, fileId) => {
+      apply(moveMethodToNewClassInFileUseCase(get().codebase, methodId, fileId, newId), describeMoveOutError);
     },
   };
 }
@@ -391,8 +389,8 @@ export function createGameStore(allStages: readonly Stage[]): GameStore {
       addClass: (fileId, className) => {
         return apply(addClassUseCase(get().codebase, fileId, className, () => crypto.randomUUID()), describeAddClassError);
       },
-      addFile: (path) => {
-        return apply(addFileUseCase(get().codebase, path, () => crypto.randomUUID()), describeAddFileError);
+      addFile: () => {
+        apply(addNewFileUseCase(get().codebase, () => crypto.randomUUID()), () => '');
       },
       ...renameActions(apply, get),
       ...deleteActions(apply, set, get),

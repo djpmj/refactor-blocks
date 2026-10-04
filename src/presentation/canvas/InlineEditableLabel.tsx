@@ -7,7 +7,7 @@ type InlineEditableLabelProps = {
   readonly onSubmit: (next: string) => boolean;
 };
 
-/** ダブルクリックでその場編集になるラベル。ファイルのパス・クラス名の表示に使う。 */
+/** ダブルクリックでその場編集になるクラス名ラベル。 */
 export function InlineEditableLabel({ value, ariaLabel, className, onSubmit }: Readonly<InlineEditableLabelProps>) {
   const { editing, startEditing, inputProps } = useInlineEdit(value, onSubmit);
 

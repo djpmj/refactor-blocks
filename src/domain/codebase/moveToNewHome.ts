@@ -4,16 +4,11 @@ import { allClasses, findClass, findMethod, type Codebase } from './Codebase';
 import { moveClass } from './moveClass';
 import { moveMethod } from './moveMethod';
 import { err, type Result } from '../shared/Result';
+import { uniqueName } from './naming';
 
 export type MoveClassToNewFileError = 'class-not-found';
 export type MoveMethodToNewClassError = 'method-not-found';
-
-/** 使われていない名前になるまで連番(2, 3, ...)を付ける。 */
-function uniqueName(base: string, isTaken: (candidate: string) => boolean): string {
-  let suffix = 1;
-  while (isTaken(suffix === 1 ? base : `${base}${String(suffix)}`)) suffix++;
-  return suffix === 1 ? base : `${base}${String(suffix)}`;
-}
+export type MoveMethodToNewClassInFileError = 'method-not-found' | 'file-not-found';
 
 function newFilePath(codebase: Codebase, className: string): string {
   const name = uniqueName(className, (candidate) => codebase.files.some((file) => file.path === `src/${candidate}.ts`));
@@ -48,5 +43,21 @@ export function moveMethodToNewClass(
   const withClass = addClass(withFile.value, ids.fileId, className, ids.classId);
   if (!withClass.ok) return err('method-not-found');
   const moved = moveMethod(withClass.value, methodId, ids.classId);
+  return moved.ok ? moved : err('method-not-found');
+}
+
+/** 空のファイル枠へメソッドを落としたとき: そのファイルに新しいクラスを作ってメソッドを移す。 */
+export function moveMethodToNewClassInFile(
+  codebase: Codebase,
+  methodId: string,
+  targetFileId: string,
+  newClassId: string,
+): Result<Codebase, MoveMethodToNewClassInFileError> {
+  if (findMethod(codebase, methodId) === undefined) return err('method-not-found');
+  if (!codebase.files.some((file) => file.id === targetFileId)) return err('file-not-found');
+  const className = uniqueName('NewClass', (name) => allClasses(codebase).some((codeClass) => codeClass.name === name));
+  const withClass = addClass(codebase, targetFileId, className, newClassId);
+  if (!withClass.ok) return err('file-not-found');
+  const moved = moveMethod(withClass.value, methodId, newClassId);
   return moved.ok ? moved : err('method-not-found');
 }

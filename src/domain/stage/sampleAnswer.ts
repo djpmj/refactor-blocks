@@ -10,7 +10,6 @@ import { moveClass } from '../codebase/moveClass';
 import { moveField } from '../codebase/moveField';
 import { moveMethod } from '../codebase/moveMethod';
 import { renameClass } from '../codebase/renameClass';
-import { renameFile } from '../codebase/renameFile';
 import { addInterface, removeInterface, setSuperclass } from '../codebase/setSuperclass';
 import type { Result } from '../shared/Result';
 import type { Stage } from './Stage';
@@ -73,8 +72,7 @@ export type SolutionStep =
     }
   | { readonly addInterface: { readonly class: string; readonly interface: string } }
   | { readonly removeInterface: { readonly class: string; readonly interface: string } }
-  | { readonly renameClass: { readonly name: string; readonly newName: string } }
-  | { readonly renameFile: { readonly path: string; readonly newPath: string } };
+  | { readonly renameClass: { readonly name: string; readonly newName: string } };
 
 function unwrap<T, E>(result: Result<T, E>): T {
   if (!result.ok) throw new Error(`模範解答の適用に失敗しました: ${String(result.error)}`);
@@ -141,10 +139,6 @@ function applyStructuralStep(codebase: Codebase, step: StructuralStep, newId: st
   if ('renameClass' in step) {
     const { name, newName } = step.renameClass;
     return unwrap(renameClass(codebase, classIdByName(codebase, name), newName));
-  }
-  if ('renameFile' in step) {
-    const { path, newPath } = step.renameFile;
-    return unwrap(renameFile(codebase, fileIdByPath(codebase, path), newPath));
   }
   const { class: className, superclass } = step.setSuperclass;
   return unwrap(setSuperclass(codebase, classIdByName(codebase, className), superclass));
@@ -305,7 +299,6 @@ export const sampleAnswerSteps: Partial<Record<string, readonly SolutionStep[]>>
   ],
   'advanced-interface-segregation': [
     { renameClass: { name: 'CollaborationTool', newName: 'ChatClient' } },
-    { renameFile: { path: 'src/integration/CollaborationTool.ts', newPath: 'src/integration/ChatClient.ts' } },
     { addFile: 'src/integration/TaskTracker.ts' },
     { addClass: { name: 'TaskTracker', file: 'src/integration/TaskTracker.ts' } },
     { move: { method: 'createTask', fromClass: 'ChatClient', toClass: 'TaskTracker' } },

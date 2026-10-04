@@ -116,9 +116,9 @@ const cyclicDependencyStage: Stage = {
 const godFileStage: Stage = {
   id: 'intermediate-god-file',
   level: 'intermediate',
-  title: '中級2: 何でも入った services.ts',
+  title: '中級2: 何でも入った1つのファイル',
   description:
-    'カート(CartService)・配送(ShippingService)・ポイント(PointService)の3クラスが、1つのファイル services.ts に同居している。しかも CartService が、送料の計算とポイントの付与を private メソッドとして抱え込んでいる。',
+    'カート(CartService)・配送(ShippingService)・ポイント(PointService)の3クラスが、1つのファイルに同居している。しかも CartService が、送料の計算とポイントの付与を private メソッドとして抱え込んでいる。',
   goal: 'ファイルは300行、クラスは180行以内、1クラスの責務は2種類まで。メソッドを持ち主へ返し、「ファイルを追加」してクラスを移そう',
   limits: { method: 100, class: 180, file: 300 },
   dependencyLimit: 2,

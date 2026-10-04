@@ -14,7 +14,6 @@ export function PreviewFileNode({ data }: Readonly<NodeProps<FileFlowNode>>) {
         <span className="file-node__icon" aria-hidden>
           📄
         </span>
-        <span className="file-node__path">{file.path}</span>
         <span className="line-badge">{fileLines(file)}行</span>
       </div>
       {file.classes.length === 0 ? <div className="file-node__empty">クラスなし</div> : null}

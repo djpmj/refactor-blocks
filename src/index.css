@@ -92,7 +92,6 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 
 .file-node { width: 100%; height: 100%; background: var(--file-bg); border: 2px dashed var(--border); border-radius: 12px; }
 .file-node__header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; font-size: 13px; font-family: ui-monospace, monospace; }
-.file-node__path { flex: 1; }
 
 .class-node { width: 100%; height: 100%; background: var(--surface); border: 2px solid var(--border); border-radius: 10px; transition: border-color 0.15s, box-shadow 0.15s; }
 .class-node--drop-target { border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent); }
@@ -101,7 +100,7 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .class-node__header { display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid var(--border); font-weight: 700; }
 .class-node__name-group { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
 .class-node__superclass { font-weight: 400; font-size: 12px; color: var(--accent); }
-input.file-node__path, input.class-node__name, .method-chip__name-input {
+input.class-node__name, .method-chip__name-input {
   font: inherit;
   color: inherit;
   background: var(--bg);

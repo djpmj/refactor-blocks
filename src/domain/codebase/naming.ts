@@ -4,6 +4,13 @@ import { err, ok, type Result } from '../shared/Result';
 export type ClassNameError = 'empty-class-name' | 'duplicate-class-name';
 export type FilePathError = 'empty-path' | 'duplicate-path';
 
+/** 名前が使われていない番号になるまで連番(2, 3, ...)を付ける。 */
+export function uniqueName(base: string, isTaken: (candidate: string) => boolean): string {
+  let suffix = 1;
+  while (isTaken(suffix === 1 ? base : `${base}${String(suffix)}`)) suffix++;
+  return suffix === 1 ? base : `${base}${String(suffix)}`;
+}
+
 /** クラス名の前後の空白を除き、空・コードベース内での重複を弾く。追加と名前の変更で同じ規則を使う。 */
 export function validateClassName(codebase: Codebase, rawName: string): Result<string, ClassNameError> {
   const name = rawName.trim();

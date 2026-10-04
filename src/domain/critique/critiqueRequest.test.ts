@@ -11,7 +11,7 @@ const LOOSE_STAGE = {
 };
 
 describe('buildCritiqueRequest', () => {
-  it('目標文と、ファイルごとの構成(パス・クラス名・メソッド名・行数)をまとめる', () => {
+  it('目標文と、ファイルごとの構成(クラス名・メソッド名・行数)をまとめる', () => {
     // Arrange
     const codebase = sampleCodebase();
     const score = scoreCodebase(codebase, LOOSE_STAGE);
@@ -22,9 +22,8 @@ describe('buildCritiqueRequest', () => {
     // Assert
     expect(request.goal).toBe(LOOSE_STAGE.goal);
     expect(request.score).toBe(score);
-    const orderFile = request.files.find((file) => file.path === 'src/OrderService.ts');
+    const orderFile = request.files[0];
     expect(orderFile).toEqual({
-      path: 'src/OrderService.ts',
       lines: 28,
       deductionPoints: 0,
       classes: [
@@ -35,6 +34,7 @@ describe('buildCritiqueRequest', () => {
         },
       ],
     });
+    expect(orderFile).not.toHaveProperty('path');
   });
 
   it.each(['fragments', 'stub', 'enviedClassName'] as const)('通常のメソッドには%sキーを含めない', (key) => {
@@ -60,11 +60,11 @@ describe('buildCritiqueRequest', () => {
     const request = buildCritiqueRequest(codebase, stage, score);
 
     // Assert
-    const orderFile = request.files.find((file) => file.path === 'src/OrderService.ts');
-    const taxFile = request.files.find((file) => file.path === 'src/TaxCalculator.ts');
-    expect(orderFile?.deductionPoints).toBe(10);
+    const orderFile = request.files[0];
+    const taxFile = request.files[1];
+    expect(orderFile.deductionPoints).toBe(10);
     // TaxCalculator には行数の減点は入らず、空のクラスの10点だけが入る
-    expect(taxFile?.deductionPoints).toBe(10);
+    expect(taxFile.deductionPoints).toBe(10);
   });
 
   it('継承元(extends)のクラス名を含める', () => {
@@ -81,9 +81,9 @@ describe('buildCritiqueRequest', () => {
     const request = buildCritiqueRequest(codebase, LOOSE_STAGE, score);
 
     // Assert
-    const orderClass = request.files.find((file) => file.path === 'src/OrderService.ts')?.classes[0];
-    expect(orderClass?.superclassName).toBe('TaxCalculator');
-    expect(orderClass?.interfaceNames).toBeUndefined();
+    const orderClass = request.files[0].classes[0];
+    expect(orderClass.superclassName).toBe('TaxCalculator');
+    expect(orderClass.interfaceNames).toBeUndefined();
   });
 
   it('実装先(implements)のクラス名を含める', () => {
@@ -100,8 +100,8 @@ describe('buildCritiqueRequest', () => {
     const request = buildCritiqueRequest(codebase, LOOSE_STAGE, score);
 
     // Assert
-    const orderClass = request.files.find((file) => file.path === 'src/OrderService.ts')?.classes[0];
-    expect(orderClass?.interfaceNames).toEqual(['TaxCalculator']);
+    const orderClass = request.files[0].classes[0];
+    expect(orderClass.interfaceNames).toEqual(['TaxCalculator']);
   });
 
   it('空実装のメソッドにはstub: trueを含める', () => {
@@ -158,8 +158,8 @@ describe('buildCritiqueRequest', () => {
     const request = buildCritiqueRequest(codebase, LOOSE_STAGE, score);
 
     // Assert
-    const orderClass = request.files.find((file) => file.path === 'src/OrderService.ts')?.classes[0];
-    expect(orderClass?.fields).toEqual([
+    const orderClass = request.files[0].classes[0];
+    expect(orderClass.fields).toEqual([
       { name: 'status', visibility: 'public' },
       { name: 'total', visibility: 'private' },
     ]);
@@ -174,7 +174,7 @@ describe('buildCritiqueRequest', () => {
     const request = buildCritiqueRequest(codebase, LOOSE_STAGE, score);
 
     // Assert
-    const orderClass = request.files.find((file) => file.path === 'src/OrderService.ts')?.classes[0];
+    const orderClass = request.files[0].classes[0];
     expect(orderClass).not.toHaveProperty('fields');
   });
 
@@ -223,7 +223,7 @@ describe('buildCritiqueRequest', () => {
     const request = buildCritiqueRequest(codebase, LOOSE_STAGE, score);
 
     // Assert
-    const method = request.files.find((file) => file.path === 'src/A.ts')?.classes[0]?.methods[0];
+    const method = request.files[0]?.classes[0]?.methods[0];
     expect(method).toMatchObject({ enviedClassName: 'B' });
   });
 
@@ -236,8 +236,8 @@ describe('buildCritiqueRequest', () => {
     const request = buildCritiqueRequest(codebase, LOOSE_STAGE, score);
 
     // Assert
-    const orderClass = request.files.find((file) => file.path === 'src/OrderService.ts')?.classes[0];
-    expect(orderClass?.superclassName).toBeUndefined();
-    expect(orderClass?.interfaceNames).toBeUndefined();
+    const orderClass = request.files[0].classes[0];
+    expect(orderClass.superclassName).toBeUndefined();
+    expect(orderClass.interfaceNames).toBeUndefined();
   });
 });

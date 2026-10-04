@@ -30,7 +30,6 @@ export type CritiqueClassSummary = {
 };
 
 export type CritiqueFileSummary = {
-  readonly path: string;
   readonly lines: number;
   readonly deductionPoints: number;
   readonly classes: readonly CritiqueClassSummary[];
@@ -73,7 +72,6 @@ export function buildCritiqueRequest(
   const enviedNames = enviedClassNameByMethodId(codebase);
   const files = codebase.files.map(
     (file): CritiqueFileSummary => ({
-      path: file.path,
       lines: fileLines(file),
       deductionPoints: deductionsByFile.get(file.id) ?? 0,
       classes: file.classes.map((codeClass): CritiqueClassSummary => {

@@ -1,5 +1,5 @@
 import { addClass, type AddClassError } from '../domain/codebase/addClass';
-import { addFile, type AddFileError } from '../domain/codebase/addFile';
+import { addNewFile } from '../domain/codebase/addNewFile';
 import { findMethod, type Codebase, type Visibility } from '../domain/codebase/Codebase';
 import { changeVisibility, type ChangeVisibilityError } from '../domain/codebase/changeVisibility';
 import { deleteClass, type DeleteClassError } from '../domain/codebase/deleteClass';
@@ -10,10 +10,9 @@ import { findCallerOf, inlineMethod, type InlineMethodError } from '../domain/co
 import { mergeMethods, type MergeMethodsError } from '../domain/codebase/mergeMethods';
 import { moveClass, type MoveClassError } from '../domain/codebase/moveClass';
 import { moveField, type MoveFieldError } from '../domain/codebase/moveField';
-import { moveClassToNewFile, moveMethodToNewClass, type MoveClassToNewFileError, type MoveMethodToNewClassError } from '../domain/codebase/moveToNewHome';
+import { moveClassToNewFile, moveMethodToNewClass, moveMethodToNewClassInFile, type MoveClassToNewFileError, type MoveMethodToNewClassError, type MoveMethodToNewClassInFileError } from '../domain/codebase/moveToNewHome';
 import { moveMethod, type MoveMethodError } from '../domain/codebase/moveMethod';
 import { renameClass, type RenameClassError } from '../domain/codebase/renameClass';
-import { renameFile, type RenameFileError } from '../domain/codebase/renameFile';
 import { renameMethod, type RenameMethodError } from '../domain/codebase/renameMethod';
 import { addInterface, removeInterface, setSuperclass, type AddInterfaceError, type RemoveInterfaceError, type SetSuperclassError } from '../domain/codebase/setSuperclass';
 import { err, ok, type Result } from '../domain/shared/Result';
@@ -113,8 +112,8 @@ export function addClassUseCase(
 }
 
 /** プレイヤーの「ファイルを追加」操作。 */
-export function addFileUseCase(codebase: Codebase, path: string, generateId: IdGenerator): Result<Codebase, AddFileError> {
-  return addFile(codebase, path, generateId());
+export function addNewFileUseCase(codebase: Codebase, generateId: IdGenerator): Result<Codebase, never> {
+  return ok(addNewFile(codebase, generateId()));
 }
 
 /** プレイヤーの「クラスを別ファイルへドロップ」操作。同じファイルへのドロップは何もしない操作として成功扱いにする。 */
@@ -147,14 +146,19 @@ export function moveMethodToNewClassUseCase(
   return moveMethodToNewClass(codebase, methodId, { classId: generateId(), fileId: generateId() });
 }
 
+/** プレイヤーの「メソッドを空のファイルへドロップ」操作。新しいクラスをそのファイル内に作る。 */
+export function moveMethodToNewClassInFileUseCase(
+  codebase: Codebase,
+  methodId: string,
+  fileId: string,
+  generateId: IdGenerator,
+): Result<Codebase, MoveMethodToNewClassInFileError> {
+  return moveMethodToNewClassInFile(codebase, methodId, fileId, generateId());
+}
+
 /** プレイヤーの「クラス名を変更」操作。 */
 export function renameClassUseCase(codebase: Codebase, classId: string, newName: string): Result<Codebase, RenameClassError> {
   return renameClass(codebase, classId, newName);
-}
-
-/** プレイヤーの「ファイルのパスを変更」操作。 */
-export function renameFileUseCase(codebase: Codebase, fileId: string, newPath: string): Result<Codebase, RenameFileError> {
-  return renameFile(codebase, fileId, newPath);
 }
 
 /** プレイヤーの「メソッド名を変更」操作。 */
@@ -198,12 +202,6 @@ const RENAME_CLASS_ERROR_MESSAGES: Record<RenameClassError, string> = {
   'duplicate-class-name': '同じ名前のクラスがすでにあります',
 };
 
-const RENAME_FILE_ERROR_MESSAGES: Record<RenameFileError, string> = {
-  'file-not-found': '名前を変えるファイルが見つかりません',
-  'empty-path': 'ファイルのパスを入力してください',
-  'duplicate-path': '同じパスのファイルがすでにあります',
-};
-
 const RENAME_METHOD_ERROR_MESSAGES: Record<RenameMethodError, string> = {
   'method-not-found': '名前を変えるメソッドが見つかりません',
   'empty-method-name': 'メソッド名を入力してください',
@@ -245,11 +243,6 @@ const ADD_CLASS_ERROR_MESSAGES: Record<AddClassError, string> = {
   'file-not-found': '追加先のファイルが見つかりません',
   'empty-class-name': 'クラス名を入力してください',
   'duplicate-class-name': '同じ名前のクラスがすでにあります',
-};
-
-const ADD_FILE_ERROR_MESSAGES: Record<AddFileError, string> = {
-  'empty-path': 'ファイルのパスを入力してください',
-  'duplicate-path': '同じパスのファイルがすでにあります',
 };
 
 const MOVE_CLASS_ERROR_MESSAGES: Record<Exclude<MoveClassError, 'same-file'>, string> = {
@@ -309,8 +302,10 @@ const CHANGE_VISIBILITY_ERROR_MESSAGES: Record<Exclude<ChangeVisibilityError, 's
   'narrowing-breaks-callers': '外から呼ばれているメソッドは、その可視性にはできません',
 };
 
-export function describeMoveOutError(error: MoveClassToNewFileError | MoveMethodToNewClassError): string {
-  return error === 'class-not-found' ? 'クラスが見つかりません' : 'メソッドが見つかりません';
+export function describeMoveOutError(error: MoveClassToNewFileError | MoveMethodToNewClassError | MoveMethodToNewClassInFileError): string {
+  if (error === 'class-not-found') return 'クラスが見つかりません';
+  if (error === 'file-not-found') return 'ファイルが見つかりません';
+  return 'メソッドが見つかりません';
 }
 
 export function describeExtractError(error: ExtractMethodError): string {
@@ -333,10 +328,6 @@ export function describeAddClassError(error: AddClassError): string {
   return ADD_CLASS_ERROR_MESSAGES[error];
 }
 
-export function describeAddFileError(error: AddFileError): string {
-  return ADD_FILE_ERROR_MESSAGES[error];
-}
-
 export function describeMoveClassError(error: Exclude<MoveClassError, 'same-file'>): string {
   return MOVE_CLASS_ERROR_MESSAGES[error];
 }
@@ -347,10 +338,6 @@ export function describeMoveFieldError(error: Exclude<MoveFieldError, 'same-clas
 
 export function describeRenameClassError(error: RenameClassError): string {
   return RENAME_CLASS_ERROR_MESSAGES[error];
-}
-
-export function describeRenameFileError(error: RenameFileError): string {
-  return RENAME_FILE_ERROR_MESSAGES[error];
 }
 
 export function describeRenameMethodError(error: RenameMethodError): string {

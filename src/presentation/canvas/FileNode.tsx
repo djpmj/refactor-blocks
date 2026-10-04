@@ -4,7 +4,6 @@ import { fileLines } from '../../domain/codebase/lineCount';
 import { fileDeductions, fileSeverity, type FileSeverity } from '../../domain/scoring/fileScores';
 import { useGameStore } from '../store/useGameStore';
 import { fileDropId } from './dndIds';
-import { InlineEditableLabel } from './InlineEditableLabel';
 import type { FileFlowNode } from './layoutCodebase';
 import { useShowDetails } from './semanticZoom';
 
@@ -23,7 +22,6 @@ export function FileNode({ data }: Readonly<NodeProps<FileFlowNode>>) {
   const file = useGameStore((state) => state.codebase.files.find((candidate) => candidate.id === data.fileId));
   const limit = useGameStore((state) => state.stage.limits.file);
   const points = useGameStore((state) => fileDeductions(state.codebase, state.stage).get(data.fileId) ?? 0);
-  const renameFile = useGameStore((state) => state.renameFile);
   const { setNodeRef, isOver } = useDroppable({ id: fileDropId(data.fileId) });
   const showDetails = useShowDetails();
   if (file === undefined) return null;
@@ -38,12 +36,6 @@ export function FileNode({ data }: Readonly<NodeProps<FileFlowNode>>) {
         <span className="file-node__icon" aria-hidden>
           📄
         </span>
-        <InlineEditableLabel
-          value={file.path}
-          ariaLabel="ファイルのパス"
-          className="file-node__path"
-          onSubmit={(newPath) => renameFile(file.id, newPath)}
-        />
         <FileMark severity={fileSeverity(points)} points={points} />
         {showDetails ? (
           <span className={lines > limit ? 'line-badge line-badge--over' : 'line-badge'}>{lines}行</span>
