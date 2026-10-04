@@ -7,7 +7,7 @@ test('減点項目を選ぶと違反メソッドを強調し、再選択で解�
   const breakdown = page.locator('.score-breakdown');
   await expect(breakdown).toBeVisible();
   await breakdown.locator('summary').click();
-  const rule = breakdown.locator('.score-breakdown__items button').first();
+  const rule = breakdown.locator('.score-breakdown__items button[aria-pressed]').first();
 
   // Act
   await rule.click();
@@ -43,7 +43,7 @@ test('別の減点項目を選ぶと強調が切り替わり、違反を直す�
   await page.getByLabel('ステージ').selectOption({ label: 'チュートリアル2: 太った placeOrder' });
   const breakdown = page.locator('.score-breakdown');
   await breakdown.locator('summary').click();
-  const rules = breakdown.locator('.score-breakdown__items button');
+  const rules = breakdown.locator('.score-breakdown__items button[aria-pressed]');
   const firstRule = rules.nth(0);
   const secondRule = rules.nth(1);
 
@@ -74,4 +74,40 @@ test('別の減点項目を選ぶと強調が切り替わり、違反を直す�
   // Assert
   await expect(secondRule).toHaveCount(0);
   await expect(page.locator('.class-node--flagged')).toHaveCount(0);
+});
+
+test('「なぜ?」は項目ごとに開閉でき、ジャンプと独立している', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await page.getByLabel('ステージ').selectOption({ label: 'チュートリアル2: 太った placeOrder' });
+  const breakdown = page.locator('.score-breakdown');
+  await breakdown.locator('summary').click();
+  const whys = breakdown.locator('.score-breakdown__why-toggle');
+  const jump = breakdown.locator('.score-breakdown__items button[aria-pressed]').first();
+
+  // Act
+  await whys.nth(0).focus();
+  await page.keyboard.press('Enter');
+  await whys.nth(1).click();
+
+  // Assert: 複数同時に開け、強調は変わらない
+  await expect(whys.nth(0)).toHaveAttribute('aria-expanded', 'true');
+  await expect(whys.nth(1)).toHaveAttribute('aria-expanded', 'true');
+  await expect(breakdown.getByText('こう困ります:').first()).toBeVisible();
+  await expect(breakdown.getByText('だから:').first()).toBeVisible();
+  await expect(jump).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.locator('.method-chip--flagged, .class-node--flagged, .file-node--flagged')).toHaveCount(0);
+
+  // Act: ジャンプしても開閉は変わらない
+  await jump.click();
+
+  // Assert
+  await expect(whys.nth(0)).toHaveAttribute('aria-expanded', 'true');
+
+  // Act: 閉じる
+  await whys.nth(0).click();
+
+  // Assert
+  await expect(whys.nth(0)).toHaveAttribute('aria-expanded', 'false');
+  await expect(whys.nth(1)).toHaveAttribute('aria-expanded', 'true');
 });
