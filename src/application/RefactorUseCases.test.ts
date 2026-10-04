@@ -549,7 +549,8 @@ describe('moveClassToNewFileUseCase / moveMethodToNewClassUseCase', () => {
 
     // Assert
     if (!result.ok) throw new Error(result.error);
-    expect(findFileOfClass(result.value, 'class-tax')?.id).toBe('generated-file');
+    expect(result.value.fileId).toBe('generated-file');
+    expect(findFileOfClass(result.value.codebase, 'class-tax')?.id).toBe(result.value.fileId);
   });
 
   it('メソッドを注入されたIDの新しいクラスとファイルへ移す', () => {
@@ -562,8 +563,9 @@ describe('moveClassToNewFileUseCase / moveMethodToNewClassUseCase', () => {
 
     // Assert
     if (!result.ok) throw new Error(result.error);
-    expect(findClassOfMethod(result.value, 'method-place')?.id).toBe('generated-class');
-    expect(findFileOfClass(result.value, 'generated-class')?.id).toBe('generated-file');
+    expect(findClassOfMethod(result.value.codebase, 'method-place')?.id).toBe('generated-class');
+    expect(findFileOfClass(result.value.codebase, 'generated-class')?.id).toBe(result.value.fileId);
+    expect(result.value.fileId).toBe('generated-file');
   });
 
   it('メソッドを指定されたファイルに注入されたIDのクラスを作って移す', () => {

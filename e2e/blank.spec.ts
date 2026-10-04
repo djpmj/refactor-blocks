@@ -65,6 +65,7 @@ const ALL_PARTS = [
 /** 7つの部品をすべて、余白に作った1つのクラスへまとめて配置する(点数は問わず、答え合わせを試すためだけの配置)。 */
 async function placeAllParts(page: Page, view: Locator) {
   await dragToEmptyCanvas(page, view, `method-${ALL_PARTS[0]}`);
+  await page.getByRole('button', { name: 'Fit View' }).click();
   for (const name of ALL_PARTS.slice(1)) {
     await dragMethodToClass(page, view, `method-${name}`, 'class-NewClass');
   }

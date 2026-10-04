@@ -108,8 +108,8 @@ type GameState = {
   addClass: (fileId: string, className: string) => boolean;
   addFile: () => void;
   moveClass: (classId: string, targetFileId: string) => void;
-  moveClassToNewFile: (classId: string) => void;
-  moveMethodToNewClass: (methodId: string) => void;
+  moveClassToNewFile: (classId: string) => string | null;
+  moveMethodToNewClass: (methodId: string) => string | null;
   moveMethodToNewClassInFile: (methodId: string, fileId: string) => void;
   renameClass: (classId: string, newName: string) => boolean;
   renameMethod: (methodId: string, newName: string) => boolean;
@@ -284,6 +284,7 @@ function renameActions(
 /** ドラッグ&ドロップによる移動系の操作と、メソッドの可視性を変える操作。 */
 function moveActions(
   apply: Apply,
+  set: (partial: Partial<GameState>) => void,
   get: () => GameState,
 ): Pick<GameState, 'moveMethod' | 'moveField' | 'changeVisibility' | 'moveClass' | 'moveClassToNewFile' | 'moveMethodToNewClass' | 'moveMethodToNewClassInFile'> {
   const newId = () => crypto.randomUUID();
@@ -302,10 +303,22 @@ function moveActions(
       apply(moveClassUseCase(get().codebase, classId, targetFileId), describeMoveClassError);
     },
     moveClassToNewFile: (classId) => {
-      apply(moveClassToNewFileUseCase(get().codebase, classId, newId), describeMoveOutError);
+      const result = moveClassToNewFileUseCase(get().codebase, classId, newId);
+      if (!result.ok) {
+        apply(result, describeMoveOutError);
+        return null;
+      }
+      set(applyResult(get(), { ok: true, value: result.value.codebase }, describeMoveOutError));
+      return result.value.fileId;
     },
     moveMethodToNewClass: (methodId) => {
-      apply(moveMethodToNewClassUseCase(get().codebase, methodId, newId), describeMoveOutError);
+      const result = moveMethodToNewClassUseCase(get().codebase, methodId, newId);
+      if (!result.ok) {
+        apply(result, describeMoveOutError);
+        return null;
+      }
+      set(applyResult(get(), { ok: true, value: result.value.codebase }, describeMoveOutError));
+      return result.value.fileId;
     },
     moveMethodToNewClassInFile: (methodId, fileId) => {
       apply(moveMethodToNewClassInFileUseCase(get().codebase, methodId, fileId, newId), describeMoveOutError);
@@ -394,7 +407,7 @@ export function createGameStore(allStages: readonly Stage[]): GameStore {
       },
       ...renameActions(apply, get),
       ...deleteActions(apply, set, get),
-      ...moveActions(apply, get),
+      ...moveActions(apply, set, get),
       ...historyActions(set, get),
       ...changeSessionActions(set, get),
       // 「最初に戻す」も1手として記録し、取り消しで戻せるようにする

@@ -106,8 +106,8 @@ async function stableBoundingBox(page: Page, testId: string) {
 const FIND_EMPTY_PANE_POINT = `(() => {
   const pane = document.querySelector('.react-flow__pane')?.getBoundingClientRect();
   if (pane === undefined) return null;
-  for (let y = pane.top + 10; y < pane.bottom; y += 20) {
-    for (let x = pane.left + 10; x < pane.right; x += 20) {
+  for (let y = pane.top + 30; y < pane.bottom - 200; y += 20) {
+    for (let x = pane.left + 170; x < pane.right - 170; x += 20) {
       if (document.elementFromPoint(x, y)?.classList.contains('react-flow__pane')) return { x, y };
     }
   }
@@ -1222,6 +1222,7 @@ test('上級2: PayPay の追加は、新しいクラスで PaymentGateway を実
   await dragToEmptyCanvas(page, 'method-logRetryCount');
   await finishRequest(page);
   // 3件目: StripeGateway へ足す
+  await page.getByRole('button', { name: 'Fit View' }).click();
   await dragMethodToClass(page, 'method-applyGatewayTimeout', 'class-StripeGateway');
   await finishRequest(page);
 
@@ -1281,6 +1282,18 @@ async function dragToEmptyCanvas(page: Page, target: string | Locator) {
   await page.mouse.move(from.x + from.width / 2 + 20, from.y + from.height / 2, { steps: 5 });
   await page.mouse.move(pane.x + pane.width - 20, pane.y + pane.height - 20, { steps: 15 });
   await page.mouse.up();
+  await page.getByRole('button', { name: 'Fit View' }).click();
+}
+
+async function dragToCanvasPoint(page: Page, target: string | Locator, x: number, y: number) {
+  const locator = typeof target === 'string' ? page.getByTestId(target) : target;
+  const from = await locator.boundingBox();
+  if (from === null) throw new Error('ドラッグ元の位置を取得できません');
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(from.x + from.width / 2 + 20, from.y + from.height / 2, { steps: 5 });
+  await page.mouse.move(x, y, { steps: 15 });
+  await page.mouse.up();
 }
 
 test('クラスをファイルの枠外へドラッグすると、新しいファイルが作られてそこに置かれる', async ({ page }) => {
@@ -1313,6 +1326,60 @@ test('メソッドをファイルの枠外へドラッグすると、新しい�
   // Assert
   await expect(page.getByTestId('class-NewClass').getByTestId('method-calculateTax')).toBeVisible();
   await expect(page.getByTestId('file-src/NewClass.ts')).toBeVisible();
+});
+
+test('メソッドを余白の指定位置へドロップすると、その位置にファイルが現れる', async ({ page }) => {
+  // Arrange
+  await openOrderStage(page);
+  await page.getByRole('button', { name: 'Zoom in' }).click();
+  const panStart = await emptyPanePoint(page);
+  await page.mouse.move(panStart.x, panStart.y);
+  await page.mouse.down();
+  await page.mouse.move(panStart.x + 80, panStart.y + 50, { steps: 8 });
+  await page.mouse.up();
+  const pane = await page.locator('.react-flow__pane').boundingBox();
+  if (pane === null) throw new Error('キャンバスの位置を取得できません');
+  const drop = { x: pane.x + pane.width - 20, y: pane.y + pane.height - 20 };
+
+  // Act
+  await dragToCanvasPoint(page, 'method-placeOrder', drop.x, drop.y);
+
+  // Assert
+  const file = page.getByTestId('file-src/NewClass.ts');
+  await expect(file).toBeVisible();
+  const bounds = await file.boundingBox();
+  expect(bounds).not.toBeNull();
+  expect(Math.abs(bounds!.x + bounds!.width / 2 - drop.x)).toBeLessThanOrEqual(60);
+  expect(Math.abs(bounds!.y + 18 - drop.y)).toBeLessThanOrEqual(12);
+
+  // Act: UndoしてからRedoする
+  await page.keyboard.press('Control+z');
+  await expect(file).toBeHidden();
+  await page.keyboard.press('Control+y');
+
+  // Assert: 同じ位置に戻る
+  await expect(file).toBeVisible();
+  const restored = await file.boundingBox();
+  expect(restored).not.toBeNull();
+  expect(Math.abs(restored!.x + restored!.width / 2 - drop.x)).toBeLessThanOrEqual(60);
+  expect(Math.abs(restored!.y + 18 - drop.y)).toBeLessThanOrEqual(12);
+});
+
+test('クラスを余白の指定位置へドロップすると、新しいファイルがその位置に現れる', async ({ page }) => {
+  // Arrange
+  await openOrderStage(page);
+  const drop = await emptyPanePoint(page);
+
+  // Act
+  await dragToCanvasPoint(page, 'class-header-TaxCalculator', drop.x, drop.y);
+
+  // Assert
+  const file = page.getByTestId('file-src/TaxCalculator.ts');
+  await expect(file).toBeVisible();
+  const bounds = await file.boundingBox();
+  expect(bounds).not.toBeNull();
+  expect(Math.abs(bounds!.x + bounds!.width / 2 - drop.x)).toBeLessThanOrEqual(60);
+  expect(Math.abs(bounds!.y + 18 - drop.y)).toBeLessThanOrEqual(12);
 });
 
 test('越境した private メソッドの呼び出しは減点され、呼び出し元のクラスへ Move Method すると解消する', async ({ page }) => {
