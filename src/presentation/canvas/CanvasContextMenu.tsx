@@ -4,12 +4,13 @@ import { findClass, findSuperclass } from '../../domain/codebase/Codebase';
 import { moveMethodTargets } from '../../domain/codebase/moveMethod';
 import { moveFieldTargets } from '../../domain/codebase/moveField';
 import { moveClassTargets } from '../../domain/codebase/moveClass';
+import { fileLabels } from './fileLabels';
 import { availableParents } from '../../domain/codebase/setSuperclass';
 import { useGameStore, useGameStoreApi, type GameStore } from '../store/useGameStore';
 import { clampMenuPosition, type Point } from './clampMenuPosition';
 import type { ContextMenuTarget } from './useCanvasContextMenu';
 
-type Mode = 'menu' | 'class' | 'file' | 'renameClass' | 'renameFile';
+type Mode = 'menu' | 'class' | 'renameClass';
 type FormMode = Exclude<Mode, 'menu'>;
 
 type NameFormProps = {
@@ -95,9 +96,8 @@ function menuItemsFor(target: ContextMenuTarget, onClose: () => void, api: GameS
     ...moveClassItems,
     ...moveItems,
     ...(fileId === null ? [] : [{ kind: 'form' as const, mode: 'class' as const, label: 'このファイルにクラスを追加' }]),
-    { kind: 'form', mode: 'file', label: 'ファイルを追加' },
+    { kind: 'action', label: 'ファイルを追加', run: () => { api.getState().addFile(); onClose(); } },
     ...(classId === null ? [] : [{ kind: 'form' as const, mode: 'renameClass' as const, label: 'クラスの名前を変更' }]),
-    ...(fileId === null ? [] : [{ kind: 'form' as const, mode: 'renameFile' as const, label: 'ファイルの名前を変更' }]),
     ...(classId === null ? [] : [{ kind: 'extends-submenu' as const, label: '継承元を設定' }]),
     ...(classId === null ? [] : [{ kind: 'implements-submenu' as const, label: '実装するインターフェースを設定' }]),
     // 確認ダイアログは出さない。誤って消してもCtrl+Zの取り消し履歴で戻せる
@@ -270,6 +270,7 @@ function MoveClassMenuItem({ target, label, onClose }: Readonly<ExtendsMenuItemP
   const position = useSubmenuPosition(triggerRef, submenuRef, open);
   const classId = target.classId;
   if (classId === null) return null;
+  const labels = new Map(fileLabels(codebase).map(({ id, label: name }) => [id, name]));
   const candidates = moveClassTargets(codebase, classId);
   if (candidates.length === 0) return null;
   const select = (fileId: string) => {
@@ -282,7 +283,7 @@ function MoveClassMenuItem({ target, label, onClose }: Readonly<ExtendsMenuItemP
       <div ref={submenuRef} role="menu" aria-label={label} className="context-menu context-menu__submenu" style={{ left: position.x, top: position.y }}>
         {candidates.map((candidate) => (
           <button key={candidate.id} type="button" role="menuitem" onClick={() => select(candidate.id)}>
-            {candidate.path}
+            {labels.get(candidate.id)}
           </button>
         ))}
       </div>
@@ -384,7 +385,7 @@ type FormConfig = Omit<NameFormProps, 'onSubmit'> & { submit: (name: string) => 
 /** 選んだ項目の入力欄。名前の変更では今の名前を入れておく。 */
 function useFormConfig(target: ContextMenuTarget, mode: FormMode): FormConfig | null {
   const codebase = useGameStore((state) => state.codebase);
-  const { addClass, addFile, renameClass, renameFile } = useGameStoreApi().getState();
+  const { addClass, renameClass } = useGameStoreApi().getState();
   const file = codebase.files.find((candidate) => candidate.id === target.fileId);
   const codeClass = findClass(codebase, target.classId ?? '');
 
@@ -402,20 +403,8 @@ function useFormConfig(target: ContextMenuTarget, mode: FormMode): FormConfig | 
   }
 
   function fileFormConfig(): FormConfig | null {
-    if (mode === 'file') {
-      return { label: '追加するファイルのパス', placeholder: 'src/foo/Foo.ts', submitLabel: '追加', submit: addFile };
-    }
     if (mode === 'class' && file !== undefined) {
       return { label: '追加するクラス名', placeholder: 'クラス名', submitLabel: '追加', submit: (name) => addClass(file.id, name) };
-    }
-    if (mode === 'renameFile' && file !== undefined) {
-      return {
-        label: '新しいファイルのパス',
-        initialValue: file.path,
-        placeholder: 'src/foo/Foo.ts',
-        submitLabel: '変更',
-        submit: (path) => renameFile(file.id, path),
-      };
     }
     return null;
   }
@@ -444,7 +433,6 @@ function MenuForm({ target, mode, onDone }: Readonly<MenuFormProps>) {
 
 /** キャンバスの右クリックメニュー。クラス・ファイルの追加と名前の変更を、その場で名前を入れて行う。 */
 export function CanvasContextMenu({ target, onClose, onDismiss }: Readonly<{ target: ContextMenuTarget; onClose: () => void; onDismiss: () => void }>) {
-  const file = useGameStore((state) => state.codebase.files.find((candidate) => candidate.id === target.fileId));
   const api = useGameStoreApi();
   const [mode, setMode] = useState<Mode>('menu');
   const menuRef = useRef<HTMLDivElement>(null);
@@ -454,7 +442,6 @@ export function CanvasContextMenu({ target, onClose, onDismiss }: Readonly<{ tar
 
   return createPortal(
     <div ref={menuRef} className="context-menu" style={{ left: position.x, top: position.y }} data-testid="context-menu">
-      {file === undefined ? null : <div className="context-menu__caption">{file.path}</div>}
       {mode === 'menu' ? (
         <MenuItems items={menuItemsFor(target, onClose, api)} target={target} onSelectForm={setMode} onClose={onClose} />
       ) : (

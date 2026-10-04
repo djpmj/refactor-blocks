@@ -10,6 +10,9 @@ test('「設計くらべ」に切り替えると、1問目の設計A・Bが表�
   // Assert
   await expect(page.getByTestId('quiz-design-a').getByTestId('preview-class-Mailer')).toBeVisible();
   await expect(page.getByTestId('quiz-design-b').getByTestId('preview-class-UserController')).toBeVisible();
+  await expect(page.locator('.preview-file-node__path, .file-node__path')).toHaveCount(0);
+  await expect(page.getByTestId('quiz-design-a')).not.toContainText('.ts');
+  await expect(page.getByTestId('quiz-design-b')).not.toContainText('.ts');
 });
 
 test('変更が楽な設計を選ぶと正解になり、それぞれの設計の点数と理由が出る', async ({ page }) => {

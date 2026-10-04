@@ -57,6 +57,21 @@ function dropTargetFileId(codebase: Codebase, overId: UniqueIdentifier): string 
   return classId === null ? (parseFileDropId(overId) ?? undefined) : findFileOfClass(codebase, classId)?.id;
 }
 
+function moveMethodToDropTarget(
+  methodId: string,
+  targetId: UniqueIdentifier,
+  moveMethod: (methodId: string, classId: string) => void,
+  moveIntoFile: (methodId: string, fileId: string) => void,
+) {
+  const targetClassId = parseClassDropId(targetId);
+  if (targetClassId !== null) {
+    moveMethod(methodId, targetClassId);
+    return;
+  }
+  const targetFileId = parseFileDropId(targetId);
+  if (targetFileId !== null) moveIntoFile(methodId, targetFileId);
+}
+
 /** ステージを切り替えたときやファイルが増えたとき、画面外に出ないよう全体が収まるように表示し直す。 */
 function FitViewOnLayoutChange({ stageId, fileCount }: Readonly<{ stageId: string; fileCount: number }>) {
   const { fitView } = useReactFlow();
@@ -102,6 +117,7 @@ function useDropHandler(codebase: Codebase, onEnd: () => void) {
   const moveClass = useGameStore((state) => state.moveClass);
   const moveClassToNewFile = useGameStore((state) => state.moveClassToNewFile);
   const moveMethodToNewClass = useGameStore((state) => state.moveMethodToNewClass);
+  const moveMethodToNewClassInFile = useGameStore((state) => state.moveMethodToNewClassInFile);
   const moveField = useGameStore((state) => state.moveField);
   return (event: DragEndEvent) => {
     onEnd();
@@ -115,7 +131,7 @@ function useDropHandler(codebase: Codebase, onEnd: () => void) {
       return;
     }
     const targetClassId = parseClassDropId(event.over.id);
-    if (methodId !== null && targetClassId !== null) moveMethod(methodId, targetClassId);
+    if (methodId !== null) moveMethodToDropTarget(methodId, event.over.id, moveMethod, moveMethodToNewClassInFile);
     if (fieldId !== null && targetClassId !== null) moveField(fieldId, targetClassId);
     const targetFileId = dropTargetFileId(codebase, event.over.id);
     if (classId !== null && targetFileId !== undefined) moveClass(classId, targetFileId);

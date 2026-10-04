@@ -153,14 +153,14 @@ async function dragMethodToClass(page: Page, methodTestId: string, classTestId: 
 }
 
 /** キャンバスの余白を右クリックし、メニューからファイルを追加する。 */
-async function addFileFromMenu(page: Page, path: string) {
+async function addFileFromMenu(page: Page) {
   const pane = await page.locator('.react-flow__pane').boundingBox();
   if (pane === null) throw new Error('キャンバスの位置を取得できません');
   await page.mouse.click(pane.x + pane.width - 20, pane.y + pane.height - 20, { button: 'right' });
   const menu = page.getByTestId('context-menu');
   await menu.getByRole('menuitem', { name: 'ファイルを追加' }).click();
-  await menu.getByLabel('追加するファイルのパス').fill(path);
-  await menu.getByRole('button', { name: '追加' }).click();
+  await expect(menu).toHaveCount(0);
+  await expect(page.getByTestId('file-src/NewFile.ts')).toBeVisible();
 }
 
 /** メソッドを右クリックし、メニューからそのメソッドのファイルにクラスを追加する。 */
@@ -256,7 +256,7 @@ test('クラスヘッダーのメニューから別ファイルへ移動でき�
   await trigger.hover();
 
   // Act
-  await menu.getByRole('menuitem', { name: 'src/tax/TaxCalculator.ts', exact: true }).click();
+  await menu.getByRole('menuitem', { name: 'TaxCalculator', exact: true }).click();
 
   // Assert
   await expect(page.getByTestId('file-src/order/OrderService.ts')).toContainText('0行');
@@ -409,7 +409,7 @@ test('ズームアウトするとファイル名とクラス名だけになり�
   await expect(method).toHaveCount(0);
   await expect(classNode).toContainText('OrderService');
   await expect(classNode).not.toContainText('行');
-  await expect(page.getByTestId('file-src/order/OrderService.ts')).toContainText('src/order/OrderService.ts');
+  await expect(page.getByTestId('file-src/order/OrderService.ts').locator('.file-node__path')).toHaveCount(0);
   await expect(page.getByTestId('file-src/order/OrderService.ts')).not.toContainText('行');
 
   // Act
@@ -467,13 +467,13 @@ test('税の計算を抽出して TaxCalculator へ移すと、責務の混在�
 test('クラスとファイルを追加し、クラスを新しいファイルへドラッグ&ドロップで移せる', async ({ page }) => {
   // Arrange
   await openOrderStage(page);
-  await addFileFromMenu(page, 'src/mail/Mailer.ts');
+  await addFileFromMenu(page);
   await addClassFromMenu(page, 'placeOrder', 'Mailer');
   // クラスノードはファイルノードのDOMの子にならないため、空ファイルの案内の有無で移動先を確かめる
   const emptyFileHint = page.getByText('ここにクラスをドロップ');
   await expect(emptyFileHint).toHaveCount(1);
   const source = page.getByTestId('class-header-Mailer');
-  const target = page.getByTestId('file-src/mail/Mailer.ts');
+  const target = page.getByTestId('file-src/NewFile.ts');
   await expect(source).toBeVisible();
   await expect(target).toBeVisible();
 
@@ -490,6 +490,28 @@ test('クラスとファイルを追加し、クラスを新しいファイル�
   // Assert
   await expect(page.getByTestId('class-Mailer')).toHaveCount(1);
   await expect(emptyFileHint).toHaveCount(0);
+});
+
+test('追加した空ファイルへメソッドをドラッグすると、新しいクラスを作って移す', async ({ page }) => {
+  // Arrange
+  await openOrderStage(page);
+  await addFileFromMenu(page);
+  const method = page.getByTestId('method-placeOrder');
+  const target = page.getByTestId('file-src/NewFile.ts');
+  const from = await method.boundingBox();
+  const to = await target.boundingBox();
+  if (from === null || to === null) throw new Error('要素の位置を取得できません');
+
+  // Act
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(from.x + from.width / 2 + 20, from.y + from.height / 2, { steps: 5 });
+  await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 15 });
+  await page.mouse.up();
+
+  // Assert
+  await expect(page.getByTestId('class-NewClass').getByTestId('method-placeOrder')).toBeVisible();
+  await expect(target).toBeVisible();
 });
 
 test('同じ名前のクラスは追加できず、理由が表示される', async ({ page }) => {
@@ -551,7 +573,7 @@ test('メソッドを右クリックしてメニューから、そのクラス�
   // Act
   await page.getByTestId('method-placeOrder').click({ button: 'right' });
   const menu = page.getByTestId('context-menu');
-  await expect(menu).toContainText('src/order/OrderService.ts');
+  await expect(menu).not.toContainText('.ts');
   await menu.getByRole('menuitem', { name: 'このファイルにクラスを追加' }).click();
   await menu.getByLabel('追加するクラス名').fill('OrderValidator');
   await menu.getByLabel('追加するクラス名').press('Enter');
@@ -570,13 +592,27 @@ test('キャンバスの余白を右クリックしてメニューから、フ�
   // Act
   await page.mouse.click(pane.x + pane.width - 20, pane.y + pane.height - 20, { button: 'right' });
   const menu = page.getByTestId('context-menu');
+  await expect(menu.getByRole('menuitem', { name: 'ファイルの名前を変更' })).toHaveCount(0);
+  await expect(menu).not.toContainText('.ts');
   await expect(menu.getByRole('menuitem', { name: 'このファイルにクラスを追加' })).toHaveCount(0);
   await menu.getByRole('menuitem', { name: 'ファイルを追加' }).click();
-  await menu.getByLabel('追加するファイルのパス').fill('src/mail/Mailer.ts');
-  await menu.getByRole('button', { name: '追加' }).click();
+  await expect(menu).toHaveCount(0);
 
   // Assert
-  await expect(page.getByTestId('file-src/mail/Mailer.ts')).toBeVisible();
+  await expect(page.getByTestId('file-src/NewFile.ts')).toBeVisible();
+
+  // Act: 続けて追加すると内部名が重複せず、どちらも取り消せる
+  const paneAgain = await page.locator('.react-flow__pane').boundingBox();
+  if (paneAgain === null) throw new Error('キャンバスの位置を取得できません');
+  await page.mouse.click(paneAgain.x + paneAgain.width - 20, paneAgain.y + paneAgain.height - 20, { button: 'right' });
+  await page.getByTestId('context-menu').getByRole('menuitem', { name: 'ファイルを追加' }).click();
+
+  // Assert
+  await expect(page.getByTestId('file-src/NewFile2.ts')).toBeVisible();
+  await page.keyboard.press('Control+z');
+  await expect(page.getByTestId('file-src/NewFile2.ts')).toHaveCount(0);
+  await page.keyboard.press('Control+z');
+  await expect(page.getByTestId('file-src/NewFile.ts')).toHaveCount(0);
 });
 
 test('右クリックメニューはEscapeで閉じる', async ({ page }) => {
@@ -612,32 +648,14 @@ test('クラスを右クリックして名前を変更すると、キャンバ�
   await expect(menu).toHaveCount(0);
 });
 
-test('ファイルを右クリックしてパスを変更すると、キャンバスの表示が変わる', async ({ page }) => {
-  // Arrange
-  await openOrderStage(page);
-  await page.getByTestId('file-src/tax/TaxCalculator.ts').click({ button: 'right', position: { x: 10, y: 10 } });
-  const menu = page.getByTestId('context-menu');
-
-  // Act
-  await menu.getByRole('menuitem', { name: 'ファイルの名前を変更' }).click();
-  const input = menu.getByLabel('新しいファイルのパス');
-  await input.fill('src/tax/TaxPolicy.ts');
-  await input.press('Enter');
-
-  // Assert
-  await expect(page.getByTestId('file-src/tax/TaxPolicy.ts')).toBeVisible();
-  await expect(page.getByTestId('file-src/tax/TaxCalculator.ts')).toHaveCount(0);
-});
-
-test('ファイル名・クラス名・メソッド名は、ダブルクリックしてその場で変更できる', async ({ page }) => {
+test('ファイル名は表示も編集もできず、クラス名・メソッド名はその場で変更できる', async ({ page }) => {
   // Arrange
   await openOrderStage(page);
 
-  // Act: ファイル名
-  await page.getByTestId('file-src/tax/TaxCalculator.ts').locator('.file-node__path').dblclick();
-  const pathInput = page.getByLabel('ファイルのパス', { exact: true });
-  await pathInput.fill('src/tax/TaxRules.ts');
-  await pathInput.press('Enter');
+  // Act: ファイルヘッダーをダブルクリックしても入力欄は出ない
+  await page.getByTestId('file-src/tax/TaxCalculator.ts').locator('.file-node__header').dblclick();
+  await expect(page.getByLabel('ファイルのパス', { exact: true })).toHaveCount(0);
+  await expect(page.getByTestId('file-src/tax/TaxCalculator.ts').locator('.file-node__path')).toHaveCount(0);
 
   // Act: クラス名
   await page.getByTestId('class-header-TaxCalculator').locator('.class-node__name').dblclick();
@@ -652,7 +670,7 @@ test('ファイル名・クラス名・メソッド名は、ダブルクリッ�
   await methodInput.press('Enter');
 
   // Assert
-  await expect(page.getByTestId('file-src/tax/TaxRules.ts')).toBeVisible();
+  await expect(page.getByTestId('file-src/tax/TaxCalculator.ts')).toBeVisible();
   await expect(page.getByTestId('class-TaxPolicy')).toBeVisible();
   await expect(page.getByTestId('method-placeNewOrder')).toBeVisible();
 });
@@ -753,9 +771,8 @@ test('1つのクラスに2つのインターフェースを実装すると"imple
   await page.mouse.click(pane.x + pane.width - 20, pane.y + pane.height - 20, { button: 'right' });
   let menu = page.getByTestId('context-menu');
   await menu.getByRole('menuitem', { name: 'ファイルを追加' }).click();
-  await page.getByLabel('追加するファイルのパス').fill('src/misc/Extra.ts');
-  await page.getByRole('button', { name: '追加' }).click();
-  await page.getByTestId('file-src/misc/Extra.ts').click({ button: 'right' });
+  await expect(menu).toHaveCount(0);
+  await page.getByTestId('file-src/NewFile.ts').click({ button: 'right' });
   menu = page.getByTestId('context-menu');
   await menu.getByRole('menuitem', { name: 'このファイルにクラスを追加' }).click();
   await page.getByLabel('追加するクラス名').fill('Extra');
@@ -792,7 +809,7 @@ test('継承元を設定にカーソルを合わせるだけで、クリック�
   await menu.getByRole('menuitem', { name: '継承元を設定' }).hover();
 
   // Assert
-  await expect(menu.getByRole('menuitem', { name: 'OrderService', exact: true })).toBeVisible();
+  await expect(menu.getByRole('menu', { name: '継承元を設定' }).getByRole('menuitem', { name: 'OrderService', exact: true })).toBeVisible();
 });
 
 test('継承の輪ができる相手は、継承元の候補一覧から外れる', async ({ page }) => {

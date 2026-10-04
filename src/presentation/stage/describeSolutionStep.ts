@@ -28,14 +28,9 @@ function describeRemoveInterface({ class: className, interface: interfaceName }:
 }
 
 type RenameClassStep = Extract<SolutionStep, { readonly renameClass: unknown }>['renameClass'];
-type RenameFileStep = Extract<SolutionStep, { readonly renameFile: unknown }>['renameFile'];
 
 function describeRenameClass({ name, newName }: RenameClassStep): string {
   return `${name} の名前を ${newName} に変えよう`;
-}
-
-function describeRenameFile({ path, newPath }: RenameFileStep): string {
-  return `ファイル ${path} の名前を ${newPath} に変えよう`;
 }
 
 type DeleteMethodStep = Extract<SolutionStep, { readonly deleteMethod: unknown }>['deleteMethod'];
@@ -68,14 +63,13 @@ type StructuralStep = Exclude<
 
 /** ファイル・クラス・継承関係の組み替え(処理の中身を伴わない手)のヒント文。 */
 function describeStructuralStep(step: StructuralStep): string {
-  if ('addFile' in step) return `ファイル ${step.addFile} を追加しよう`;
-  if ('deleteFile' in step) return `空になったファイル ${step.deleteFile} を右クリックで削除しよう`;
-  if ('addClass' in step) return `${step.addClass.file} に ${step.addClass.name} クラスを追加しよう`;
-  if ('moveClass' in step) return `${step.moveClass.name} クラスを ${step.moveClass.toFile} へ移そう`;
+  if ('addFile' in step) return '新しいファイルを追加しよう';
+  if ('deleteFile' in step) return '空になったファイルを右クリックで削除しよう';
+  if ('addClass' in step) return `${step.addClass.name} クラスを追加しよう`;
+  if ('moveClass' in step) return `${step.moveClass.name} クラスを別のファイルへ移そう`;
   if ('addInterface' in step) return describeAddInterface(step.addInterface);
   if ('removeInterface' in step) return describeRemoveInterface(step.removeInterface);
   if ('renameClass' in step) return describeRenameClass(step.renameClass);
-  if ('renameFile' in step) return describeRenameFile(step.renameFile);
   return describeSetSuperclass(step.setSuperclass);
 }
 

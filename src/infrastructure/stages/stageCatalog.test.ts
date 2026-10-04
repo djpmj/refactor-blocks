@@ -97,7 +97,6 @@ const shortcuts: ReadonlyArray<{ readonly stageId: string; readonly description:
     description: 'インターフェースを分けて実装先も付け替えたが、空実装を消さない',
     steps: [
       { renameClass: { name: 'CollaborationTool', newName: 'ChatClient' } },
-      { renameFile: { path: 'src/integration/CollaborationTool.ts', newPath: 'src/integration/ChatClient.ts' } },
       { addFile: 'src/integration/TaskTracker.ts' },
       { addClass: { name: 'TaskTracker', file: 'src/integration/TaskTracker.ts' } },
       { move: { method: 'createTask', fromClass: 'ChatClient', toClass: 'TaskTracker' } },
@@ -137,7 +136,6 @@ const shortcuts: ReadonlyArray<{ readonly stageId: string; readonly description:
     description: '分けたが、Chatwork には ChatClient しか実装させない',
     steps: [
       { renameClass: { name: 'CollaborationTool', newName: 'ChatClient' } },
-      { renameFile: { path: 'src/integration/CollaborationTool.ts', newPath: 'src/integration/ChatClient.ts' } },
       { addFile: 'src/integration/TaskTracker.ts' },
       { addClass: { name: 'TaskTracker', file: 'src/integration/TaskTracker.ts' } },
       { move: { method: 'createTask', fromClass: 'ChatClient', toClass: 'TaskTracker' } },
@@ -208,7 +206,7 @@ const shortcuts: ReadonlyArray<{ readonly stageId: string; readonly description:
   },
   {
     stageId: 'intermediate-feature-envy',
-    description: 'データをサービスへ寄せる: Subscription の5つのフィールドを BillingService へ Move Field し、Subscription.ts を削除する',
+    description: 'データをサービスへ寄せる: Subscription の5つのフィールドを BillingService へ Move Field し、空のファイルを削除する',
     steps: [
       { moveField: { field: 'status', fromClass: 'Subscription', toClass: 'BillingService' } },
       { moveField: { field: 'startedAt', fromClass: 'Subscription', toClass: 'BillingService' } },

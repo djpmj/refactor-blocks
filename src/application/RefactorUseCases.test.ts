@@ -3,12 +3,11 @@ import { findClassOfMethod, findFileOfClass, findMethod, type Codebase } from '.
 import { sampleCodebase } from '../domain/codebase/testFixtures';
 import {
   addClassUseCase,
-  addFileUseCase,
+  addNewFileUseCase,
   addInterfaceUseCase,
   changeVisibilityUseCase,
   deleteMethodUseCase,
   describeAddClassError,
-  describeAddFileError,
   describeAddInterfaceError,
   describeChangeVisibilityError,
   describeDeleteClassError,
@@ -19,7 +18,6 @@ import {
   describeMoveFieldError,
   describeRemoveInterfaceError,
   describeRenameClassError,
-  describeRenameFileError,
   describeRenameMethodError,
   describeExtractError,
   describeInlineError,
@@ -32,10 +30,10 @@ import {
   moveClassToNewFileUseCase,
   moveFieldUseCase,
   moveMethodToNewClassUseCase,
+  moveMethodToNewClassInFileUseCase,
   moveMethodUseCase,
   removeInterfaceUseCase,
   renameClassUseCase,
-  renameFileUseCase,
   renameMethodUseCase,
   setSuperclassUseCase,
 } from './RefactorUseCases';
@@ -255,7 +253,7 @@ describe('inlineMethodUseCase', () => {
   });
 });
 
-describe('addClassUseCase / addFileUseCase', () => {
+describe('addClassUseCase / addNewFileUseCase', () => {
   it('注入されたIDで新しいクラスを作る', () => {
     // Arrange
     const codebase = sampleCodebase();
@@ -273,11 +271,11 @@ describe('addClassUseCase / addFileUseCase', () => {
     const codebase = sampleCodebase();
 
     // Act
-    const result = addFileUseCase(codebase, 'src/mail/Mailer.ts', () => 'generated-file');
+    const result = addNewFileUseCase(codebase, () => 'generated-file');
 
     // Assert
     if (!result.ok) throw new Error(result.error);
-    expect(result.value.files[2]).toEqual({ id: 'generated-file', path: 'src/mail/Mailer.ts', classes: [] });
+    expect(result).toEqual({ ok: true, value: { files: [...codebase.files, { id: 'generated-file', path: 'src/NewFile.ts', classes: [] }] } });
   });
 });
 
@@ -317,7 +315,7 @@ describe('moveClassUseCase', () => {
   });
 });
 
-describe('renameClassUseCase / renameFileUseCase', () => {
+describe('renameClassUseCase / renameMethodUseCase', () => {
   it('クラス名を付け替える', () => {
     // Arrange
     const codebase = sampleCodebase();
@@ -328,18 +326,6 @@ describe('renameClassUseCase / renameFileUseCase', () => {
     // Assert
     if (!result.ok) throw new Error(result.error);
     expect(result.value.files[1].classes[0].name).toBe('TaxPolicy');
-  });
-
-  it('ファイルのパスを付け替える', () => {
-    // Arrange
-    const codebase = sampleCodebase();
-
-    // Act
-    const result = renameFileUseCase(codebase, 'file-tax', 'src/tax/TaxPolicy.ts');
-
-    // Assert
-    if (!result.ok) throw new Error(result.error);
-    expect(result.value.files[1].path).toBe('src/tax/TaxPolicy.ts');
   });
 
   it('メソッド名を付け替える', () => {
@@ -431,10 +417,8 @@ describe('エラーメッセージ', () => {
       describeInlineError(inlineError),
       describeMergeError(mergeError),
       describeAddClassError('duplicate-class-name'),
-      describeAddFileError('duplicate-path'),
       describeMoveClassError('file-not-found'),
       describeRenameClassError('class-not-found'),
-      describeRenameFileError('file-not-found'),
       describeRenameMethodError('duplicate-method-name'),
       describeSetSuperclassError('inheritance-cycle'),
       describeDeleteMethodError('not-stub'),
@@ -454,10 +438,8 @@ describe('エラーメッセージ', () => {
       'publicメソッドは呼び出し元へ戻せません',
       '処理の形が一致しないため統合できません',
       '同じ名前のクラスがすでにあります',
-      '同じパスのファイルがすでにあります',
       '移動先のファイルが見つかりません',
       '名前を変えるクラスが見つかりません',
-      '名前を変えるファイルが見つかりません',
       '同じクラスに同じ名前のメソッドがあります',
       '継承の輪ができてしまいます',
       '中身のあるメソッドは削除できません。削除できるのは空実装のメソッドだけです',
@@ -582,5 +564,19 @@ describe('moveClassToNewFileUseCase / moveMethodToNewClassUseCase', () => {
     if (!result.ok) throw new Error(result.error);
     expect(findClassOfMethod(result.value, 'method-place')?.id).toBe('generated-class');
     expect(findFileOfClass(result.value, 'generated-class')?.id).toBe('generated-file');
+  });
+
+  it('メソッドを指定されたファイルに注入されたIDのクラスを作って移す', () => {
+    // Arrange
+    const base = sampleCodebase();
+    const codebase = { files: [...base.files, { id: 'target-file', path: 'src/NewFile.ts', classes: [] }] };
+
+    // Act
+    const result = moveMethodToNewClassInFileUseCase(codebase, 'method-place', 'target-file', () => 'generated-class');
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    expect(findClassOfMethod(result.value, 'method-place')?.id).toBe('generated-class');
+    expect(findFileOfClass(result.value, 'generated-class')?.id).toBe('target-file');
   });
 });
