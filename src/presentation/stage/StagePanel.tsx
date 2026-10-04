@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import type { Codebase } from '../../domain/codebase/Codebase';
 import { scoreCodebase, type Score } from '../../domain/scoring/score';
 import { sampleAnswerCodebase, sampleAnswerSteps } from '../../domain/stage/sampleAnswer';
 import type { Stage } from '../../domain/stage/Stage';
@@ -16,6 +17,7 @@ import { ChangePainCard } from './ChangePainCard';
 import { ManualFixPanel } from './ManualFixPanel';
 import { LEVEL_LABEL } from './levelLabel';
 import { StageRoadmapDialog } from './StageRoadmapDialog';
+import { TestStatus } from './TestStatus';
 import { useHints } from './useHints';
 import { useStageSidebar } from './useStageSidebar';
 
@@ -110,6 +112,17 @@ function ScoreBadge({ score }: Readonly<{ score: Score }>) {
   );
 }
 
+/** ヘッダーの右端: 点数のゲージ・テストの状態・減点の内訳。 */
+function ScoreArea({ stage, codebase, score, disabled }: Readonly<{ stage: Stage; codebase: Codebase; score: Score; disabled: boolean }>) {
+  return (
+    <>
+      <ScoreBadge score={score} />
+      <TestStatus stage={stage} codebase={codebase} />
+      <ScoreBreakdown score={score} disabled={disabled} />
+    </>
+  );
+}
+
 /** ツールバー(キャンバスの上): 変更依頼・やり直し系・図の確認。 */
 function ActionToolbar({ stage, isPerfect, active }: Readonly<{ stage: Stage; isPerfect: boolean; active: boolean }>) {
   const [guideOpen, setGuideOpen] = useState(false);
@@ -188,8 +201,7 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
         <div className="stage-panel__spacer" />
         <CritiqueButton disabled={investigating} />
         <HintButton revealed={revealedCount} total={total} disabled={investigating} onReveal={() => setRevealed({ stageId: stage.id, count: revealedCount + 1 })} />
-        <ScoreBadge score={score} />
-        <ScoreBreakdown score={score} disabled={investigating} />
+        <ScoreArea stage={stage} codebase={codebase} score={score} disabled={investigating} />
       </header>
       <CritiqueResult />
       <div className={`app__body${sidebarOpen ? ' app__body--sidebar-open' : ''}`}>
