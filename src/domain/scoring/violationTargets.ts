@@ -6,6 +6,7 @@ import { findEncapsulationViolations, findFeatureEnvy, findOpenSetters } from '.
 import { findContractViolations, findStubMethods } from './interfaceContracts';
 import { findEmptyContainers, findUnusedPrivateMethods } from './leftovers';
 import { findLineLimitViolations } from './lineLimits';
+import { findLayerViolations } from './layers';
 import { findLoneSuperclasses } from './loneSuperclass';
 import { findResponsibilityViolations } from './responsibilities';
 import { findThinClasses, findTrivialMethods } from './overExtraction';
@@ -32,6 +33,7 @@ function emptyTargets(): TargetRecord {
     visibility: emptyTarget(), empty: emptyTarget(), unused: emptyTarget(), 'lone-superclass': emptyTarget(),
     stub: emptyTarget(), contract: emptyTarget(), 'feature-envy': emptyTarget(), encapsulation: emptyTarget(),
     cohesion: emptyTarget(), 'trivial-method': emptyTarget(), 'thin-class': emptyTarget(),
+    layer: emptyTarget(),
   };
 }
 
@@ -56,6 +58,7 @@ function freezeTargets(targets: TargetRecord): Record<ScoreRule, ViolationTarget
     contract: freezeTarget(targets.contract), 'feature-envy': freezeTarget(targets['feature-envy']),
     encapsulation: freezeTarget(targets.encapsulation), cohesion: freezeTarget(targets.cohesion),
     'trivial-method': freezeTarget(targets['trivial-method']), 'thin-class': freezeTarget(targets['thin-class']),
+    layer: freezeTarget(targets.layer),
   };
 }
 
@@ -77,7 +80,7 @@ function addEmptyTargets(codebase: Codebase, target: MutableTarget): void {
 
 export function violationTargets(
   codebase: Codebase,
-  stage: Pick<Stage, 'limits' | 'dependencyLimit' | 'responsibilityLimit' | 'visibilityEnforced'>,
+  stage: Pick<Stage, 'limits' | 'dependencyLimit' | 'responsibilityLimit' | 'visibilityEnforced' | 'layers'>,
 ): Record<ScoreRule, ViolationTarget> {
   const targets = emptyTargets();
   const dependencies = classDependencies(codebase);
@@ -103,5 +106,6 @@ export function violationTargets(
   addClasses(targets.cohesion, findLowCohesionClasses(codebase).map(({ classId }) => classId));
   addMethods(targets['trivial-method'], findTrivialMethods(codebase));
   addClasses(targets['thin-class'], findThinClasses(codebase));
+  addClasses(targets.layer, findLayerViolations(codebase, stage.layers).map(({ fromClassId }) => fromClassId));
   return freezeTargets(targets);
 }

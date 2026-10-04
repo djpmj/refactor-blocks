@@ -19,6 +19,13 @@ export type ConceptCheck = {
   readonly answer: number;
 };
 
+export type StageLayer = {
+  /** 画面に出す層の名前。例: 'Controller' / 'Service' / 'Repository' */
+  readonly name: string;
+  /** この層に属する処理の責務(Fragment.responsibility)。 */
+  readonly responsibilities: readonly string[];
+};
+
 export type Stage = {
   readonly id: string;
   readonly level: StageLevel;
@@ -44,4 +51,6 @@ export type Stage = {
    *  越境は、呼ばれる側を public にしても消える(可視性の操作は全ステージで使える)。Move Method で直させたいステージは、
    *  依存の上限など別の採点で public にするだけでは100点にならないようにする(中級3は dependencyLimit: 0)。 */
   readonly visibilityEnforced?: boolean;
+  /** 層の並び(上 → 下)。省略時は層の採点をしない。 */
+  readonly layers?: readonly StageLayer[];
 };

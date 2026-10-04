@@ -63,4 +63,8 @@ export const RULE_WHY: Record<ScoreRule, RuleWhy> = {
     trouble: '小さな役割しかないクラスは、読む場所を増やすだけで、分けた得がありません。',
     because: '分ける価値(変更理由が違う・使い回せる)があるときだけ分けると、全体が小さく保てます。',
   },
+  layer: {
+    trouble: '下の層が上の層を呼んだり、Controller が Repository を直接呼んだりすると、DBを変えるだけで画面側まで直すことになります。',
+    because: '上の層は1つ下の層だけを呼ぶ一方通行にすると、各層を別々に変えられます。',
+  },
 };

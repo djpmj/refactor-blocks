@@ -3,6 +3,7 @@ import type { NodeProps } from "@xyflow/react";
 import { fieldsOf, findClass, findInterfaces, findSuperclass, type CodeClass } from "../../domain/codebase/Codebase";
 import { classDependencies, cyclicClassIds } from "../../domain/codebase/dependencies";
 import { classLines } from "../../domain/codebase/lineCount";
+import { classLayers } from "../../domain/scoring/layers";
 import { violationTargets } from "../../domain/scoring/violationTargets";
 import { useGameStore } from "../store/useGameStore";
 import { classDragId, classDropId } from "./dndIds";
@@ -20,6 +21,15 @@ function CyclicMark() {
   return (
     <span className="cyclic-mark" role="img" aria-label={label} title={label} data-testid="cyclic-mark">
       🔁
+    </span>
+  );
+}
+
+/** ステージに層の定義があるとき、クラスが属する層の名前を出す。色に頼らず文字で伝える。 */
+function LayerTag({ name, className }: Readonly<{ name: string; className: string }>) {
+  return (
+    <span className="class-node__layer" data-testid={`layer-${className}`}>
+      {name}
     </span>
   );
 }
@@ -81,6 +91,11 @@ export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
     cyclicClassIds(classDependencies(state.codebase)).has(data.classId),
   );
   const limit = useGameStore((state) => state.stage.limits.class);
+  const layerName = useGameStore((state) => {
+    const { layers } = state.stage;
+    const index = layers === undefined ? undefined : classLayers(state.codebase, layers).get(data.classId);
+    return layers === undefined || index === undefined ? undefined : layers[index].name;
+  });
   const flagged = useGameStore((state) => {
     const rule = state.focusedRule;
     return rule !== null && violationTargets(state.codebase, state.stage)[rule].classIds.includes(data.classId);
@@ -112,6 +127,7 @@ export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
         {...listeners}
       >
         <ClassNameLabel classId={data.classId} name={codeClass.name} />
+        {layerName === undefined ? null : <LayerTag name={layerName} className={codeClass.name} />}
         {isCyclic ? <CyclicMark /> : null}
         {showDetails ? (
           <span
