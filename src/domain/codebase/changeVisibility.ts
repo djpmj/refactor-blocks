@@ -55,7 +55,12 @@ function visibilityError(codebase: Codebase, methodId: string, ownerClassId: str
  * 親の抽象宣言を実装するときも可視性を広げられる。抽象宣言経由の呼び出しは変更後の可視性で解決する。
  * 狭めるときは、狭めた後の可視性では届かない呼び出し元(持ち主以外 / 子孫以外)が1つもないことを求める。
  */
-export function changeVisibility(codebase: Codebase, methodId: string, visibility: Visibility): Result<Codebase, ChangeVisibilityError> {
+export function changeVisibility(
+  codebase: Codebase,
+  methodId: string,
+  visibility: Visibility,
+  originalVisibility?: Visibility,
+): Result<Codebase, ChangeVisibilityError> {
   const method = findMethod(codebase, methodId);
   const ownerClass = findClassOfMethod(codebase, methodId);
   if (method === undefined || ownerClass === undefined) return err('method-not-found');
@@ -67,6 +72,6 @@ export function changeVisibility(codebase: Codebase, methodId: string, visibilit
     methods: codeClass.methods.map((candidate) => (candidate.id === methodId ? { ...candidate, visibility } : candidate)),
   }));
   const widening = VISIBILITY_RANK[visibility] > VISIBILITY_RANK[method.visibility];
-  const error = visibilityError(updated, methodId, ownerClass.id, widening);
+  const error = widening && visibility === originalVisibility ? undefined : visibilityError(updated, methodId, ownerClass.id, widening);
   return error === undefined ? ok(updated) : err(error);
 }

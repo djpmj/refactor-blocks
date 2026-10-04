@@ -473,7 +473,7 @@ describe('エラーメッセージ', () => {
 });
 
 /** changeVisibilityUseCase用: class-a の method-target(private)を class-b の method-b が呼ぶ。 */
-function codebaseWithVisibilityTarget(): Codebase {
+function codebaseWithVisibilityTarget(targetVisibility: 'public' | 'private' = 'private', callsTarget = true): Codebase {
   return {
     files: [
       {
@@ -483,12 +483,12 @@ function codebaseWithVisibilityTarget(): Codebase {
           {
             id: 'class-a',
             name: 'A',
-            methods: [{ id: 'method-target', name: 'target', visibility: 'private', fragments: [{ id: 'f-target', label: 'do', lines: 1, responsibility: 'x' }] }],
+            methods: [{ id: 'method-target', name: 'target', visibility: targetVisibility, fragments: [{ id: 'f-target', label: 'do', lines: 1, responsibility: 'x' }] }],
           },
           {
             id: 'class-b',
             name: 'B',
-            methods: [{ id: 'method-b', name: 'run', visibility: 'public', fragments: [{ id: 'f-b', label: 'call', lines: 1, responsibility: 'x', uses: ['method-target'] }] }],
+            methods: [{ id: 'method-b', name: 'run', visibility: 'public', fragments: callsTarget ? [{ id: 'f-b', label: 'call', lines: 1, responsibility: 'x', uses: ['method-target'] }] : [] }],
           },
         ],
       },
@@ -502,7 +502,7 @@ describe('changeVisibilityUseCase', () => {
     const codebase = codebaseWithVisibilityTarget();
 
     // Act
-    const result = changeVisibilityUseCase(codebase, 'method-target', 'private');
+    const result = changeVisibilityUseCase(codebase, 'method-target', 'private', codebase);
 
     // Assert
     expect(result).toEqual({ ok: true, value: codebase });
@@ -513,7 +513,7 @@ describe('changeVisibilityUseCase', () => {
     const codebase = codebaseWithVisibilityTarget();
 
     // Act
-    const result = changeVisibilityUseCase(codebase, 'method-target', 'public');
+    const result = changeVisibilityUseCase(codebase, 'method-target', 'public', codebase);
 
     // Assert
     if (!result.ok) throw new Error(result.error);
@@ -525,10 +525,35 @@ describe('changeVisibilityUseCase', () => {
     const codebase = codebaseWithVisibilityTarget();
 
     // Act
-    const result = changeVisibilityUseCase(codebase, 'method-missing', 'public');
+    const result = changeVisibilityUseCase(codebase, 'method-missing', 'public', codebase);
 
     // Assert
     expect(result).toEqual({ ok: false, error: 'method-not-found' });
+  });
+
+  it('originalCodebase の可視性には呼び出し元がなくても戻せる', () => {
+    // Arrange
+    const codebase = codebaseWithVisibilityTarget('private', false);
+    const originalCodebase = codebaseWithVisibilityTarget('public', false);
+
+    // Act
+    const result = changeVisibilityUseCase(codebase, 'method-target', 'public', originalCodebase);
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    expect(findMethod(result.value, 'method-target')?.visibility).toBe('public');
+  });
+
+  it('originalCodebase にないメソッドは呼び出し元がないと広げられない', () => {
+    // Arrange
+    const codebase = codebaseWithVisibilityTarget();
+    const originalCodebase: Codebase = { files: [] };
+
+    // Act
+    const result = changeVisibilityUseCase(codebase, 'method-target', 'protected', originalCodebase);
+
+    // Assert
+    expect(result).toEqual({ ok: false, error: 'widening-not-needed' });
   });
 });
 

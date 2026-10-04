@@ -1,6 +1,6 @@
 import { addClass, type AddClassError } from '../domain/codebase/addClass';
 import { addFile, type AddFileError } from '../domain/codebase/addFile';
-import type { Codebase, Visibility } from '../domain/codebase/Codebase';
+import { findMethod, type Codebase, type Visibility } from '../domain/codebase/Codebase';
 import { changeVisibility, type ChangeVisibilityError } from '../domain/codebase/changeVisibility';
 import { deleteClass, type DeleteClassError } from '../domain/codebase/deleteClass';
 import { deleteFile, type DeleteFileError } from '../domain/codebase/deleteFile';
@@ -81,8 +81,10 @@ export function changeVisibilityUseCase(
   codebase: Codebase,
   methodId: string,
   visibility: Visibility,
+  originalCodebase: Codebase,
 ): Result<Codebase, Exclude<ChangeVisibilityError, 'same-visibility'>> {
-  const result = changeVisibility(codebase, methodId, visibility);
+  const originalVisibility = findMethod(originalCodebase, methodId)?.visibility;
+  const result = changeVisibility(codebase, methodId, visibility, originalVisibility);
   if (result.ok) return ok(result.value);
   const { error } = result;
   return error === 'same-visibility' ? ok(codebase) : err(error);
