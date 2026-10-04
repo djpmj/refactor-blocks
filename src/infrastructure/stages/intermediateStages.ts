@@ -935,6 +935,119 @@ const copyPasteTaxStage: Stage = {
   },
 };
 
+/**
+ * 中級10: 会員ランク(通常/プレミアム/VIP)ごとのif分岐が、価格(PriceCalculator)と送料(ShippingCalculator)の2クラスに散らばっている。
+ * 契約だけを持つ MemberRank は用意されていて、CheckoutService が呼んでいるが、どのクラスとも実装関係で結ばれていない。
+ * ランクごとのクラスに集めて MemberRank を実装すると、ランクの追加が「新しいクラス1つ」で済むことが体験できる(オブジェクト指向の入口)。
+ * 上級3(割引のStrategy、受け皿は1メソッド)と違い、1クラスが価格と送料の2メソッドを持つ。既存の操作だけで解ける。
+ */
+const memberRankBranchingStage: Stage = {
+  id: 'intermediate-member-rank-branching',
+  level: 'intermediate',
+  title: '中級10: 会員ランクごとのif分岐をクラスに分ける',
+  /** 100点になったときに見せる、この題材で分ける理由。 */
+  why: '会員ランクが増えるたびに、価格と送料の2つのクラスを開いて分岐を足していました。ランクごとのクラスにしたので、新しいランクはクラスを1つ足すだけで済み、既存のコードを壊す心配がありません。',
+  description:
+    '価格を決める PriceCalculator.quotePrice と、送料を決める ShippingCalculator.quoteShipping が、' +
+    '会員ランク(通常/プレミアム/VIP)ごとのif分岐を、それぞれ持っている。新しいランクが増えるたびに、2つのクラスを開いて分岐を足すことになる。' +
+    '価格と送料の契約だけを持つ MemberRank は用意され、CheckoutService が呼んでいるが、まだどのクラスとも実装関係で結ばれていない。',
+  goal:
+    '会員ランクごとの分岐を、ランクごとの新しいクラス(RegularRank/PremiumRank/VipRank)に集めよう。Extract Methodで分岐を calculatePrice / calculateShipping として取り出し、Move Methodでランクのクラスへ移す。' +
+    '1つのクラスが価格と送料の両方を持つ。3クラスとも MemberRank を実装(implements)すると、新しいランクはクラスを足すだけで済む。メソッドは40行以内、クラスは70行以内',
+  limits: { method: 40, class: 70, file: 100 },
+  // 模範解答では、価格・送料の両方がランクごとの3クラスを呼ぶ。結合度の改善はこのステージの狙いではない。
+  dependencyLimit: 3,
+  responsibilityLimit: 3,
+  changeRequests: [
+    { id: 'req-add-gold-rank', title: 'ゴールド会員を追加して', description: '新しい会員ランク「ゴールド」を追加したい。価格も送料もゴールド用の計算にする。', responsibility: 'rank-gold', linesPerSite: 12, kind: 'extend', partName: 'applyGoldRank' },
+    { id: 'req-premium-shipping', title: 'プレミアムの送料を変えて', description: 'プレミアム会員の送料を、一律500円に変えたい。', responsibility: 'shipping-premium', linesPerSite: 4, partName: 'revisePremiumShipping' },
+  ],
+  codebase: {
+    files: [
+      {
+        id: 'file-price-calculator',
+        path: 'src/membership/PriceCalculator.ts',
+        classes: [
+          {
+            id: 'class-price-calculator',
+            name: 'PriceCalculator',
+            methods: [
+              {
+                id: 'method-quote-price',
+                name: 'quotePrice',
+                visibility: 'public',
+                fragments: [
+                  { id: 'frag-price-regular', label: '会員ランクが「通常」なら、定価で計算する', lines: 30, responsibility: 'price-regular', suggestedName: 'calculatePrice' },
+                  { id: 'frag-price-premium', label: '会員ランクが「プレミアム」なら、10%引きで計算する', lines: 32, responsibility: 'price-premium', suggestedName: 'calculatePrice' },
+                  { id: 'frag-price-vip', label: '会員ランクが「VIP」なら、20%引きで計算する', lines: 34, responsibility: 'price-vip', suggestedName: 'calculatePrice' },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'file-shipping-calculator',
+        path: 'src/membership/ShippingCalculator.ts',
+        classes: [
+          {
+            id: 'class-shipping-calculator',
+            name: 'ShippingCalculator',
+            methods: [
+              {
+                id: 'method-quote-shipping',
+                name: 'quoteShipping',
+                visibility: 'public',
+                fragments: [
+                  { id: 'frag-shipping-regular', label: '会員ランクが「通常」なら、送料を全額かける', lines: 22, responsibility: 'shipping-regular', suggestedName: 'calculateShipping' },
+                  { id: 'frag-shipping-premium', label: '会員ランクが「プレミアム」なら、送料を半額にする', lines: 24, responsibility: 'shipping-premium', suggestedName: 'calculateShipping' },
+                  { id: 'frag-shipping-vip', label: '会員ランクが「VIP」なら、送料を無料にする', lines: 26, responsibility: 'shipping-vip', suggestedName: 'calculateShipping' },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'file-checkout-service',
+        path: 'src/membership/CheckoutService.ts',
+        classes: [
+          {
+            id: 'class-checkout-service',
+            name: 'CheckoutService',
+            methods: [
+              {
+                id: 'method-checkout',
+                name: 'checkout',
+                visibility: 'public',
+                fragments: [
+                  { id: 'frag-checkout-validate', label: '注文内容を検証する', lines: 10, responsibility: 'validation', suggestedName: 'validateOrder' },
+                  { id: 'frag-checkout-rank', label: 'MemberRank(インターフェース)経由で価格と送料を求める', lines: 12, responsibility: 'pricing', uses: ['method-member-rank-price', 'method-member-rank-shipping'], suggestedName: 'priceOrder' },
+                  { id: 'frag-checkout-save', label: '注文を確定して保存する', lines: 10, responsibility: 'ordering', suggestedName: 'saveOrder' },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'file-member-rank',
+        path: 'src/membership/MemberRank.ts',
+        classes: [
+          {
+            id: 'class-member-rank',
+            name: 'MemberRank',
+            methods: [
+              { id: 'method-member-rank-price', name: 'calculatePrice', visibility: 'public', fragments: [] },
+              { id: 'method-member-rank-shipping', name: 'calculateShipping', visibility: 'public', fragments: [] },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+};
+
 export const intermediateStages: readonly Stage[] = [
   cyclicDependencyStage,
   godFileStage,
@@ -945,4 +1058,5 @@ export const intermediateStages: readonly Stage[] = [
   anemicDomainModelStage,
   extractClassStage,
   copyPasteTaxStage,
+  memberRankBranchingStage,
 ];

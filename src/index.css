@@ -115,6 +115,8 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .change-pain p { margin: 6px 0; }
 .change-pain ul { margin: 6px 0 0; padding-left: 20px; }
 .change-pain__request { margin-bottom: 2px !important; }
+.change-pain__extend { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border); }
+.change-pain h4 { margin: 0 0 6px; font-size: 13px; }
 @media (max-width: 700px) {
   .sidebar-resizable { max-width: calc(100vw - 160px); }
   .app__body--sidebar-open > .sidebar { width: min(260px, 40vw); }

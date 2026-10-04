@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { measurePain, painRequestOf } from '../../domain/change/changePain';
+import { measurePain, painRequestsOf } from '../../domain/change/changePain';
 import { findChangeSites } from '../../domain/change/findChangeSites';
 import { allClasses } from '../../domain/codebase/Codebase';
 import { scoreCodebase } from '../../domain/scoring/score';
@@ -8,7 +8,7 @@ import { stages } from './stageCatalog';
 
 const stage = stages.find((candidate) => candidate.id === 'intermediate-copy-paste-tax');
 if (stage === undefined) throw new Error('中級9 (intermediate-copy-paste-tax) がありません');
-const request = painRequestOf(stage);
+const request = painRequestsOf(stage).modify;
 if (request === undefined) throw new Error('中級9に modify の依頼がありません');
 
 describe('中級9: コピペされた消費税計算', () => {
