@@ -3,18 +3,37 @@ name: Scheduled PR Review
 on:
   schedule:
     # 毎日 01:00 / 07:00 / 13:00 / 19:00 JST(= 前日16:00 / 前日22:00 / 04:00 / 10:00 UTC)
+    # Dependabot PR(pull_requestイベントではsecretsが使えず即時レビューできない)を拾うための保険。
     - cron: "0 16 * * *"
     - cron: "0 22 * * *"
     - cron: "0 4 * * *"
     - cron: "0 10 * * *"
+  pull_request:
+    types: [opened, synchronize]
   workflow_dispatch: {}
 
 concurrency:
-  group: review-pr
+  # pull_requestイベントはPRごとに独立させ、スケジュール実行(全PR一括)とは別グループにする
+  group: review-pr-${{ github.event.pull_request.number && format('pr-{0}', github.event.pull_request.number) || 'scheduled' }}
   cancel-in-progress: false
 
 jobs:
   review-pr:
+    # pull_requestイベントで即時レビューを許可するのは、このリポジトリ内のブランチ同士のPRのみ。
+    # - フォークからのPRはここで除外する: `npm ci`/`npm test`等をこのステップ内でフォーク側の
+    #   コードとして実行するため、フォークの悪意あるコードがステップに渡したsecrets
+    #   (CLAUDE_CODE_OAUTH_TOKEN)をプロセス環境から読み取れてしまうリスクを断つ。
+    #   フォークPRはスケジュール実行(読み取り専用トークンでも動く手順)側で拾う。
+    # - Dependabotが作成したPRへのpull_requestイベントはGitHub側の仕様でsecretsが渡らず
+    #   認証に失敗するだけなので実行しない(スケジュール実行側で拾う)。
+    # - ドラフトPRもここで除外する。
+    if: |
+      github.event_name != 'pull_request' ||
+      (
+        github.actor != 'dependabot[bot]' &&
+        github.event.pull_request.draft == false &&
+        github.event.pull_request.head.repo.full_name == github.repository
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 120
     permissions:
@@ -40,17 +59,28 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
             REPO: ${{ github.repository }}
+            TRIGGER: ${{ github.event_name }}
+            PR_NUMBER(pull_requestイベントの場合のみ有効): ${{ github.event.pull_request.number }}
 
-            あなたはこのリポジトリのPRレビュー担当です。起動ごとに、オープンな
-            プルリクエストを一通りレビューし、指摘(blocker)が無ければ自動でマージします。
-            Dependabotが作成した依存更新PRも対象に含みます。
+            あなたはこのリポジトリのPRレビュー担当です。オープンなプルリクエストをレビューし、
+            指摘(blocker)が無ければ自動でマージします。Dependabotが作成した依存更新PRも対象に
+            含みますが、Dependabot PRやフォークからのPR自身のpushをきっかけにした起動
+            (TRIGGER=pull_request)では、このジョブ自体が実行されない設定になっている
+            (secretsが使えない、またはフォークの未信頼コードにsecretsを晒さないため)。
+            これらのPRはスケジュール実行(TRIGGER=schedule)側で拾われる。
 
             まず `git config user.name "github-actions[bot]"` と
             `git config user.email "github-actions[bot]@users.noreply.github.com"` を設定する。
 
-            1. `gh pr list --state open --json number,title,headRefName,isDraft,updatedAt` で
-               オープンなPRを一覧する。ドラフトPRは対象外にする。対象PRが無ければ何もせず終了する。
-            2. 各PRについて、`gh pr view <番号> --json reviews,commits` で、このbot
+            0. 対象PRを次の通り決める。
+               - TRIGGERが `pull_request` の場合: 対象は `PR_NUMBER` の1件のみ。
+                 (PR作成時または指摘対応のpush時に起動しているので、一覧は不要)
+               - TRIGGERが `schedule` または `workflow_dispatch` の場合: 従来通り
+                 `gh pr list --state open --json number,title,headRefName,isDraft,updatedAt` で
+                 オープンなPRを一覧し、ドラフトPRを除外して対象にする。
+               対象PRが無ければ何もせず終了する。
+            1. (手順0で対象PRを決定済み)
+            2. 各対象PRについて、`gh pr view <番号> --json reviews,commits` で、このbot
                (`github-actions[bot]`、またはClaude Code経由の直近のレビュー)による最新レビューが
                現在の最新コミットに対して既に行われているか確認する。最新コミットへの変更が無い
                (前回レビュー以降に新しいコミットが無い)PRはスキップする
