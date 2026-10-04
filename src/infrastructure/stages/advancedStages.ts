@@ -767,10 +767,10 @@ const valueObjectStage: Stage = {
             id: 'class-expense',
             name: 'Expense',
             fields: [
-              { id: 'field-amount', name: 'amount', visibility: 'public' },
-              { id: 'field-currency', name: 'currency', visibility: 'public' },
-              { id: 'field-category', name: 'category', visibility: 'public' },
-              { id: 'field-status', name: 'status', visibility: 'public' },
+              { id: 'field-amount', name: 'amount', visibility: 'public', description: '申請する経費の金額', type: { csharp: 'decimal' } },
+              { id: 'field-currency', name: 'currency', visibility: 'public', description: '金額の通貨コード', type: { csharp: 'string' } },
+              { id: 'field-category', name: 'category', visibility: 'public', description: '経費の分類', type: { csharp: 'string' } },
+              { id: 'field-status', name: 'status', visibility: 'public', description: '申請の状態', type: { csharp: 'string' } },
             ],
             methods: [
               {

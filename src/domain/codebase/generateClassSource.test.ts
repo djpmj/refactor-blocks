@@ -122,15 +122,27 @@ describe('generateClassSource', () => {
   it('renders fields in declaration order', () => {
     // Arrange
     const codebase: Codebase = { files: [{ id: 'f', path: 'x', classes: [{ id: 'c', name: 'Thing', fields: [
-      { id: 'first', name: 'value', visibility: 'private' },
-      { id: 'second', name: 'title', visibility: 'public' },
+      { id: 'first', name: 'value', visibility: 'private', description: '数値', type: { csharp: 'decimal' } },
+      { id: 'second', name: 'title', visibility: 'public', type: { csharp: 'string' } },
     ], methods: [] }] }] };
     // Act
     const source = generateClassSource(codebase, 'c', 'csharp');
     // Assert
-    expect(source).toContain('private object value;');
-    expect(source).toContain('public object title;');
-    expect(source.indexOf('private object value;')).toBeLessThan(source.indexOf('public object title;'));
+    expect(source).toContain('// 数値\n    private decimal value;');
+    expect(source).toContain('public string title;');
+    expect(source.indexOf('private decimal value;')).toBeLessThan(source.indexOf('public string title;'));
+  });
+
+  it('renders a placeholder when a field has no type for the selected language', () => {
+    // Arrange
+    const codebase: Codebase = { files: [{ id: 'f', path: 'x', classes: [{ id: 'c', name: 'Thing', fields: [
+      { id: 'unknown', name: 'value', visibility: 'private', description: '値' },
+    ], methods: [] }] }] };
+    // Act
+    const source = generateClassSource(codebase, 'c', 'csharp');
+    // Assert
+    expect(source).toContain('    // 未入力: フィールド value');
+    expect(source).not.toContain('object');
   });
 
   it('renders the superclass and interfaces in order and ignores missing parent IDs', () => {

@@ -46,6 +46,10 @@ export type Field = {
   readonly id: string;
   readonly name: string;
   readonly visibility: Visibility;
+  /** 画面とコードのコメントに出す日本語の説明。省略可。 */
+  readonly description?: string;
+  /** 言語ごとの型(表示用)。省略可。無い言語ではコードに宣言を出さず「未入力」にする。 */
+  readonly type?: Partial<Record<CodeLanguage, string>>;
 };
 
 export type Method = {

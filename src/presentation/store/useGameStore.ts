@@ -4,7 +4,7 @@ import { evaluateImplementationUseCase, type ChangeOutcome } from '../../applica
 import { describeCritiqueError, requestCritiqueUseCase } from '../../application/CritiqueUseCases';
 import { withoutTray } from '../../domain/blank/tray';
 import { withChangePart } from '../../domain/change/changePart';
-import { findMethod, type Codebase, type Visibility } from '../../domain/codebase/Codebase';
+import { findField, findMethod, type Codebase, type Visibility } from '../../domain/codebase/Codebase';
 import { emptyHistory, recordChange, redoHistory, undoHistory, type History, type Travel } from '../../domain/codebase/history';
 import { scoreCodebase } from '../../domain/scoring/score';
 import type { Stage } from '../../domain/stage/Stage';
@@ -93,12 +93,14 @@ type GameState = {
   codebase: Codebase;
   history: History;
   selectedMethodId: string | null;
+  selectedFieldId: string | null;
   message: string | null;
   changeSession: ChangeSession | null;
   lastChangeReport: ChangeReport | null;
   critique: CritiqueState;
   requestCritique: () => void;
   selectMethod: (methodId: string | null) => void;
+  selectField: (fieldId: string) => void;
   moveMethod: (methodId: string, targetClassId: string) => void;
   moveField: (fieldId: string, targetClassId: string) => void;
   changeVisibility: (methodId: string, visibility: Visibility) => void;
@@ -134,7 +136,12 @@ type GameState = {
 /** コードベースが変わったときだけ、変更前のものを履歴に積んで差し替える。何も変わらない操作は1手に数えない。 */
 function commit(state: GameState, codebase: Codebase): Partial<GameState> {
   if (codebase === state.codebase) return {};
-  return { codebase, history: recordChange(state.history, state.codebase) };
+  const fieldStillThere = state.selectedFieldId !== null && findField(codebase, state.selectedFieldId) !== undefined;
+  return {
+    codebase,
+    history: recordChange(state.history, state.codebase),
+    selectedFieldId: fieldStillThere ? state.selectedFieldId : null,
+  };
 }
 
 /** 操作の結果を状態の更新にする。成功したらコードベースを差し替え、失敗したら理由を出す。 */
@@ -147,7 +154,8 @@ function travelTo(state: GameState, travel: Travel | undefined): Partial<GameSta
   if (travel === undefined) return {};
   const { codebase, history } = travel;
   const stillThere = state.selectedMethodId !== null && findMethod(codebase, state.selectedMethodId) !== undefined;
-  return { codebase, history, selectedMethodId: stillThere ? state.selectedMethodId : null, message: null };
+  const fieldStillThere = state.selectedFieldId !== null && findField(codebase, state.selectedFieldId) !== undefined;
+  return { codebase, history, selectedMethodId: stillThere ? state.selectedMethodId : null, selectedFieldId: fieldStillThere ? state.selectedFieldId : null, message: null };
 }
 
 const UNPLACED_MESSAGE = '部品がまだ部品置き場にあります。置き場所へドラッグしてください';
@@ -166,6 +174,7 @@ function finishImplementation(state: GameState): Partial<GameState> {
     codebase: next === undefined ? session.base : withChangePart(carried, next),
     history: emptyHistory(),
     selectedMethodId: null,
+    selectedFieldId: null,
     message: null,
   };
 }
@@ -194,6 +203,7 @@ function changeSessionActions(
         codebase: withChangePart(codebase, first),
         history: emptyHistory(),
         selectedMethodId: null,
+        selectedFieldId: null,
         message: null,
       });
     },
@@ -213,6 +223,7 @@ function changeSessionActions(
         codebase: base,
         history: baseHistory,
         selectedMethodId: null,
+        selectedFieldId: null,
         message: null,
         lastChangeReport: outcomes.length > 0 ? { outcomes, codebase: carried } : lastChangeReport,
       });
@@ -248,6 +259,7 @@ function selectStageState(allStages: readonly Stage[], stageId: string): Partial
     codebase: stage.codebase,
     history: emptyHistory(),
     selectedMethodId: null,
+    selectedFieldId: null,
     message: null,
     changeSession: null,
     lastChangeReport: null,
@@ -387,13 +399,17 @@ export function createGameStore(allStages: readonly Stage[]): GameStore {
       codebase: firstStage.codebase,
       history: emptyHistory(),
       selectedMethodId: null,
+      selectedFieldId: null,
       message: null,
       changeSession: null,
       lastChangeReport: null,
       critique: EMPTY_CRITIQUE,
       ...critiqueActions(set, get),
       selectMethod: (methodId) => {
-        set({ selectedMethodId: methodId, message: null });
+        set({ selectedMethodId: methodId, selectedFieldId: null, message: null });
+      },
+      selectField: (fieldId) => {
+        set({ selectedFieldId: fieldId, selectedMethodId: null, message: null });
       },
       extractMethod: (input) => {
         return apply(extractMethodUseCase(get().codebase, input, () => crypto.randomUUID()), describeExtractError);
@@ -414,7 +430,7 @@ export function createGameStore(allStages: readonly Stage[]): GameStore {
       resetStage: () => {
         // 実装中に戻すと、部品置き場ごと消えてしまう
         if (get().changeSession !== null) return;
-        set({ ...commit(get(), get().stage.codebase), selectedMethodId: null, message: null });
+        set({ ...commit(get(), get().stage.codebase), selectedMethodId: null, selectedFieldId: null, message: null });
       },
       selectStage: (stageId) => {
         const next = selectStageState(get().stages, stageId);
