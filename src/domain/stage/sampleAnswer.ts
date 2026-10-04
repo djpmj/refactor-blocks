@@ -175,9 +175,21 @@ function applyStep(codebase: Codebase, step: SolutionStep, newId: string): Codeb
   return applyStructuralStep(codebase, step, newId);
 }
 
-/** 手順を順番に適用する。新しく振るIDは呼び出し元のIDと衝突しないよう連番にする。 */
+/**
+ * 手順を順番に適用し、各手の後のコードを返す。先頭(添字0)は適用前の codebase そのもの。長さは steps.length + 1。
+ * 新しく振るIDは呼び出し元のIDと衝突しないよう連番(`solution-<添字>`)にする。
+ */
+export function solutionSnapshots(codebase: Codebase, steps: readonly SolutionStep[]): readonly Codebase[] {
+  return steps.reduce<readonly Codebase[]>(
+    (snapshots, step, index) => [...snapshots, applyStep(snapshots[index], step, `solution-${String(index)}`)],
+    [codebase],
+  );
+}
+
+/** 手順を順番に適用した最終形のコードを返す。 */
 export function applySolutionSteps(codebase: Codebase, steps: readonly SolutionStep[]): Codebase {
-  return steps.reduce((current, step, index) => applyStep(current, step, `solution-${String(index)}`), codebase);
+  const snapshots = solutionSnapshots(codebase, steps);
+  return snapshots[snapshots.length - 1];
 }
 
 /** 中級4・中級5の共通の前半。税と整形の両方をメソッドへ抽出する(どちらを別クラスへ出すかだけが違う)。 */
