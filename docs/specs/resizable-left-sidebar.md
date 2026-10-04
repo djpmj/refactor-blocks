@@ -30,11 +30,12 @@
     (開閉ボタンとの位置をそろえるため。`aside` の `style={{ width }}` を直接使ってもよいが、ボタンも追従すること)
 - `src/index.css`(presentation)
   - `.sidebar { width: 260px }` を `width: var(--sidebar-width, 260px)` にする
-  - `.app__body--sidebar-open > .sidebar-toggle { left: 250px }` を `left: calc(var(--sidebar-width, 260px) - 10px)` にする
-    (`sidebar-toggle-position` で決めたとおり、ボタンはサイドバーの右の境界にぴったり付く)
+  - `.app__body--sidebar-open > .sidebar-toggle` の `left` を `var(--sidebar-width, 260px)` にする。
+    ボタンの左端をサイドバーの右端に一致させ、サイドバーの内側(スクロールバー)に食い込ませない(`sidebar-toggle-overlap`、Issue #99 の方針。
+    `- 10px` のような食い込みは入れない。#99 が先にマージ済みなら `left: 260px` をこの形に置き換え、未マージなら #99 側が rebase で合わせる)
   - 狭い画面用の既存の上書き(`.app__body--sidebar-open > .sidebar { width: min(260px, 40vw) }` と
-    `.sidebar-toggle { left: calc(40vw - 10px) }`)は、`260px` を `var(--sidebar-width, 260px)` に置き換えて
-    「幅 = min(指定幅, 40vw)」を保つ。狭い画面でキャンバスが消えないこと
+    `.sidebar-toggle { left: ... }`)は、サイドバー幅を `min(var(--sidebar-width, 260px), 40vw)` にし、ボタンの `left` も
+    同じ値(`min(var(--sidebar-width, 260px), 40vw)`)にして、サイドバーの右端に接する位置を保つ。狭い画面でキャンバスが消えないこと
   - `.sidebar` に `overflow-wrap: anywhere` を足し、幅を狭めても長い識別子(クラス名・メソッド名)が見切れず折り返す
     (`change-pain-wrap`・`code-preview-wrap` の方針と同じ。同じ指定が既にあれば足さない)
 - `src/presentation/clampSidebarWidth.ts` / `clampSidebarWidth.test.ts`(presentation): 追加の純粋関数 `widthAfterDrag` を置く(下記)
@@ -65,7 +66,7 @@
 - 左サイドバーが開いているとき、その右端にドラッグできるハンドル(`role="separator"`、`aria-label="課題とヒントの幅を変更"`)が出る
 - ハンドルを右へドラッグすると左サイドバーが広がり、左へドラッグすると狭まる。幅は 200〜480px の範囲に収まる
 - ハンドルにフォーカスして → で広がり、← で狭まる(1回16px)。範囲を超えない。`aria-valuenow` が現在の幅を表す
-- 幅を変えても、開閉ボタン(`«`/`»`)は常にサイドバーの右端の境界に付いている(ボタンの位置とサイドバーの右端の差が 30px 以内)
+- 幅を変えても、開閉ボタン(`«`/`»`)は常にサイドバーの右端の境界に接していて、サイドバー(スクロールバー)に重ならない(ボタンの左端 ≥ サイドバーの右端、差は 2px 以内)
 - サイドバーを閉じるとハンドルも消え、開き直すと直前に調整した幅で開く(同じセッション内。リロードでは既定の260pxに戻る)
 - 幅を最小にしても、長い識別子(`DiscountService.calculateDiscount(110行)` など)が見切れず折り返す
 - 狭い画面でも、キャンバスが消えず、サイドバーの幅は画面の40%以内に収まる
