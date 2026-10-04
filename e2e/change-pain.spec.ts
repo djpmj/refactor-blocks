@@ -81,3 +81,46 @@ test('長いメソッドを分けると目を通す行数が減る。100点で�
   await expect(card).toContainText('最初は 86 行でした');
   await expect(card).toContainText('ReportService.printMonthlyReport(73行)');
 });
+
+test('種類を足すときに書き換えるクラス数が見え、ランクごとのクラスに組み替えると0になる', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/');
+  await page.getByLabel('ステージ').selectOption({ label: '中級10: 会員ランクごとのif分岐をクラスに分ける' });
+  const card = page.getByRole('region', { name: 'もし、この変更が来たら?' });
+  await expect(card.getByRole('heading', { name: '新しい種類を足すなら?' })).toBeVisible();
+  await expect(card).toContainText('ゴールド会員を追加して');
+  await expect(card).toContainText('既存の 1 クラスを書き換えます');
+  await expect(card.locator('.change-pain__extend li')).toContainText('PriceCalculator');
+
+  // Extract Method だけでは数字は変わらない
+  await page.getByTestId('method-quotePrice').click();
+  await page.getByLabel('会員ランクが「通常」なら、定価で計算する').check();
+  await page.getByLabel('新しいメソッド名').fill('calculatePrice');
+  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+  await expect(card).toContainText('既存の 1 クラスを書き換えます');
+  await expect(page.getByTestId('score')).not.toContainText('100');
+});
+
+test('ランクのクラスにMemberRankを実装させると、新しいクラスを足すだけで済む表示に変わる', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/');
+  await page.getByLabel('ステージ').selectOption({ label: '中級10: 会員ランクごとのif分岐をクラスに分ける' });
+  const card = page.getByRole('region', { name: 'もし、この変更が来たら?' });
+  await expect(card).toContainText('既存の 1 クラスを書き換えます');
+
+  await page.getByTestId('method-quotePrice').click({ button: 'right' });
+  const menu = page.getByTestId('context-menu');
+  await menu.getByRole('menuitem', { name: 'このファイルにクラスを追加' }).click();
+  await menu.getByLabel('追加するクラス名').fill('RegularRank');
+  await menu.getByRole('button', { name: '追加' }).click();
+  await expect(card).toContainText('既存の 1 クラスを書き換えます');
+
+  await page.getByTestId('class-header-RegularRank').click({ button: 'right' });
+  await menu.getByRole('menuitem', { name: '実装するインターフェースを設定' }).click();
+  await menu.getByRole('menuitemcheckbox', { name: 'MemberRank' }).click();
+  await page.keyboard.press('Escape');
+
+  await expect(card).toContainText('既存のクラスを書き換えずに、新しいクラスを足すだけで済みます');
+  await expect(card).toContainText('最初は 1 クラスでした');
+  await expect(page.getByTestId('score')).not.toContainText('100');
+});

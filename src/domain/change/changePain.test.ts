@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import type { Codebase } from '../codebase/Codebase';
+import type { CodeClass, Codebase } from '../codebase/Codebase';
 import { methodLines } from '../codebase/lineCount';
 import { fragment, sampleCodebase } from '../codebase/testFixtures';
 import type { Stage } from '../stage/Stage';
-import { measurePain, painRequestOf } from './changePain';
+import { measureExtendPain, measurePain, painRequestsOf } from './changePain';
 import type { ChangeRequest } from './ChangeRequest';
 
 const modify: ChangeRequest = { id: 'modify', title: '変更', description: '', responsibility: 'tax', linesPerSite: 2 };
@@ -11,24 +11,35 @@ const extend: ChangeRequest = { ...modify, id: 'extend', kind: 'extend' };
 const limits = { method: 20, class: 100, file: 100 };
 const stage = (codebase: Codebase, changeRequests: readonly ChangeRequest[] = [modify]): Pick<Stage, 'codebase' | 'changeRequests' | 'limits'> => ({ codebase, changeRequests, limits });
 
-describe('painRequestOf', () => {
-  it('最初のmodifyを返す。kind省略もmodifyとして扱う', () => {
+describe('painRequestsOf', () => {
+  it('modifyとextendの両方があれば、それぞれ最初のものを返す。順番に依らない。kind省略もmodify', () => {
     // Arrange
-    const requests = [extend, modify, { ...modify, id: 'later' }];
+    const requests = [extend, modify, { ...modify, id: 'later' }, { ...extend, id: 'later-extend' }];
 
     // Act
-    const result = painRequestOf({ changeRequests: requests });
+    const result = painRequestsOf({ changeRequests: requests });
 
     // Assert
-    expect(result).toBe(modify);
+    expect(result.modify).toBe(modify);
+    expect(result.extend).toBe(extend);
   });
 
-  it('modifyがなければundefinedを返す', () => {
+  it('片方だけなら、もう片方はundefined', () => {
     // Arrange / Act
-    const result = painRequestOf({ changeRequests: [extend] });
+    const onlyExtend = painRequestsOf({ changeRequests: [extend] });
+    const onlyModify = painRequestsOf({ changeRequests: [modify] });
 
     // Assert
-    expect(result).toBeUndefined();
+    expect(onlyExtend).toEqual({ modify: undefined, extend });
+    expect(onlyModify).toEqual({ modify, extend: undefined });
+  });
+
+  it('どちらも無ければ両方undefined', () => {
+    // Arrange / Act
+    const result = painRequestsOf({ changeRequests: [] });
+
+    // Assert
+    expect(result).toEqual({ modify: undefined, extend: undefined });
   });
 });
 
@@ -161,5 +172,84 @@ describe('measurePain readLines', () => {
     // Assert
     expect(result?.current.siteIds).toHaveLength(1);
     expect(result?.improved).toBe(true);
+  });
+});
+
+const extendRequest: ChangeRequest = { ...extend, responsibility: 'rank-gold', partName: 'applyGold' };
+
+function method(id: string, name: string, fragments: CodeClass['methods'][number]['fragments'] = []): CodeClass['methods'][number] {
+  return { id, name, visibility: 'public', fragments };
+}
+
+function codebaseOf(classes: readonly CodeClass[]): Codebase {
+  return { files: classes.map((codeClass) => ({ id: `file-${codeClass.id}`, path: `src/${codeClass.name}.ts`, classes: [codeClass] })) };
+}
+
+const branching: CodeClass = { id: 'class-calc', name: 'Calculator', methods: [method('method-calc', 'calc', [fragment('f-regular', 5, 'rank-regular'), fragment('f-vip', 5, 'rank-vip')])] };
+const caller: CodeClass = { id: 'class-caller', name: 'Caller', methods: [method('method-run', 'run', [{ ...fragment('f-run', 5, 'a'), uses: ['method-rank-calc'] }, fragment('f-b', 1, 'b'), fragment('f-c', 1, 'c'), fragment('f-d', 1, 'd')])] };
+const rank: CodeClass = { id: 'class-rank', name: 'Rank', methods: [method('method-rank-calc', 'calc')] };
+const regular: CodeClass = { id: 'class-regular', name: 'RegularRank', interfaceIds: ['class-rank'], methods: [method('method-regular', 'regular', [fragment('f-regular', 5, 'rank-regular')])] };
+
+describe('measureExtendPain', () => {
+  it('インターフェース役が無いと、既存クラスを書き換える置き方になる', () => {
+    // Arrange
+    const codebase = codebaseOf([branching]);
+
+    // Act
+    const result = measureExtendPain(stage(codebase), codebase, extendRequest);
+
+    // Assert
+    expect(result?.initialModified).toEqual(['class-calc']);
+    expect(result?.currentTarget).toEqual({ kind: 'existing-class', className: 'Calculator' });
+  });
+
+  it('呼ばれていて実装もあるインターフェース役があれば、新しいクラスで足せて0個になる', () => {
+    // Arrange
+    const initial = codebaseOf([branching, caller, rank]);
+    const current = codebaseOf([branching, caller, rank, regular]);
+
+    // Act
+    const result = measureExtendPain(stage(initial), current, extendRequest);
+
+    // Assert
+    expect(result?.initialModified.length).toBeGreaterThanOrEqual(1);
+    expect(result?.currentModified).toEqual([]);
+    expect(result?.currentTarget).toEqual({ kind: 'new-class', implementing: 'Rank' });
+    expect(result?.improved).toBe(true);
+  });
+
+  it('誰も実装していないインターフェース役は、まだ入口として数えない', () => {
+    // Arrange
+    const codebase = codebaseOf([branching, caller, rank]);
+
+    // Act
+    const result = measureExtendPain(stage(codebase), codebase, extendRequest);
+
+    // Assert
+    expect(result?.currentModified.length).toBeGreaterThanOrEqual(1);
+    expect(result?.currentTarget.kind).toBe('existing-class');
+  });
+
+  it('今のコード=初期のコードなら、同じ結果でimprovedではない', () => {
+    // Arrange
+    const codebase = codebaseOf([branching, caller, rank, regular]);
+
+    // Act
+    const result = measureExtendPain(stage(codebase), codebase, extendRequest);
+
+    // Assert
+    expect(result?.currentModified).toEqual(result?.initialModified);
+    expect(result?.improved).toBe(false);
+  });
+
+  it('置き先がすべて失敗する(部品名が既存メソッドと重なる)コードではundefined', () => {
+    // Arrange
+    const codebase = codebaseOf([branching]);
+
+    // Act
+    const result = measureExtendPain(stage(codebase), codebase, { ...extendRequest, partName: 'calc' });
+
+    // Assert
+    expect(result).toBeUndefined();
   });
 });

@@ -1,4 +1,4 @@
-import { findClassOfMethod, type Codebase } from '../../domain/codebase/Codebase';
+import { findClass, findClassOfMethod, type Codebase } from '../../domain/codebase/Codebase';
 import { methodLines } from '../../domain/codebase/lineCount';
 import type { PainSummary } from '../../domain/change/changePain';
 
@@ -15,4 +15,10 @@ export function describePain(codebase: Codebase, summary: PainSummary): PainDesc
     return owner === undefined || method === undefined ? [] : [`${owner.name}.${method.name}(${methodLines(method)}行)`];
   });
   return { locations: locations.slice(0, 6), additionalLocations: Math.max(0, locations.length - 6) };
+}
+
+/** 書き換えるクラスのIDを、クラス名の一覧にする(最大6件)。コードに無いIDは飛ばす。 */
+export function describeClasses(codebase: Codebase, classIds: readonly string[]): PainDescription {
+  const names = classIds.flatMap((id) => findClass(codebase, id)?.name ?? []);
+  return { locations: names.slice(0, 6), additionalLocations: Math.max(0, names.length - 6) };
 }

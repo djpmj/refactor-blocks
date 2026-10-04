@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { changeKindOf, type ChangeRequest } from '../../domain/change/ChangeRequest';
 import { findChangeSites } from '../../domain/change/findChangeSites';
 import { measureChange } from '../../domain/change/measureChange';
-import { measurePain, painRequestOf } from '../../domain/change/changePain';
+import { measureExtendPain, measurePain, painRequestsOf } from '../../domain/change/changePain';
 import { averageScore, scoreChange } from '../../domain/change/scoreChange';
 import { allClasses, fieldsOf, isAbstractLike, isInterfaceLike, touchedFieldIds, type Codebase } from '../../domain/codebase/Codebase';
 import { methodLines } from '../../domain/codebase/lineCount';
@@ -532,11 +532,22 @@ describe('stageCatalog', () => {
       const reason = stage.why.trim();
 
       // Act
-      const pain = painRequestOf(stage) === undefined ? undefined : measurePain(stage, stage.codebase);
+      const pain = painRequestsOf(stage).modify === undefined ? undefined : measurePain(stage, stage.codebase);
 
       // Assert
       expect(reason).not.toBe('');
-      if (painRequestOf(stage) !== undefined) expect(pain).toBeDefined();
+      if (painRequestsOf(stage).modify !== undefined) expect(pain).toBeDefined();
+    });
+
+    it('extendの依頼があれば、機能の追加の痛みが出せる', () => {
+      // Arrange
+      const { extend } = painRequestsOf(stage);
+
+      // Act
+      const pain = extend === undefined ? undefined : measureExtendPain(stage, stage.codebase, extend);
+
+      // Assert
+      if (extend !== undefined) expect(pain).toBeDefined();
     });
 
     it('ステージ内のファイル・クラス・メソッド・処理のIDは重複しない', () => {

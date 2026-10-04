@@ -297,6 +297,18 @@ export const sampleAnswerSteps: Partial<Record<string, readonly SolutionStep[]>>
     { merge: { methodA: 'buildWeeklyReport', methodB: 'buildMonthlyReport', name: 'buildReport' } },
     { move: { method: 'buildReport', toClass: 'ReportFactory' } },
   ],
+  'intermediate-member-rank-branching': [
+    // 名前の重複を避けるため、ランクごとに抽出→移動する。どのクラスも価格と送料の両方を持つ。
+    ...['Regular', 'Premium', 'Vip'].flatMap((rank): SolutionStep[] => [
+      { addFile: `src/membership/${rank}Rank.ts` },
+      { addClass: { name: `${rank}Rank`, file: `src/membership/${rank}Rank.ts` } },
+      { extract: { from: 'quotePrice', fragmentIds: [`frag-price-${rank.toLowerCase()}`], name: 'calculatePrice' } },
+      { move: { method: 'calculatePrice', fromClass: 'PriceCalculator', toClass: `${rank}Rank` } },
+      { extract: { from: 'quoteShipping', fragmentIds: [`frag-shipping-${rank.toLowerCase()}`], name: 'calculateShipping' } },
+      { move: { method: 'calculateShipping', fromClass: 'ShippingCalculator', toClass: `${rank}Rank` } },
+      { addInterface: { class: `${rank}Rank`, interface: 'MemberRank' } },
+    ]),
+  ],
   'intermediate-copy-paste-tax': [
     { extract: { from: 'confirm', fragmentIds: ['frag-order-tax'], name: 'calculateOrderTax' } },
     { extract: { from: 'issue', fragmentIds: ['frag-invoice-tax'], name: 'calculateInvoiceTax' } },

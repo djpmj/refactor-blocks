@@ -1,6 +1,6 @@
 import { findClassOfMethod, type Codebase } from '../../domain/codebase/Codebase';
 import { checkManualFix } from '../../domain/change/checkManualFix';
-import { painRequestOf } from '../../domain/change/changePain';
+import { painRequestsOf } from '../../domain/change/changePain';
 import type { Stage } from '../../domain/stage/Stage';
 import { useGameStore } from '../store/useGameStore';
 
@@ -16,7 +16,7 @@ export function ManualFixPanel({ stage, codebase }: Readonly<{ stage: Stage; cod
   const releaseManualFix = useGameStore((state) => state.releaseManualFix);
   const restartManualFix = useGameStore((state) => state.restartManualFix);
   const endManualFix = useGameStore((state) => state.endManualFix);
-  const request = painRequestOf(stage);
+  const request = painRequestsOf(stage).modify;
   if (manualFix === null || request === undefined) return null;
   const result = checkManualFix(codebase, request, manualFix.fixedIds);
   const fixedCount = manualFix.fixedIds.filter((id) => findClassOfMethod(codebase, id) !== undefined).length;
