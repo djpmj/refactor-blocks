@@ -297,6 +297,14 @@ export const sampleAnswerSteps: Partial<Record<string, readonly SolutionStep[]>>
     { merge: { methodA: 'buildWeeklyReport', methodB: 'buildMonthlyReport', name: 'buildReport' } },
     { move: { method: 'buildReport', toClass: 'ReportFactory' } },
   ],
+  'intermediate-copy-paste-tax': [
+    { extract: { from: 'confirm', fragmentIds: ['frag-order-tax'], name: 'calculateOrderTax' } },
+    { extract: { from: 'issue', fragmentIds: ['frag-invoice-tax'], name: 'calculateInvoiceTax' } },
+    { extract: { from: 'create', fragmentIds: ['frag-quote-tax'], name: 'calculateQuoteTax' } },
+    { merge: { methodA: 'calculateOrderTax', methodB: 'calculateInvoiceTax', name: 'calculateTax' } },
+    { merge: { methodA: 'calculateTax', methodB: 'calculateQuoteTax', name: 'calculateTax' } },
+    { move: { method: 'calculateTax', toClass: 'TaxCalculator' } },
+  ],
   'advanced-interface-segregation': [
     { renameClass: { name: 'CollaborationTool', newName: 'ChatClient' } },
     { addFile: 'src/integration/TaskTracker.ts' },

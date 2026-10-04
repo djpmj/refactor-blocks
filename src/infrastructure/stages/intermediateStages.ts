@@ -835,6 +835,106 @@ const extractClassStage: Stage = {
   },
 };
 
+/**
+ * 中級9: 注文・請求・見積の3クラスに、ほぼ同じ「消費税を計算する」処理がコピペされている。
+ * 中級4(変わる場所の切り分け)と違い、コピペの重複をまとめる理由(直し忘れ)が主題。
+ * Extract Method → 統合(Merge Methods)→ TaxCalculator へ移動、の既存の操作だけで解ける。
+ */
+const copyPasteTaxStage: Stage = {
+  id: 'intermediate-copy-paste-tax',
+  level: 'intermediate',
+  title: '中級9: コピペされた消費税計算を1か所にまとめる',
+  /** 100点になったときに見せる、この題材で分ける理由。 */
+  why: '税率が変わるたびに3か所を同じように直す必要があり、1か所でも直し忘れると請求額が合わなくなります。1か所にまとめれば、直すのは1か所だけで、直し忘れが起きません。',
+  description:
+    '販売システムの注文確定(OrderService.confirm)・請求書発行(InvoiceService.issue)・見積作成(QuoteService.create)。' +
+    'どのメソッドにも、ほぼ同じ「消費税を計算する」処理がコピペされていて、注文・請求・見積それぞれの処理と同居している。' +
+    '空のクラス TaxCalculator は用意されているが、まだどこからも使われていない。',
+  goal: '消費税の計算が3か所にコピペされています。1か所にまとめて、変更に強くしよう。Extract Methodで取り出し、似た処理を持つメソッドを統合して TaxCalculator へ移す。メソッドは70行以内、1クラスの責務は1種類まで',
+  limits: { method: 70, class: 100, file: 300 },
+  dependencyLimit: 1,
+  responsibilityLimit: 1,
+  changeRequests: [
+    { id: 'req-reduced-tax-rate', title: '軽減税率8%に対応して', description: '飲食料品は消費税を8%で計算するようにしたい。', responsibility: 'tax', linesPerSite: 8, partName: 'applyReducedTaxRate' },
+    { id: 'req-order-stock-check', title: '在庫確認のルールを見直して', description: '注文確定のとき、予約在庫も数に入れて確かめたい。', responsibility: 'ordering', linesPerSite: 6, partName: 'countReservedStock' },
+  ],
+  codebase: {
+    files: [
+      {
+        id: 'file-order-service',
+        path: 'src/sales/OrderService.ts',
+        classes: [
+          {
+            id: 'class-order-service',
+            name: 'OrderService',
+            methods: [
+              {
+                id: 'method-confirm-order',
+                name: 'confirm',
+                visibility: 'public',
+                fragments: [
+                  { id: 'frag-order-check', label: '在庫と注文内容を確かめる', lines: 30, responsibility: 'ordering', suggestedName: 'checkOrder' },
+                  { id: 'frag-order-tax', label: '消費税を計算する', lines: 24, responsibility: 'tax', suggestedName: 'calculateOrderTax', duplicateGroup: 'tax-calc' },
+                  { id: 'frag-order-save', label: '注文を確定して保存する', lines: 30, responsibility: 'ordering', suggestedName: 'saveOrder' },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'file-invoice-service',
+        path: 'src/sales/InvoiceService.ts',
+        classes: [
+          {
+            id: 'class-invoice-service',
+            name: 'InvoiceService',
+            methods: [
+              {
+                id: 'method-issue-invoice',
+                name: 'issue',
+                visibility: 'public',
+                fragments: [
+                  { id: 'frag-invoice-build', label: '請求明細を組み立てる', lines: 32, responsibility: 'invoicing', suggestedName: 'buildInvoiceLines' },
+                  { id: 'frag-invoice-tax', label: '消費税を計算する', lines: 26, responsibility: 'tax', suggestedName: 'calculateInvoiceTax', duplicateGroup: 'tax-calc' },
+                  { id: 'frag-invoice-issue', label: '請求書を発行して送る', lines: 28, responsibility: 'invoicing', suggestedName: 'issueInvoice' },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'file-quote-service',
+        path: 'src/sales/QuoteService.ts',
+        classes: [
+          {
+            id: 'class-quote-service',
+            name: 'QuoteService',
+            methods: [
+              {
+                id: 'method-create-quote',
+                name: 'create',
+                visibility: 'public',
+                fragments: [
+                  { id: 'frag-quote-estimate', label: '見積項目を集計する', lines: 34, responsibility: 'quoting', suggestedName: 'estimateItems' },
+                  { id: 'frag-quote-tax', label: '消費税を計算する', lines: 25, responsibility: 'tax', suggestedName: 'calculateQuoteTax', duplicateGroup: 'tax-calc' },
+                  { id: 'frag-quote-save', label: '見積書を作って保存する', lines: 26, responsibility: 'quoting', suggestedName: 'saveQuote' },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'file-tax-calculator',
+        path: 'src/sales/TaxCalculator.ts',
+        classes: [{ id: 'class-tax-calculator', name: 'TaxCalculator', methods: [] }],
+      },
+    ],
+  },
+};
+
 export const intermediateStages: readonly Stage[] = [
   cyclicDependencyStage,
   godFileStage,
@@ -844,4 +944,5 @@ export const intermediateStages: readonly Stage[] = [
   featureEnvyStage,
   anemicDomainModelStage,
   extractClassStage,
+  copyPasteTaxStage,
 ];

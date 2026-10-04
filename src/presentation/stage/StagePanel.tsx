@@ -12,6 +12,7 @@ import { ScoreBreakdown } from './ScoreBreakdown';
 import { HintList } from './HintList';
 import { HintButton } from './HintPanel';
 import { ChangePainCard } from './ChangePainCard';
+import { ManualFixPanel } from './ManualFixPanel';
 import { useHints } from './useHints';
 import { useStageSidebar } from './useStageSidebar';
 
@@ -171,6 +172,7 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
             {stage.goal}
           </p>
           {!investigating && <ChangePainCard stage={stage} codebase={codebase} score={score.total} />}
+          {!investigating && <ManualFixPanel stage={stage} codebase={codebase} />}
           <HintList hints={hints} />
           <details className="stage-panel__description" open>
             <summary>どんなコード?</summary>
