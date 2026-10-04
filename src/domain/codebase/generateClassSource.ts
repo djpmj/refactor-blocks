@@ -13,7 +13,7 @@ function renderMethod(codebase: Codebase, method: CodeClass['methods'][number], 
     const code = explicitCode ?? (inferredCode === '' ? undefined : inferredCode);
     return (code ?? `// 未入力: ${fragment.label}`).split('\n').map((line) => `        ${line}`);
   });
-  return [`${declaration} {`, ...body, '    }'];
+  return [declaration, '    {', ...body, '    }'];
 }
 
 /** クラスと各Fragmentに登録されたコードから、読み取り専用のC#疑似ソースを生成する。 */
@@ -22,16 +22,18 @@ export function generateClassSource(codebase: Codebase, classId: string, languag
   if (codeClass === undefined) return '';
   const parents = parentIds(codeClass).map((id) => findClass(codebase, id)?.name).filter((name) => name !== undefined);
   const inheritance = parents.length === 0 ? '' : ` : ${parents.join(', ')}`;
-  const members = [
-    ...fieldsOf(codeClass).flatMap((field) => {
-      const type = field.type?.[language];
-      if (type === undefined) return [`    // 未入力: フィールド ${field.name}`];
-      return [
-        ...(field.description === undefined ? [] : [`    // ${field.description}`]),
-        `    ${field.visibility} ${type} ${field.name};`,
-      ];
-    }),
-    ...codeClass.methods.flatMap((method) => renderMethod(codebase, method, language)),
-  ];
+  const fields = fieldsOf(codeClass).flatMap((field) => {
+    const type = field.type?.[language];
+    if (type === undefined) return [`    // 未入力: フィールド ${field.name}`];
+    return [
+      ...(field.description === undefined ? [] : [`    // ${field.description}`]),
+      `    ${field.visibility} ${type} ${field.name};`,
+    ];
+  });
+  const methods = codeClass.methods.flatMap((method, index) => [
+    ...(index > 0 ? [''] : []),
+    ...renderMethod(codebase, method, language),
+  ]);
+  const members = [...fields, ...(fields.length > 0 && methods.length > 0 ? [''] : []), ...methods];
   return [`public class ${codeClass.name}${inheritance}`, '{', ...members, '}'].join('\n');
 }
