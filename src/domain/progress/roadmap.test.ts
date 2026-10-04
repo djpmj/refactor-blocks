@@ -11,6 +11,7 @@ function stageOf(id: string): Stage {
     goal: '',
     description: '',
     learns: ['Extract Method'],
+    checks: [],
     limits: { method: 10, class: 20, file: 30 },
     dependencyLimit: 3,
     responsibilityLimit: 2,

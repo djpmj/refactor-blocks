@@ -379,3 +379,10 @@ input.class-node__name { width: 14ch; }
 .test-status__list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
 .test-status__item--red { color: var(--danger); }
 .test-status__reason { margin: 2px 0 0 14px; font-size: 11px; }
+
+.concept-check { margin: 12px 0; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); font-size: 13px; line-height: 1.5; }
+.concept-check h3 { margin: 0 0 6px; font-size: 14px; }
+.concept-check__item { margin: 8px 0; padding: 8px; border: 1px solid var(--border); border-radius: 6px; }
+.concept-check__item legend { font-weight: bold; padding: 0 4px; }
+.concept-check__result p { margin: 6px 0; }
+.concept-check__verdict { font-weight: bold; }
