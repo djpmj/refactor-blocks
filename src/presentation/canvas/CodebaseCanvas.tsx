@@ -20,7 +20,7 @@ import { ClassNode } from './ClassNode';
 import { parseClassDragId, parseClassDropId, parseFieldDragId, parseFileDropId, parseMethodDragId } from './dndIds';
 import { FieldChipView } from './FieldChip';
 import { FileNode } from './FileNode';
-import { dependencyEdges, inheritanceEdges, layoutCodebase, type CodebaseFlowNode } from './layoutCodebase';
+import { dependencyEdges, fileRectsFromNodes, inheritanceEdges, layoutCodebase, type CodebaseFlowNode } from './layoutCodebase';
 import { MethodChipView } from './MethodChip';
 import { TopRouteEdge } from './TopRouteEdge';
 import { useCanvasContextMenu } from './useCanvasContextMenu';
@@ -128,7 +128,10 @@ export function CodebaseCanvas({ active }: Readonly<{ active: boolean }>) {
   const stageId = useGameStore((state) => state.stage.id);
   const { overrides, handleNodesChange } = useFlowOverrides(stageId);
   const nodes = useMemo(() => arrangeNodes(layoutCodebase(codebase), overrides), [codebase, overrides]);
-  const edges = useMemo(() => [...dependencyEdges(codebase), ...inheritanceEdges(codebase)], [codebase]);
+  const edges = useMemo(() => {
+    const fileRects = fileRectsFromNodes(nodes);
+    return [...dependencyEdges(codebase, fileRects), ...inheritanceEdges(codebase, fileRects)];
+  }, [codebase, nodes]);
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, POINTER_ACTIVATION), useSensor(KeyboardSensor));
   const contextMenu = useCanvasContextMenu();
