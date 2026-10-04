@@ -4,6 +4,8 @@ import { sampleAnswerCodebase, sampleAnswerSteps } from '../../domain/stage/samp
 import type { Stage, StageLevel } from '../../domain/stage/Stage';
 import { CritiqueButton, CritiqueResult } from '../critique/CritiquePanel';
 import { CodebasePreviewDialog } from '../preview/CodebasePreviewDialog';
+import { OperationGuideDialog } from '../guide/OperationGuideDialog';
+import { useGuideShortcut } from '../guide/useGuideShortcut';
 import { useGameStore } from '../store/useGameStore';
 import { describeScore } from './describeScore';
 import { ScoreBreakdown } from './ScoreBreakdown';
@@ -90,7 +92,8 @@ function ScoreBadge({ score }: Readonly<{ score: Score }>) {
 }
 
 /** ツールバー(キャンバスの上): 変更依頼・やり直し系・図の確認。 */
-function ActionToolbar({ stage, isPerfect }: Readonly<{ stage: Stage; isPerfect: boolean }>) {
+function ActionToolbar({ stage, isPerfect, active }: Readonly<{ stage: Stage; isPerfect: boolean; active: boolean }>) {
+  const [guideOpen, setGuideOpen] = useState(false);
   const resetStage = useGameStore((state) => state.resetStage);
   const undo = useGameStore((state) => state.undo);
   const redo = useGameStore((state) => state.redo);
@@ -99,6 +102,7 @@ function ActionToolbar({ stage, isPerfect }: Readonly<{ stage: Stage; isPerfect:
   const challenged = useGameStore((state) => state.lastChangeReport !== null);
   const canUndo = useGameStore((state) => state.history.past.length > 0);
   const canRedo = useGameStore((state) => state.history.future.length > 0);
+  useGuideShortcut(active, guideOpen, setGuideOpen);
   return (
     <div className="toolbar stage-panel__actions">
       <button
@@ -121,12 +125,16 @@ function ActionToolbar({ stage, isPerfect }: Readonly<{ stage: Stage; isPerfect:
         最初に戻す
       </button>
       <PreviewButtons key={stage.id} stage={stage} disabled={investigating} />
+      <button type="button" data-testid="operation-guide-open" title="操作ガイド(?)" onClick={() => setGuideOpen(true)}>
+        操作ガイド
+      </button>
+      <OperationGuideDialog open={guideOpen} onClose={() => setGuideOpen(false)} />
     </div>
   );
 }
 
 /** ステージの目標と、行数・結合度・循環依存・責務の混在から出した点数を表示する。責務の中身(responsibility の値)は見せない。 */
-function StagePanelContent({ stage, children }: Readonly<{ stage: Stage; children: ReactNode }>) {
+function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage; children: ReactNode; active: boolean }>) {
   // 実装中は部品置き場入りのコードなので、点数と進捗は挑戦前のコードで数える
   const codebase = useGameStore((state) => state.changeSession?.base ?? state.codebase);
   const investigating = useGameStore((state) => state.changeSession !== null);
@@ -178,7 +186,7 @@ function StagePanelContent({ stage, children }: Readonly<{ stage: Stage; childre
           {sidebarOpen ? '«' : '»'}
         </button>
         <div className="workspace">
-          <ActionToolbar stage={stage} isPerfect={score.total >= 100} />
+          <ActionToolbar stage={stage} isPerfect={score.total >= 100} active={active} />
           <div className="workspace__main">{children}</div>
         </div>
       </div>
@@ -186,7 +194,7 @@ function StagePanelContent({ stage, children }: Readonly<{ stage: Stage; childre
   );
 }
 
-export function StagePanel({ children }: Readonly<{ children: ReactNode }>) {
+export function StagePanel({ children, active }: Readonly<{ children: ReactNode; active: boolean }>) {
   const stage = useGameStore((state) => state.stage);
-  return <StagePanelContent stage={stage}>{children}</StagePanelContent>;
+  return <StagePanelContent stage={stage} active={active}>{children}</StagePanelContent>;
 }
