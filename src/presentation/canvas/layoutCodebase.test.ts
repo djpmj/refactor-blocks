@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Codebase, Fragment } from "../../domain/codebase/Codebase";
 import { advancedStages } from "../../infrastructure/stages/advancedStages";
-import { dependencyEdges, handleSidesForFiles, inheritanceEdges, layoutCodebase, spreadOffsets, type FileRect } from "./layoutCodebase";
+import { dependencyEdges, handleSidesForFiles, inheritanceEdges, inheritanceKind, layoutCodebase, spreadOffsets, type FileRect } from "./layoutCodebase";
 
 function callFragment(id: string, uses: readonly string[]): Fragment {
   return { id, label: id, lines: 1, responsibility: "call", uses };
@@ -305,6 +305,19 @@ describe("dependencyEdges", () => {
 });
 
 describe("inheritanceEdges", () => {
+  it("親IDがsuperclassIdと一致すればextendsを優先し、それ以外のinterfaceIdsならimplementsと判定する", () => {
+    // Arrange
+    const codeClass = { id: "class-C", name: "C", methods: [], superclassId: "class-parent", interfaceIds: ["class-parent", "class-contract"] };
+
+    // Act
+    const extendsKind = inheritanceKind(codeClass, "class-parent");
+    const implementsKind = inheritanceKind(codeClass, "class-contract");
+
+    // Assert
+    expect(extendsKind).toBe("extends");
+    expect(implementsKind).toBe("implements");
+  });
+
   it("着地点オフセットを中央揃えにし、幅を超える場合は間隔を縮める", () => {
     // Arrange
     const maxWidth = 80;
@@ -356,7 +369,7 @@ describe("inheritanceEdges", () => {
       target: "class-A",
       sourceHandle: "source-bottom",
       targetHandle: "target-top",
-      className: "edge--inheritance",
+      className: "edge--inheritance edge--extends",
     });
   });
 
@@ -502,6 +515,11 @@ describe("inheritanceEdges", () => {
 
     // Assert
     expect(edges.map((edge) => edge.id)).toEqual(["inherit-class-C-class-X", "inherit-class-C-class-Y"]);
+    expect(edges.map((edge) => edge.className)).toEqual([
+      "edge--inheritance edge--implements",
+      "edge--inheritance edge--implements",
+    ]);
+    expect(edges.map((edge) => edge.markerEnd)).toEqual(["implements-arrow", "implements-arrow"]);
   });
 
   it("依存と継承のファイル範囲が重なるときも、まとめて別のレーンに割り当てて重ならないようにする", () => {
