@@ -387,3 +387,9 @@ input.class-node__name { width: 14ch; }
 .concept-check__item legend { font-weight: bold; padding: 0 4px; }
 .concept-check__result p { margin: 6px 0; }
 .concept-check__verdict { font-weight: bold; }
+
+.story-card { margin: 12px 0; padding: 10px; border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 8px; background: var(--surface); font-size: 13px; line-height: 1.5; }
+.story-card h3 { margin: 0 0 6px; font-size: 14px; }
+.story-card p { margin: 6px 0; }
+.story-card__speaker { color: var(--muted, inherit); font-weight: bold; }
+.story-card button { margin-right: 6px; }

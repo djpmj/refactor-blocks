@@ -15,6 +15,8 @@ import { HintList } from './HintList';
 import { HintButton } from './HintPanel';
 import { ConceptCheckPanel } from './ConceptCheckPanel';
 import { ChangePainCard } from './ChangePainCard';
+import { StoryIntro } from './StoryIntro';
+import { StoryOutro } from './StoryOutro';
 import { ManualFixPanel } from './ManualFixPanel';
 import { LEVEL_LABEL } from './levelLabel';
 import { StageRoadmapDialog } from './StageRoadmapDialog';
@@ -65,6 +67,28 @@ function StageSelect() {
         </optgroup>
       ))}
     </select>
+  );
+}
+
+/** 章の導入・結びを出すかどうかの切り替え。 */
+function StoryToggle() {
+  const enabled = useGameStore((state) => state.storyEnabled);
+  const setStoryEnabled = useGameStore((state) => state.setStoryEnabled);
+  return (
+    <button type="button" data-testid="story-toggle" aria-pressed={enabled} onClick={() => setStoryEnabled(!enabled)}>
+      ストーリー
+    </button>
+  );
+}
+
+/** ヘッダーの左側: ステージ選び・ステージ一覧・ストーリーの切り替え。 */
+function StageNavigation() {
+  return (
+    <>
+      <StageSelect />
+      <RoadmapButton />
+      <StoryToggle />
+    </>
   );
 }
 
@@ -197,8 +221,7 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
     <>
       <header className="stage-panel">
         <h1 className="stage-panel__title">{stage.title}</h1>
-        <StageSelect />
-        <RoadmapButton />
+        <StageNavigation />
         <div className="stage-panel__spacer" />
         <CritiqueButton disabled={investigating} />
         <HintButton revealed={revealedCount} total={total} disabled={investigating} onReveal={() => setRevealed({ stageId: stage.id, count: revealedCount + 1 })} />
@@ -208,18 +231,19 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
       <div className={`app__body${sidebarOpen ? ' app__body--sidebar-open' : ''}`}>
         <aside id="stage-sidebar" className="sidebar" aria-label="課題とヒント" hidden={!sidebarOpen}>
           <h2 className="sidebar__title">課題とヒント</h2>
+          <StoryIntro stageId={stage.id} />
           <p className="stage-panel__goal">
             <strong>課題: </strong>
             {stage.goal}
           </p>
-          {!investigating && <ChangePainCard stage={stage} codebase={codebase} score={score.total} />}
-          {!investigating && <ManualFixPanel stage={stage} codebase={codebase} />}
+          {!investigating && <><ChangePainCard stage={stage} codebase={codebase} score={score.total} /><ManualFixPanel stage={stage} codebase={codebase} /></>}
           <HintList hints={hints} />
           <details className="stage-panel__description" open>
             <summary>どんなコード?</summary>
             <p data-testid="stage-description">{stage.description}</p>
           </details>
           {!investigating && score.total >= 100 && <ConceptCheckPanel key={stage.id} checks={stage.checks} />}
+          <StoryOutro stage={stage} perfect={!investigating && score.total >= 100} />
         </aside>
         <button
           type="button"
