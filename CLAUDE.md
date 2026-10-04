@@ -132,5 +132,6 @@ npm run typecheck    # tsc -b
 npm test             # Vitest
 npm run test:e2e     # Playwright(初回は npx playwright install chromium)
 npm run check        # lint + typecheck + test をまとめて実行
+npm run stage-report  # 全ステージの一覧表 docs/stages/report.md を再生成
 npm run build        # 本番ビルド
 ```
