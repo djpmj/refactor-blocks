@@ -44,6 +44,12 @@ function measureFile(file: CodeFile): FileMetrics {
   return { width: CLASS_WIDTH + FILE_PADDING * 2, height: Math.max(MIN_FILE_HEIGHT, classY - CLASS_GAP + FILE_PADDING) };
 }
 
+export const NEW_CLASS_FILE_SIZE = measureFile({
+  id: 'new-file',
+  path: 'src/NewClass.ts',
+  classes: [{ id: 'new-class', name: 'NewClass', methods: [], fields: [] }],
+});
+
 /** ファイル同士の依存・継承をまとめた有向グラフ(自己参照・同じファイル内の参照は除く)。層分けに使う。 */
 function fileDependencyGraph(codebase: Codebase): Map<string, Set<string>> {
   const fileIdByClassId = new Map(codebase.files.flatMap((file) => file.classes.map((codeClass) => [codeClass.id, file.id] as const)));

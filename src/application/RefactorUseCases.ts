@@ -133,8 +133,10 @@ export function moveClassToNewFileUseCase(
   codebase: Codebase,
   classId: string,
   generateId: IdGenerator,
-): Result<Codebase, MoveClassToNewFileError> {
-  return moveClassToNewFile(codebase, classId, generateId());
+): Result<{ codebase: Codebase; fileId: string }, MoveClassToNewFileError> {
+  const fileId = generateId();
+  const result = moveClassToNewFile(codebase, classId, fileId);
+  return result.ok ? ok({ codebase: result.value, fileId }) : result;
 }
 
 /** プレイヤーの「メソッドをファイルの枠外へドロップ」操作。新しいファイルとクラスを自動で作ってメソッドを置く。 */
@@ -142,8 +144,11 @@ export function moveMethodToNewClassUseCase(
   codebase: Codebase,
   methodId: string,
   generateId: IdGenerator,
-): Result<Codebase, MoveMethodToNewClassError> {
-  return moveMethodToNewClass(codebase, methodId, { classId: generateId(), fileId: generateId() });
+): Result<{ codebase: Codebase; fileId: string }, MoveMethodToNewClassError> {
+  const classId = generateId();
+  const fileId = generateId();
+  const result = moveMethodToNewClass(codebase, methodId, { classId, fileId });
+  return result.ok ? ok({ codebase: result.value, fileId }) : result;
 }
 
 /** プレイヤーの「メソッドを空のファイルへドロップ」操作。新しいクラスをそのファイル内に作る。 */
