@@ -57,6 +57,7 @@ import { putDraft, takeDraft, type Drafts } from '../../domain/progress/drafts';
 import { updateProgress } from '../../domain/progress/updateProgress';
 import { loadDrafts, saveDrafts } from '../../infrastructure/progress/draftStorage';
 import { loadProgress, saveProgress } from '../../infrastructure/progress/progressStorage';
+import { loadStoryEnabled, saveStoryEnabled } from '../../infrastructure/story/storyPreference';
 
 /** 変更依頼に挑戦中の状態。依頼ごとに部品を足したコードで実装し、依頼を1件ずつ片付ける。 */
 export type ChangeSession = {
@@ -151,6 +152,9 @@ type GameState = {
   draftStageIds: readonly string[];
   progress: Progress;
   recordProgress: (stageId: string, score: number) => void;
+  /** ストーリー(章の導入・結び)を出すか。保存される閲覧者の好み。 */
+  storyEnabled: boolean;
+  setStoryEnabled: (enabled: boolean) => void;
 };
 
 /** コードベースが変わったときだけ、変更前のものを履歴に積んで差し替える。何も変わらない操作は1手に数えない。 */
@@ -447,9 +451,14 @@ function replaceMethodActions(
   };
 }
 
-/** ステージごとの自己ベストの読み込みと記録。 */
-function progressActions(set: (partial: Partial<GameState>) => void, get: () => GameState): Pick<GameState, 'progress' | 'recordProgress'> {
+/** ステージごとの自己ベストの読み込みと記録、ストーリーのオン/オフ(どちらも閲覧者ごとに保存される)。 */
+function progressActions(set: (partial: Partial<GameState>) => void, get: () => GameState): Pick<GameState, 'progress' | 'recordProgress' | 'storyEnabled' | 'setStoryEnabled'> {
   return {
+    storyEnabled: loadStoryEnabled(),
+    setStoryEnabled: (enabled) => {
+      saveStoryEnabled(enabled);
+      set({ storyEnabled: enabled });
+    },
     progress: loadProgress(),
     recordProgress: (stageId, score) => {
       const next = updateProgress(get().progress, stageId, score);
