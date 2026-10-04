@@ -14,7 +14,8 @@
     "check": "npm run lint && npm run typecheck && npm test",
     "preview": "vite preview",
     "duplication-scan": "jscpd src --format \"typescript,tsx\" --ignore \"**/*.test.ts,**/*.test.tsx\" --reporters console,sarif --output report",
-    "dead-code-scan": "knip"
+    "dead-code-scan": "knip",
+    "stage-report": "vitest run src/infrastructure/stages/stageReport.test.ts -u"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
