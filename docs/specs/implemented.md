@@ -52,3 +52,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [field-info-and-types](field-info-and-types.md) | フィールドをクリックで説明表示し、コードに説明コメントと実際の型を出す |
 | [canvas-error-toast](canvas-error-toast.md) | 操作の失敗理由をキャンバス上のトーストで見せ、×で閉じられるようにする |
 | [score-jump-to-violations](score-jump-to-violations.md) | 採点の減点項目から該当ブロックをキャンバス上で強調してジャンプする |
+| [operation-guide](operation-guide.md) | ツールバーと?キーで開ける操作ガイドを追加する |
