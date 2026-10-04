@@ -1649,6 +1649,77 @@ test('中級6: フィールドをドラッグで別クラスへ移すと移り�
   await expect(page.getByTestId('class-BillingService').getByTestId('field-trialDays')).toBeVisible();
 });
 
+test('フィールドをTabでフォーカスしてSpaceと矢印キーで別クラスへ移動できる', async ({ page }) => {
+  // Arrange
+  await openFeatureEnvyStage(page);
+  const source = page.getByTestId('field-trialDays');
+  const target = page.getByTestId('class-Subscription');
+  const from = await source.boundingBox();
+  const to = await target.boundingBox();
+  if (from === null || to === null) throw new Error('フィールドまたは移動先クラスが見つかりません');
+  const deltaX = to.x + to.width / 2 - (from.x + from.width / 2);
+  const deltaY = to.y + to.height / 2 - (from.y + from.height / 2);
+
+  // Act: Tabフォーカス後、Spaceで掴み、矢印キーで移動してSpaceでドロップ
+  await source.focus();
+  await page.keyboard.press('Shift+Tab');
+  await page.keyboard.press('Tab');
+  await expect(source).toBeFocused();
+  await page.keyboard.press('Space');
+  for (let step = 0; step < Math.ceil(Math.abs(deltaX) / 25); step += 1) {
+    await page.keyboard.press(deltaX > 0 ? 'ArrowRight' : 'ArrowLeft');
+  }
+  for (let step = 0; step < Math.ceil(Math.abs(deltaY) / 25); step += 1) {
+    await page.keyboard.press(deltaY > 0 ? 'ArrowDown' : 'ArrowUp');
+  }
+  await page.keyboard.press('Space');
+
+  // Assert
+  await expect(target.getByTestId('field-trialDays')).toBeVisible();
+  await expect(page.getByTestId('class-BillingService').getByTestId('field-trialDays')).toHaveCount(0);
+});
+
+test('中級8: フィールドを選ぶと説明と使用メソッドが表示され、キーボードと選択切替もできる', async ({ page }) => {
+  // Arrange
+  await openExtractClassStage(page);
+  const field = page.getByTestId('field-baseSalary');
+
+  // Act: クリック選択
+  await field.click();
+
+  // Assert
+  const panel = page.getByLabel('メソッドエディタ');
+  await expect(panel.getByRole('heading', { name: /Employee\.baseSalary/ })).toBeVisible();
+  await expect(panel).toContainText('型: decimal');
+  await expect(panel).toContainText('基本給(月額)');
+  await expect(panel).toContainText('calculateMonthlyPay — 読む');
+  await expect(field).toHaveAttribute('aria-pressed', 'true');
+
+  // Act: フィールドからメソッドへ切り替え
+  await page.getByTestId('method-calculateMonthlyPay').click();
+
+  // Assert
+  await expect(panel.getByRole('heading', { name: /Employee\.calculateMonthlyPay\(\)/ })).toBeVisible();
+  await expect(field).toHaveAttribute('aria-pressed', 'false');
+
+  // Act: Tabでフィールドへ移動し、Enterで選択
+  await field.focus();
+  await page.keyboard.press('Enter');
+
+  // Assert
+  await expect(panel.getByRole('heading', { name: /Employee\.baseSalary/ })).toBeVisible();
+
+  // Act: コードタブで型と説明を確認
+  await page.getByTestId('method-calculateMonthlyPay').click();
+  await page.getByRole('tab', { name: 'コード' }).click();
+
+  // Assert
+  const source = page.getByRole('tabpanel', { name: 'コード' });
+  await expect(source).toContainText('// 基本給(月額)');
+  await expect(source).toContainText('private decimal baseSalary;');
+  await expect(source).not.toContainText('object');
+});
+
 test('中級6: メソッドだけ移すと循環依存になり、使うフィールドも移すと消える', async ({ page }) => {
   // Arrange
   await openFeatureEnvyStage(page);

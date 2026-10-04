@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import {
   accessorFieldAccess,
   findClass,
@@ -20,6 +20,7 @@ import { showsVisibilityControl } from '../../domain/stage/showsVisibilityContro
 import { ChangeMemo } from '../change/ChangeMemo';
 import { ClassCodePreview } from './ClassCodePreview';
 import { useGameStore } from '../store/useGameStore';
+import { FieldInfo } from './FieldInfo';
 
 function toggle(selected: ReadonlySet<string>, id: string): Set<string> {
   const next = new Set(selected);
@@ -261,17 +262,18 @@ function MethodEditorBody({ method, showVisibility }: Readonly<{ method: Method;
 
 export function MethodEditor({ alwaysShowVisibility = false }: Readonly<{ alwaysShowVisibility?: boolean }>) {
   const stage = useGameStore((state) => state.stage);
+  const selectedFieldId = useGameStore((state) => state.selectedFieldId);
   const method = useGameStore((state) =>
     state.selectedMethodId === null ? undefined : findMethod(state.codebase, state.selectedMethodId),
   );
   const message = useGameStore((state) => state.message);
+  let content: ReactNode;
+  if (selectedFieldId !== null) content = <FieldInfo fieldId={selectedFieldId} />;
+  else if (method === undefined) content = <p className="method-editor__hint">メソッドかフィールドをクリックすると、ここに詳しい内容が表示されます</p>;
+  else content = <MethodEditorBody key={method.id} method={method} showVisibility={alwaysShowVisibility || showsVisibilityControl(stage)} />;
   return (
     <aside className="method-editor" aria-label="メソッドエディタ">
-      {method === undefined ? (
-        <p className="method-editor__hint">メソッドをクリックすると、中の処理がここに表示されます</p>
-      ) : (
-        <MethodEditorBody key={method.id} method={method} showVisibility={alwaysShowVisibility || showsVisibilityControl(stage)} />
-      )}
+      {content}
       <ChangeMemo />
       {message === null ? null : (
         <p className="method-editor__message" role="alert">

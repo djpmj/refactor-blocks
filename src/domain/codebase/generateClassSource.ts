@@ -23,7 +23,14 @@ export function generateClassSource(codebase: Codebase, classId: string, languag
   const parents = parentIds(codeClass).map((id) => findClass(codebase, id)?.name).filter((name) => name !== undefined);
   const inheritance = parents.length === 0 ? '' : ` : ${parents.join(', ')}`;
   const members = [
-    ...fieldsOf(codeClass).map((field) => `    ${field.visibility} object ${field.name};`),
+    ...fieldsOf(codeClass).flatMap((field) => {
+      const type = field.type?.[language];
+      if (type === undefined) return [`    // 未入力: フィールド ${field.name}`];
+      return [
+        ...(field.description === undefined ? [] : [`    // ${field.description}`]),
+        `    ${field.visibility} ${type} ${field.name};`,
+      ];
+    }),
     ...codeClass.methods.flatMap((method) => renderMethod(codebase, method, language)),
   ];
   return [`public class ${codeClass.name}${inheritance}`, '{', ...members, '}'].join('\n');

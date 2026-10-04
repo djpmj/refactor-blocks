@@ -124,6 +124,7 @@ input.class-node__name { width: 14ch; }
 .field-chip-button { all: unset; display: block; cursor: grab; }
 .field-chip-button:focus-visible { outline: 2px solid var(--accent); border-radius: 6px; }
 .field-chip { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border-radius: 6px; border: 1px dashed var(--border); background: var(--bg); font-family: ui-monospace, monospace; font-size: 13px; }
+.field-chip--selected { border-color: var(--accent); }
 .field-chip--public .field-chip__visibility { color: var(--public); }
 .field-chip--private .field-chip__visibility { color: var(--private); }
 .field-chip--protected .field-chip__visibility { color: var(--protected); }

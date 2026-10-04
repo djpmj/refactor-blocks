@@ -429,9 +429,9 @@ const featureEnvyStage: Stage = {
             id: 'class-billing-service',
             name: 'BillingService',
             fields: [
-              { id: 'field-payment-gateway', name: 'paymentGateway', visibility: 'private' },
-              { id: 'field-mailer', name: 'mailer', visibility: 'private' },
-              { id: 'field-trial-days', name: 'trialDays', visibility: 'private' },
+              { id: 'field-payment-gateway', name: 'paymentGateway', visibility: 'private', description: '決済を処理するゲートウェイ', type: { csharp: 'IPaymentGateway' } },
+              { id: 'field-mailer', name: 'mailer', visibility: 'private', description: 'メールを送信するサービス', type: { csharp: 'IMailer' } },
+              { id: 'field-trial-days', name: 'trialDays', visibility: 'private', description: '無料試用期間の日数', type: { csharp: 'int' } },
             ],
             methods: [
               {
@@ -516,11 +516,11 @@ const featureEnvyStage: Stage = {
             id: 'class-subscription',
             name: 'Subscription',
             fields: [
-              { id: 'field-status', name: 'status', visibility: 'public' },
-              { id: 'field-started-at', name: 'startedAt', visibility: 'public' },
-              { id: 'field-seats', name: 'seats', visibility: 'public' },
-              { id: 'field-unit-price', name: 'unitPrice', visibility: 'public' },
-              { id: 'field-canceled-at', name: 'canceledAt', visibility: 'public' },
+              { id: 'field-status', name: 'status', visibility: 'public', description: '契約の状態', type: { csharp: 'string' } },
+              { id: 'field-started-at', name: 'startedAt', visibility: 'public', description: '契約を開始した日時', type: { csharp: 'DateTime' } },
+              { id: 'field-seats', name: 'seats', visibility: 'public', description: '契約中の座席数', type: { csharp: 'int' } },
+              { id: 'field-unit-price', name: 'unitPrice', visibility: 'public', description: '座席あたりの料金', type: { csharp: 'decimal' } },
+              { id: 'field-canceled-at', name: 'canceledAt', visibility: 'public', description: '解約した日時', type: { csharp: 'DateTime?' } },
             ],
             methods: [],
           },
@@ -564,9 +564,9 @@ const anemicDomainModelStage: Stage = {
             id: 'class-account',
             name: 'Account',
             fields: [
-              { id: 'field-balance', name: 'balance', visibility: 'private' },
-              { id: 'field-status', name: 'status', visibility: 'private' },
-              { id: 'field-daily-withdrawn', name: 'dailyWithdrawn', visibility: 'private' },
+              { id: 'field-balance', name: 'balance', visibility: 'private', description: '口座の現在残高', type: { csharp: 'decimal' } },
+              { id: 'field-status', name: 'status', visibility: 'private', description: '口座の状態', type: { csharp: 'string' } },
+              { id: 'field-daily-withdrawn', name: 'dailyWithdrawn', visibility: 'private', description: '本日の引き出し合計', type: { csharp: 'decimal' } },
             ],
             methods: [
               {
@@ -611,8 +611,8 @@ const anemicDomainModelStage: Stage = {
             id: 'class-account-service',
             name: 'AccountService',
             fields: [
-              { id: 'field-transaction-log', name: 'transactionLog', visibility: 'private' },
-              { id: 'field-notifier', name: 'notifier', visibility: 'private' },
+              { id: 'field-transaction-log', name: 'transactionLog', visibility: 'private', description: '取引を記録するログ', type: { csharp: 'ITransactionLog' } },
+              { id: 'field-notifier', name: 'notifier', visibility: 'private', description: '通知を送るサービス', type: { csharp: 'INotifier' } },
             ],
             methods: [
               {
@@ -734,12 +734,12 @@ const extractClassStage: Stage = {
             id: 'class-employee',
             name: 'Employee',
             fields: [
-              { id: 'field-base-salary', name: 'baseSalary', visibility: 'private' },
-              { id: 'field-overtime-rate', name: 'overtimeRate', visibility: 'private' },
-              { id: 'field-bank-account', name: 'bankAccount', visibility: 'private' },
-              { id: 'field-postal-code', name: 'postalCode', visibility: 'private' },
-              { id: 'field-prefecture', name: 'prefecture', visibility: 'private' },
-              { id: 'field-address-line', name: 'addressLine', visibility: 'private' },
+              { id: 'field-base-salary', name: 'baseSalary', visibility: 'private', description: '基本給(月額)', type: { csharp: 'decimal' } },
+              { id: 'field-overtime-rate', name: 'overtimeRate', visibility: 'private', description: '時間外勤務の時給', type: { csharp: 'decimal' } },
+              { id: 'field-bank-account', name: 'bankAccount', visibility: 'private', description: '給与の振込先口座', type: { csharp: 'BankAccount' } },
+              { id: 'field-postal-code', name: 'postalCode', visibility: 'private', description: '住所の郵便番号', type: { csharp: 'string' } },
+              { id: 'field-prefecture', name: 'prefecture', visibility: 'private', description: '住所の都道府県', type: { csharp: 'string' } },
+              { id: 'field-address-line', name: 'addressLine', visibility: 'private', description: '住所の町名・番地', type: { csharp: 'string' } },
             ],
             methods: [
               {
