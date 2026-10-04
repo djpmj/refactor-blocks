@@ -54,3 +54,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [score-jump-to-violations](score-jump-to-violations.md) | 採点の減点項目から該当ブロックをキャンバス上で強調してジャンプする |
 | [operation-guide](operation-guide.md) | ツールバーと?キーで開ける操作ガイドを追加する |
 | [why-split-change-pain](why-split-change-pain.md) | 変更の痛みカードと達成時の「なぜ分けるか」で分割の意義を実感させる |
+| [code-preview-wrap](code-preview-wrap.md) | コードタブの長い行をサイドバー幅に合わせて折り返す |
