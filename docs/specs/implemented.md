@@ -49,3 +49,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [extends-implements-edge-colors](extends-implements-edge-colors.md) | 継承(extends)と実装(implements)の矢印を色と線種で分ける |
 | [method-editor-tab-bar](method-editor-tab-bar.md) | メソッドエディタの「編集/コード」タブをエディタ風のタブバーにする |
 | [drop-new-file-at-position](drop-new-file-at-position.md) | 余白へドロップしたとき、新しいファイルをドロップ位置に置く |
+| [field-info-and-types](field-info-and-types.md) | フィールドをクリックで説明表示し、コードに説明コメントと実際の型を出す |
