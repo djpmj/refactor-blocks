@@ -55,3 +55,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [operation-guide](operation-guide.md) | ツールバーと?キーで開ける操作ガイドを追加する |
 | [why-split-change-pain](why-split-change-pain.md) | 変更の痛みカードと達成時の「なぜ分けるか」で分割の意義を実感させる |
 | [code-preview-wrap](code-preview-wrap.md) | コードタブの長い行をサイドバー幅に合わせて折り返す |
+| [change-pain-wrap](change-pain-wrap.md) | 変更の痛みカードと前回の変更依頼の長い名前をサイドバー幅に合わせて折り返す |
