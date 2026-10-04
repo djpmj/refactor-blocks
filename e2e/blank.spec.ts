@@ -97,6 +97,19 @@ test('部品を1つ空いている所へドラッグすると、新しいクラ�
   await expect(view.getByTestId('blank-unplaced')).toContainText('あと6個');
 });
 
+test('白紙設計では本体のあるメソッドを選ぶと可視性欄が表示される', async ({ page }) => {
+  // Arrange
+  await openBlank(page);
+  const view = blankView(page);
+  await dragToEmptyCanvas(page, view, 'method-placeOrder');
+
+  // Act
+  await view.getByTestId('method-placeOrder').click();
+
+  // Assert
+  await expect(view.getByLabel('メソッド placeOrder の可視性')).toBeVisible();
+});
+
 test('全部品を配置すると答え合わせができ、両者の設計スコアと変更依頼の結果、模範解答の図が出る', async ({ page }) => {
   // Arrange
   await openBlank(page);
