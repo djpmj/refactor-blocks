@@ -14,16 +14,20 @@ type MethodChipViewProps = {
   /** 直前の変更依頼で、このメソッドの変更が必要だった依頼の数。 */
   changeCount?: number;
   flagged?: boolean;
+  /** 手で直すシミュレーションで「直した」印が付いている。 */
+  fixed?: boolean;
 };
 
 /** ドラッグ中のオーバーレイでも使う見た目だけのコンポーネント。 */
-export function MethodChipView({ method, overLimit, selected = false, changeCount = 0, flagged = false }: Readonly<MethodChipViewProps>) {
+export function MethodChipView({ method, overLimit, selected = false, changeCount = 0, flagged = false, fixed = false }: Readonly<MethodChipViewProps>) {
   const classNames = ['method-chip', `method-chip--${method.visibility}`];
   if (overLimit) classNames.push('method-chip--over');
   if (selected) classNames.push('method-chip--selected');
   if (flagged) classNames.push('method-chip--flagged');
+  if (fixed) classNames.push('method-chip--fixed');
   return (
     <div className={classNames.join(' ')}>
+      {fixed ? <span className="method-chip__fixed-mark" data-testid="fixed-mark">✔ 直した</span> : null}
       <span className="method-chip__visibility">{VISIBILITY_MARK[method.visibility]}</span>
       <span className="method-chip__name">{method.name}()</span>
       {changeCount > 0 ? (
@@ -34,6 +38,20 @@ export function MethodChipView({ method, overLimit, selected = false, changeCoun
       <span className="method-chip__lines">{methodLines(method)}行</span>
     </div>
   );
+}
+
+/** 手で直すシミュレーション中の「直した」印の状態と切り替え。 */
+function useManualFixMark(methodId: string) {
+  const manualFixing = useGameStore((state) => state.manualFix !== null);
+  const fixed = useGameStore((state) => state.manualFix?.fixedIds.includes(methodId) ?? false);
+  const toggleFixed = useGameStore((state) => state.toggleFixed);
+  const selectMethod = useGameStore((state) => state.selectMethod);
+  /** 印の付け替え中は、メソッドの選択ではなく「直した」印を切り替える。 */
+  const onClick = () => {
+    if (manualFixing) toggleFixed(methodId);
+    else selectMethod(methodId);
+  };
+  return { manualFixing, fixed, onClick };
 }
 
 /**
@@ -47,10 +65,10 @@ export function MethodChip({ method }: Readonly<{ method: Method }>) {
     return rule !== null && violationTargets(state.codebase, state.stage)[rule].methodIds.includes(method.id);
   });
   const selected = useGameStore((state) => state.selectedMethodId === method.id);
-  const selectMethod = useGameStore((state) => state.selectMethod);
   const inspectMethod = useGameStore((state) => state.inspectMethod);
   const inspected = useGameStore((state) => state.changeSession?.inspected === method.id);
   const renameMethod = useGameStore((state) => state.renameMethod);
+  const { manualFixing, fixed, onClick } = useManualFixMark(method.id);
   // 実装中に出すと答えが見えてしまうので、変更依頼に挑戦していないときだけ数える
   const changeCount = useGameStore((state) =>
     state.changeSession === null
@@ -89,17 +107,17 @@ export function MethodChip({ method }: Readonly<{ method: Method }>) {
       onBlur={() => {
         if (inspected) inspectMethod(null);
       }}
-      onClick={() => {
-        selectMethod(method.id);
-      }}
+      onClick={onClick}
       onDoubleClick={(event) => {
         event.stopPropagation();
         startEditing();
       }}
       {...attributes}
-      {...listeners}
+      // 印の付け外し中は Enter/Space を、キーボードドラッグの開始ではなくボタンのクリックとして使う
+      {...(manualFixing ? { ...listeners, onKeyDown: undefined } : listeners)}
+      aria-pressed={manualFixing ? fixed : undefined}
     >
-      <MethodChipView method={method} overLimit={methodLines(method) > limit} selected={selected} changeCount={changeCount} flagged={flagged} />
+      <MethodChipView method={method} overLimit={methodLines(method) > limit} selected={selected} changeCount={changeCount} flagged={flagged} fixed={fixed} />
     </button>
   );
 }

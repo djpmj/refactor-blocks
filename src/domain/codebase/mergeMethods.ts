@@ -77,7 +77,7 @@ function validate(codebase: Codebase, request: MergeMethodsRequest): Result<Vali
   return ok({ methodA, ownerA, methodB, ownerB });
 }
 
-/** 統合後のFragmentを1つ組み立てる。大きいほうの行数に合わせ、uses は和集合、duplicateGroupは引き継がない。 */
+/** 統合後のFragmentを1つ組み立てる。大きいほうの行数に合わせ、uses は和集合、duplicateGroupはAのものを引き継ぐ(3つ以上のコピーを続けて統合できるように)。 */
 function mergeFragment(newMethodId: string, index: number, fragmentA: Fragment, fragmentB: Fragment): Fragment {
   const uses = [...new Set([...(fragmentA.uses ?? []), ...(fragmentB.uses ?? [])])];
   const reads = [...new Set([...(fragmentA.reads ?? []), ...(fragmentB.reads ?? [])])];
@@ -88,6 +88,7 @@ function mergeFragment(newMethodId: string, index: number, fragmentA: Fragment, 
     responsibility: fragmentA.responsibility,
     lines: Math.max(fragmentA.lines, fragmentB.lines),
     ...(fragmentA.suggestedName === undefined ? {} : { suggestedName: fragmentA.suggestedName }),
+    ...(fragmentA.duplicateGroup === undefined ? {} : { duplicateGroup: fragmentA.duplicateGroup }),
     ...(uses.length === 0 ? {} : { uses }),
     ...(reads.length === 0 ? {} : { reads }),
     ...(writes.length === 0 ? {} : { writes }),

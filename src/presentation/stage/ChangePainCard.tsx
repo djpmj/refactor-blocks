@@ -1,10 +1,13 @@
 import type { Codebase } from '../../domain/codebase/Codebase';
 import { measurePain } from '../../domain/change/changePain';
 import type { Stage } from '../../domain/stage/Stage';
+import { useGameStore } from '../store/useGameStore';
 import { describePain } from './describePain';
 
 export function ChangePainCard({ stage, codebase, score }: Readonly<{ stage: Stage; codebase: Codebase; score: number }>) {
   const pain = measurePain(stage, codebase);
+  const canFixByHand = useGameStore((state) => state.changeSession === null && state.manualFix === null);
+  const startManualFix = useGameStore((state) => state.startManualFix);
   if (pain === undefined) return null;
   const perfect = score >= 100;
   const titleId = `change-pain-title-${stage.id}`;
@@ -34,6 +37,9 @@ export function ChangePainCard({ stage, codebase, score }: Readonly<{ stage: Sta
             {described.additionalLocations > 0 && <li>ほか {described.additionalLocations} 件</li>}
           </ul>
         </>
+      )}
+      {canFixByHand && pain.current.siteIds.length >= 2 && (
+        <button type="button" onClick={startManualFix}>実際に直してみる</button>
       )}
     </section>
   );

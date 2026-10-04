@@ -91,7 +91,7 @@ describe('mergeMethods', () => {
     expect(classB?.methods.map((m) => m.id)).toEqual(['method-caller-b']);
   });
 
-  it('統合後のFragmentのlinesはA/Bの大きいほうになり、label/responsibilityはA側を引き継ぐ', () => {
+  it('統合後のFragmentのlinesはA/Bの大きいほうになり、label/responsibility/duplicateGroupはA側を引き継ぐ(3つ目のコピーともう一度統合できる)', () => {
     // Arrange
     const codebase = fixture();
 
@@ -101,7 +101,7 @@ describe('mergeMethods', () => {
     // Assert
     if (!result.ok) throw new Error(result.error);
     const merged = findMethod(result.value, 'method-merged');
-    expect(merged?.fragments).toEqual([{ id: 'method-merged:merge0', label: '送信ログを記録する', lines: 24, responsibility: 'logging' }]);
+    expect(merged?.fragments).toEqual([{ id: 'method-merged:merge0', label: '送信ログを記録する', lines: 24, responsibility: 'logging', duplicateGroup: 'log-group' }]);
   });
 
   it('統合後のFragmentのreads/writesはA/Bの和集合になる', () => {

@@ -87,6 +87,11 @@ export type CritiqueState = {
 
 const EMPTY_CRITIQUE: CritiqueState = { text: null, loading: false, error: null };
 
+/** 変更依頼を「手で直す」シミュレーション。fixedIds は「直した」印を付けたメソッドのID。 */
+type ManualFix = { readonly fixedIds: readonly string[]; readonly released: boolean };
+
+const NEW_MANUAL_FIX: ManualFix = { fixedIds: [], released: false };
+
 type GameState = {
   stages: readonly Stage[];
   stage: Stage;
@@ -98,6 +103,12 @@ type GameState = {
   message: string | null;
   dismissMessage: () => void;
   changeSession: ChangeSession | null;
+  manualFix: ManualFix | null;
+  startManualFix: () => void;
+  toggleFixed: (methodId: string) => void;
+  releaseManualFix: () => void;
+  restartManualFix: () => void;
+  endManualFix: () => void;
   lastChangeReport: ChangeReport | null;
   critique: CritiqueState;
   requestCritique: () => void;
@@ -211,6 +222,7 @@ function changeSessionActions(
       const [first] = stage.changeRequests;
       set({
         focusedRule: null,
+        manualFix: null,
         changeSession: { index: 0, inspected: null, outcomes: [], base: codebase, carried: codebase, baseHistory: history },
         codebase: withChangePart(codebase, first),
         history: emptyHistory(),
@@ -240,6 +252,36 @@ function changeSessionActions(
         message: null,
         lastChangeReport: outcomes.length > 0 ? { outcomes, codebase: carried } : lastChangeReport,
       });
+    },
+  };
+}
+
+/** 手で直すシミュレーション。変更依頼の挑戦中は始められない。 */
+function manualFixActions(
+  set: (partial: Partial<GameState>) => void,
+  get: () => GameState,
+): Pick<GameState, 'startManualFix' | 'toggleFixed' | 'releaseManualFix' | 'restartManualFix' | 'endManualFix'> {
+  return {
+    startManualFix: () => {
+      if (get().changeSession === null) set({ manualFix: NEW_MANUAL_FIX });
+    },
+    toggleFixed: (methodId) => {
+      const { manualFix } = get();
+      if (manualFix === null || manualFix.released) return;
+      const fixedIds = manualFix.fixedIds.includes(methodId)
+        ? manualFix.fixedIds.filter((id) => id !== methodId)
+        : [...manualFix.fixedIds, methodId];
+      set({ manualFix: { ...manualFix, fixedIds } });
+    },
+    releaseManualFix: () => {
+      const { manualFix } = get();
+      if (manualFix !== null) set({ manualFix: { ...manualFix, released: true } });
+    },
+    restartManualFix: () => {
+      if (get().manualFix !== null) set({ manualFix: NEW_MANUAL_FIX });
+    },
+    endManualFix: () => {
+      set({ manualFix: null });
     },
   };
 }
@@ -276,6 +318,7 @@ function selectStageState(allStages: readonly Stage[], stageId: string): Partial
     focusedRule: null,
     message: null,
     changeSession: null,
+    manualFix: null,
     lastChangeReport: null,
     critique: EMPTY_CRITIQUE,
   };
@@ -418,6 +461,7 @@ export function createGameStore(allStages: readonly Stage[]): GameStore {
       message: null,
       ...messageActions(set),
       changeSession: null,
+      manualFix: null, ...manualFixActions(set, get),
       lastChangeReport: null,
       critique: EMPTY_CRITIQUE,
       ...critiqueActions(set, get),
@@ -445,7 +489,7 @@ export function createGameStore(allStages: readonly Stage[]): GameStore {
       resetStage: () => {
         // 実装中に戻すと、部品置き場ごと消えてしまう
         if (get().changeSession !== null) return;
-        set({ ...commit(get(), get().stage.codebase), focusedRule: null, selectedMethodId: null, selectedFieldId: null, message: null });
+        set({ ...commit(get(), get().stage.codebase), manualFix: null, focusedRule: null, selectedMethodId: null, selectedFieldId: null, message: null });
       },
       selectStage: (stageId) => {
         const next = selectStageState(get().stages, stageId);
