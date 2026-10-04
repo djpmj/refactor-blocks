@@ -16,6 +16,7 @@ export function ChangePainCard({ stage, codebase, score }: Readonly<{ stage: Sta
         <>
           <p>{stage.why}</p>
           {pain.improved && <p>同じ変更が <strong>{pain.initial.siteIds.length} か所 → {pain.current.siteIds.length} か所</strong> で済むようになりました。</p>}
+          {pain.current.readLines < pain.initial.readLines && <p>読む量は <strong>{pain.initial.readLines} 行 → {pain.current.readLines} 行</strong> になりました。</p>}
           <p>「変更依頼に挑戦」で、実際に確かめてみましょう</p>
         </>
       ) : (
@@ -24,6 +25,9 @@ export function ChangePainCard({ stage, codebase, score }: Readonly<{ stage: Sta
           <p>{pain.request.description}</p>
           <p aria-live="polite">直す場所は今 <strong>{pain.current.siteIds.length} か所</strong>（{pain.current.classes} クラス・{pain.current.files} ファイル）
             {pain.current.siteIds.length < pain.initial.siteIds.length && <>（最初は {pain.initial.siteIds.length} か所でした）</>}
+          </p>
+          <p aria-live="polite">その場所を直すために、目を通す行数は今 <strong>{pain.current.readLines} 行</strong>
+            {pain.current.readLines < pain.initial.readLines && <>（最初は {pain.initial.readLines} 行でした）</>}
           </p>
           <ul>
             {described.locations.map((location) => <li key={location}>{location}</li>)}

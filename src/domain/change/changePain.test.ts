@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Codebase } from '../codebase/Codebase';
+import { methodLines } from '../codebase/lineCount';
 import { fragment, sampleCodebase } from '../codebase/testFixtures';
 import type { Stage } from '../stage/Stage';
 import { measurePain, painRequestOf } from './changePain';
@@ -94,5 +95,71 @@ describe('measurePain', () => {
     // Assert
     expect(absentRequest).toBeUndefined();
     expect(absentSites).toBeUndefined();
+  });
+});
+
+describe('measurePain readLines', () => {
+  const single = (methods: Codebase['files'][number]['classes'][number]['methods']): Codebase => ({ files: [{ id: 'f', path: 'a.ts', classes: [{ id: 'c', name: 'A', methods }] }] });
+  const method = (id: string, fragments: ReturnType<typeof fragment>[]) => ({ id, name: id, visibility: 'public' as const, fragments });
+
+  it('1メソッドならmethodLinesの値になる', () => {
+    // Arrange
+    const codebase = single([method('m', [fragment('a', 50, 'tax')])]);
+
+    // Act
+    const result = measurePain(stage(codebase), codebase);
+
+    // Assert
+    expect(result?.current.readLines).toBe(52);
+  });
+
+  it('2メソッドなら合計になる', () => {
+    // Arrange
+    const methods = [method('m1', [fragment('a', 10, 'tax')]), method('m2', [fragment('b', 20, 'tax')])];
+    const codebase = single(methods);
+
+    // Act
+    const result = measurePain(stage(codebase), codebase);
+
+    // Assert
+    expect(result?.current.readLines).toBe(methods.reduce((sum, m) => sum + methodLines(m), 0));
+  });
+
+  it('1メソッドに複数の依頼の責務があっても1回だけ数える', () => {
+    // Arrange
+    const codebase = single([method('m', [fragment('a', 10, 'tax'), fragment('b', 10, 'tax')])]);
+
+    // Act
+    const result = measurePain(stage(codebase), codebase);
+
+    // Assert
+    expect(result?.current.readLines).toBe(22);
+  });
+
+  it('長いメソッドから責務の処理だけ抽出すると読む行数が減りimprovedになる', () => {
+    // Arrange
+    const initial = single([method('long', [fragment('other', 100, 'x'), fragment('tax', 5, 'tax')])]);
+    const current = single([method('long', [fragment('other', 100, 'x')]), method('extracted', [fragment('tax', 5, 'tax')])]);
+
+    // Act
+    const result = measurePain(stage(initial), current);
+
+    // Assert
+    expect(result?.initial.readLines).toBe(107);
+    expect(result?.current.readLines).toBe(7);
+    expect(result?.improved).toBe(true);
+  });
+
+  it('箇所数・クラス数・ファイル数が同じでもreadLinesが小さければimprovedになる', () => {
+    // Arrange
+    const initial = single([method('m', [fragment('other', 30, 'x'), fragment('tax', 5, 'tax')])]);
+    const current = single([method('m', [fragment('tax', 5, 'tax')])]);
+
+    // Act
+    const result = measurePain(stage(initial), current);
+
+    // Assert
+    expect(result?.current.siteIds).toHaveLength(1);
+    expect(result?.improved).toBe(true);
   });
 });
