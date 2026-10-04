@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-04 12:25 UTC PR #76 減点対象へのジャンプと強調を追加
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint ✅ / typecheck ✅ / test 1032件 ✅)。E2Eは環境にChromiumが無く実行できず未検証(PR記載では109件成功)。差分は仕様どおりでDDD層境界にも問題なし
+- マージ: squash & delete-branch
+
 ## 2026-10-04 11:58 UTC PR #75 操作エラーをキャンバスに表示 (#57)
 
 - 判定: 合格(blocker無し)
