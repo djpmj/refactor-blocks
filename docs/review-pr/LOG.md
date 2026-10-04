@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-04 11:58 UTC PR #75 操作エラーをキャンバスに表示 (#57)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(1028件) / npm run lint ✅ / npm run typecheck ✅(E2EはChromium未導入で実行不可。PR本文では107件成功と報告)
+- マージ: squash & delete-branch
+
 ## 2026-10-04 11:30 UTC PR #70 フィールドの説明と型を表示 (#56)
 
 - 判定: 合格(blocker無し)

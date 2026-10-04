@@ -50,3 +50,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [method-editor-tab-bar](method-editor-tab-bar.md) | メソッドエディタの「編集/コード」タブをエディタ風のタブバーにする |
 | [drop-new-file-at-position](drop-new-file-at-position.md) | 余白へドロップしたとき、新しいファイルをドロップ位置に置く |
 | [field-info-and-types](field-info-and-types.md) | フィールドをクリックで説明表示し、コードに説明コメントと実際の型を出す |
+| [canvas-error-toast](canvas-error-toast.md) | 操作の失敗理由をキャンバス上のトーストで見せ、×で閉じられるようにする |
