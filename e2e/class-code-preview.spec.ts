@@ -20,14 +20,76 @@ test('コードタブにチュートリアル1のクラスソースを表示す�
   await expect(source.locator('.hljs-comment')).toContainText('レポートを出力する');
   expect(await source.locator('.hljs-number').count()).toBeGreaterThan(0);
   const sourceLineCount = (await source.textContent() ?? '').split('\n').length;
-  const lineNumbers = panel.locator('.code-preview__line-numbers span');
-  await expect(lineNumbers).toHaveCount(sourceLineCount);
-  await expect(lineNumbers.first()).toHaveText('1');
-  await expect(lineNumbers.last()).toHaveText(String(sourceLineCount));
+  const sourceLines = panel.locator('.code-preview__line');
+  await expect(sourceLines).toHaveCount(sourceLineCount);
+  await expect(sourceLines.first()).toHaveCSS('display', 'grid');
+  await expect(sourceLines.first()).toHaveAttribute('data-line-number', '1');
+  await expect(sourceLines.last()).toHaveAttribute('data-line-number', String(sourceLineCount));
   await expect(source).toContainText('public void printMonthlyReport()\n    {');
   await expect(source).toContainText('foreach (var row in rows)\n        {\n            Console.WriteLine(row);\n        }');
   await expect(source).toContainText('.GroupBy(s => s.ProductName)\n            .Select(');
   await expect(panel.getByRole('combobox', { name: 'コードの言語' })).toHaveValue('csharp');
+  await page.getByRole('tab', { name: '編集' }).click();
+  await expect(page.getByRole('tabpanel', { name: '編集' })).toBeVisible();
+});
+
+test('コードタブはサイドバー幅に合わせて折り返し、横スクロールを出さない', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await page.getByLabel('ステージ').selectOption({ label: 'チュートリアル1: 長いメソッドを分ける' });
+  await page.getByTestId('method-printMonthlyReport').click();
+  await page.getByRole('tab', { name: 'コード' }).click();
+  const panel = page.getByRole('tabpanel', { name: 'コード' });
+  const source = panel.locator('pre code');
+  const preview = panel.locator('.code-preview');
+  const sourceText = await source.textContent();
+  const sidebar = panel.locator('xpath=ancestor::div[contains(@class, "sidebar-resizable")][1]');
+  const handle = sidebar.getByRole('separator', { name: 'サイドバーの幅を変更' });
+
+  // Act: 初期幅、拡大、縮小で折り返しと横幅を確認する
+  const measure = () => preview.evaluate((element) => {
+    const pre = element.querySelector('pre');
+    if (pre === null) throw new Error('コードの pre が見つかりません');
+    return { previewWidth: element.clientWidth, previewScrollWidth: element.scrollWidth, preWidth: pre.clientWidth, preScrollWidth: pre.scrollWidth, preHeight: pre.clientHeight };
+  });
+  const initial = await measure();
+  const handleBox = await handle.boundingBox();
+  if (handleBox === null) throw new Error('サイドバーのハンドルが見つかりません');
+  await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(handleBox.x - 240, handleBox.y + handleBox.height / 2, { steps: 5 });
+  await page.mouse.up();
+  const expanded = await measure();
+  const expandedBox = await handle.boundingBox();
+  if (expandedBox === null) throw new Error('サイドバーのハンドルが見つかりません');
+  await page.mouse.move(expandedBox.x + expandedBox.width / 2, expandedBox.y + expandedBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(expandedBox.x + 400, expandedBox.y + expandedBox.height / 2, { steps: 5 });
+  await page.mouse.up();
+  const narrowed = await measure();
+
+  // Assert
+  expect(initial.preHeight).toBeGreaterThan(expanded.preHeight);
+  expect(narrowed.preHeight).toBeGreaterThan(expanded.preHeight);
+  for (const dimensions of [initial, expanded, narrowed]) {
+    expect(dimensions.previewScrollWidth).toBeLessThanOrEqual(dimensions.previewWidth);
+    expect(dimensions.preScrollWidth).toBeLessThanOrEqual(dimensions.preWidth);
+  }
+  await expect(source).toContainText('changeRate');
+  expect(await source.textContent()).toBe(sourceText);
+  await expect(panel.locator('pre')).toHaveCSS('white-space', 'pre-wrap');
+  const changeRateLineIndex = (sourceText ?? '').split('\n').findIndex((line) => line.includes('changeRate'));
+  const wrappedLine = panel.locator('.code-preview__line').nth(changeRateLineIndex);
+  const wrappedSourceBox = await wrappedLine.locator('.code-preview__line-source').boundingBox();
+  const followingLineBox = await panel.locator('.code-preview__line').nth(changeRateLineIndex + 1).boundingBox();
+  const wrappedLineBox = await wrappedLine.boundingBox();
+  if (wrappedSourceBox === null || followingLineBox === null || wrappedLineBox === null) {
+    throw new Error('折り返し行または行番号が見つかりません');
+  }
+  await expect(wrappedLine).toHaveAttribute('data-line-number', String(changeRateLineIndex + 1));
+  expect(wrappedSourceBox.y).toBe(wrappedLineBox.y);
+  expect(wrappedLineBox.height).toBeGreaterThan(20);
+  expect(followingLineBox.y).toBeGreaterThanOrEqual(wrappedSourceBox.y + wrappedSourceBox.height - 1);
   await page.getByRole('tab', { name: '編集' }).click();
   await expect(page.getByRole('tabpanel', { name: '編集' })).toBeVisible();
 });

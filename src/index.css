@@ -235,11 +235,12 @@ input.class-node__name { width: 14ch; }
 .method-editor__merge input { padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); }
 .merge-candidate-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .merge-candidate-list button { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 8px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
-.code-preview { display: flex; overflow: auto; margin-top: 12px; background: var(--code-bg); color: var(--code-text); font: 13px/1.6 ui-monospace, SFMono-Regular, Consolas, monospace; }
-.code-preview__line-numbers { display: flex; flex-direction: column; flex: none; padding: 12px 10px; color: var(--code-line-number); text-align: right; user-select: none; }
-.code-preview__line-numbers span { line-height: 1.6; }
-.code-preview pre { flex: 1; min-width: max-content; margin: 0; padding: 12px 16px 12px 0; overflow: visible; color: inherit; font: inherit; }
-.code-preview code { font: inherit; white-space: pre; }
+.code-preview { display: flex; min-width: 0; overflow: hidden; margin-top: 12px; background: var(--code-bg); color: var(--code-text); font: 13px/1.6 ui-monospace, SFMono-Regular, Consolas, monospace; }
+.code-preview pre { flex: 1; min-width: 0; max-width: 100%; margin: 0; padding: 12px 16px 12px 0; overflow: visible; overflow-wrap: anywhere; white-space: pre-wrap; color: inherit; font: inherit; }
+.code-preview code { display: flex; flex-direction: column; min-width: 0; font: inherit; white-space: pre-wrap; }
+.code-preview__line { display: grid; grid-template-columns: 3ch minmax(0, 1fr); column-gap: 10px; align-items: start; min-width: 0; padding-left: 10px; }
+.code-preview__line::before { grid-column: 1; content: attr(data-line-number); color: var(--code-line-number); text-align: right; user-select: none; }
+.code-preview__line-source { min-width: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
 .code-preview .hljs-keyword, .code-preview .hljs-selector-tag { color: var(--code-keyword); }
 .code-preview .hljs-string, .code-preview .hljs-attr { color: var(--code-string); }
 .code-preview .hljs-comment { color: var(--code-comment); }
