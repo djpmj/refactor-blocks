@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-04 02:40 UTC PR #52 可視性が関係するステージだけ選択欄を出す (#39)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅(E2EはChromium未導入で実行不可。差分を読んで確認)
+- マージ: squash & delete-branch
+
 ## 2026-10-04 02:30 UTC PR #51 元のメソッド可視性へ戻せるようにする (#37)
 
 - 判定: 合格(blocker無し)

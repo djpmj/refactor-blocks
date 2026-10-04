@@ -43,3 +43,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [sidebar-toggle-position](sidebar-toggle-position.md) | 左サイドバーの開閉ボタンをサイドバーの境界へ移す |
 | [edge-handles-by-position](edge-handles-by-position.md) | 矢印の出入り口をファイルの実際の位置関係で決める |
 | [visibility-restore-original](visibility-restore-original.md) | ステージ開始時の可視性へは呼び出し元がなくても戻せる |
+| [visibility-select-by-stage](visibility-select-by-stage.md) | 可視性の選択欄は可視性が課題に関係するステージと白紙設計だけに出す |
