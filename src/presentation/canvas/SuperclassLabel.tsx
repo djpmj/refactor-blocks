@@ -8,8 +8,8 @@ export function SuperclassLabel({ superclassName, interfaceNames }: RelationLabe
   if (superclassName === undefined && interfaceNames.length === 0) return null;
   return (
     <span className="class-node__superclass">
-      {superclassName === undefined ? null : ` extends ${superclassName}`}
-      {interfaceNames.length === 0 ? null : ` implements ${interfaceNames.join(', ')}`}
+      {superclassName === undefined ? null : <span className="class-node__relation class-node__relation--extends"> extends {superclassName}</span>}
+      {interfaceNames.length === 0 ? null : <span className="class-node__relation class-node__relation--implements"> implements {interfaceNames.join(', ')}</span>}
     </span>
   );
 }

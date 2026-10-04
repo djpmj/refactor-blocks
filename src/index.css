@@ -5,6 +5,8 @@
   --text: #1f2430;
   --muted: #6b7285;
   --accent: #4f6bed;
+  --edge-extends: #4f6bed;
+  --edge-implements: #d9730d;
   --public: #2e9e6a;
   --private: #8a8fa3;
   --protected: #c9861c;
@@ -22,6 +24,8 @@
     --text: #e6e8ef;
     --muted: #9aa0b4;
     --accent: #7c93ff;
+    --edge-extends: #7c93ff;
+    --edge-implements: #f0a050;
     --file-bg: #1a1d27;
     color-scheme: dark;
   }
@@ -99,7 +103,9 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .cyclic-mark { font-size: 14px; margin-right: 6px; }
 .class-node__header { display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid var(--border); font-weight: 700; }
 .class-node__name-group { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
-.class-node__superclass { font-weight: 400; font-size: 12px; color: var(--accent); }
+.class-node__superclass { font-weight: 400; font-size: 12px; }
+.class-node__relation--extends { color: var(--edge-extends); }
+.class-node__relation--implements { color: var(--edge-implements); }
 input.class-node__name, .method-chip__name-input {
   font: inherit;
   color: inherit;
@@ -182,8 +188,10 @@ input.class-node__name { width: 14ch; }
 .class-node__handle--source-skip { left: 65%; top: -72px; }
 .class-node__handle--target-skip { left: 35%; top: -72px; }
 .react-flow__edge.edge--cyclic .react-flow__edge-path { stroke: var(--danger); stroke-width: 2; }
-.react-flow__edge.edge--inheritance .react-flow__edge-path { stroke: var(--accent); stroke-width: 2.5; }
-#inheritance-arrow path { fill: var(--surface); stroke: var(--accent); stroke-width: 2; }
+.react-flow__edge.edge--extends .react-flow__edge-path { stroke: var(--edge-extends); stroke-width: 2.5; }
+.react-flow__edge.edge--implements .react-flow__edge-path { stroke: var(--edge-implements); stroke-width: 2.5; stroke-dasharray: 6 4; }
+#inheritance-arrow path { fill: var(--surface); stroke: var(--edge-extends); stroke-width: 2; }
+#implements-arrow path { fill: var(--surface); stroke: var(--edge-implements); stroke-width: 2; }
 .file-node--drop-target { border-color: var(--accent); }
 .file-node__empty { color: var(--muted); font-size: 12px; text-align: center; padding: 24px 0; }
 .class-node__header { cursor: grab; }

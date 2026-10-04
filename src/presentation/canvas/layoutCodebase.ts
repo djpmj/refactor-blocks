@@ -15,6 +15,7 @@ const FILE_PADDING = 24;
 const FILE_HEADER = 36;
 const CLASS_WIDTH = 280;
 const INHERITANCE_ARROW_MARKER = "inheritance-arrow";
+const IMPLEMENTS_ARROW_MARKER = "implements-arrow";
 const CLASS_GAP = 24;
 const METHOD_ROW = 34;
 /** フィールド1つぶんの高さ。メソッドより見た目を控えめにするぶん、行の高さも少し小さい。 */
@@ -364,6 +365,7 @@ type EdgeDescriptor = {
   sourceFilePosition: FilePosition | undefined;
   targetFilePosition: FilePosition | undefined;
   kind: "dependency" | "inheritance";
+  inheritanceKind?: "extends" | "implements";
   cyclic?: boolean;
 };
 
@@ -400,17 +402,20 @@ function handleSidesForPositions(
   return handleSidesForFiles({ sourceFileId, targetFileId, sourceClassIndex, targetClassIndex }, fileRects);
 }
 
-function edgeAppearance(kind: EdgeDescriptor["kind"], cyclic: boolean): Pick<Edge, "className" | "markerEnd"> {
+function edgeAppearance(descriptor: EdgeDescriptor): Pick<Edge, "className" | "markerEnd"> {
   let className: string | undefined;
-  if (kind === "inheritance") className = "edge--inheritance";
-  if (kind === "dependency" && cyclic) className = "edge--cyclic";
-  return {
-    className,
-    markerEnd: kind === "inheritance" ? INHERITANCE_ARROW_MARKER : {
+  let markerEnd: Edge["markerEnd"];
+  if (descriptor.kind === "inheritance") {
+    className = `edge--inheritance edge--${descriptor.inheritanceKind ?? "extends"}`;
+    markerEnd = descriptor.inheritanceKind === "implements" ? IMPLEMENTS_ARROW_MARKER : INHERITANCE_ARROW_MARKER;
+  } else {
+    markerEnd = {
       type: MarkerType.ArrowClosed,
-      color: cyclic ? "var(--danger)" : undefined,
-    },
-  };
+      color: descriptor.cyclic === true ? "var(--danger)" : undefined,
+    };
+  }
+  if (descriptor.kind === "dependency" && descriptor.cyclic === true) className = "edge--cyclic";
+  return { className, markerEnd };
 }
 
 function edgeFor(
@@ -419,14 +424,14 @@ function edgeFor(
   laneByEdgeId: ReadonlyMap<string, number>,
   useLogicalLayout: boolean,
 ): Edge {
-  const { id, source, target, kind, cyclic = false } = descriptor;
+  const { id, source, target } = descriptor;
   return {
     id,
     source,
     target,
     ...edgeRouting(descriptor, fileRects, laneByEdgeId, useLogicalLayout),
     zIndex: EDGE_Z_INDEX,
-    ...edgeAppearance(kind, cyclic),
+    ...edgeAppearance(descriptor),
   };
 }
 
@@ -463,6 +468,7 @@ export function inheritanceEdges(codebase: Codebase, fileRects: ReadonlyMap<stri
       sourcePosition: positionByClassId.get(codeClass.id), targetPosition: positionByClassId.get(parentId),
       sourceFilePosition: filePositionByClassIdMap.get(codeClass.id), targetFilePosition: filePositionByClassIdMap.get(parentId),
       kind: "inheritance",
+      inheritanceKind: inheritanceKind(codeClass, parentId),
     }, fileRects, laneByEdgeId, useLogicalLayout)));
   const edgeGroups = new Map<string, Edge[]>();
   for (const edge of edges) {
@@ -486,6 +492,11 @@ export function inheritanceEdges(codebase: Codebase, fileRects: ReadonlyMap<stri
     if (targetOffset === undefined) return edge;
     return { ...edge, type: edge.type ?? "offset", data: { ...edge.data, targetOffset } };
   });
+}
+
+/** 継承元を優先し、辺の親IDから関係の種類を判定する。 */
+export function inheritanceKind(codeClass: CodeClass, parentId: string): "extends" | "implements" {
+  return codeClass.superclassId === parentId ? "extends" : "implements";
 }
 
 /** 複数の終点を中央揃えし、総幅を maxWidth 以内に収める。 */
