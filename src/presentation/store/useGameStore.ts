@@ -95,6 +95,7 @@ type GameState = {
   selectedMethodId: string | null;
   selectedFieldId: string | null;
   message: string | null;
+  dismissMessage: () => void;
   changeSession: ChangeSession | null;
   lastChangeReport: ChangeReport | null;
   critique: CritiqueState;
@@ -186,6 +187,14 @@ function historyActions(set: (partial: Partial<GameState>) => void, get: () => G
     },
     redo: () => {
       set(travelTo(get(), redoHistory(get().history, get().codebase)));
+    },
+  };
+}
+
+function messageActions(set: (partial: Partial<GameState>) => void): Pick<GameState, 'dismissMessage'> {
+  return {
+    dismissMessage: () => {
+      set({ message: null });
     },
   };
 }
@@ -401,6 +410,7 @@ export function createGameStore(allStages: readonly Stage[]): GameStore {
       selectedMethodId: null,
       selectedFieldId: null,
       message: null,
+      ...messageActions(set),
       changeSession: null,
       lastChangeReport: null,
       critique: EMPTY_CRITIQUE,

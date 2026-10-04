@@ -266,7 +266,6 @@ export function MethodEditor({ alwaysShowVisibility = false }: Readonly<{ always
   const method = useGameStore((state) =>
     state.selectedMethodId === null ? undefined : findMethod(state.codebase, state.selectedMethodId),
   );
-  const message = useGameStore((state) => state.message);
   let content: ReactNode;
   if (selectedFieldId !== null) content = <FieldInfo fieldId={selectedFieldId} />;
   else if (method === undefined) content = <p className="method-editor__hint">メソッドかフィールドをクリックすると、ここに詳しい内容が表示されます</p>;
@@ -275,11 +274,6 @@ export function MethodEditor({ alwaysShowVisibility = false }: Readonly<{ always
     <aside className="method-editor" aria-label="メソッドエディタ">
       {content}
       <ChangeMemo />
-      {message === null ? null : (
-        <p className="method-editor__message" role="alert">
-          {message}
-        </p>
-      )}
     </aside>
   );
 }

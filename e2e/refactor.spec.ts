@@ -522,7 +522,7 @@ test('同じ名前のクラスは追加できず、理由が表示される', as
   await addClassFromMenu(page, 'placeOrder', 'TaxCalculator');
 
   // Assert
-  await expect(page.getByRole('alert')).toHaveText('同じ名前のクラスがすでにあります');
+  await expect(page.locator('.app__canvas').getByRole('alert')).toContainText('同じ名前のクラスがすでにあります');
   await expect(page.getByTestId('context-menu')).toBeVisible();
 });
 
@@ -701,7 +701,7 @@ test('ダブルクリックでの名前変更で重複した名前を入力す�
   await input.press('Enter');
 
   // Assert
-  await expect(page.getByRole('alert')).toHaveText('同じ名前のクラスがすでにあります');
+  await expect(page.locator('.app__canvas').getByRole('alert')).toContainText('同じ名前のクラスがすでにあります');
   await expect(page.getByTestId('class-TaxCalculator')).toBeVisible();
 });
 
@@ -718,7 +718,7 @@ test('重複した名前には変更できず、理由が表示されて名前�
   await input.press('Enter');
 
   // Assert
-  await expect(page.getByRole('alert')).toHaveText('同じ名前のクラスがすでにあります');
+  await expect(page.locator('.app__canvas').getByRole('alert')).toContainText('同じ名前のクラスがすでにあります');
   await expect(page.getByTestId('class-TaxCalculator')).toBeVisible();
   await input.press('Escape');
   await expect(menu).toHaveCount(0);
@@ -1062,6 +1062,15 @@ test('変更依頼に挑戦すると部品置き場に部品が出て、置く�
   await expect(page.getByTestId('class-部品置き場').getByTestId('method-addReducedTaxItems')).toBeVisible();
   await expect(page.getByTestId('change-request-finish')).toBeDisabled();
   await expect(page.getByTestId('change-part-status')).toContainText('部品はまだ部品置き場にあります');
+
+  // Act: 変更依頼パネルを表示中に拒否された操作を行う
+  await page.getByTestId('class-header-OrderService').click({ button: 'right' });
+  await page.getByTestId('context-menu').getByRole('menuitem', { name: 'クラスを削除' }).click();
+
+  // Assert
+  const toast = page.locator('.app__canvas').getByRole('alert');
+  await expect(toast).toContainText('処理が残っているクラスは削除できません');
+  await expect(page.getByRole('alert')).toHaveCount(1);
 
   // Act(3件とも OrderService へ置く)
   await dragMethodToClass(page, 'method-addReducedTaxItems', 'class-OrderService');
@@ -1760,7 +1769,7 @@ test('中級6: フィールドを持つクラスは削除できない', async ({
   await menu.getByRole('menuitem', { name: 'クラスを削除' }).click();
 
   // Assert
-  await expect(page.getByRole('alert')).toHaveText('フィールドを持つクラスは削除できません。先にフィールドを別のクラスへ移してください');
+  await expect(page.locator('.app__canvas').getByRole('alert')).toContainText('フィールドを持つクラスは削除できません。先にフィールドを別のクラスへ移してください');
   await expect(page.getByTestId('class-Subscription')).toBeVisible();
 });
 

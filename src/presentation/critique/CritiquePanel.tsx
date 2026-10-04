@@ -18,7 +18,7 @@ export function CritiqueResult() {
   return (
     <div className="critique-panel">
       {critique.error !== null && (
-        <p className="critique-panel__error" role="alert">
+        <p className="critique-panel__error" role="status">
           {critique.error}
         </p>
       )}
