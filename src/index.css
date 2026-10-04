@@ -310,6 +310,12 @@ input.class-node__name { width: 14ch; }
 .score-breakdown { position: relative; font-size: 12px; }
 .score-breakdown > summary { cursor: pointer; color: var(--muted); white-space: nowrap; }
 .score-breakdown__items { position: absolute; z-index: 20; top: calc(100% + 6px); right: 0; display: flex; flex-direction: column; gap: 4px; min-width: 210px; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); box-shadow: 0 4px 12px rgb(0 0 0 / 16%); }
+.score-breakdown__item { display: flex; flex-direction: column; gap: 4px; }
+.score-breakdown__row { display: flex; gap: 4px; }
+.score-breakdown__row > button:first-child { flex: 1; }
+.score-breakdown__why { padding: 6px 8px; border-left: 3px solid var(--border); }
+.score-breakdown__why[hidden] { display: none; }
+.score-breakdown__why p { margin: 0 0 4px; line-height: 1.5; }
 .score-breakdown__items button { padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); text-align: left; cursor: pointer; }
 .score-breakdown__items button[aria-pressed='true'] { border: 3px solid var(--warning); }
 .score-breakdown__items button:disabled { opacity: 0.55; cursor: not-allowed; }
