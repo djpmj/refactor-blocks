@@ -738,6 +738,7 @@ test('クラスを右クリックして継承元を設定すると、継承の�
   const edge = page.getByTestId('rf__edge-inherit-class-tax-calculator-class-order-service');
   await expect(edge).toHaveCount(1);
   await expect(edge).toHaveClass(/edge--inheritance/);
+  await expect(edge.locator('.react-flow__edge-path')).toHaveAttribute('marker-end', "url('#inheritance-arrow')");
   await expect(page.getByTestId('class-TaxCalculator')).toContainText('extends OrderService');
   await expect(menu).toHaveCount(0);
 });
@@ -760,6 +761,45 @@ test('クラスを右クリックして実装するインターフェースを�
   await expect(menu.getByRole('menuitemcheckbox', { name: 'OrderService' })).toHaveAttribute('aria-checked', 'true');
   await page.keyboard.press('Escape');
   await expect(menu).toHaveCount(0);
+});
+
+test('上級3で3クラスがDiscountStrategyを実装すると、終点が分かれて白抜き三角マーカーが付く', async ({ page }) => {
+  // Arrange: 上級3の DiscountService と同じファイルに3つの実装クラスを作る
+  await page.goto('/');
+  await page.getByLabel('ステージ').selectOption({ label: '上級3: 会員ランクの割引をStrategyパターンへ組み替える' });
+  const classNames = ['RegularDiscount', 'PremiumDiscount', 'VipDiscount'];
+  for (const className of classNames) {
+    await addClassFromMenu(page, 'calculateDiscount', className);
+  }
+
+  // Act: 3クラスそれぞれに共通の実装先を設定する
+  for (const className of classNames) {
+    await page.getByTestId(`class-header-${className}`).click({ button: 'right' });
+    const menu = page.getByTestId('context-menu');
+    await menu.getByRole('menuitem', { name: '実装するインターフェースを設定' }).click();
+    await menu.getByRole('menuitemcheckbox', { name: 'DiscountStrategy' }).click();
+    await page.keyboard.press('Escape');
+  }
+
+  // Assert: 3本ともマーカーを持ち、描画パスの終点xが重ならない
+  const edges = page.locator('[data-testid^="rf__edge-inherit-"][data-testid$="-class-discount-strategy"]');
+  await expect(edges).toHaveCount(3);
+  const endXs: string[] = [];
+  for (const edge of await edges.all()) {
+    const path = edge.locator('.react-flow__edge-path');
+    await expect(path).toHaveAttribute('marker-end', "url('#inheritance-arrow')");
+    const pathData = await path.getAttribute('d');
+    const endpoint = pathData?.match(/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)$/);
+    if (endpoint?.[1] === undefined) throw new Error('継承辺の終点を読み取れません');
+    endXs.push(endpoint[1]);
+  }
+  expect(new Set(endXs).size).toBe(3);
+  const markerPath = page.locator('#inheritance-arrow path');
+  await expect(markerPath).toHaveCSS('fill', 'rgb(255, 255, 255)');
+  await expect(markerPath).toHaveCSS('stroke', 'rgb(79, 107, 237)');
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await expect(markerPath).toHaveCSS('fill', 'rgb(31, 34, 44)');
+  await expect(markerPath).toHaveCSS('stroke', 'rgb(124, 147, 255)');
 });
 
 test('1つのクラスに2つのインターフェースを実装すると"implements A, B"と矢印2本が出て、チェックを外すと1つ外れる', async ({ page }) => {

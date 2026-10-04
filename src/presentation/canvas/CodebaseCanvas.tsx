@@ -20,13 +20,15 @@ import { ClassNode } from './ClassNode';
 import { parseClassDragId, parseClassDropId, parseFieldDragId, parseFileDropId, parseMethodDragId } from './dndIds';
 import { FieldChipView } from './FieldChip';
 import { FileNode } from './FileNode';
+import { InheritanceMarker } from './InheritanceMarker';
 import { dependencyEdges, fileRectsFromNodes, inheritanceEdges, layoutCodebase, type CodebaseFlowNode } from './layoutCodebase';
 import { MethodChipView } from './MethodChip';
+import { OffsetEdge } from './OffsetEdge';
 import { TopRouteEdge } from './TopRouteEdge';
 import { useCanvasContextMenu } from './useCanvasContextMenu';
 
 const nodeTypes: NodeTypes = { fileNode: FileNode, classNode: ClassNode };
-const edgeTypes: EdgeTypes = { topRoute: TopRouteEdge };
+const edgeTypes: EdgeTypes = { topRoute: TopRouteEdge, offset: OffsetEdge };
 
 /** クリックでの選択とドラッグを区別するため、5px以上動かしたときだけドラッグを開始する。 */
 const POINTER_ACTIVATION = { activationConstraint: { distance: 5 } };
@@ -186,6 +188,7 @@ export function CodebaseCanvas({ active }: Readonly<{ active: boolean }>) {
         onNodeContextMenu={contextMenu.onNodeContextMenu}
         onPaneContextMenu={contextMenu.onPaneContextMenu}
       >
+        <InheritanceMarker />
         <Background gap={24} />
         <Controls showInteractive={false} />
         <FitViewOnLayoutChange stageId={stageId} fileCount={codebase.files.length} />

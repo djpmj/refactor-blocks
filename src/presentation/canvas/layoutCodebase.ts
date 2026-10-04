@@ -14,6 +14,7 @@ const FILE_GAP = 60;
 const FILE_PADDING = 24;
 const FILE_HEADER = 36;
 const CLASS_WIDTH = 280;
+const INHERITANCE_ARROW_MARKER = "inheritance-arrow";
 const CLASS_GAP = 24;
 const METHOD_ROW = 34;
 /** フィールド1つぶんの高さ。メソッドより見た目を控えめにするぶん、行の高さも少し小さい。 */
@@ -405,8 +406,8 @@ function edgeAppearance(kind: EdgeDescriptor["kind"], cyclic: boolean): Pick<Edg
   if (kind === "dependency" && cyclic) className = "edge--cyclic";
   return {
     className,
-    markerEnd: {
-      type: kind === "inheritance" ? MarkerType.Arrow : MarkerType.ArrowClosed,
+    markerEnd: kind === "inheritance" ? INHERITANCE_ARROW_MARKER : {
+      type: MarkerType.ArrowClosed,
       color: cyclic ? "var(--danger)" : undefined,
     },
   };
@@ -455,7 +456,7 @@ export function inheritanceEdges(codebase: Codebase, fileRects: ReadonlyMap<stri
   const filePositionByClassIdMap = filePositionByClassId(codebase);
   const useLogicalLayout = isDefaultLayout(codebase, fileRects);
   const laneByEdgeId = topLanesByEdgeId(codebase, fileRects, useLogicalLayout);
-  return allClasses(codebase).flatMap((codeClass) => parentIds(codeClass)
+  const edges = allClasses(codebase).flatMap((codeClass) => parentIds(codeClass)
     .filter((parentId) => findClass(codebase, parentId) !== undefined)
     .map((parentId) => edgeFor({
       id: `inherit-${codeClass.id}-${parentId}`, source: codeClass.id, target: parentId,
@@ -463,4 +464,34 @@ export function inheritanceEdges(codebase: Codebase, fileRects: ReadonlyMap<stri
       sourceFilePosition: filePositionByClassIdMap.get(codeClass.id), targetFilePosition: filePositionByClassIdMap.get(parentId),
       kind: "inheritance",
     }, fileRects, laneByEdgeId, useLogicalLayout)));
+  const edgeGroups = new Map<string, Edge[]>();
+  for (const edge of edges) {
+    const key = `${edge.target}:${edge.targetHandle ?? ""}`;
+    edgeGroups.set(key, [...(edgeGroups.get(key) ?? []), edge]);
+  }
+  const sourceOrder = new Map(allClasses(codebase).map((codeClass, index) => [codeClass.id, index]));
+  const offsetsById = new Map<string, number>();
+  for (const group of edgeGroups.values()) {
+    if (group.length < 2) continue;
+    const ordered = [...group].sort((left, right) => {
+      const leftX = fileRects.get(positionByClassId.get(left.source)?.fileId ?? "")?.x ?? 0;
+      const rightX = fileRects.get(positionByClassId.get(right.source)?.fileId ?? "")?.x ?? 0;
+      return leftX - rightX || (sourceOrder.get(left.source) ?? 0) - (sourceOrder.get(right.source) ?? 0);
+    });
+    const offsets = spreadOffsets(ordered.length, CLASS_WIDTH - 40);
+    ordered.forEach((edge, index) => offsetsById.set(edge.id, offsets[index] ?? 0));
+  }
+  return edges.map((edge) => {
+    const targetOffset = offsetsById.get(edge.id);
+    if (targetOffset === undefined) return edge;
+    return { ...edge, type: edge.type ?? "offset", data: { ...edge.data, targetOffset } };
+  });
+}
+
+/** 複数の終点を中央揃えし、総幅を maxWidth 以内に収める。 */
+export function spreadOffsets(count: number, maxWidth: number): number[] {
+  if (count <= 0) return [];
+  if (count === 1) return [0];
+  const spacing = Math.min(24, maxWidth / (count - 1));
+  return Array.from({ length: count }, (_, index) => (index - (count - 1) / 2) * spacing);
 }

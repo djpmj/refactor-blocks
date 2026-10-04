@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Codebase, Fragment } from "../../domain/codebase/Codebase";
 import { advancedStages } from "../../infrastructure/stages/advancedStages";
-import { dependencyEdges, handleSidesForFiles, inheritanceEdges, layoutCodebase, type FileRect } from "./layoutCodebase";
+import { dependencyEdges, handleSidesForFiles, inheritanceEdges, layoutCodebase, spreadOffsets, type FileRect } from "./layoutCodebase";
 
 function callFragment(id: string, uses: readonly string[]): Fragment {
   return { id, label: id, lines: 1, responsibility: "call", uses };
@@ -305,6 +305,27 @@ describe("dependencyEdges", () => {
 });
 
 describe("inheritanceEdges", () => {
+  it("着地点オフセットを中央揃えにし、幅を超える場合は間隔を縮める", () => {
+    // Arrange
+    const maxWidth = 80;
+
+    // Act
+    const one = spreadOffsets(1, maxWidth);
+    const two = spreadOffsets(2, maxWidth);
+    const three = spreadOffsets(3, maxWidth);
+    const many = spreadOffsets(6, 20);
+    const none = spreadOffsets(0, maxWidth);
+
+    // Assert
+    expect(one).toEqual([0]);
+    expect(two[0] + two[1]).toBe(0);
+    expect(two[1] - two[0]).toBe(24);
+    expect(three).toEqual([-24, 0, 24]);
+    expect(many.every((offset) => Math.abs(offset) <= 10)).toBe(true);
+    expect(many[1] - many[0]).toBeLessThan(24);
+    expect(none).toEqual([]);
+  });
+
   function codebaseWithInheritance(superclassId?: string): Codebase {
     return {
       files: [
@@ -359,6 +380,35 @@ describe("inheritanceEdges", () => {
 
     // Assert
     expect(edges).toHaveLength(0);
+  });
+
+  it("同じ親へ向かう辺を出発ファイルのx順にずらし、単独の辺はずらさない", () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [
+        { id: "file-right", path: "right", classes: [{ id: "class-right", name: "Right", methods: [], superclassId: "class-parent" }] },
+        { id: "file-left", path: "left", classes: [{ id: "class-left", name: "Left", methods: [], superclassId: "class-parent" }] },
+        { id: "file-middle", path: "middle", classes: [{ id: "class-middle", name: "Middle", methods: [], superclassId: "class-parent" }] },
+        { id: "file-parent", path: "parent", classes: [{ id: "class-parent", name: "Parent", methods: [] }] },
+      ],
+    };
+    const fileRects: ReadonlyMap<string, FileRect> = new Map([
+      ["file-right", { x: 400, y: 0, width: 328, height: 200 }],
+      ["file-left", { x: 0, y: 0, width: 328, height: 200 }],
+      ["file-middle", { x: 200, y: 0, width: 328, height: 200 }],
+      ["file-parent", { x: 100, y: 300, width: 328, height: 200 }],
+    ]);
+
+    // Act
+    const edges = inheritanceEdges(codebase, fileRects);
+    const offsetsBySource = new Map(edges.map((edge) => [edge.source, edge.data?.targetOffset]));
+
+    // Assert
+    expect(edges.every((edge) => edge.markerEnd === "inheritance-arrow")).toBe(true);
+    expect(Number(offsetsBySource.get("class-left"))).toBeLessThan(Number(offsetsBySource.get("class-middle")));
+    expect(Number(offsetsBySource.get("class-middle"))).toBeLessThan(Number(offsetsBySource.get("class-right")));
+    const single = inheritanceEdges(codebaseWithInheritance("class-A"));
+    expect(single[0]?.data?.targetOffset).toBeUndefined();
   });
 
   it("有効な継承と、親が削除済みの継承が混在するときは、有効な方の辺だけ作る", () => {

@@ -2,13 +2,15 @@ import { Background, Controls, ReactFlow, type EdgeTypes, type NodeTypes } from 
 import { useMemo } from 'react';
 import type { Codebase } from '../../domain/codebase/Codebase';
 import { dependencyEdges, fileRectsFromNodes, inheritanceEdges, layoutCodebase } from '../canvas/layoutCodebase';
+import { InheritanceMarker } from '../canvas/InheritanceMarker';
+import { OffsetEdge } from '../canvas/OffsetEdge';
 import { TopRouteEdge } from '../canvas/TopRouteEdge';
 import { CodebasePreviewProvider } from './CodebasePreviewContext';
 import { PreviewClassNode } from './PreviewClassNode';
 import { PreviewFileNode } from './PreviewFileNode';
 
 const nodeTypes: NodeTypes = { fileNode: PreviewFileNode, classNode: PreviewClassNode };
-const edgeTypes: EdgeTypes = { topRoute: TopRouteEdge };
+const edgeTypes: EdgeTypes = { topRoute: TopRouteEdge, offset: OffsetEdge };
 
 type CodebasePreviewCanvasProps = {
   readonly codebase: Codebase;
@@ -38,6 +40,7 @@ export function CodebasePreviewCanvas({ codebase, methodLimit, wheelZoom = true 
         zoomOnScroll={wheelZoom}
         preventScrolling={wheelZoom}
       >
+        <InheritanceMarker />
         <Background gap={24} />
         <Controls showInteractive={false} />
       </ReactFlow>
