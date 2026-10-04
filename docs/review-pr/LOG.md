@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-04 02:15 UTC PR #50 ファイル位置に合わせて矢印の接続点を切り替える (#36)
+
+- 判定: 合格(blocker無し。suggestion: 古いdocコメントの残り・論理位置/矩形の二重ルートの一本化)
+- 確認した内容: npm test 1005件 ✅ / npm run lint ✅ / npm run typecheck ✅ / E2Eはローカルにブラウザが無く未実行、PRのCI(e2e)pass
+- マージ: squash & delete-branch
+
 ## 2026-10-03 19:30 UTC PR #47 左サイドバー開閉ボタンを境界へ移す (#35)
 
 - 判定: 合格(blocker無し)
