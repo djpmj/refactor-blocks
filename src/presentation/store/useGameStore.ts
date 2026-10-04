@@ -53,7 +53,9 @@ import {
 import type { Result } from '../../domain/shared/Result';
 import { stages } from '../../infrastructure/stages/stageCatalog';
 import type { Progress } from '../../domain/progress/Progress';
+import { putDraft, takeDraft, type Drafts } from '../../domain/progress/drafts';
 import { updateProgress } from '../../domain/progress/updateProgress';
+import { loadDrafts, saveDrafts } from '../../infrastructure/progress/draftStorage';
 import { loadProgress, saveProgress } from '../../infrastructure/progress/progressStorage';
 
 /** 変更依頼に挑戦中の状態。依頼ごとに部品を足したコードで実装し、依頼を1件ずつ片付ける。 */
@@ -143,6 +145,8 @@ type GameState = {
   endChangeRequests: () => void;
   resetStage: () => void;
   selectStage: (stageId: string) => void;
+  /** 前回の下書きから再開したか。次にコードが変わったら false に戻す。 */
+  restoredDraft: boolean;
   progress: Progress;
   recordProgress: (stageId: string, score: number) => void;
 };
@@ -306,12 +310,14 @@ function critiqueActions(set: (partial: Partial<GameState>) => void, get: () => 
 }
 
 /** ステージを切り替えたときの状態。見つからないステージIDなら何もしない。 */
-function selectStageState(allStages: readonly Stage[], stageId: string): Partial<GameState> | null {
+function selectStageState(allStages: readonly Stage[], stageId: string, drafts: Drafts): Partial<GameState> | null {
   const stage = allStages.find((candidate) => candidate.id === stageId);
   if (stage === undefined) return null;
+  const draft = takeDraft(drafts, stage);
   return {
     stage,
-    codebase: stage.codebase,
+    codebase: draft ?? stage.codebase,
+    restoredDraft: draft !== undefined,
     history: emptyHistory(),
     selectedMethodId: null,
     selectedFieldId: null,
@@ -439,12 +445,51 @@ function replaceMethodActions(
   };
 }
 
+/** ステージごとの自己ベストの読み込みと記録。 */
+function progressActions(set: (partial: Partial<GameState>) => void, get: () => GameState): Pick<GameState, 'progress' | 'recordProgress'> {
+  return {
+    progress: loadProgress(),
+    recordProgress: (stageId, score) => {
+      const next = updateProgress(get().progress, stageId, score);
+      if (next === get().progress) return;
+      saveProgress(next);
+      set({ progress: next });
+    },
+  };
+}
+
 export type GameStore = StoreApi<GameState>;
 
-/** stages の先頭のステージから始まるストアを作る。selectStage もこの stages から探す。 */
-export function createGameStore(allStages: readonly Stage[]): GameStore {
+/** 採点の対象になっているコード(変更依頼の実装中は挑戦前のコード)が変わるたびに、ステージの下書きとして保存する。 */
+function autosaveDrafts(store: GameStore, holder: { drafts: Drafts }): void {
+  store.subscribe((state, prev) => {
+    if (state.codebase === prev.codebase && state.changeSession === prev.changeSession) return;
+    holder.drafts = putDraft(holder.drafts, state.stage, state.changeSession?.base ?? state.codebase);
+    saveDrafts(holder.drafts);
+    // ステージを切り替えたときの復元は、お知らせを出すので戻さない
+    if (state.restoredDraft && state.stage === prev.stage) store.setState({ restoredDraft: false });
+  });
+}
+
+/** 最初のステージの下書きを取り出す。指紋が違う・形が壊れた下書きは捨てて(ストレージからも消して) undefined を返す。 */
+function restoreFirstDraft(holder: { drafts: Drafts }, firstStage: Stage): Codebase | undefined {
+  const restored = takeDraft(holder.drafts, firstStage);
+  if (restored === undefined && holder.drafts[firstStage.id] !== undefined) {
+    holder.drafts = putDraft(holder.drafts, firstStage, firstStage.codebase);
+    saveDrafts(holder.drafts);
+  }
+  return restored;
+}
+
+/**
+ * stages の先頭のステージから始まるストアを作る。selectStage もこの stages から探す。
+ * saveDraftsOn が true のときだけ、編集中のコードを localStorage の下書きに保存・復元する。
+ */
+export function createGameStore(allStages: readonly Stage[], saveDraftsOn = true): GameStore {
   const [firstStage] = allStages;
-  return createStore<GameState>((set, get) => {
+  const holder = { drafts: saveDraftsOn ? loadDrafts() : {} };
+  const restored = restoreFirstDraft(holder, firstStage);
+  const store = createStore<GameState>((set, get) => {
     /** 操作の結果を反映し、成功したかを返す。 */
     const apply = <E>(result: Result<Codebase, E>, describe: (error: E) => string): boolean => {
       set(applyResult(get(), result, describe));
@@ -453,7 +498,8 @@ export function createGameStore(allStages: readonly Stage[]): GameStore {
     return {
       stages: allStages,
       stage: firstStage,
-      codebase: firstStage.codebase,
+      codebase: restored ?? firstStage.codebase,
+      restoredDraft: restored !== undefined,
       history: emptyHistory(),
       selectedMethodId: null,
       selectedFieldId: null,
@@ -492,18 +538,14 @@ export function createGameStore(allStages: readonly Stage[]): GameStore {
         set({ ...commit(get(), get().stage.codebase), manualFix: null, focusedRule: null, selectedMethodId: null, selectedFieldId: null, message: null });
       },
       selectStage: (stageId) => {
-        const next = selectStageState(get().stages, stageId);
+        const next = selectStageState(get().stages, stageId, holder.drafts);
         if (next !== null) set(next);
       },
-      progress: loadProgress(),
-      recordProgress: (stageId, score) => {
-        const next = updateProgress(get().progress, stageId, score);
-        if (next === get().progress) return;
-        saveProgress(next);
-        set({ progress: next });
-      },
+      ...progressActions(set, get),
     };
   });
+  if (saveDraftsOn) autosaveDrafts(store, holder);
+  return store;
 }
 
 /** 既定値はリファクタリング用のストア。Providerがない所(リファクタリング画面)ではこれを使う。 */

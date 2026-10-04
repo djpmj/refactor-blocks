@@ -13,7 +13,7 @@ import { BlankDesignResultPanel } from './BlankDesignResultPanel';
 const [problem] = blankDesignProblems;
 
 // 白紙設計はリファクタリングと別の編集状態を持つので、専用のストアを1つだけ作る(exportしない)
-const blankStore = createGameStore(blankDesignProblems);
+const blankStore = createGameStore(blankDesignProblems, false);
 
 function BlankDesignBody({ active }: Readonly<{ active: boolean }>) {
   const codebase = useGameStore((state) => state.codebase);

@@ -136,6 +136,17 @@ function ActionToolbar({ stage, isPerfect, active }: Readonly<{ stage: Stage; is
   );
 }
 
+/** 前回の下書きから再開したときのお知らせ。エラーではないので message は使わない。 */
+function DraftRestoredNotice() {
+  const restored = useGameStore((state) => state.restoredDraft);
+  if (!restored) return null;
+  return (
+    <p className="draft-restored" role="status" data-testid="draft-restored">
+      前回の続きから再開しました。最初からやり直すときは「最初に戻す」を押してください。
+    </p>
+  );
+}
+
 /** ステージの目標と、行数・結合度・循環依存・責務の混在から出した点数を表示する。責務の中身(responsibility の値)は見せない。 */
 function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage; children: ReactNode; active: boolean }>) {
   // 実装中は部品置き場入りのコードなので、点数と進捗は挑戦前のコードで数える
@@ -192,6 +203,7 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
         </button>
         <div className="workspace">
           <ActionToolbar stage={stage} isPerfect={score.total >= 100} active={active} />
+          <DraftRestoredNotice />
           <div className="workspace__main">{children}</div>
         </div>
       </div>
