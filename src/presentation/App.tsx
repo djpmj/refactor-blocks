@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { BlankDesignView } from './blank/BlankDesignView';
 import { CodebaseCanvas } from './canvas/CodebaseCanvas';
+import { ErrorToast } from './canvas/ErrorToast';
 import { ChangeRequestPanel } from './change/ChangeRequestPanel';
 import { MethodEditor } from './editor/MethodEditor';
 import { ComparisonQuizView } from './quiz/ComparisonQuizView';
@@ -22,6 +23,7 @@ function RefactorView({ active }: Readonly<{ active: boolean }>) {
       <main className="app__body">
         <section className="app__canvas" aria-label="コードベース">
           <CodebaseCanvas active={active} />
+          <ErrorToast />
         </section>
         <div className="sidebar-resizable" style={{ width }}>
           <div className="sidebar-resizable__handle" {...handleProps} />

@@ -157,7 +157,6 @@ function PartStatus({ request }: Readonly<{ request: ChangeRequest }>) {
 export function ChangeRequestPanel() {
   const stage = useGameStore((state) => state.stage);
   const session = useGameStore((state) => state.changeSession);
-  const message = useGameStore((state) => state.message);
   const codebase = useGameStore((state) => state.codebase);
   const finishImplementation = useGameStore((state) => state.finishImplementation);
   const endChangeRequests = useGameStore((state) => state.endChangeRequests);
@@ -183,7 +182,6 @@ export function ChangeRequestPanel() {
           </p>
           <PartStatus request={request} />
           <InspectedMethod />
-          {message === null ? null : <p className="method-editor__message">{message}</p>}
           <button type="button" data-testid="change-request-finish" onClick={finishImplementation} disabled={!isChangePartPlaced(codebase, request)}>
             実装を終える
           </button>

@@ -44,5 +44,7 @@ test('講評の取得に失敗したら、エラーメッセージを表示す�
   await page.getByRole('button', { name: 'AIの講評をもらう' }).click();
 
   // Assert
-  await expect(page.getByRole('alert')).toHaveText('AI講評を取得できませんでした。しばらくしてからもう一度お試しください');
+  const error = page.locator('.critique-panel__error');
+  await expect(error).toHaveText('AI講評を取得できませんでした。しばらくしてからもう一度お試しください');
+  await expect(error).toHaveAttribute('role', 'status');
 });
