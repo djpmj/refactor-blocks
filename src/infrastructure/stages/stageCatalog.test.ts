@@ -7,10 +7,23 @@ import { averageScore, scoreChange } from '../../domain/change/scoreChange';
 import { allClasses, fieldsOf, isAbstractLike, isInterfaceLike, touchedFieldIds, type Codebase } from '../../domain/codebase/Codebase';
 import { methodLines } from '../../domain/codebase/lineCount';
 import { scoreCodebase } from '../../domain/scoring/score';
+import { behaviorTests, runBehaviorTests } from '../../domain/testing/behaviorTests';
 import type { Result } from '../../domain/shared/Result';
 import { applySolutionSteps, sampleAnswerSteps, solutionSnapshots, type SolutionStep } from '../../domain/stage/sampleAnswer';
 import type { Stage } from '../../domain/stage/Stage';
 import { stages } from './stageCatalog';
+
+/** 赤になっているテストの失敗。onlyNonCompile なら、コンパイルエラー以外だけ。 */
+function redFailures(stage: Stage, snapshot: Codebase, onlyNonCompile: boolean) {
+  return runBehaviorTests(stage, snapshot).flatMap((result) =>
+    result.failures.filter((failure) => !onlyNonCompile || failure.kind !== 'compile').map((failure) => ({ entry: result.test.entryMethodId, failure })),
+  );
+}
+
+/** 各手の後のコードの、コンパイルエラー以外で赤になっているテスト。 */
+function redFailuresAcross(stage: Stage, snapshots: readonly Codebase[]) {
+  return snapshots.flatMap((snapshot) => redFailures(stage, snapshot, true));
+}
 
 const templateSolution = sampleAnswerSteps['advanced-template-method'] ?? [];
 
@@ -649,6 +662,20 @@ describe('stageCatalog', () => {
       expect(scoreCodebase(snapshots[snapshots.length - 1], stage).total).toBe(100);
     });
 
+    it('模範解答のどの手の後も、振る舞いのテストが全部緑(途中で private のまま別クラスへ移した一時的なコンパイルエラーを除く)', () => {
+      // Arrange
+      const steps = sampleAnswerSteps[stage.id] ?? [];
+      const snapshots = solutionSnapshots(stage.codebase, steps);
+
+      // Act
+      const reds = redFailuresAcross(stage, snapshots);
+
+      // Assert
+      // 抽出したメソッドは private なので、移した直後(public にする前)は『呼べない』コンパイルエラーが正しく出る。最終形は完全に緑
+      expect(reds).toEqual([]);
+      expect(redFailures(stage, snapshots[snapshots.length - 1], false)).toEqual([]);
+    });
+
     it('依頼が2件以上あり、ルール変更の依頼は初期のコードに変更箇所がある', () => {
       // Arrange
       const changeRequests = modifyRequests(stage);
@@ -721,5 +748,14 @@ describe('stageCatalog', () => {
 
     // Assert
     expect(scoreCodebase(played, stage).total).toBeLessThan(100);
+  });
+
+  it('入口のあるステージが大半を占める', () => {
+    // Arrange & Act
+    const withTests = stages.filter((stage) => behaviorTests(stage).length > 0);
+
+    // Assert
+    // 入口が0になるのは、全メソッドが他から呼ばれる輪になっているなど特殊な題材だけ
+    expect(withTests.length).toBeGreaterThan(stages.length / 2);
   });
 });

@@ -373,3 +373,9 @@ input.class-node__name { width: 14ch; }
 .sample-replay__controls { display: flex; justify-content: center; gap: 8px; padding: 8px 16px; border-top: 1px solid var(--border); }
 .sample-replay__controls button { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 8px; padding: 4px 12px; cursor: pointer; }
 .sample-replay__controls button:disabled { opacity: 0.5; cursor: not-allowed; }
+.test-status { position: relative; font-size: 12px; }
+.test-status > summary { cursor: pointer; color: var(--muted); white-space: nowrap; }
+.test-status__body { position: absolute; z-index: 20; top: calc(100% + 6px); right: 0; width: 320px; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); box-shadow: 0 4px 12px rgb(0 0 0 / 16%); }
+.test-status__list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.test-status__item--red { color: var(--danger); }
+.test-status__reason { margin: 2px 0 0 14px; font-size: 11px; }
