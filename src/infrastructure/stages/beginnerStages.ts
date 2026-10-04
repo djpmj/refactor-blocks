@@ -5,6 +5,7 @@ const userControllerStage: Stage = {
   id: 'beginner-user-controller',
   level: 'beginner',
   title: '初級1: 何でも屋の UserController',
+  learns: ['責務の分離', 'Move Method'],
   /** 100点になったときに見せる、この題材で分ける理由。 */
   why: 'メールの案内を変えるだけでも、ユーザー登録や削除の処理に埋もれた送信箇所を探す必要があります。通知をまとめれば、メールの変更を通知処理に集められます。',
   description:
@@ -72,6 +73,7 @@ const invoiceServiceStage: Stage = {
   id: 'beginner-invoice-service',
   level: 'beginner',
   title: '初級2: クラスを自分で作る',
+  learns: ['クラスの追加', '責務の分離'],
   /** 100点になったときに見せる、この題材で分ける理由。 */
   why: 'PDFの見た目を変えるだけなのに、金額計算や保存、送信まで抱えた請求処理を追うことになります。描画の役割が分かれていれば、レイアウト変更の確認先を絞れます。',
   description:

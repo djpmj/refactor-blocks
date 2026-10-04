@@ -526,6 +526,19 @@ describe('stageCatalog', () => {
     expect(unique.size).toBe(ids.length);
   });
 
+  it.each(stages.map((stage) => [stage.title, stage.learns] as const))('%s: 学べること(learns)が1〜3個あり、どれも空でない', (_title, learns) => {
+    // Arrange
+    const blanks = learns.filter((item) => item.trim() === '');
+
+    // Act
+    const count = learns.length;
+
+    // Assert
+    expect(count).toBeGreaterThanOrEqual(1);
+    expect(count).toBeLessThanOrEqual(3);
+    expect(blanks).toEqual([]);
+  });
+
   describe.each(stages.map((stage) => [stage.title, stage] as const))('%s', (_title, stage) => {
     it('変更の痛みカード用の理由と初期集計がある', () => {
       // Arrange

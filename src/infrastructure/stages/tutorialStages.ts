@@ -5,6 +5,7 @@ const extractMethodStage: Stage = {
   id: 'tutorial-extract-method',
   level: 'tutorial',
   title: 'チュートリアル1: 長いメソッドを分ける',
+  learns: ['Extract Method'],
   /** 100点になったときに見せる、この題材で分ける理由。 */
   why: '前年同月比や表の列を変えるたびに、集計から出力まで続く長い処理を読み直すことになります。集計と表示を分ければ、数字や見せ方の変更箇所を追いやすくなります。',
   description:
@@ -52,6 +53,7 @@ const orderServiceStage: Stage = {
   id: 'tutorial-order-service',
   level: 'tutorial',
   title: 'チュートリアル2: 太った placeOrder',
+  learns: ['Extract Method', 'Move Method'],
   /** 100点になったときに見せる、この題材で分ける理由。 */
   why: '税率やメール文面の変更が注文の検証や保存処理に紛れ、関係ない手順まで確認することになります。役割ごとに置き場所が分かれていれば、変更する理由のある処理を探せます。',
   description:

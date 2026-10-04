@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { scoreCodebase, type Score } from '../../domain/scoring/score';
 import { sampleAnswerCodebase, sampleAnswerSteps } from '../../domain/stage/sampleAnswer';
-import type { Stage, StageLevel } from '../../domain/stage/Stage';
+import type { Stage } from '../../domain/stage/Stage';
 import { CritiqueButton, CritiqueResult } from '../critique/CritiquePanel';
 import { CodebasePreviewDialog } from '../preview/CodebasePreviewDialog';
 import { OperationGuideDialog } from '../guide/OperationGuideDialog';
@@ -13,15 +13,24 @@ import { HintList } from './HintList';
 import { HintButton } from './HintPanel';
 import { ChangePainCard } from './ChangePainCard';
 import { ManualFixPanel } from './ManualFixPanel';
+import { LEVEL_LABEL } from './levelLabel';
+import { StageRoadmapDialog } from './StageRoadmapDialog';
 import { useHints } from './useHints';
 import { useStageSidebar } from './useStageSidebar';
 
-const LEVEL_LABEL: Record<StageLevel, string> = {
-  tutorial: 'チュートリアル',
-  beginner: '初級',
-  intermediate: '中級',
-  advanced: '上級',
-};
+/** ステージ一覧のダイアログを開くボタン。 */
+function RoadmapButton() {
+  const [open, setOpen] = useState(false);
+  const investigating = useGameStore((state) => state.changeSession !== null);
+  return (
+    <>
+      <button type="button" data-testid="roadmap-open" disabled={investigating} onClick={() => setOpen(true)}>
+        ステージ一覧
+      </button>
+      <StageRoadmapDialog open={open} onClose={() => setOpen(false)} />
+    </>
+  );
+}
 
 function StageSelect() {
   const stages = useGameStore((state) => state.stages);
@@ -168,6 +177,7 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
       <header className="stage-panel">
         <h1 className="stage-panel__title">{stage.title}</h1>
         <StageSelect />
+        <RoadmapButton />
         <div className="stage-panel__spacer" />
         <CritiqueButton disabled={investigating} />
         <HintButton revealed={revealedCount} total={total} disabled={investigating} onReveal={() => setRevealed({ stageId: stage.id, count: revealedCount + 1 })} />

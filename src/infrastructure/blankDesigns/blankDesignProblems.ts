@@ -69,6 +69,7 @@ export const blankDesignProblems: readonly BlankDesignProblem[] = [
     id: 'blank-order-shipping',
     level: 'beginner',
     title: '白紙1: 注文と発送',
+    learns: ['責務の分離', 'クラス設計'],
     why: '税率やメール文面を変えるたびに注文と発送の一連の流れを読み直す必要があります。処理の置き場所が分かれていれば、変更先を特定しやすくなります。',
     goal: '部品置き場の7つの部品を、すべて自分で作ったクラスに配置しよう。メソッドは40行・クラスは80行以内、1クラスの責務は1種類、依存先は3クラスまで',
     description:

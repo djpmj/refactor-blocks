@@ -35,6 +35,7 @@ function makeProblem(overrides: Partial<BlankDesignProblem> = {}): BlankDesignPr
     id: 'test-blank',
     level: 'beginner',
     title: 'テスト用の白紙設計',
+    learns: ['責務の分離'],
     why: '役割ごとに処理を配置すると、変更時に関係する部品を見つけやすくなります。',
     goal: '全部品を配置しよう',
     description: 'テスト用の要求文',
