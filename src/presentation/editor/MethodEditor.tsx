@@ -233,7 +233,7 @@ function MethodEditorBody({ method, showVisibility }: Readonly<{ method: Method;
       </h2>
       <div className="method-editor__tabs" role="tablist" aria-label="メソッド表示">
         <button className="method-editor__tab" type="button" role="tab" aria-selected={activeTab === 'edit'} onClick={() => { setActiveTab('edit'); }}>編集</button>
-        <button className="method-editor__tab" type="button" role="tab" aria-selected={activeTab === 'code'} onClick={() => { setActiveTab('code'); }}>コード</button>
+        <button className="method-editor__tab" type="button" role="tab" aria-selected={activeTab === 'code'} onClick={() => { setActiveTab('code'); }}><span className="method-editor__tab-icon" aria-hidden="true">&lt;/&gt;</span>コード</button>
       </div>
       {activeTab === 'code' ? <ClassCodePreview codebase={codebase} classId={owner?.id ?? ''} /> : (
         <div role="tabpanel" aria-label="編集">
