@@ -3,6 +3,7 @@ import type { NodeProps } from "@xyflow/react";
 import { fieldsOf, findClass, findInterfaces, findSuperclass, type CodeClass } from "../../domain/codebase/Codebase";
 import { classDependencies, cyclicClassIds } from "../../domain/codebase/dependencies";
 import { classLines } from "../../domain/codebase/lineCount";
+import { violationTargets } from "../../domain/scoring/violationTargets";
 import { useGameStore } from "../store/useGameStore";
 import { classDragId, classDropId } from "./dndIds";
 import { DependencyHandles } from "./DependencyHandles";
@@ -80,6 +81,10 @@ export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
     cyclicClassIds(classDependencies(state.codebase)).has(data.classId),
   );
   const limit = useGameStore((state) => state.stage.limits.class);
+  const flagged = useGameStore((state) => {
+    const rule = state.focusedRule;
+    return rule !== null && violationTargets(state.codebase, state.stage)[rule].classIds.includes(data.classId);
+  });
   const showDetails = useShowDetails();
   const { setNodeRef, isOver } = useDroppable({
     id: classDropId(data.classId),
@@ -94,7 +99,7 @@ export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
   if (codeClass === undefined) return null;
   const lines = classLines(codeClass);
   return (
-    <div ref={setNodeRef} className={classNodeClassName({ isOver, isCyclic })} data-testid={`class-${codeClass.name}`}>
+    <div ref={setNodeRef} className={`${classNodeClassName({ isOver, isCyclic })}${flagged ? " class-node--flagged" : ""}`} data-testid={`class-${codeClass.name}`}>
       {/* 依存の矢印の接続点。つなぐ操作はさせないので見た目には出さない。 */}
       <DependencyHandles />
       <div

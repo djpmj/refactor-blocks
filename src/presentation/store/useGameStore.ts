@@ -6,7 +6,7 @@ import { withoutTray } from '../../domain/blank/tray';
 import { withChangePart } from '../../domain/change/changePart';
 import { findField, findMethod, type Codebase, type Visibility } from '../../domain/codebase/Codebase';
 import { emptyHistory, recordChange, redoHistory, undoHistory, type History, type Travel } from '../../domain/codebase/history';
-import { scoreCodebase } from '../../domain/scoring/score';
+import { scoreCodebase, type ScoreRule } from '../../domain/scoring/score';
 import type { Stage } from '../../domain/stage/Stage';
 import { fetchCritique } from '../../infrastructure/critique/critiqueClient';
 import {
@@ -94,6 +94,7 @@ type GameState = {
   history: History;
   selectedMethodId: string | null;
   selectedFieldId: string | null;
+  focusedRule: ScoreRule | null;
   message: string | null;
   dismissMessage: () => void;
   changeSession: ChangeSession | null;
@@ -102,6 +103,7 @@ type GameState = {
   requestCritique: () => void;
   selectMethod: (methodId: string | null) => void;
   selectField: (fieldId: string) => void;
+  focusRule: (rule: ScoreRule | null) => void;
   moveMethod: (methodId: string, targetClassId: string) => void;
   moveField: (fieldId: string, targetClassId: string) => void;
   changeVisibility: (methodId: string, visibility: Visibility) => void;
@@ -208,6 +210,7 @@ function changeSessionActions(
       const { codebase, history, stage } = get();
       const [first] = stage.changeRequests;
       set({
+        focusedRule: null,
         changeSession: { index: 0, inspected: null, outcomes: [], base: codebase, carried: codebase, baseHistory: history },
         codebase: withChangePart(codebase, first),
         history: emptyHistory(),
@@ -228,6 +231,7 @@ function changeSessionActions(
       if (changeSession === null) return;
       const { outcomes, base, carried, baseHistory } = changeSession;
       set({
+        focusedRule: null,
         changeSession: null,
         codebase: base,
         history: baseHistory,
@@ -269,6 +273,7 @@ function selectStageState(allStages: readonly Stage[], stageId: string): Partial
     history: emptyHistory(),
     selectedMethodId: null,
     selectedFieldId: null,
+    focusedRule: null,
     message: null,
     changeSession: null,
     lastChangeReport: null,
@@ -409,6 +414,7 @@ export function createGameStore(allStages: readonly Stage[]): GameStore {
       history: emptyHistory(),
       selectedMethodId: null,
       selectedFieldId: null,
+      focusedRule: null,
       message: null,
       ...messageActions(set),
       changeSession: null,
@@ -418,9 +424,8 @@ export function createGameStore(allStages: readonly Stage[]): GameStore {
       selectMethod: (methodId) => {
         set({ selectedMethodId: methodId, selectedFieldId: null, message: null });
       },
-      selectField: (fieldId) => {
-        set({ selectedFieldId: fieldId, selectedMethodId: null, message: null });
-      },
+      selectField: (fieldId) => set({ selectedFieldId: fieldId, selectedMethodId: null, message: null }),
+      focusRule: (focusedRule) => set({ focusedRule }),
       extractMethod: (input) => {
         return apply(extractMethodUseCase(get().codebase, input, () => crypto.randomUUID()), describeExtractError);
       },
@@ -440,7 +445,7 @@ export function createGameStore(allStages: readonly Stage[]): GameStore {
       resetStage: () => {
         // 実装中に戻すと、部品置き場ごと消えてしまう
         if (get().changeSession !== null) return;
-        set({ ...commit(get(), get().stage.codebase), selectedMethodId: null, selectedFieldId: null, message: null });
+        set({ ...commit(get(), get().stage.codebase), focusedRule: null, selectedMethodId: null, selectedFieldId: null, message: null });
       },
       selectStage: (stageId) => {
         const next = selectStageState(get().stages, stageId);

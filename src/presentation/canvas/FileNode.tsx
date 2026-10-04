@@ -2,6 +2,7 @@ import { useDroppable } from '@dnd-kit/core';
 import type { NodeProps } from '@xyflow/react';
 import { fileLines } from '../../domain/codebase/lineCount';
 import { fileDeductions, fileSeverity, type FileSeverity } from '../../domain/scoring/fileScores';
+import { violationTargets } from '../../domain/scoring/violationTargets';
 import { useGameStore } from '../store/useGameStore';
 import { fileDropId } from './dndIds';
 import type { FileFlowNode } from './layoutCodebase';
@@ -22,6 +23,10 @@ export function FileNode({ data }: Readonly<NodeProps<FileFlowNode>>) {
   const file = useGameStore((state) => state.codebase.files.find((candidate) => candidate.id === data.fileId));
   const limit = useGameStore((state) => state.stage.limits.file);
   const points = useGameStore((state) => fileDeductions(state.codebase, state.stage).get(data.fileId) ?? 0);
+  const flagged = useGameStore((state) => {
+    const rule = state.focusedRule;
+    return rule !== null && violationTargets(state.codebase, state.stage)[rule].fileIds.includes(data.fileId);
+  });
   const { setNodeRef, isOver } = useDroppable({ id: fileDropId(data.fileId) });
   const showDetails = useShowDetails();
   if (file === undefined) return null;
@@ -29,7 +34,7 @@ export function FileNode({ data }: Readonly<NodeProps<FileFlowNode>>) {
   return (
     <div
       ref={setNodeRef}
-      className={isOver ? 'file-node file-node--drop-target' : 'file-node'}
+      className={`file-node${isOver ? ' file-node--drop-target' : ''}${flagged ? ' file-node--flagged' : ''}`}
       data-testid={`file-${file.path}`}
     >
       <div className="file-node__header">
