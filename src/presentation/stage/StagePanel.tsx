@@ -11,7 +11,9 @@ import { describeScore } from './describeScore';
 import { ScoreBreakdown } from './ScoreBreakdown';
 import { HintList } from './HintList';
 import { HintButton } from './HintPanel';
+import { ChangePainCard } from './ChangePainCard';
 import { useHints } from './useHints';
+import { useStageSidebar } from './useStageSidebar';
 
 const LEVEL_LABEL: Record<StageLevel, string> = {
   tutorial: 'チュートリアル',
@@ -141,11 +143,11 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
   const recordProgress = useGameStore((state) => state.recordProgress);
   // ステージを切り替えたらヒントを閉じ直す。keyで作り直すとキャンバスまで作り直してしまうので、開いた数にステージIDを添える
   const [revealed, setRevealed] = useState({ stageId: stage.id, count: 0 });
+  const score = useMemo(() => scoreCodebase(codebase, stage), [codebase, stage]);
   // 狭い画面ではキャンバスを優先して、最初は閉じておく(描画は残し、hiddenで隠すだけ)
-  const [sidebarOpen, setSidebarOpen] = useState(() => window.matchMedia('(min-width: 1400px)').matches);
+  const [sidebarOpen, toggleSidebar] = useStageSidebar(stage.id, score.total >= 100);
   const revealedCount = revealed.stageId === stage.id ? revealed.count : 0;
   const { hints, total } = useHints(stage, revealedCount);
-  const score = useMemo(() => scoreCodebase(codebase, stage), [codebase, stage]);
   useEffect(() => {
     recordProgress(stage.id, score.total);
   }, [stage.id, score.total, recordProgress]);
@@ -168,6 +170,7 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
             <strong>課題: </strong>
             {stage.goal}
           </p>
+          {!investigating && <ChangePainCard stage={stage} codebase={codebase} score={score.total} />}
           <HintList hints={hints} />
           <details className="stage-panel__description" open>
             <summary>どんなコード?</summary>
@@ -181,7 +184,7 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
           aria-controls="stage-sidebar"
           aria-label={sidebarOpen ? 'サイドバーを閉じる' : 'サイドバーを開く'}
           title={sidebarOpen ? 'サイドバーを閉じる' : 'サイドバーを開く'}
-          onClick={() => setSidebarOpen((open) => !open)}
+          onClick={toggleSidebar}
         >
           {sidebarOpen ? '«' : '»'}
         </button>

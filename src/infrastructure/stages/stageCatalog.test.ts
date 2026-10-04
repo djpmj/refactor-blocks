@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { changeKindOf, type ChangeRequest } from '../../domain/change/ChangeRequest';
 import { findChangeSites } from '../../domain/change/findChangeSites';
 import { measureChange } from '../../domain/change/measureChange';
+import { measurePain, painRequestOf } from '../../domain/change/changePain';
 import { averageScore, scoreChange } from '../../domain/change/scoreChange';
 import { allClasses, fieldsOf, isAbstractLike, isInterfaceLike, touchedFieldIds, type Codebase } from '../../domain/codebase/Codebase';
 import { methodLines } from '../../domain/codebase/lineCount';
@@ -526,6 +527,18 @@ describe('stageCatalog', () => {
   });
 
   describe.each(stages.map((stage) => [stage.title, stage] as const))('%s', (_title, stage) => {
+    it('変更の痛みカード用の理由と初期集計がある', () => {
+      // Arrange
+      const reason = stage.why.trim();
+
+      // Act
+      const pain = painRequestOf(stage) === undefined ? undefined : measurePain(stage, stage.codebase);
+
+      // Assert
+      expect(reason).not.toBe('');
+      if (painRequestOf(stage) !== undefined) expect(pain).toBeDefined();
+    });
+
     it('ステージ内のファイル・クラス・メソッド・処理のIDは重複しない', () => {
       // Arrange
       const ids = allIds(stage);

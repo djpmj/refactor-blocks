@@ -90,6 +90,11 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .sidebar-toggle:hover { border-color: var(--accent); }
 .sidebar-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .sidebar__title { margin: 0 0 8px; font-size: 14px; }
+.change-pain { margin: 12px 0; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); font-size: 13px; line-height: 1.5; }
+.change-pain h3 { margin: 0 0 6px; font-size: 14px; }
+.change-pain p { margin: 6px 0; }
+.change-pain ul { margin: 6px 0 0; padding-left: 20px; }
+.change-pain__request { margin-bottom: 2px !important; }
 @media (max-width: 700px) {
   .sidebar-resizable { max-width: calc(100vw - 160px); }
   .app__body--sidebar-open > .sidebar { width: min(260px, 40vw); }

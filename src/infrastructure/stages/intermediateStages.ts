@@ -9,6 +9,8 @@ const cyclicDependencyStage: Stage = {
   id: 'intermediate-cyclic-dependency',
   level: 'intermediate',
   title: '中級1: 循環依存を断ち切る',
+  /** 100点になったときに見せる、この題材で分ける理由。 */
+  why: '価格ルールを変えるとき、注文・顧客・在庫が互いに呼び合う経路まで確かめる必要があります。各データの扱いをそれぞれの役割に寄せると、変更の影響を追いやすくなります。',
   description:
     '注文(Order)と顧客(Customer)のクラス。注文の合計金額を求めるメソッドが Customer に、顧客の過去の注文数を数えるメソッドが Order に置かれているせいで、2つのクラスがお互いを呼び合っている。',
   goal: '赤い矢印(循環依存)をなくそう。メソッドが本来いるべきクラスはどこ? メソッドは50行以内、1クラスの責務は4種類まで',
@@ -117,6 +119,8 @@ const godFileStage: Stage = {
   id: 'intermediate-god-file',
   level: 'intermediate',
   title: '中級2: 何でも入った1つのファイル',
+  /** 100点になったときに見せる、この題材で分ける理由。 */
+  why: '一つのファイルに複数の業務処理が集まると、小さな変更でも無関係な処理との絡みを読み解くことになります。役割で置き場所を分ければ、修正対象を見つけやすくなります。',
   description:
     'カート(CartService)・配送(ShippingService)・ポイント(PointService)の3クラスが、1つのファイルに同居している。しかも CartService が、送料の計算とポイントの付与を private メソッドとして抱え込んでいる。',
   goal: 'ファイルは300行、クラスは180行以内、1クラスの責務は2種類まで。メソッドを持ち主へ返し、「ファイルを追加」してクラスを移そう',
@@ -226,6 +230,8 @@ const misplacedPrivateStage: Stage = {
   id: 'intermediate-misplaced-private',
   level: 'intermediate',
   title: '中級3: 越境する private メソッド',
+  /** 100点になったときに見せる、この題材で分ける理由。 */
+  why: '通知方法を変えるたびに、通知の組み立てとテンプレート処理の境界まで調べることになります。各処理を担当するクラスに置けば、変更先がはっきりします。',
   description:
     '配送完了を知らせる NotificationService。通知メールの文面を組み立てる処理の中で、実は TemplateEngine クラスに private として置かれた renderTemplate() を直接呼んでいる。TemplateEngine 側は自分の中でしか使わないつもりで private にしたはずなのに、外から呼ばれてしまっている。',
   goal:
@@ -372,6 +378,8 @@ const volatileTaxStage: Stage = {
   id: 'intermediate-volatile-tax',
   level: 'intermediate',
   title: '中級4: 変わるのは税の計算',
+  /** 100点になったときに見せる、この題材で分ける理由。 */
+  why: '税ルールの更新が注文処理と一緒に置かれていると、税と無関係な注文手順まで変更のたびに読み直します。税の計算を独立させれば、制度変更をそこに集められます。',
   description:
     '画面の ReportController から呼ばれ、月次・四半期の売上帳票を作る SalesReportService。経理からは「税の計算ルールは法改正や社内規定で毎月のように変わる」と聞いている。一方、帳票の見た目はここ3年変わっていない。',
   goal: salesReportGoal,
@@ -388,6 +396,8 @@ const volatileFormatStage: Stage = {
   id: 'intermediate-volatile-format',
   level: 'intermediate',
   title: '中級5: 変わるのは帳票の形式',
+  /** 100点になったときに見せる、この題材で分ける理由。 */
+  why: '出力形式を変えるたびに、データ取得や業務判断が混ざった処理を追うことになります。形式ごとの組み立てを分ければ、表示変更の影響を閉じ込められます。',
   description:
     '中級4とまったく同じ、ReportController から呼ばれる SalesReportService。ただし今回は、営業から「取引先ごとに帳票の形式(列の並び・PDF/CSV)を変えてほしいという依頼が毎月来る」と聞いている。税の計算はここ数年変わっていない。',
   goal: salesReportGoal,
@@ -409,6 +419,8 @@ const featureEnvyStage: Stage = {
   id: 'intermediate-feature-envy',
   level: 'intermediate',
   title: '中級6: 他人のデータばかり触るメソッド',
+  /** 100点になったときに見せる、この題材で分ける理由。 */
+  why: '契約内容を変えるたびに、契約データを持たないサービス側の処理を調べる必要があります。データを扱う側に振る舞いがまとまれば、変更先を見つけやすくなります。',
   description:
     'SaaS の月額課金を担当する BillingService。契約(Subscription)は public なフィールドを持つだけのクラスで、トライアル中かの判定も、席数と単価からの請求額の計算も、解約の手続きも、すべて BillingService が Subscription のフィールドを読んで行い、最後に subscription.status を外から書き換えている。しかも、キャンペーンで契約ごとに変わるようになったトライアル日数(trialDays)が、まだ BillingService のフィールドのまま残っている。',
   goal: 'データを持つクラスに仕事を頼もう(Tell, Don\'t Ask)。他クラスのフィールドばかり触る処理は Extract Method してからデータの持ち主へ移し、一緒に使うフィールドは Move Field で運ぼう。メソッドは60行以内、1クラスの責務は3種類まで、依存先は1クラスまで',
@@ -539,6 +551,8 @@ const anemicDomainModelStage: Stage = {
   id: 'intermediate-anemic-domain-model',
   level: 'intermediate',
   title: '中級7: getter/setter だけの口座クラス',
+  /** 100点になったときに見せる、この題材で分ける理由。 */
+  why: '注文ルールを変えると、データだけの注文クラスと判断を担うサービスの両方を行き来します。注文に関する判断がまとまれば、ルール変更の確認先を絞れます。',
   description:
     'ネット銀行の口座(Account)。フィールドはすべて private で、getBalance / setBalance のような getter と setter が並んでいるので、一見カプセル化できているように見える。' +
     'しかし、凍結中かどうかの確認も、残高と1日の引き出し上限のチェックも、残高の更新も、すべて AccountService が getter で値を取り出して判断し、setter で書き戻している。',
@@ -711,6 +725,8 @@ const extractClassStage: Stage = {
   id: 'intermediate-extract-class',
   level: 'intermediate',
   title: '中級8: 給与と住所を抱えた社員クラス',
+  /** 100点になったときに見せる、この題材で分ける理由。 */
+  why: '一つのクラスに別々の理由で変わる処理が集まると、片方の変更でも全体の長さや関連を気にします。まとまりを分ければ、それぞれの変更を独立して追えます。',
   description:
     '人事システムの社員(Employee)クラス。基本給・残業単価・振込口座を使う給与計算のメソッドと、郵便番号・都道府県・番地を使う住所のメソッドが同居している。' +
     '給与のメソッドは住所のフィールドを一切使わず、住所のメソッドも給与のフィールドを一切使わない。住所の書式を直すたびに、給与計算の入った大きなクラスを開くことになっている。',

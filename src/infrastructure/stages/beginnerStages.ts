@@ -5,6 +5,8 @@ const userControllerStage: Stage = {
   id: 'beginner-user-controller',
   level: 'beginner',
   title: '初級1: 何でも屋の UserController',
+  /** 100点になったときに見せる、この題材で分ける理由。 */
+  why: 'メールの案内を変えるだけでも、ユーザー登録や削除の処理に埋もれた送信箇所を探す必要があります。通知をまとめれば、メールの変更を通知処理に集められます。',
   description:
     'Web APIでユーザー登録・削除のリクエストを受ける UserController。本来の仕事はリクエストの検証とレスポンスの組み立てなのに、DBへの保存・削除やメール送信まで自分でやっている。',
   goal: 'メソッドは50行・クラスは150行以内、1クラスの責務は1種類まで。DBとメールの処理は UserRepository と Mailer に任せよう',
@@ -70,6 +72,8 @@ const invoiceServiceStage: Stage = {
   id: 'beginner-invoice-service',
   level: 'beginner',
   title: '初級2: クラスを自分で作る',
+  /** 100点になったときに見せる、この題材で分ける理由。 */
+  why: 'PDFの見た目を変えるだけなのに、金額計算や保存、送信まで抱えた請求処理を追うことになります。描画の役割が分かれていれば、レイアウト変更の確認先を絞れます。',
   description:
     '請求書を作って送る InvoiceService。金額の計算・PDFの描画・ストレージへの保存・メール送信・送信履歴の記録を1クラスで抱えている。今回は受け皿のクラスが用意されていない。',
   goal: 'メソッドは50行、クラスは150行以内、1クラスの責務は2種類まで。「クラスを追加」で受け皿を作ろう',

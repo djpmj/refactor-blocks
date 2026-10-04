@@ -5,6 +5,8 @@ const extractMethodStage: Stage = {
   id: 'tutorial-extract-method',
   level: 'tutorial',
   title: 'チュートリアル1: 長いメソッドを分ける',
+  /** 100点になったときに見せる、この題材で分ける理由。 */
+  why: '前年同月比や表の列を変えるたびに、集計から出力まで続く長い処理を読み直すことになります。集計と表示を分ければ、数字や見せ方の変更箇所を追いやすくなります。',
   description:
     '月次の売上レポートを画面に出す ReportService。売上の集計・前月比の計算・表の組み立て・出力が、1つのメソッド printMonthlyReport に上から順に書かれている。',
   goal: 'メソッドは50行以内に。メソッドをクリックし、まとまった処理を選んで「メソッドとして抽出」しよう',
@@ -50,6 +52,8 @@ const orderServiceStage: Stage = {
   id: 'tutorial-order-service',
   level: 'tutorial',
   title: 'チュートリアル2: 太った placeOrder',
+  /** 100点になったときに見せる、この題材で分ける理由。 */
+  why: '税率やメール文面の変更が注文の検証や保存処理に紛れ、関係ない手順まで確認することになります。役割ごとに置き場所が分かれていれば、変更する理由のある処理を探せます。',
   description:
     'ネットショップの注文を受け付ける OrderService。placeOrder の中に、入力と在庫の検証・小計と消費税(軽減税率あり)の計算・DBへの保存・確認メールの送信が全部入っている。税の計算を担当する TaxCalculator は用意されているが、まだ空っぽ。',
   goal: 'メソッドは40行以内に。税の計算は抽出してから TaxCalculator へドラッグで移そう',
