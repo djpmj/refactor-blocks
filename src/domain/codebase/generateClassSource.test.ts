@@ -12,13 +12,14 @@ describe('generateClassSource', () => {
     const source = generateClassSource(codebase, 'c', 'csharp');
     // Assert
     const classIndex = source.indexOf('public class Report');
-    const methodIndex = source.indexOf('public void run() {');
+    const methodIndex = source.indexOf('public void run()');
     const firstFragmentIndex = source.indexOf('var x = 1;');
     const secondFragmentIndex = source.indexOf('print(x);');
     expect(classIndex).toBeGreaterThanOrEqual(0);
     expect(methodIndex).toBeGreaterThan(classIndex);
     expect(firstFragmentIndex).toBeGreaterThan(methodIndex);
     expect(secondFragmentIndex).toBeGreaterThan(firstFragmentIndex);
+    expect(source).toContain('    public void run()\n    {');
   });
 
   it('renders a placeholder only where fragment code is missing', () => {
@@ -143,6 +144,32 @@ describe('generateClassSource', () => {
     // Assert
     expect(source).toContain('    // 未入力: フィールド value');
     expect(source).not.toContain('object');
+  });
+
+  it('separates fields from methods and methods from each other by one blank line', () => {
+    // Arrange
+    const codebase: Codebase = { files: [{ id: 'f', path: 'x', classes: [{ id: 'c', name: 'Thing', fields: [
+      { id: 'field', name: 'value', visibility: 'private', type: { csharp: 'object' } },
+    ], methods: [
+      { id: 'first', name: 'first', visibility: 'public', fragments: [{ id: 'a', label: 'a', lines: 1, responsibility: 'x', code: { csharp: 'firstWork();' } }] },
+      { id: 'second', name: 'second', visibility: 'private', fragments: [{ id: 'b', label: 'b', lines: 1, responsibility: 'x', code: { csharp: 'secondWork();' } }] },
+    ] }] }] };
+    // Act
+    const source = generateClassSource(codebase, 'c', 'csharp');
+    // Assert
+    expect(source).toContain('private object value;\n\n    public void first()\n    {');
+    expect(source).toContain('    }\n\n    private void second()\n    {');
+  });
+
+  it('does not add blank lines around a single method without fields', () => {
+    // Arrange
+    const codebase: Codebase = { files: [{ id: 'f', path: 'x', classes: [{ id: 'c', name: 'Thing', methods: [
+      { id: 'run', name: 'run', visibility: 'public', fragments: [{ id: 'a', label: 'a', lines: 1, responsibility: 'x', code: { csharp: 'work();' } }] },
+    ] }] }] };
+    // Act
+    const source = generateClassSource(codebase, 'c', 'csharp');
+    // Assert
+    expect(source).toBe('public class Thing\n{\n    public void run()\n    {\n        work();\n    }\n}');
   });
 
   it('renders the superclass and interfaces in order and ignores missing parent IDs', () => {
