@@ -46,3 +46,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [visibility-select-by-stage](visibility-select-by-stage.md) | 可視性の選択欄は可視性が課題に関係するステージと白紙設計だけに出す |
 | [hide-file-names](hide-file-names.md) | ファイル名を画面に表示せず、入力も求めずに自動追加する |
 | [inheritance-arrow-clarity](inheritance-arrow-clarity.md) | 継承・実装の矢印を白抜き三角にし、同じ親へ集まる矢印の着地点をずらす |
+| [extends-implements-edge-colors](extends-implements-edge-colors.md) | 継承(extends)と実装(implements)の矢印を色と線種で分ける |
