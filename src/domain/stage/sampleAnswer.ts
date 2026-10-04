@@ -329,6 +329,17 @@ export const sampleAnswerSteps: Partial<Record<string, readonly SolutionStep[]>>
     { merge: { methodA: 'calculateTax', methodB: 'calculateQuoteTax', name: 'calculateTax' } },
     { move: { method: 'calculateTax', toClass: 'TaxCalculator' } },
   ],
+  'intermediate-layered-order-api': [
+    // 業務ルールと保存をまとめて抜き出し、その中から保存だけをさらに抜き出す。Controller → Service → Repository の順に呼ぶ形になる。
+    { extract: { from: 'placeOrder', fragmentIds: ['frag-place-stock', 'frag-place-price', 'frag-place-save'], name: 'processOrder' } },
+    { extract: { from: 'processOrder', fragmentIds: ['frag-place-save'], name: 'saveOrder' } },
+    { extract: { from: 'cancelOrder', fragmentIds: ['frag-cancel-rule', 'frag-cancel-save'], name: 'processCancel' } },
+    { extract: { from: 'processCancel', fragmentIds: ['frag-cancel-save'], name: 'saveCancellation' } },
+    { move: { method: 'saveOrder', toClass: 'OrderRepository' } },
+    { move: { method: 'saveCancellation', toClass: 'OrderRepository' } },
+    { move: { method: 'processOrder', toClass: 'OrderService' } },
+    { move: { method: 'processCancel', toClass: 'OrderService' } },
+  ],
   'advanced-interface-segregation': [
     { renameClass: { name: 'CollaborationTool', newName: 'ChatClient' } },
     { addFile: 'src/integration/TaskTracker.ts' },

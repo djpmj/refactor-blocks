@@ -1278,6 +1278,118 @@ const memberRankBranchingStage: Stage = {
   },
 };
 
+/**
+ * 中級11: OrderController に、リクエストの検証(http)・在庫と金額のルール(order-rule)・DB保存(persistence)が同居している。
+ * Controller → Service → Repository の一方通行に分ける。保存だけを Repository へ移して Controller から直接呼ぶと、層を飛ばして減点される。
+ * 層はファイルのパスではなく、処理の責務から決める。既存の操作(Extract Method / Move Method)だけで解ける。
+ */
+const layeredOrderApiStage: Stage = {
+  id: 'intermediate-layered-order-api',
+  level: 'intermediate',
+  title: '中級11: Controller に全部書いてある注文API',
+  learns: ['層(Controller/Service/Repository)', '依存の向き'],
+  checks: [
+    {
+      id: 'check-1',
+      question: 'Controller から Repository を直接呼ぶ形が、避けたほうがよいと言われるのはなぜ?',
+      choices: [
+        { text: 'Controller が保存の細かい事情を知ることになり、業務ルールを挟む場所もなくなるから', explanation: '正解です。間に Service がないと、ルールが Controller に染み出し、保存の変更も受け口に響きます。' },
+        { text: 'Repository のメソッドは Controller から呼べない決まりだから', explanation: '技術的には呼べます。問題は、層の役割が崩れて変更が広がることです。' },
+        { text: 'クラスの数が増えて遅くなるから', explanation: '層の分け方は速度の話ではなく、変更しやすさの話です。' },
+      ],
+      answer: 0,
+    },
+    {
+      id: 'check-2',
+      question: '「保存先をDBから外部APIに変える」とき、層が分かれていると何が嬉しい?',
+      choices: [
+        { text: 'どの層も、全部同時に直せば済む', explanation: '全部を同時に直す必要がある状態が、分けていないコードの困りごとです。' },
+        { text: 'Controller と Service を直さずに、Repository だけを直せばよい', explanation: '正解です。下の層の事情は、1つ上の層までしか知られていないので、変更が閉じ込められます。' },
+        { text: 'Repository は変更しなくてよくなる', explanation: '保存先の変更は、まさに Repository が受け持つ変更です。' },
+      ],
+      answer: 1,
+    },
+    {
+      id: 'check-3',
+      question: 'Repository が Service のメソッドを呼ぶ(下から上を呼ぶ)形の問題は?',
+      choices: [
+        { text: '呼び出しが1回増えるだけで、問題はない', explanation: '回数ではなく、依存の向きが問題です。' },
+        { text: 'Service が private になってしまう', explanation: '可視性とは関係がありません。' },
+        { text: '上の層を変えると下の層まで壊れ、層を別々に変えられなくなる', explanation: '正解です。依存は上から下への一方通行にすると、下の層を単独でテストしたり差し替えたりできます。' },
+      ],
+      answer: 2,
+    },
+  ],
+  /** 100点になったときに見せる、この題材で分ける理由。 */
+  why: '保存先の変更や送料のルール変更のたびに、Controller の長いメソッドを読み解いて直すことになります。層ごとに分けると、保存先の変更は Repository だけ、ルールの変更は Service だけで済みます。',
+  description:
+    '注文APIの OrderController。placeOrder(注文する)と cancelOrder(キャンセルする)の中に、リクエストの検証・レスポンスの組み立て(http)、' +
+    '在庫の確認や金額の計算などの業務ルール(order-rule)、注文や在庫のDB保存(persistence)がすべて書かれている。' +
+    '空のクラス OrderService と OrderRepository は用意されているが、まだ使われていない。',
+  goal: 'Controller に何でも書いてあります。業務ルールは OrderService へ、保存は OrderRepository へ移し、Controller → Service → Repository の一方通行にしよう。Controller から Repository を直接呼ぶのは層を飛ばす形。メソッドは50行以内、1クラスの責務は1種類まで',
+  limits: { method: 50, class: 100, file: 300 },
+  dependencyLimit: 1,
+  responsibilityLimit: 1,
+  layers: [
+    { name: 'Controller', responsibilities: ['http'] },
+    { name: 'Service', responsibilities: ['order-rule'] },
+    { name: 'Repository', responsibilities: ['persistence'] },
+  ],
+  changeRequests: [
+    { id: 'req-external-storage', title: '保存先をDBから外部APIに変えて', description: '注文の保存先を、自社DBから外部の注文管理APIに切り替えることになった。', responsibility: 'persistence', linesPerSite: 10, partName: 'switchToExternalApi' },
+    { id: 'req-free-shipping', title: '送料無料の条件を変えて', description: '送料無料になる条件を、合計5,000円以上から3,000円以上に下げたい。', responsibility: 'order-rule', linesPerSite: 6, partName: 'reviseFreeShippingRule' },
+  ],
+  codebase: {
+    files: [
+      {
+        id: 'file-order-controller',
+        path: 'src/order/OrderController.ts',
+        classes: [
+          {
+            id: 'class-order-controller',
+            name: 'OrderController',
+            methods: [
+              {
+                id: 'method-place-order',
+                name: 'placeOrder',
+                visibility: 'public',
+                fragments: [
+                  { id: 'frag-place-parse', label: 'リクエストを検証する', lines: 14, responsibility: 'http', suggestedName: 'parsePlaceRequest' },
+                  { id: 'frag-place-stock', label: '在庫を確認する', lines: 18, responsibility: 'order-rule', suggestedName: 'checkStock' },
+                  { id: 'frag-place-price', label: '送料込みの金額を計算する', lines: 22, responsibility: 'order-rule', suggestedName: 'calculateTotal' },
+                  { id: 'frag-place-save', label: '注文を保存して在庫を減らす', lines: 18, responsibility: 'persistence', suggestedName: 'saveOrder' },
+                  { id: 'frag-place-respond', label: 'レスポンスを組み立てる', lines: 14, responsibility: 'http', suggestedName: 'buildPlaceResponse' },
+                ],
+              },
+              {
+                id: 'method-cancel-order',
+                name: 'cancelOrder',
+                visibility: 'public',
+                fragments: [
+                  { id: 'frag-cancel-parse', label: 'リクエストを検証する', lines: 10, responsibility: 'http', suggestedName: 'parseCancelRequest' },
+                  { id: 'frag-cancel-rule', label: 'キャンセルできるか判定し、返金額を計算する', lines: 20, responsibility: 'order-rule', suggestedName: 'judgeCancel' },
+                  { id: 'frag-cancel-save', label: 'キャンセルを保存して在庫を戻す', lines: 18, responsibility: 'persistence', suggestedName: 'saveCancellation' },
+                  { id: 'frag-cancel-respond', label: 'レスポンスを組み立てる', lines: 10, responsibility: 'http', suggestedName: 'buildCancelResponse' },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'file-order-service',
+        path: 'src/order/OrderService.ts',
+        classes: [{ id: 'class-order-service', name: 'OrderService', methods: [] }],
+      },
+      {
+        id: 'file-order-repository',
+        path: 'src/order/OrderRepository.ts',
+        classes: [{ id: 'class-order-repository', name: 'OrderRepository', methods: [] }],
+      },
+    ],
+  },
+};
+
 export const intermediateStages: readonly Stage[] = [
   cyclicDependencyStage,
   godFileStage,
@@ -1289,4 +1401,5 @@ export const intermediateStages: readonly Stage[] = [
   extractClassStage,
   copyPasteTaxStage,
   memberRankBranchingStage,
+  layeredOrderApiStage,
 ];

@@ -6,6 +6,7 @@ import { findEncapsulationViolations, findFeatureEnvy, findOpenSetters } from '.
 import { findContractViolations, findStubMethods } from './interfaceContracts';
 import { findEmptyContainers, findUnusedPrivateMethods } from './leftovers';
 import { findLineLimitViolations } from './lineLimits';
+import { findLayerViolations } from './layers';
 import { findLoneSuperclasses } from './loneSuperclass';
 import { findResponsibilityViolations } from './responsibilities';
 import { findThinClasses, findTrivialMethods } from './overExtraction';
@@ -26,7 +27,8 @@ export type ScoreRule =
   | 'encapsulation'
   | 'cohesion'
   | 'trivial-method'
-  | 'thin-class';
+  | 'thin-class'
+  | 'layer';
 
 export type ScoreDeduction = {
   readonly rule: ScoreRule;
@@ -51,11 +53,11 @@ export function findCouplingViolations(dependencies: readonly ClassDependency[],
 
 /**
  * 行数・結合度・循環依存・責務の混在・アクセス制御・空の入れ物・使われていないprivateメソッド・子が1つだけの継承・
- * 空実装・インターフェースの約束違反・Feature Envy・カプセル化の破れ・凝集度の違反1件につき10点を100点から引く。0点より下にはしない。
+ * 空実装・インターフェースの約束違反・Feature Envy・カプセル化の破れ・凝集度・層の依存の向きの違反1件につき10点を100点から引く。0点より下にはしない。
  */
 export function scoreCodebase(
   codebase: Codebase,
-  stage: Pick<Stage, 'limits' | 'dependencyLimit' | 'responsibilityLimit' | 'visibilityEnforced'>,
+  stage: Pick<Stage, 'limits' | 'dependencyLimit' | 'responsibilityLimit' | 'visibilityEnforced' | 'layers'>,
 ): Score {
   const dependencies = classDependencies(codebase);
   const counts: Record<ScoreRule, number> = {
@@ -74,6 +76,7 @@ export function scoreCodebase(
     cohesion: findLowCohesionClasses(codebase).length,
     'trivial-method': findTrivialMethods(codebase).length,
     'thin-class': findThinClasses(codebase).length,
+    layer: findLayerViolations(codebase, stage.layers).length,
   };
   const deductions = (
     [
@@ -92,6 +95,7 @@ export function scoreCodebase(
       'cohesion',
       'trivial-method',
       'thin-class',
+      'layer',
     ] as const
   ).map((rule): ScoreDeduction => ({ rule, count: counts[rule], points: counts[rule] * POINTS_PER_VIOLATION }));
   const deducted = deductions.reduce((sum, deduction) => sum + deduction.points, 0);

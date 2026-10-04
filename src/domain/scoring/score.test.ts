@@ -88,6 +88,7 @@ describe('scoreCodebase', () => {
         { rule: 'cohesion', count: 0, points: 0 },
         { rule: 'trivial-method', count: 0, points: 0 },
         { rule: 'thin-class', count: 0, points: 0 },
+        { rule: 'layer', count: 0, points: 0 },
       ],
     });
   });
@@ -497,9 +498,34 @@ describe('scoreCodebase', () => {
 
     // Assert
     expect(score.total).toBe(80);
-    expect(score.deductions.slice(-2)).toEqual([
+    expect(score.deductions.slice(-3, -1)).toEqual([
       { rule: 'trivial-method', count: 1, points: 10 },
       { rule: 'thin-class', count: 1, points: 10 },
     ]);
+  });
+
+  it('layers があるステージで層を飛ばす依存が1件なら、layer を10点減点する', () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [{ id: 'file', path: 'src/all.ts', classes: [
+        { id: 'class-c', name: 'C', methods: [{ id: 'method-c', name: 'run', visibility: 'public',
+          fragments: [{ id: 'f-c', label: 'c', lines: 1, responsibility: 'http', uses: ['method-r'] }] }] },
+        { id: 'class-r', name: 'R', methods: [{ id: 'method-r', name: 'save', visibility: 'public',
+          fragments: [{ id: 'f-r', label: 'r', lines: 1, responsibility: 'persistence' }] }] },
+      ] }],
+    };
+    const layers = [
+      { name: 'Controller', responsibilities: ['http'] },
+      { name: 'Service', responsibilities: ['rule'] },
+      { name: 'Repository', responsibilities: ['persistence'] },
+    ];
+
+    // Act
+    const withLayers = scoreCodebase(codebase, { ...LOOSE, dependencyLimit: 5, layers });
+    const withoutLayers = scoreCodebase(codebase, { ...LOOSE, dependencyLimit: 5 });
+
+    // Assert
+    expect(withLayers.deductions.at(-1)).toEqual({ rule: 'layer', count: 1, points: 10 });
+    expect(withLayers.total).toBe(withoutLayers.total - 10);
   });
 });

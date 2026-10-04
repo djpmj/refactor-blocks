@@ -138,6 +138,7 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .cyclic-mark { font-size: 14px; margin-right: 6px; }
 .class-node__header { display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid var(--border); font-weight: 700; }
 .class-node__name-group { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.class-node__layer { font-size: 11px; font-weight: 600; padding: 1px 6px; border: 1px solid var(--border); border-radius: 8px; margin-left: 6px; }
 .class-node__superclass { font-weight: 400; font-size: 12px; }
 .class-node__relation--extends { color: var(--edge-extends); }
 .class-node__relation--implements { color: var(--edge-implements); }
