@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useGameStoreApi } from './store/useGameStore';
 
 /** 入力欄・選択欄では、ブラウザ標準の文字の取り消しを優先する。 */
-function isEditingText(target: EventTarget | null): boolean {
+export function isEditingText(target: EventTarget | null): boolean {
   return target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
 }
 

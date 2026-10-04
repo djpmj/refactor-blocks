@@ -19,7 +19,7 @@ function RefactorView({ active }: Readonly<{ active: boolean }>) {
   const { width, handleProps } = useResizableSidebarWidth();
   useUndoRedoShortcut(active);
   return (
-    <StagePanel>
+    <StagePanel active={active}>
       <main className="app__body">
         <section className="app__canvas" aria-label="コードベース">
           <CodebaseCanvas active={active} />
