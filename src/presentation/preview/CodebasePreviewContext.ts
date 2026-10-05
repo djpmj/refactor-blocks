@@ -1,7 +1,12 @@
 import { createContext, useContext } from 'react';
 import type { Codebase } from '../../domain/codebase/Codebase';
 
-export type CodebasePreviewValue = { readonly codebase: Codebase; readonly methodLimit: number };
+export type CodebasePreviewValue = {
+  readonly codebase: Codebase;
+  readonly methodLimit: number;
+  readonly selectedMethodId?: string | null;
+  readonly onSelectMethod?: (methodId: string) => void;
+};
 
 /** プレビュー用のノードは store ではなくここから Codebase・行数上限を読む。 */
 const CodebasePreviewContext = createContext<CodebasePreviewValue | null>(null);

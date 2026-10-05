@@ -3,6 +3,7 @@ import { scoreCodebase } from '../../domain/scoring/score';
 import { solutionSnapshots, type SolutionStep } from '../../domain/stage/sampleAnswer';
 import type { Stage } from '../../domain/stage/Stage';
 import { CodebasePreviewCanvas } from '../preview/CodebasePreviewCanvas';
+import { ReplayMethodPanel } from './ReplayMethodPanel';
 import { describeSolutionStep } from './describeSolutionStep';
 
 const TITLE_ID = 'sample-replay-title';
@@ -18,6 +19,8 @@ type SampleAnswerReplayDialogProps = {
 export function SampleAnswerReplayDialog({ stage, steps, onClose }: SampleAnswerReplayDialogProps) {
   const ref = useRef<HTMLDialogElement>(null);
   const [position, setPosition] = useState(0);
+  const [maximized, setMaximized] = useState(false);
+  const [selectedMethodId, setSelectedMethodId] = useState<string | null>(null);
   const snapshots = useMemo(() => solutionSnapshots(stage.codebase, steps), [stage, steps]);
   const totals = useMemo(() => snapshots.map((snapshot) => scoreCodebase(snapshot, stage).total), [snapshots, stage]);
   useEffect(() => {
@@ -39,11 +42,14 @@ export function SampleAnswerReplayDialog({ stage, steps, onClose }: SampleAnswer
   const gain = position > 0 ? total - totals[position - 1] : 0;
   const description = position === 0 ? INITIAL_DESCRIPTION : describeSolutionStep(stage.codebase, steps[position - 1]);
   return (
-    <dialog ref={ref} className="codebase-preview sample-replay" aria-labelledby={TITLE_ID} onClose={onClose} data-testid="sample-replay">
+    <dialog ref={ref} className={`codebase-preview sample-replay${maximized ? ' sample-replay--maximized' : ''}`} aria-labelledby={TITLE_ID} onClose={onClose} data-testid="sample-replay">
       <div className="codebase-preview__header">
         <h2 className="codebase-preview__title" id={TITLE_ID}>
           解答の再生
         </h2>
+        <button type="button" data-testid="sample-replay-maximize" aria-pressed={maximized} aria-label={maximized ? '元のサイズに戻す' : '最大化'} onClick={() => setMaximized((current) => !current)}>
+          {maximized ? '縮小' : '最大化'}
+        </button>
         <button type="button" onClick={onClose} aria-label="閉じる">
           ✕
         </button>
@@ -60,8 +66,11 @@ export function SampleAnswerReplayDialog({ stage, steps, onClose }: SampleAnswer
         {description}
       </p>
       {total >= 100 && <p className="sample-replay__perfect">ここまでで100点です</p>}
-      <div className="codebase-preview__canvas">
-        <CodebasePreviewCanvas codebase={snapshots[position]} methodLimit={stage.limits.method} />
+      <div className="sample-replay__body">
+        <div className="codebase-preview__canvas">
+          <CodebasePreviewCanvas codebase={snapshots[position]} methodLimit={stage.limits.method} selectedMethodId={selectedMethodId} onSelectMethod={setSelectedMethodId} />
+        </div>
+        {selectedMethodId === null ? null : <ReplayMethodPanel key={selectedMethodId} codebase={snapshots[position]} methodId={selectedMethodId} />}
       </div>
       <ReplayControls position={position} last={last} goTo={goTo} />
     </dialog>

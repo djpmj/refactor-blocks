@@ -17,17 +17,19 @@ type CodebasePreviewCanvasProps = {
   readonly methodLimit: number;
   /** false にすると、ホイールでズームせずページのスクロールに任せる(スクロールするページの中に置くとき用)。 */
   readonly wheelZoom?: boolean;
+  readonly selectedMethodId?: string | null;
+  readonly onSelectMethod?: (methodId: string) => void;
 };
 
 /** コードベースを読み取り専用で描くキャンバス。「解答例の図」と設計くらべで使う。 */
-export function CodebasePreviewCanvas({ codebase, methodLimit, wheelZoom = true }: CodebasePreviewCanvasProps) {
+export function CodebasePreviewCanvas({ codebase, methodLimit, wheelZoom = true, selectedMethodId, onSelectMethod }: CodebasePreviewCanvasProps) {
   const nodes = useMemo(() => layoutCodebase(codebase), [codebase]);
   const edges = useMemo(() => {
     const fileRects = fileRectsFromNodes(nodes);
     return [...dependencyEdges(codebase, fileRects), ...inheritanceEdges(codebase, fileRects)];
   }, [codebase, nodes]);
   return (
-    <CodebasePreviewProvider value={{ codebase, methodLimit }}>
+    <CodebasePreviewProvider value={{ codebase, methodLimit, selectedMethodId, onSelectMethod }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
