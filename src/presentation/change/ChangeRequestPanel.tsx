@@ -5,7 +5,7 @@ import { changePart, isChangePartPlaced } from '../../domain/change/changePart';
 import type { SampleImplementation } from '../../domain/change/sampleImplementation';
 import { averageScore, type ChangeAssessment } from '../../domain/change/scoreChange';
 import { findClassOfMethod, findMethod, type Codebase, type Method } from '../../domain/codebase/Codebase';
-import { methodLines } from '../../domain/codebase/lineCount';
+import { fragmentLines, methodLines } from '../../domain/codebase/lineCount';
 import { CodebasePreviewDialog } from '../preview/CodebasePreviewDialog';
 import { useGameStore } from '../store/useGameStore';
 import { describeDeductions, describePlacement, siteNames } from './describeChange';
@@ -116,7 +116,7 @@ function MethodContents({ method, codebase }: Readonly<{ method: Method; codebas
       <ul className="change-inspect__fragments">
         {method.fragments.map((fragment) => (
           <li key={fragment.id}>
-            {fragment.label}({fragment.lines}行)
+            {fragment.label}({fragmentLines(fragment)}行)
           </li>
         ))}
       </ul>

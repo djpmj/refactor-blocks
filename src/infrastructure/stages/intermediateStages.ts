@@ -435,12 +435,12 @@ const salesReportCodebase: Stage['codebase'] = {
 
 /** 中級4・中級5で共通の数値。依存1本・責務2種類なので、税と整形のうち片方だけを別クラスへ出すことになる。 */
 const salesReportRules = {
-  limits: { method: 60, class: 150, file: 300 },
+  limits: { method: 61, class: 156, file: 300 },
   dependencyLimit: 1,
   responsibilityLimit: 2,
 } satisfies Pick<Stage, 'limits' | 'dependencyLimit' | 'responsibilityLimit'>;
 
-const salesReportGoal = 'メソッドは60行・クラスは150行以内、1クラスの責務は2種類まで、依存先は1クラスまで。よく変わる所を1つのクラスに閉じ込めよう';
+const salesReportGoal = 'メソッドは61行・クラスは156行以内、1クラスの責務は2種類まで、依存先は1クラスまで。よく変わる所を1つのクラスに閉じ込めよう';
 
 /** 中級4: 税の計算がよく変わる。税の計算を別クラスへ出すのが正解。 */
 const volatileTaxStage: Stage = {

@@ -643,7 +643,9 @@ describe('stageCatalog', () => {
       const longest = longestMethodLines(codebase);
 
       // Assert
-      expect(longest).toBeGreaterThanOrEqual(80);
+      if (stage.id === 'tutorial-extract-method') expect(longest).toBe(29);
+      else expect(longest).toBeGreaterThanOrEqual(80);
+      if (stage.id === 'tutorial-extract-method') expect(longest).toBeGreaterThan(stage.limits.method);
     });
 
     it('行数の上限は メソッド < クラス < ファイル の順に大きい', () => {

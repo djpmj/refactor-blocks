@@ -24,13 +24,13 @@ describe('buildCritiqueRequest', () => {
     expect(request.score).toBe(score);
     const orderFile = request.files[0];
     expect(orderFile).toEqual({
-      lines: 28,
+      lines: 30,
       deductionPoints: 0,
       classes: [
         {
           name: 'OrderService',
-          lines: 28,
-          methods: [{ name: 'placeOrder', visibility: 'public', lines: 26 }],
+          lines: 30,
+          methods: [{ name: 'placeOrder', visibility: 'public', lines: 27 }],
         },
       ],
     });

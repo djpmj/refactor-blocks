@@ -64,7 +64,7 @@ describe('stageReportRows', () => {
       files: 1,
       classes: 1,
       methods: 2,
-      longestMethodLines: 32,
+      longestMethodLines: 33,
       modifyRequests: 2,
       extendRequests: 1,
     });
@@ -269,8 +269,8 @@ describe('renderStageReport', () => {
     // Assert
     expect(header).toBe('| ステージ | レベル | 初期点 | 主な減点 | 手数 | 使う操作 | 規模 | 最長メソッド | 依頼 | 注意 |');
     expect(bodyRows).toEqual([
-      '| A \\| B | 初級 | 70 | 行数 -30 | 1 | 移動 | 1ファイル / 1クラス / 3メソッド | 32 | ルール変更 1 / 機能追加 0 |  |',
-      '| b | 上級 | 70 | 行数 -30 | 2 | 移動 | 1ファイル / 1クラス / 3メソッド | 32 | ルール変更 1 / 機能追加 0 |  |',
+      '| A \\| B | 初級 | 70 | 行数 -30 | 1 | 移動 | 1ファイル / 1クラス / 3メソッド | 33 | ルール変更 1 / 機能追加 0 |  |',
+      '| b | 上級 | 70 | 行数 -30 | 2 | 移動 | 1ファイル / 1クラス / 3メソッド | 33 | ルール変更 1 / 機能追加 0 |  |',
     ]);
   });
 
