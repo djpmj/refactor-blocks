@@ -1,4 +1,5 @@
 import { allClasses, isAccessorMethod, isStubMethod, type Codebase } from '../codebase/Codebase';
+import { fragmentLines } from '../codebase/lineCount';
 import { CALL_RESPONSIBILITY } from './responsibilities';
 
 export const TRIVIAL_METHOD_MAX_LINES = 2;
@@ -7,7 +8,7 @@ export const TRIVIAL_METHOD_MAX_LINES = 2;
 export function findTrivialMethods(codebase: Codebase): string[] {
   return allClasses(codebase).flatMap((codeClass) => codeClass.methods)
     .filter((method) => {
-      const lines = method.fragments.reduce((total, fragment) => total + fragment.lines, 0);
+      const lines = method.fragments.reduce((total, fragment) => total + fragmentLines(fragment), 0);
       return method.fragments.length > 0
         && !isStubMethod(method)
         && !isAccessorMethod(method)

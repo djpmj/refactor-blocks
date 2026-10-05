@@ -924,8 +924,8 @@ const valueObjectStage: Stage = {
     '「金額が0より大きく対応している通貨か」「同じ通貨どうしで合計する」「通貨ごとの小数桁で表示する」を、それぞれコピペで持っている。',
   goal:
     '金額と通貨をひとまとまりの値(Money)として扱おう。コピペされた処理は抽出して統合(Merge Methods)し、amount・currency と一緒に新しい Money クラスへ移す。' +
-    'Money は自分で自分を検証し、足し算や表示も自分でする(値オブジェクト)。Expense に直接入れるのではなく、別のクラスにしよう。メソッドは50行・クラスは65行以内、1クラスの責務は3種類まで、依存先は2クラスまで',
-  limits: { method: 50, class: 65, file: 300 },
+    'Money は自分で自分を検証し、足し算や表示も自分でする(値オブジェクト)。Expense に直接入れるのではなく、別のクラスにしよう。メソッドは51行・クラスは65行以内、1クラスの責務は3種類まで、依存先は2クラスまで',
+  limits: { method: 51, class: 65, file: 300 },
   dependencyLimit: 2,
   responsibilityLimit: 3,
   changeRequests: [

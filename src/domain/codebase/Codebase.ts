@@ -12,8 +12,9 @@ export type CodeLanguage = 'csharp';
 export type Fragment = {
   readonly id: string;
   readonly label: string;
-  /** ソースコード表示用。ゲーム上の行数とは独立して扱う。 */
+  /** ソースコード表示用。csharp の行数はここから計算する。 */
   readonly code?: Partial<Record<CodeLanguage, string>>;
+  /** コードを持たないFragmentの行数。csharp のコードがあれば表示・採点にはコード行数を使う。 */
   readonly lines: number;
   readonly responsibility: string;
   readonly uses?: readonly string[];

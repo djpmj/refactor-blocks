@@ -41,7 +41,7 @@ describe('extractMethod', () => {
     if (!result.ok) throw new Error(result.error);
     const source = findMethod(result.value, 'method-place');
     expect(source?.fragments.map((fragment) => fragment.id)).toEqual(['f-validate', 'method-tax:call', 'f-save']);
-    expect(source === undefined ? 0 : methodLines(source)).toBe(10 + 1 + 6 + 2);
+    expect(source === undefined ? 0 : methodLines(source)).toBe(10 + 1 + 6 + 3);
   });
 
   it('呼び出し行は抽出した新メソッドを uses に持つ', () => {

@@ -14,7 +14,7 @@ import {
 } from '../../domain/codebase/Codebase';
 import { changeVisibilityUseCase } from '../../application/RefactorUseCases';
 import { findMergeCandidates, type MergeCandidate } from '../../domain/codebase/mergeMethods';
-import { methodLines } from '../../domain/codebase/lineCount';
+import { fragmentLines, methodLines } from '../../domain/codebase/lineCount';
 import { suggestMethodName } from '../../domain/codebase/suggestMethodName';
 import { showsVisibilityControl } from '../../domain/stage/showsVisibilityControl';
 import { ChangeMemo } from '../change/ChangeMemo';
@@ -81,7 +81,7 @@ function FragmentList({
               }}
             />
             <span className="fragment-list__label">{fragment.label}</span>
-            <span className="fragment-list__lines">{fragment.lines}行</span>
+            <span className="fragment-list__lines">{fragmentLines(fragment)}行</span>
           </label>
           <FragmentFieldRefs codebase={codebase} fragment={fragment} />
         </li>

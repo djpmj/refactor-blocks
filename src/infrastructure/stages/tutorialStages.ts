@@ -32,8 +32,8 @@ const extractMethodStage: Stage = {
   why: '前年同月比や表の列を変えるたびに、集計から出力まで続く長い処理を読み直すことになります。集計と表示を分ければ、数字や見せ方の変更箇所を追いやすくなります。',
   description:
     '月次の売上レポートを画面に出す ReportService。売上の集計・前月比の計算・表の組み立て・出力が、1つのメソッド printMonthlyReport に上から順に書かれている。',
-  goal: 'メソッドは50行以内に。メソッドをクリックし、まとまった処理を選んで「メソッドとして抽出」しよう',
-  limits: { method: 50, class: 200, file: 300 },
+  goal: 'メソッドは20行以内に。メソッドをクリックし、まとまった処理を選んで「メソッドとして抽出」しよう',
+  limits: { method: 20, class: 200, file: 300 },
   dependencyLimit: 2,
   responsibilityLimit: 3,
   changeRequests: [
@@ -55,11 +55,11 @@ const extractMethodStage: Stage = {
                 name: 'printMonthlyReport',
                 visibility: 'public',
                 fragments: [
-                  { id: 'frag-aggregate-sales', label: '今月の売上を集計する', lines: 22, responsibility: 'aggregation', suggestedName: 'aggregateSales', code: { csharp: 'var monthlySales = sales\n    .Where(s => s.Month == currentMonth)\n    .Sum(s => s.Amount);\n\nvar transactionCount = sales\n    .Count(s => s.Month == currentMonth);' } },
-                  { id: 'frag-compare-last-month', label: '前月比を計算する', lines: 16, responsibility: 'aggregation', suggestedName: 'compareWithLastMonth', code: { csharp: 'var lastMonthSales = sales\n    .Where(s => s.Month == previousMonth)\n    .Sum(s => s.Amount);\n\nvar changeRate = lastMonthSales == 0\n    ? 0\n    : (monthlySales - lastMonthSales) / lastMonthSales;' } },
-                  { id: 'frag-table-header', label: '表のヘッダーを組み立てる', lines: 14, responsibility: 'formatting', suggestedName: 'buildTableHeader', code: { csharp: 'var header = "商品名 | 数量 | 売上";' } },
-                  { id: 'frag-table-rows', label: '表の行を組み立てる', lines: 24, responsibility: 'formatting', suggestedName: 'buildTableRows', code: { csharp: 'var rows = sales\n    .GroupBy(s => s.ProductName)\n    .Select(group => $"{group.Key} | {group.Count()} | {group.Sum(s => s.Amount):C}");' } },
-                  { id: 'frag-print', label: '画面に出力する', lines: 8, responsibility: 'output', suggestedName: 'print', code: { csharp: '// レポートを出力する\nConsole.WriteLine(header);\n\nforeach (var row in rows)\n{\n    Console.WriteLine(row);\n}\n\nConsole.WriteLine($"前月比: {changeRate:P}");' } },
+                  { id: 'frag-aggregate-sales', label: '今月の売上を集計する', lines: 6, responsibility: 'aggregation', suggestedName: 'aggregateSales', code: { csharp: 'var monthlySales = sales\n    .Where(s => s.Month == currentMonth)\n    .Sum(s => s.Amount);\n\nvar transactionCount = sales\n    .Count(s => s.Month == currentMonth);' } },
+                  { id: 'frag-compare-last-month', label: '前月比を計算する', lines: 7, responsibility: 'aggregation', suggestedName: 'compareWithLastMonth', code: { csharp: 'var lastMonthSales = sales\n    .Where(s => s.Month == previousMonth)\n    .Sum(s => s.Amount);\n\nvar changeRate = lastMonthSales == 0\n    ? 0\n    : (monthlySales - lastMonthSales) / lastMonthSales;' } },
+                  { id: 'frag-table-header', label: '表のヘッダーを組み立てる', lines: 1, responsibility: 'formatting', suggestedName: 'buildTableHeader', code: { csharp: 'var header = "商品名 | 数量 | 売上";' } },
+                  { id: 'frag-table-rows', label: '表の行を組み立てる', lines: 3, responsibility: 'formatting', suggestedName: 'buildTableRows', code: { csharp: 'var rows = sales\n    .GroupBy(s => s.ProductName)\n    .Select(group => $"{group.Key} | {group.Count()} | {group.Sum(s => s.Amount):C}");' } },
+                  { id: 'frag-print', label: '画面に出力する', lines: 9, responsibility: 'output', suggestedName: 'print', code: { csharp: '// レポートを出力する\nConsole.WriteLine(header);\n\nforeach (var row in rows)\n{\n    Console.WriteLine(row);\n}\n\nConsole.WriteLine($"前月比: {changeRate:P}");' } },
                 ],
               },
             ],

@@ -91,7 +91,7 @@ describe('上級7: 金額と通貨を Money にまとめる', () => {
     // 実測: accept-euroはPayoutServiceを触らない(money-validationはPayoutServiceに存在しない)ため
     // 上限超えの件数がhide-yen-decimalsと異なる(仕様書は両方35点の見込みだったが45点・35点に修正)
     expect(scoresBefore.map((score) => score.total)).toEqual([45, 35]);
-    expect(scoresAfter.map((score) => score.total)).toEqual([85, 85]);
+    expect(scoresAfter.map((score) => score.total)).toEqual([75, 75]);
   });
 });
 

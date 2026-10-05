@@ -66,13 +66,13 @@ test('100点で理由を見せてサイドバーを一度だけ自動で開く',
   await expect(page.locator('.change-pain')).toHaveCount(0);
 });
 
-test('長いメソッドを分けると目を通す行数が減る。100点で読む量の変化が出る', async ({ page }) => {
+test('チュートリアル1の読む行数は実コードと一致する', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/');
   await page.getByLabel('ステージ').selectOption({ label: 'チュートリアル1: 長いメソッドを分ける' });
   const card = page.getByRole('region', { name: 'もし、この変更が来たら?' });
-  await expect(card).toContainText('目を通す行数は今 86 行');
-  await expect(card).toContainText('ReportService.printMonthlyReport(86行)');
+  await expect(card).toContainText('目を通す行数は今 29 行');
+  await expect(card).toContainText('ReportService.printMonthlyReport(29行)');
 
   const locations = page.locator('.change-pain li');
   const originalLocations = await locations.evaluateAll((items) => items.map((item) => ({
@@ -87,15 +87,15 @@ test('長いメソッドを分けると目を通す行数が減る。100点で�
     text: item.textContent,
     childCount: item.childElementCount,
   })))).toEqual(originalLocations);
-  await expect(card).toContainText('ReportService.printMonthlyReport(86行)');
+  await expect(card).toContainText('ReportService.printMonthlyReport(29行)');
   await page.setViewportSize({ width: 1440, height: 900 });
 
   await page.getByTestId('method-printMonthlyReport').click();
   await page.getByLabel('表のヘッダーを組み立てる').check();
   await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
-  await expect(card).toContainText('目を通す行数は今 73 行');
-  await expect(card).toContainText('最初は 86 行でした');
-  await expect(card).toContainText('ReportService.printMonthlyReport(73行)');
+  await expect(card).toContainText('目を通す行数は今 29 行');
+  await expect(card).not.toContainText('最初は');
+  await expect(card).toContainText('ReportService.printMonthlyReport(29行)');
 });
 
 test('種類を足すときに書き換えるクラス数が見え、ランクごとのクラスに組み替えると0になる', async ({ page }) => {
