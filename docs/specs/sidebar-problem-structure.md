@@ -27,8 +27,8 @@
 ├ 困っていること                ← stage.problem(常時)
 │  privateのメソッドが、別のクラスから呼ばれている
 ├ クリア条件                    ← 採点から自動(常時・操作のたびに更新)
-│  ✓ 行数: メソッド50行・クラス120行・ファイル300行以内
-│  ✗ 結合度: 依存先は0クラスまで(今1件)
+│  ✗ 行数: メソッド50行・クラス120行・ファイル300行以内(今: メソッド最大84行)
+│  ✗ 結合度: 依存先は0クラスまで(今: 最大1クラス)
 │  ✓ 責務の混在: 1クラス2種類まで
 │  ✗ アクセス制御: 0件にする(今2件)
 ├ ヒント [ヒントを見る (1/3)]    ← ボタンをヘッダーから移動。開いたヒントはこの下
@@ -48,7 +48,7 @@
 | パス | 層 | 新規/変更 | 役割 |
 | --- | --- | --- | --- |
 | `src/domain/stage/Stage.ts` | domain | 変更 | `Stage` に `problem: string` を追加 |
-| `src/domain/stage/clearConditions.ts` | domain | 新規 | `clearConditions`(初期と現在の `Score` からクリア条件の一覧を出す) |
+| `src/domain/stage/clearConditions.ts` | domain | 新規 | `clearConditions`(初期と現在の `Score` からクリア条件の一覧を出す)・`worstMeasures`(上限を超えている実際の値) |
 | `src/domain/stage/clearConditions.test.ts` | domain(test) | 新規 | 上記のテスト |
 | `src/infrastructure/stages/tutorialStages.ts` / `beginnerStages.ts` / `intermediateStages.ts` / `advancedStages.ts` | infrastructure | 変更 | 全ステージに `problem` を書く(下記の書き方ルール) |
 | `src/infrastructure/stages/stageCatalog.test.ts` | infrastructure(test) | 変更 | 全ステージの `problem` が空でなく60文字以内であることを確認するケースを足す |
@@ -93,6 +93,20 @@ export type ClearCondition = {
 export const ALWAYS_SHOWN_RULES: readonly ScoreRule[] = ['line-limit', 'coupling', 'responsibility'];
 
 export function clearConditions(initial: Score, current: Score): ClearCondition[];
+
+/** 上限値のある3ルールについて、上限を超えているものの最大値。上限内の項目は undefined。 */
+export type WorstMeasures = {
+  readonly method?: number;
+  readonly class?: number;
+  readonly file?: number;
+  readonly dependencies?: number;
+  readonly responsibilities?: number;
+};
+
+export function worstMeasures(
+  codebase: Codebase,
+  stage: Pick<Stage, 'limits' | 'dependencyLimit' | 'responsibilityLimit'>,
+): WorstMeasures;
 ```
 
 ### `problem` の書き方ルール(実装者向け)
@@ -112,6 +126,14 @@ export function clearConditions(initial: Score, current: Score): ClearCondition[
 - 並び順は `current.deductions` の並び(=`scoreCodebase` のルール順)。
 - `count` は `current` の件数。
 
+### `worstMeasures(codebase, stage)`
+
+上限を超えているものの中で一番大きい値を返す。上限内なら、その項目は `undefined`。
+
+- `method`/`class`/`file`: `findLineLimitViolations` の結果を種類ごとに見て、超えているものの最大行数
+- `dependencies`: 依存先の数が `dependencyLimit` を超えているクラスの中で最大の依存先数(`classDependencies` を `from` ごとに数える。`findCouplingViolations` と同じ数え方)
+- `responsibilities`: `findResponsibilityViolations` の結果の中で最大の責務の種類数
+
 ### 画面
 
 - `initial` は `scoreCodebase(stage.codebase, stage)` を `useMemo` で1回だけ計算する(ステージが変わったら計算し直す)。`current` は `StagePanelContent` がすでに計算している `score` を使う。
@@ -120,7 +142,12 @@ export function clearConditions(initial: Score, current: Score): ClearCondition[
   - `coupling`: `結合度: 依存先は{dependencyLimit}クラスまで`
   - `responsibility`: `責務の混在: 1クラス{responsibilityLimit}種類まで`
   - その他: `{RULE_LABEL[rule]}: 0件にする`
-  - 違反中は末尾に `(今{count}件)` を付ける。
+  - 違反中は末尾に今の状態を付ける。上限値のある3ルールは**実際の値**(`worstMeasures` の結果)を、それ以外は件数を出す:
+    - `line-limit`: 超えている種類だけを並べる。例: `(今: メソッド最大84行・クラス最大200行)`
+    - `coupling`: `(今: 最大{maxDependencies}クラス)`
+    - `responsibility`: `(今: 最大{maxResponsibilities}種類)`
+    - その他: `(今{count}件)`
+  - 満たしているときは何も付けない。
 - 各行の先頭に ✓/✗ を出す。記号だけに頼らず、`aria-label` などで「達成」「未達成」が読み上げでも分かるようにする(アクセシビリティ)。
 - 一覧は `aria-live="polite"` にし、操作で状態が変わったら読み上げられるようにする。
 - 変更依頼の実装中(`investigating`)は、今と同じく挑戦前のコードの点数で表示する。
@@ -157,12 +184,24 @@ export function clearConditions(initial: Score, current: Score): ClearCondition[
 - 並び順: `scoreCodebase` のルール順になる(例: `line-limit` → `coupling` → `responsibility` → `visibility`)
 - 常時表示の3ルールが違反中なら、その件数が `count` に入る
 
+### `worstMeasures`(`src/domain/stage/clearConditions.ts`)
+
+- 正常系: 上限50行で84行と60行のメソッドがある → `method: 84`
+- 正常系: クラス・ファイルの行数超えも、それぞれの最大値が入る
+- 正常系: 依存先上限1で、依存先3クラスと2クラスのクラスがある → `dependencies: 3`
+- 正常系: 責務上限2で、4種類と3種類のクラスがある → `responsibilities: 4`
+- 境界: すべて上限内 → すべて `undefined`
+- 境界: ちょうど上限(50行・依存先1・責務2)は超えていないので `undefined`
+
 ### `describeCondition`(`src/presentation/stage/describeCondition.ts`)
 
 - `line-limit` にステージの3つの上限値が入る
 - `coupling`/`responsibility` にステージの上限値が入る
 - その他のルールは `RULE_LABEL` を使った `…: 0件にする` になる
-- 違反中は `(今{count}件)` が付き、0件なら付かない
+- 違反中の `line-limit` は、超えている種類だけ `(今: メソッド最大84行・…)` が付く
+- 違反中の `coupling`/`responsibility` は `(今: 最大Nクラス)`/`(今: 最大N種類)` が付く
+- 違反中のその他のルールは `(今{count}件)` が付く
+- 満たしている条件には何も付かない
 
 ### `summarizePain`
 
@@ -178,7 +217,7 @@ export function clearConditions(initial: Score, current: Score): ClearCondition[
 1. `npm run check`(lint + typecheck + test)が通る。上記の純粋関数にAAAパターンのテストがある。
 2. 全ステージに `problem` があり、書き方ルール(症状だけ・操作名なし・数値条件なし・60文字以内)を満たす。評価者は全ステージの文言に目を通して確認する。
 3. 画面: サイドバーに課題文(`stage.goal`)が表示されず、上から「ストーリー(1行またはカード)→ 困っていること → クリア条件 → ヒント → 変更の痛み(畳んだ状態)→ どんなコード?(閉じた状態)」の順に並ぶ。
-4. 画面: クリア条件の ✓/✗ と「(今N件)」が、操作(Move Method など)のたびに更新される。100点になると全条件が ✓ になる。
+4. 画面: クリア条件の ✓/✗ と今の状態(行数・依存先数・責務数は実際の最大値、それ以外は件数)が、操作(Move Method など)のたびに更新される。100点になると全条件が ✓ になる。
 5. 画面: 「ヒントを見る」ボタンがヘッダーではなくサイドバーのヒント欄にあり、押すたびにその下へヒントが1つずつ増える。
 6. 画面: ストーリーを閉じると章タイトルの1行ボタンが残り、押すとカードが開き直る。
 7. 画面: 変更の痛みは、プレイ中は要約1行の閉じた状態で、開くと今までどおり詳細・「実際に直してみる」が出る。100点時は「なぜ分けるのか」が開いた状態で出る。
