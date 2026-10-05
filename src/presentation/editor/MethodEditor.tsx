@@ -45,7 +45,7 @@ function fieldRefText(codebase: Codebase, fieldIds: readonly string[]): string {
 }
 
 /** 処理が触るフィールドを色だけに頼らず文字で出す。Feature Envy・カプセル化の破れをプレイヤーが判断する手がかりになる。 */
-function FragmentFieldRefs({ codebase, fragment }: Readonly<{ codebase: Codebase; fragment: Fragment }>) {
+export function FragmentFieldRefs({ codebase, fragment }: Readonly<{ codebase: Codebase; fragment: Fragment }>) {
   const reads = fieldRefText(codebase, fragment.reads ?? []);
   const writes = fieldRefText(codebase, fragment.writes ?? []);
   const accessed = accessorFieldAccess(codebase, fragment);
