@@ -56,3 +56,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [why-split-change-pain](why-split-change-pain.md) | 変更の痛みカードと達成時の「なぜ分けるか」で分割の意義を実感させる |
 | [code-preview-wrap](code-preview-wrap.md) | コードタブの長い行をサイドバー幅に合わせて折り返す |
 | [change-pain-wrap](change-pain-wrap.md) | 変更の痛みカードと前回の変更依頼の長い名前をサイドバー幅に合わせて折り返す |
+| [code-lines-match](code-lines-match.md) | コードを持つFragmentの行数を実際のC#ソースの行数から計算し、表示・採点をそろえる |
