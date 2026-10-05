@@ -57,3 +57,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [code-preview-wrap](code-preview-wrap.md) | コードタブの長い行をサイドバー幅に合わせて折り返す |
 | [change-pain-wrap](change-pain-wrap.md) | 変更の痛みカードと前回の変更依頼の長い名前をサイドバー幅に合わせて折り返す |
 | [code-lines-match](code-lines-match.md) | コードを持つFragmentの行数を実際のC#ソースの行数から計算し、表示・採点をそろえる |
+| [replay-maximize-method-panel](replay-maximize-method-panel.md) | 解答の再生に最大化ボタンと読み取り専用のメソッドパネルを追加する |

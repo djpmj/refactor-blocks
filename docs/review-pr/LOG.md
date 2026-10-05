@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-05 14:15 UTC PR #105 Add replay maximize and read-only method panel
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint ✅ / typecheck ✅ / test ✅ 1392件)。E2Eはブラウザ未導入のため再実行できず、PR本文の報告(148件pass)を参照
+- マージ: squash & delete-branch
+
 ## 2026-10-05 13:57 UTC PR #104 Align displayed line counts with C# source
 
 - 判定: 合格(blocker無し)
