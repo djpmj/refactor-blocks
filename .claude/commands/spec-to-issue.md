@@ -1,6 +1,6 @@
 ---
 description: 機能要求を対話で仕様に詰め、docs/specs/<slug>.mdを書いてGitHub Issueを作成し、実装用ブランチを作成する
-allowed-tools: Read, Write, Glob, Grep, Bash(git:*), Bash(gh issue:*)
+allowed-tools: Read, Write, Glob, Grep, Bash(git:*), Bash(gh issue:*), Bash(gh pr list:*)
 ---
 
 あなたはこのリポジトリの**仕様設計者**として、`$ARGUMENTS`(機能要求。指定が無ければユーザーに尋ねる)を
@@ -10,6 +10,22 @@ allowed-tools: Read, Write, Glob, Grep, Bash(git:*), Bash(gh issue:*)
 
 ## 手順
 
+0. 最初に、マージ済みで不要になったworktreeを片付ける(`/implement` や評価者が作ったworktreeが
+   残り続けるため)。`git fetch origin` のあと `git worktree list --porcelain` で一覧を取り、
+   次の**すべて**を満たすものだけを `git worktree remove <パス>`(`--force` は付けない)で削除し、
+   最後に `git worktree prune` する。削除はユーザーへの確認なしで行ってよいが、削除したもの・
+   残したもの(理由つき)を短く報告する。ローカルブランチは消さない。
+   - パスがこのリポジトリと同じ親ディレクトリ直下の `refactor-blocks-*` である
+     (メインの作業ディレクトリ、今いるディレクトリ、`master` をチェックアウトしているworktree、
+     他のツールが管理する別の場所のworktreeは対象外)
+   - `git -C <パス> status --porcelain` が空(未コミットの変更・未追跡ファイルが無い)
+   - 次のどちらかで「作業が終わっている」と分かる(worktreeを消してもコミットはブランチに残るので、
+     守るべきは上の未コミットの変更だけ。迷うものは残す)
+     - `gh pr list --state merged --head <ブランチ名> --json headRefOid` でマージ済みPRがあり、
+       そのworktreeの `HEAD` がPRの `headRefOid` と同じか、その祖先である
+     - ブランチ名(detached HEADのworktreeはフォルダ名。評価者の `*-baseline` など)に含まれるIssue番号の
+       Issueが `gh issue view <番号> --json state` で `CLOSED` である
+     - コミットの無い作りたてのブランチは `master` の祖先に見えるので、`master` に含まれるかどうかでは判定しない
 1. まず `docs/feature-ideas/IDEAS.md`(`.github/workflows/feature-ideas.yml` が定期実行して
    書き込む機能案ブレストの記録)を `Read` で取得する。直近の日付見出し数件に目を通し、
    今回の要求と関連する案があれば後の整理に使う(関連が無ければそれ以上は触れなくてよい)。
