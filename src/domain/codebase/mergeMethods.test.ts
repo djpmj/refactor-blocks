@@ -1,9 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import { findClass, findMethod, mapClasses, type CodeClass, type CodeFile, type Codebase, type Fragment, type Method, type Visibility } from './Codebase';
 import { findMergeCandidates, mergeMethods, type MergeMethodsRequest } from './mergeMethods';
+import { fragmentLines } from './lineCount';
 
 function fragment(id: string, overrides: Partial<Fragment> = {}): Fragment {
   return { id, label: '送信ログを記録する', lines: 24, responsibility: 'logging', ...overrides };
+}
+
+function withDuplicateCode(candidate: Method, code: string): Method {
+  return { ...candidate, fragments: candidate.fragments.map((item) => ({ ...item, code: { csharp: code } })) };
+}
+
+function codebaseWithDuplicateMethodsCode(codebase: Codebase, code: string): Codebase {
+  return mapClasses(codebase, (owner) => ({
+    ...owner,
+    methods: owner.methods.map((candidate) => candidate.id === 'method-a' || candidate.id === 'method-b'
+      ? withDuplicateCode(candidate, code)
+      : candidate),
+  }));
 }
 
 function method(id: string, name: string, fragments: Fragment[], visibility: Visibility = 'private'): Method {
@@ -102,6 +116,21 @@ describe('mergeMethods', () => {
     if (!result.ok) throw new Error(result.error);
     const merged = findMethod(result.value, 'method-merged');
     expect(merged?.fragments).toEqual([{ id: 'method-merged:merge0', label: '送信ログを記録する', lines: 24, responsibility: 'logging', duplicateGroup: 'log-group' }]);
+  });
+
+  it('統合後のFragmentは重複元と同じコードを引き継ぎ、fragmentLinesがコードの行数と一致する', () => {
+    // Arrange
+    const duplicateCode = 'var message = BuildMessage();\n_logger.LogInformation(message);';
+    const codebaseWithCode = codebaseWithDuplicateMethodsCode(fixture(), duplicateCode);
+
+    // Act
+    const result = mergeMethods(codebaseWithCode, request());
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    const mergedFragment = findMethod(result.value, 'method-merged')?.fragments[0];
+    expect(mergedFragment?.code?.csharp).toBe(duplicateCode);
+    expect(mergedFragment === undefined ? undefined : fragmentLines(mergedFragment)).toBe(2);
   });
 
   it('統合後のFragmentのreads/writesはA/Bの和集合になる', () => {

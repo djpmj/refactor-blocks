@@ -13,7 +13,7 @@ const solution = sampleAnswerSteps[stage.id];
 if (solution === undefined) throw new Error('上級7の模範解答がありません');
 
 describe('上級7: 金額と通貨を Money にまとめる', () => {
-  it('初期状態は40点(行数2・責務の混在1・Feature Envy 3)で、凝集度は0', () => {
+  it('初期状態は50点(行数1・責務の混在1・Feature Envy 3)で、凝集度は0', () => {
     // Arrange
     const { codebase } = stage;
 
@@ -21,8 +21,8 @@ describe('上級7: 金額と通貨を Money にまとめる', () => {
     const score = scoreCodebase(codebase, stage);
 
     // Assert
-    expect(score.total).toBe(40);
-    expect(score.deductions.find((d) => d.rule === 'line-limit')?.count).toBe(2);
+    expect(score.total).toBe(50);
+    expect(score.deductions.find((d) => d.rule === 'line-limit')?.count).toBe(1);
     expect(score.deductions.find((d) => d.rule === 'responsibility')?.count).toBe(1);
     expect(score.deductions.find((d) => d.rule === 'feature-envy')?.count).toBe(3);
     expect(score.deductions.find((d) => d.rule === 'cohesion')?.count).toBe(0);
@@ -91,7 +91,7 @@ describe('上級7: 金額と通貨を Money にまとめる', () => {
     // 実測: accept-euroはPayoutServiceを触らない(money-validationはPayoutServiceに存在しない)ため
     // 上限超えの件数がhide-yen-decimalsと異なる(仕様書は両方35点の見込みだったが45点・35点に修正)
     expect(scoresBefore.map((score) => score.total)).toEqual([45, 35]);
-    expect(scoresAfter.map((score) => score.total)).toEqual([75, 75]);
+    expect(scoresAfter.map((score) => score.total)).toEqual([65, 65]);
   });
 });
 

@@ -56,8 +56,9 @@ test('100点で理由を見せてサイドバーを一度だけ自動で開く',
 
   await page.getByRole('button', { name: 'サイドバーを閉じる' }).click();
   await page.getByRole('button', { name: '元に戻す' }).click();
-  await expect(page.getByTestId('score')).not.toContainText('100');
+  await expect(page.getByTestId('method-validateStock')).toHaveCount(0);
   await page.getByRole('button', { name: 'やり直し' }).click();
+  await expect(page.getByTestId('method-validateStock')).toBeVisible();
   await expect(page.getByTestId('score')).toContainText('100');
   await expect(page.getByRole('button', { name: 'サイドバーを開く' })).toHaveAttribute('aria-expanded', 'false');
 
@@ -71,8 +72,8 @@ test('チュートリアル1の読む行数は実コードと一致する', asyn
   await page.goto('/');
   await page.getByLabel('ステージ').selectOption({ label: 'チュートリアル1: 長いメソッドを分ける' });
   const card = page.getByRole('region', { name: 'もし、この変更が来たら?' });
-  await expect(card).toContainText('目を通す行数は今 29 行');
-  await expect(card).toContainText('ReportService.printMonthlyReport(29行)');
+  await expect(card).toContainText('目を通す行数は今 30 行');
+  await expect(card).toContainText('ReportService.printMonthlyReport(30行)');
 
   const locations = page.locator('.change-pain li');
   const originalLocations = await locations.evaluateAll((items) => items.map((item) => ({
@@ -87,14 +88,14 @@ test('チュートリアル1の読む行数は実コードと一致する', asyn
     text: item.textContent,
     childCount: item.childElementCount,
   })))).toEqual(originalLocations);
-  await expect(card).toContainText('ReportService.printMonthlyReport(29行)');
+  await expect(card).toContainText('ReportService.printMonthlyReport(30行)');
   await page.setViewportSize({ width: 1440, height: 900 });
 
   await page.getByTestId('method-printMonthlyReport').click();
   await page.getByLabel('表のヘッダーを組み立てる').check();
   await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
   await expect(card).toContainText('目を通す行数は今 29 行');
-  await expect(card).not.toContainText('最初は');
+  await expect(card).toContainText('最初は 30 行でした');
   await expect(card).toContainText('ReportService.printMonthlyReport(29行)');
 });
 

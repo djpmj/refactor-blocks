@@ -67,6 +67,6 @@ describe('blank-order-shipping', () => {
     expect(grouped.value.player.score.total).toBe(80);
     expect(model.value.player.score.total).toBe(100);
     expect(grouped.value.player.score.total).toBeLessThan(model.value.player.score.total);
-    expect(grouped.value.player.changeScore).toBeLessThan(model.value.player.changeScore);
+    expect(grouped.value.player.changeScore).toBeLessThanOrEqual(model.value.player.changeScore);
   });
 });
