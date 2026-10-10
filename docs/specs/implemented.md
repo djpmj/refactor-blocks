@@ -65,3 +65,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [#102 inline-middle-man](https://github.com/djpmj/refactor-blocks/issues/102) | Inline Methodを一般化し、横流しだけのクラスを採点する中級ステージを追加する |
 | [sidebar-problem-structure](sidebar-problem-structure.md) | サイドバーを「困っていること」と採点から自動で出す「クリア条件」中心に組み替え、他は折りたたむ |
 | [action-affordance](action-affordance.md) | 抽出ボタンの活性/非活性、ブロックのホバー説明、メソッドエディタの空状態の案内で操作を見た目で伝える |
+| [hint-highlight](hint-highlight.md) | ヒントごとに「キャンバスで見る」ボタンを付け、模範解答の手が触るブロックを光らせて画面を寄せる |
