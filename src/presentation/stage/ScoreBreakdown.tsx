@@ -4,6 +4,11 @@ import { RULE_LABEL } from './describeScore';
 import { RULE_WHY } from './ruleWhy';
 import type { Score, ScoreRule } from '../../domain/scoring/score';
 
+function clearPreviewRules(previewRuleFor: (rule: ScoreRule | null, source: 'hover' | 'focus') => void): void {
+  previewRuleFor(null, 'hover');
+  previewRuleFor(null, 'focus');
+}
+
 export function ScoreBreakdown({ score, disabled }: Readonly<{
   score: Score;
   disabled: boolean;
@@ -11,6 +16,7 @@ export function ScoreBreakdown({ score, disabled }: Readonly<{
   const [openRules, setOpenRules] = useState<ReadonlySet<ScoreRule>>(new Set());
   const focusedRule = useGameStore((state) => state.focusedRule);
   const focusRule = useGameStore((state) => state.focusRule);
+  const previewRuleFor = useGameStore((state) => state.previewRuleFor);
   const deductions = score.deductions.filter((deduction) => deduction.points > 0);
   if (deductions.length === 0) return null;
   const toggleWhy = (rule: ScoreRule) => setOpenRules((current) => {
@@ -19,7 +25,7 @@ export function ScoreBreakdown({ score, disabled }: Readonly<{
     return next;
   });
   return (
-    <details className="score-breakdown">
+    <details className="score-breakdown" onToggle={(event) => { if (!event.currentTarget.open) clearPreviewRules(previewRuleFor); }}>
       <summary>減点の内訳({deductions.length})</summary>
       <div className="score-breakdown__items">
         {deductions.map(({ rule, count }) => {
@@ -33,6 +39,8 @@ export function ScoreBreakdown({ score, disabled }: Readonly<{
                   aria-pressed={focusedRule === rule}
                   disabled={disabled}
                   onClick={() => focusRule(focusedRule === rule ? null : rule)}
+                  onMouseEnter={() => { if (!disabled) previewRuleFor(rule, 'hover'); }} onMouseLeave={() => previewRuleFor(null, 'hover')}
+                  onFocus={() => { if (!disabled) previewRuleFor(rule, 'focus'); }} onBlur={() => previewRuleFor(null, 'focus')}
                 >
                   {RULE_LABEL[rule]} ×{count}
                 </button>

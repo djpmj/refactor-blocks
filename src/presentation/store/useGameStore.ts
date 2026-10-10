@@ -94,6 +94,7 @@ export type CritiqueState = {
 };
 
 const EMPTY_CRITIQUE: CritiqueState = { text: null, loading: false, error: null };
+const EMPTY_RULE_PREVIEW = { previewRule: null, hoverPreviewRule: null, focusPreviewRule: null };
 
 /** 変更依頼を「手で直す」シミュレーション。fixedIds は「直した」印を付けたメソッドのID。 */
 type ManualFix = { readonly fixedIds: readonly string[]; readonly released: boolean };
@@ -116,6 +117,9 @@ type GameState = {
   focusedRule: ScoreRule | null;
   hintTarget: ViolationTarget | null;
   hintTargetKey: string | null;
+  previewRule: ScoreRule | null;
+  hoverPreviewRule: ScoreRule | null;
+  focusPreviewRule: ScoreRule | null;
   message: string | null;
   dismissMessage: () => void;
   changeSession: ChangeSession | null;
@@ -132,6 +136,7 @@ type GameState = {
   selectField: (fieldId: string) => void;
   focusRule: (rule: ScoreRule | null) => void;
   focusHint: (target: ViolationTarget | null, hintKey?: string) => void;
+  previewRuleFor: (rule: ScoreRule | null, source: 'hover' | 'focus') => void;
   moveMethod: (methodId: string, targetClassId: string) => void;
   moveField: (fieldId: string, targetClassId: string) => void;
   changeVisibility: (methodId: string, visibility: Visibility) => void;
@@ -306,10 +311,18 @@ function ghostActions(set: (partial: Partial<GameState>) => void): Pick<GameStat
   return { ghost: null, playGhost: (ghost) => set({ ghost }), clearGhost: () => set({ ghost: null }) };
 }
 
-function focusActions(set: (partial: Partial<GameState>) => void): Pick<GameState, 'focusRule' | 'focusHint'> {
+function focusActions(
+  set: (partial: Partial<GameState>) => void,
+  get: () => GameState,
+): Pick<GameState, 'focusRule' | 'focusHint' | 'previewRuleFor'> {
   return {
-    focusRule: (focusedRule) => set({ focusedRule, hintTarget: null, hintTargetKey: null }),
+    focusRule: (focusedRule) => set({ focusedRule, hintTarget: null, hintTargetKey: null, previewRule: null, hoverPreviewRule: null, focusPreviewRule: null }),
     focusHint: (hintTarget, hintKey) => set({ hintTarget, hintTargetKey: hintTarget === null ? null : hintKey ?? null, focusedRule: null }),
+    previewRuleFor: (previewRule, source) => {
+      const hoverPreviewRule = source === 'hover' ? previewRule : get().hoverPreviewRule;
+      const focusPreviewRule = source === 'focus' ? previewRule : get().focusPreviewRule;
+      set({ hoverPreviewRule, focusPreviewRule, previewRule: hoverPreviewRule ?? focusPreviewRule });
+    },
   };
 }
 
@@ -317,7 +330,7 @@ function resetActions(set: (partial: Partial<GameState>) => void, get: () => Gam
   return {
     resetStage: () => {
       if (get().changeSession !== null) return;
-      set({ ...commit(get(), get().stage.codebase, false), celebration: null, ghost: null, manualFix: null, extractDraft: null, focusedRule: null, hintTarget: null, hintTargetKey: null, selectedMethodId: null, selectedFieldId: null, message: null });
+      set({ ...commit(get(), get().stage.codebase, false), celebration: null, ghost: null, manualFix: null, extractDraft: null, focusedRule: null, hintTarget: null, hintTargetKey: null, previewRule: null, hoverPreviewRule: null, focusPreviewRule: null, selectedMethodId: null, selectedFieldId: null, message: null });
     },
   };
 }
@@ -334,6 +347,9 @@ function changeSessionActions(
         focusedRule: null,
         hintTarget: null,
         hintTargetKey: null,
+        previewRule: null,
+        hoverPreviewRule: null,
+        focusPreviewRule: null,
         ghost: null,
         manualFix: null,
         changeSession: { index: 0, inspected: null, outcomes: [], base: codebase, carried: codebase, baseHistory: history },
@@ -360,6 +376,9 @@ function changeSessionActions(
         focusedRule: null,
         hintTarget: null,
         hintTargetKey: null,
+        previewRule: null,
+        hoverPreviewRule: null,
+        focusPreviewRule: null,
         ghost: null,
         changeSession: null,
         codebase: base,
@@ -440,6 +459,9 @@ function selectStageState(allStages: readonly Stage[], stageId: string, drafts: 
     focusedRule: null,
     hintTarget: null,
     hintTargetKey: null,
+    previewRule: null,
+    hoverPreviewRule: null,
+    focusPreviewRule: null,
     message: null,
     changeSession: null,
     manualFix: null,
@@ -644,6 +666,7 @@ export function createGameStore(allStages: readonly Stage[], saveDraftsOn = true
       focusedRule: null,
       hintTarget: null,
       hintTargetKey: null,
+      ...EMPTY_RULE_PREVIEW,
       message: null,
       ...messageActions(set), ...ghostActions(set),
       changeSession: null,
@@ -652,7 +675,7 @@ export function createGameStore(allStages: readonly Stage[], saveDraftsOn = true
       critique: EMPTY_CRITIQUE,
       ...critiqueActions(set, get),
       ...methodSelectionActions(set, get),
-      ...focusActions(set),
+      ...focusActions(set, get),
       ...extractActions(apply, set, get),
       ...replaceMethodActions(set, get),
       addClass: (fileId, className) => {

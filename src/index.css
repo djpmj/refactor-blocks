@@ -397,6 +397,14 @@ input.class-node__name { width: 14ch; }
 .file-node--can-drop.file-node--flagged { border-color: var(--accent); outline: 2px solid var(--warning); outline-offset: 2px; }
 .file-node--can-drop.file-node--flagged.file-node--drop-target { border-color: var(--accent); }
 .method-chip--flagged { border: 3px solid var(--warning); background-color: color-mix(in srgb, var(--warning) 12%, var(--bg)); }
+.class-node--flagged, .file-node--flagged, .method-chip--flagged { animation: flagged-flash 420ms ease-out; }
+@keyframes flagged-flash {
+  0% { filter: brightness(1.55); }
+  100% { filter: brightness(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .class-node--flagged, .file-node--flagged, .method-chip--flagged { animation: none; }
+}
 
 .operation-guide { width: min(90vw, 720px); max-width: calc(100vw - 24px); max-height: 85vh; padding: 0; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--text); }
 .operation-guide::backdrop { background: rgb(0 0 0 / 45%); }

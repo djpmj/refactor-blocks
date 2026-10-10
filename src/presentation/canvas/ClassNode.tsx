@@ -137,7 +137,9 @@ export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
   });
   const flagged = useGameStore((state) => {
     const rule = state.focusedRule;
-    return rule !== null ? violationTargets(state.codebase, state.stage)[rule].classIds.includes(data.classId) : state.hintTarget?.classIds.includes(data.classId) ?? false;
+    return rule !== null
+      ? violationTargets(state.codebase, state.stage)[rule].classIds.includes(data.classId)
+      : state.hintTarget?.classIds.includes(data.classId) ?? (state.previewRule !== null && violationTargets(state.codebase, state.stage)[state.previewRule].classIds.includes(data.classId));
   });
   const showDetails = useShowDetails();
   const dropTargetClasses = useDropTargetClassNames('class', data.classId);
