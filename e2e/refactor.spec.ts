@@ -260,14 +260,14 @@ test('クラスヘッダーのメニューから別ファイルへ移動でき�
 
   // Assert
   await expect(page.getByTestId('file-src/order/OrderService.ts')).toContainText('0行');
-  await expect(page.getByTestId('file-src/tax/TaxCalculator.ts')).toContainText('113行');
+  await expect(page.getByTestId('file-src/tax/TaxCalculator.ts')).toContainText('26行');
   await expect(page.getByTestId('context-menu')).toHaveCount(0);
 
   // Act: Undo
   await page.keyboard.press('Control+z');
 
   // Assert
-  await expect(page.getByTestId('file-src/order/OrderService.ts')).toContainText('110行');
+  await expect(page.getByTestId('file-src/order/OrderService.ts')).toContainText('23行');
   await expect(page.getByTestId('file-src/tax/TaxCalculator.ts')).toContainText('3行');
 });
 
@@ -285,7 +285,7 @@ test('クラスヘッダーではShift+F10とTab/Enterでファイルを選ん�
   await page.keyboard.press('Tab');
   await page.keyboard.press('Enter');
   await expect(page.getByTestId('file-src/order/OrderService.ts')).toContainText('0行');
-  await expect(page.getByTestId('file-src/tax/TaxCalculator.ts')).toContainText('113行');
+  await expect(page.getByTestId('file-src/tax/TaxCalculator.ts')).toContainText('26行');
 });
 
 test('ファイル・メソッド・余白のメニューにはクラスのファイル移動項目を出さない', async ({ page }) => {

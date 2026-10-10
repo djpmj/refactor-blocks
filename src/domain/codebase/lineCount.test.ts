@@ -103,8 +103,8 @@ describe('lineCount', () => {
 
     // Assert
     expect(lines).toBe(source.split('\n').length);
-    expect(lines).toBe(32);
-    expect(methodLines(method)).toBe(29);
+    expect(lines).toBe(33);
+    expect(methodLines(method)).toBe(30);
   });
 
   it('クラスの行数はメソッドの行数の合計にクラス宣言と波括弧の3行を足したもの', () => {

@@ -33,7 +33,7 @@ const extractMethodStage: Stage = {
   description:
     '月次の売上レポートを画面に出す ReportService。売上の集計・前月比の計算・表の組み立て・出力が、1つのメソッド printMonthlyReport に上から順に書かれている。',
   goal: 'メソッドは20行以内に。メソッドをクリックし、まとまった処理を選んで「メソッドとして抽出」しよう',
-  limits: { method: 20, class: 200, file: 300 },
+  limits: { method: 20, class: 50, file: 55 },
   dependencyLimit: 2,
   responsibilityLimit: 3,
   changeRequests: [
@@ -57,7 +57,7 @@ const extractMethodStage: Stage = {
                 fragments: [
                   { id: 'frag-aggregate-sales', label: '今月の売上を集計する', lines: 6, responsibility: 'aggregation', suggestedName: 'aggregateSales', code: { csharp: 'var monthlySales = sales\n    .Where(s => s.Month == currentMonth)\n    .Sum(s => s.Amount);\n\nvar transactionCount = sales\n    .Count(s => s.Month == currentMonth);' } },
                   { id: 'frag-compare-last-month', label: '前月比を計算する', lines: 7, responsibility: 'aggregation', suggestedName: 'compareWithLastMonth', code: { csharp: 'var lastMonthSales = sales\n    .Where(s => s.Month == previousMonth)\n    .Sum(s => s.Amount);\n\nvar changeRate = lastMonthSales == 0\n    ? 0\n    : (monthlySales - lastMonthSales) / lastMonthSales;' } },
-                  { id: 'frag-table-header', label: '表のヘッダーを組み立てる', lines: 1, responsibility: 'formatting', suggestedName: 'buildTableHeader', code: { csharp: 'var header = "商品名 | 数量 | 売上";' } },
+                  { id: 'frag-table-header', label: '表のヘッダーを組み立てる', lines: 2, responsibility: 'formatting', suggestedName: 'buildTableHeader', code: { csharp: "var header = \"商品名 | 数量 | 売上\";\n_logger.LogDebug(\"表のヘッダーを組み立てる が完了しました\");" } },
                   { id: 'frag-table-rows', label: '表の行を組み立てる', lines: 3, responsibility: 'formatting', suggestedName: 'buildTableRows', code: { csharp: 'var rows = sales\n    .GroupBy(s => s.ProductName)\n    .Select(group => $"{group.Key} | {group.Count()} | {group.Sum(s => s.Amount):C}");' } },
                   { id: 'frag-print', label: '画面に出力する', lines: 9, responsibility: 'output', suggestedName: 'print', code: { csharp: '// レポートを出力する\nConsole.WriteLine(header);\n\nforeach (var row in rows)\n{\n    Console.WriteLine(row);\n}\n\nConsole.WriteLine($"前月比: {changeRate:P}");' } },
                 ],
@@ -102,8 +102,8 @@ const orderServiceStage: Stage = {
   why: '税率やメール文面の変更が注文の検証や保存処理に紛れ、関係ない手順まで確認することになります。役割ごとに置き場所が分かれていれば、変更する理由のある処理を探せます。',
   description:
     'ネットショップの注文を受け付ける OrderService。placeOrder の中に、入力と在庫の検証・小計と消費税(軽減税率あり)の計算・DBへの保存・確認メールの送信が全部入っている。税の計算を担当する TaxCalculator は用意されているが、まだ空っぽ。',
-  goal: 'メソッドは40行以内に。税の計算は抽出してから TaxCalculator へドラッグで移そう',
-  limits: { method: 40, class: 200, file: 300 },
+  goal: 'メソッドは15行以内に。税の計算は抽出してから TaxCalculator へドラッグで移そう',
+  limits: { method: 15, class: 50, file: 60 },
   dependencyLimit: 2,
   // 税の計算を TaxCalculator へ移せば OrderService の責務が4種類になり、上限を満たす
   responsibilityLimit: 4,
@@ -127,12 +127,12 @@ const orderServiceStage: Stage = {
                 name: 'placeOrder',
                 visibility: 'public',
                 fragments: [
-                  { id: 'frag-validate-items', label: '商品が空でないか検証する', lines: 12, responsibility: 'validation', suggestedName: 'validateItems' },
-                  { id: 'frag-validate-stock', label: '在庫があるか検証する', lines: 18, responsibility: 'validation', suggestedName: 'validateStock' },
-                  { id: 'frag-subtotal', label: '小計を計算する', lines: 14, responsibility: 'pricing', suggestedName: 'calculateSubtotal' },
-                  { id: 'frag-tax', label: '消費税を計算する(軽減税率あり)', lines: 24, responsibility: 'tax', suggestedName: 'calculateTax' },
-                  { id: 'frag-save', label: '注文をDBに保存する', lines: 20, responsibility: 'persistence', suggestedName: 'saveOrder' },
-                  { id: 'frag-mail', label: '確認メールを送る', lines: 16, responsibility: 'notification', suggestedName: 'sendConfirmationMail' },
+                  { id: 'frag-validate-items', label: '商品が空でないか検証する', lines: 2, responsibility: 'validation', suggestedName: 'validateItems' , code: { csharp: "if (items.Count == 0) throw new ValidationException(\"対象がありません\");\nif (items.Any(item => !item.IsValid)) throw new ValidationException(\"入力が不正です\");" }},
+                  { id: 'frag-validate-stock', label: '在庫があるか検証する', lines: 3, responsibility: 'validation', suggestedName: 'validateStock' , code: { csharp: "if (quantity <= 0) throw new ArgumentOutOfRangeException(nameof(quantity));\nif (!await _inventory.IsAvailableAsync(productId, quantity)) throw new InsufficientStockException(productId);\nawait _inventory.ReserveAsync(productId, quantity);" }},
+                  { id: 'frag-subtotal', label: '小計を計算する', lines: 2, responsibility: 'pricing', suggestedName: 'calculateSubtotal' , code: { csharp: "var total = items.Sum(item => item.Quantity * item.UnitPrice);\norder.Subtotal = decimal.Round(total, 2);" }},
+                  { id: 'frag-tax', label: '消費税を計算する(軽減税率あり)', lines: 4, responsibility: 'tax', suggestedName: 'calculateTax' , code: { csharp: "var taxRate = isReducedRate ? reducedTaxRate : standardTaxRate;\nvar taxAmount = decimal.Round(order.Subtotal * taxRate, 0, MidpointRounding.AwayFromZero);\norder.TaxAmount = taxAmount;\norder.Total = order.Subtotal + taxAmount;" }},
+                  { id: 'frag-save', label: '注文をDBに保存する', lines: 3, responsibility: 'persistence', suggestedName: 'saveOrder' , code: { csharp: "cancellationToken.ThrowIfCancellationRequested();\nawait _repository.SaveAsync(order, cancellationToken);\nawait _unitOfWork.CommitAsync(cancellationToken);" }},
+                  { id: 'frag-mail', label: '確認メールを送る', lines: 3, responsibility: 'notification', suggestedName: 'sendConfirmationMail' , code: { csharp: "var message = new MailMessage(order.CustomerEmail, \"注文確認\", $\"注文 {order.Id}: 合計 {order.Total:C}\");\nawait _mailer.SendAsync(message, cancellationToken);\nawait _mailAuditLog.RecordSentAsync(message.Id, cancellationToken);" }},
                 ],
               },
             ],

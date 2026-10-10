@@ -10,10 +10,10 @@ const placeOrder: Method = {
     {
       id: 'frag-blank-place-order',
       label: '注文を受け付け、税の計算・保存・確認メールを順に呼ぶ',
-      lines: 10,
+      lines: 3,
       responsibility: 'order-flow',
       uses: ['method-blank-calculate-order-tax', 'method-blank-save-order', 'method-blank-send-order-confirm-mail'],
-    },
+     code: { csharp: "var taxedAmount = calculateOrderTax(amount);\nsaveOrder(taxedAmount);\nsendOrderConfirmMail(taxedAmount);" }},
   ],
 };
 const shipOrder: Method = {
@@ -24,41 +24,41 @@ const shipOrder: Method = {
     {
       id: 'frag-blank-ship-order',
       label: '発送を受け付け、発送状況の記録・発送メールを順に呼ぶ',
-      lines: 10,
+      lines: 3,
       responsibility: 'order-flow',
       uses: ['method-blank-update-shipping-status', 'method-blank-send-shipped-mail'],
-    },
+     code: { csharp: "await updateShippingStatus(orderId, cancellationToken);\nvar message = new MailMessage(recipient, subject, body);\nawait sendShippedMail(message, cancellationToken);" }},
   ],
 };
 const calculateOrderTax: Method = {
   id: 'method-blank-calculate-order-tax',
   name: 'calculateOrderTax',
   visibility: 'public',
-  fragments: [{ id: 'frag-blank-calculate-order-tax', label: '注文金額に消費税を足す', lines: 18, responsibility: 'tax' }],
+  fragments: [{ id: 'frag-blank-calculate-order-tax', label: '注文金額に消費税を足す', lines: 3, responsibility: 'tax' , code: { csharp: "var taxRate = isReducedRate ? reducedTaxRate : standardTaxRate;\nvar taxAmount = decimal.Round(amount * taxRate, 0, MidpointRounding.AwayFromZero);\nreturn amount + taxAmount;" }}],
 };
 const saveOrder: Method = {
   id: 'method-blank-save-order',
   name: 'saveOrder',
   visibility: 'public',
-  fragments: [{ id: 'frag-blank-save-order', label: '注文をDBに保存する', lines: 20, responsibility: 'persistence' }],
+  fragments: [{ id: 'frag-blank-save-order', label: '注文をDBに保存する', lines: 4, responsibility: 'persistence' , code: { csharp: "var entity = Order.FromAmount(amount);\nawait _repository.SaveAsync(entity, cancellationToken);\nawait _unitOfWork.CommitAsync(cancellationToken);\nreturn entity.Id;" }}],
 };
 const updateShippingStatus: Method = {
   id: 'method-blank-update-shipping-status',
   name: 'updateShippingStatus',
   visibility: 'public',
-  fragments: [{ id: 'frag-blank-update-shipping-status', label: '発送状況をDBに記録する', lines: 16, responsibility: 'persistence' }],
+  fragments: [{ id: 'frag-blank-update-shipping-status', label: '発送状況をDBに記録する', lines: 3, responsibility: 'persistence' , code: { csharp: "if (orderId <= 0) throw new ArgumentOutOfRangeException(nameof(orderId));\nvar updated = await _shippingRepository.UpdateStatusAsync(orderId, \"Shipped\", DateTimeOffset.UtcNow, cancellationToken);\nreturn updated;" }}],
 };
 const sendOrderConfirmMail: Method = {
   id: 'method-blank-send-order-confirm-mail',
   name: 'sendOrderConfirmMail',
   visibility: 'public',
-  fragments: [{ id: 'frag-blank-send-order-confirm-mail', label: '注文確認メールを送る', lines: 20, responsibility: 'notification' }],
+  fragments: [{ id: 'frag-blank-send-order-confirm-mail', label: '注文確認メールを送る', lines: 3, responsibility: 'notification' , code: { csharp: "var message = new MailMessage(recipient, subject, body);\nawait _mailer.SendAsync(message, cancellationToken);\nawait _mailAuditLog.RecordSentAsync(message.Id, cancellationToken);" }}],
 };
 const sendShippedMail: Method = {
   id: 'method-blank-send-shipped-mail',
   name: 'sendShippedMail',
   visibility: 'public',
-  fragments: [{ id: 'frag-blank-send-shipped-mail', label: '発送完了メールを送る', lines: 18, responsibility: 'notification' }],
+  fragments: [{ id: 'frag-blank-send-shipped-mail', label: '発送完了メールを送る', lines: 3, responsibility: 'notification' , code: { csharp: "var message = new MailMessage(recipient, subject, body);\nawait _mailer.SendAsync(message, cancellationToken);\nawait _mailAuditLog.RecordSentAsync(message.Id, cancellationToken);" }}],
 };
 
 const orderShippingParts = [placeOrder, shipOrder, calculateOrderTax, saveOrder, updateShippingStatus, sendOrderConfirmMail, sendShippedMail];

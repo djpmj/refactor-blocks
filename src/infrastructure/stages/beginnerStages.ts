@@ -32,8 +32,8 @@ const userControllerStage: Stage = {
   why: 'メールの案内を変えるだけでも、ユーザー登録や削除の処理に埋もれた送信箇所を探す必要があります。通知をまとめれば、メールの変更を通知処理に集められます。',
   description:
     'Web APIでユーザー登録・削除のリクエストを受ける UserController。本来の仕事はリクエストの検証とレスポンスの組み立てなのに、DBへの保存・削除やメール送信まで自分でやっている。',
-  goal: 'メソッドは50行・クラスは150行以内、1クラスの責務は1種類まで。DBとメールの処理は UserRepository と Mailer に任せよう',
-  limits: { method: 50, class: 150, file: 300 },
+  goal: 'メソッドは11行・クラスは23行・ファイルは24行以内、1クラスの責務は1種類まで。DBとメールの処理は UserRepository と Mailer に任せよう',
+  limits: { method: 11, class: 23, file: 24 },
   dependencyLimit: 2,
   // 入力値の検証とレスポンスの組み立ては、どちらもHTTPの受け口としての責務に数える
   responsibilityLimit: 1,
@@ -56,10 +56,10 @@ const userControllerStage: Stage = {
                 name: 'registerUser',
                 visibility: 'public',
                 fragments: [
-                  { id: 'frag-validate-input', label: '入力値を検証する', lines: 26, responsibility: 'http', suggestedName: 'validateInput' },
-                  { id: 'frag-save-user', label: 'ユーザーをDBに保存する', lines: 36, responsibility: 'persistence', suggestedName: 'saveUser' },
-                  { id: 'frag-welcome-mail', label: 'ようこそメールを送る', lines: 30, responsibility: 'notification', suggestedName: 'sendWelcomeMail' },
-                  { id: 'frag-register-response', label: 'レスポンスを組み立てる', lines: 16, responsibility: 'http', suggestedName: 'buildResponse' },
+                  { id: 'frag-validate-input', label: '入力値を検証する', lines: 2, responsibility: 'http', suggestedName: 'validateInput' , code: { csharp: "if (string.IsNullOrWhiteSpace(input.Name)) throw new ValidationException(\"名前が必要です\");\nif (!EmailAddress.TryParse(input.Email, out _)) throw new ValidationException(\"メールアドレスが不正です\");" }},
+                  { id: 'frag-save-user', label: 'ユーザーをDBに保存する', lines: 3, responsibility: 'persistence', suggestedName: 'saveUser' , code: { csharp: "var user = User.Create(input.Name, input.Email);\nawait _repository.SaveAsync(user, cancellationToken);\nawait _unitOfWork.CommitAsync(cancellationToken);" }},
+                  { id: 'frag-welcome-mail', label: 'ようこそメールを送る', lines: 3, responsibility: 'notification', suggestedName: 'sendWelcomeMail' , code: { csharp: "var message = new MailMessage(user.Email, \"ようこそ\", $\"{user.Name} さん、登録ありがとうございます\");\nawait _mailer.SendAsync(message, cancellationToken);\nawait _mailAuditLog.RecordSentAsync(message.Id, cancellationToken);" }},
+                  { id: 'frag-register-response', label: 'レスポンスを組み立てる', lines: 3, responsibility: 'http', suggestedName: 'buildResponse' , code: { csharp: "var response = new ApiResponse(user.Id, user.Name, user.Email);\n_logger.LogDebug(\"登録済みユーザー {UserId} を返します\", user.Id);\nreturn Results.Created($\"/users/{user.Id}\", response);" }},
                 ],
               },
               {
@@ -67,9 +67,9 @@ const userControllerStage: Stage = {
                 name: 'deleteUser',
                 visibility: 'public',
                 fragments: [
-                  { id: 'frag-delete-user', label: 'ユーザーをDBから削除する', lines: 20, responsibility: 'persistence', suggestedName: 'removeUserRecord' },
-                  { id: 'frag-farewell-mail', label: 'お別れメールを送る', lines: 16, responsibility: 'notification', suggestedName: 'sendFarewellMail' },
-                  { id: 'frag-delete-response', label: 'レスポンスを組み立てる', lines: 10, responsibility: 'http', suggestedName: 'buildDeleteResponse' },
+                  { id: 'frag-delete-user', label: 'ユーザーをDBから削除する', lines: 3, responsibility: 'persistence', suggestedName: 'removeUserRecord' , code: { csharp: "cancellationToken.ThrowIfCancellationRequested();\nawait _repository.DeleteAsync(userId, cancellationToken);\nawait _unitOfWork.CommitAsync(cancellationToken);" }},
+                  { id: 'frag-farewell-mail', label: 'お別れメールを送る', lines: 3, responsibility: 'notification', suggestedName: 'sendFarewellMail' , code: { csharp: "var message = new MailMessage(recipient, subject, body);\nawait _mailer.SendAsync(message, cancellationToken);\nawait _mailAuditLog.RecordSentAsync(message.Id, cancellationToken);" }},
+                  { id: 'frag-delete-response', label: 'レスポンスを組み立てる', lines: 3, responsibility: 'http', suggestedName: 'buildDeleteResponse' , code: { csharp: "if (input is null) throw new ArgumentNullException(nameof(input));\nvar response = new ApiResponse(statusCode, message);\nreturn Results.Json(response, statusCode: statusCode);" }},
                 ],
               },
             ],
@@ -122,8 +122,8 @@ const invoiceServiceStage: Stage = {
   why: 'PDFの見た目を変えるだけなのに、金額計算や保存、送信まで抱えた請求処理を追うことになります。描画の役割が分かれていれば、レイアウト変更の確認先を絞れます。',
   description:
     '請求書を作って送る InvoiceService。金額の計算・PDFの描画・ストレージへの保存・メール送信・送信履歴の記録を1クラスで抱えている。今回は受け皿のクラスが用意されていない。',
-  goal: 'メソッドは50行、クラスは150行以内、1クラスの責務は2種類まで。「クラスを追加」で受け皿を作ろう',
-  limits: { method: 50, class: 150, file: 300 },
+  goal: 'メソッドは11行、クラスは22行・ファイルは50行以内、1クラスの責務は2種類まで。「クラスを追加」で受け皿を作ろう',
+  limits: { method: 11, class: 22, file: 50 },
   dependencyLimit: 3,
   responsibilityLimit: 2,
   changeRequests: [
@@ -145,10 +145,10 @@ const invoiceServiceStage: Stage = {
                 name: 'issueInvoice',
                 visibility: 'public',
                 fragments: [
-                  { id: 'frag-sum-items', label: '明細の金額を合計する', lines: 24, responsibility: 'pricing', suggestedName: 'sumItems' },
-                  { id: 'frag-apply-discount', label: '割引を適用する', lines: 18, responsibility: 'pricing', suggestedName: 'applyDiscount' },
-                  { id: 'frag-render-pdf', label: '請求書のPDFを描画する', lines: 44, responsibility: 'rendering', suggestedName: 'renderPdf' },
-                  { id: 'frag-store-pdf', label: 'PDFをストレージに保存する', lines: 24, responsibility: 'storage', suggestedName: 'storePdf' },
+                  { id: 'frag-sum-items', label: '明細の金額を合計する', lines: 2, responsibility: 'pricing', suggestedName: 'sumItems' , code: { csharp: "var total = items.Sum(item => item.Quantity * item.UnitPrice);\nsubtotal = decimal.Round(total, 2);" }},
+                  { id: 'frag-apply-discount', label: '割引を適用する', lines: 2, responsibility: 'pricing', suggestedName: 'applyDiscount' , code: { csharp: "var discount = subtotal * discountRate;\ninvoice.Total = subtotal - discount;" }},
+                  { id: 'frag-render-pdf', label: '請求書のPDFを描画する', lines: 3, responsibility: 'rendering', suggestedName: 'renderPdf' , code: { csharp: "var page = _pdfRenderer.CreatePage();\npage.DrawInvoice(invoice);\nvar document = _pdfRenderer.Render(page);" }},
+                  { id: 'frag-store-pdf', label: 'PDFをストレージに保存する', lines: 3, responsibility: 'storage', suggestedName: 'storePdf' , code: { csharp: "var key = $\"invoices/{invoice.Number}.pdf\";\nawait _storage.UploadAsync(key, document, cancellationToken);\nawait _storage.SetMetadataAsync(key, invoice.Number, cancellationToken);" }},
                 ],
               },
               {
@@ -156,8 +156,8 @@ const invoiceServiceStage: Stage = {
                 name: 'sendInvoice',
                 visibility: 'public',
                 fragments: [
-                  { id: 'frag-attach-mail', label: '請求書をメールに添付して送る', lines: 26, responsibility: 'notification', suggestedName: 'mailInvoice' },
-                  { id: 'frag-record-history', label: '送信履歴を記録する', lines: 20, responsibility: 'storage', suggestedName: 'recordHistory' },
+                  { id: 'frag-attach-mail', label: '請求書をメールに添付して送る', lines: 6, responsibility: 'notification', suggestedName: 'mailInvoice' , code: { csharp: "var key = $\"invoices/{invoice.Number}.pdf\";\nawait using var pdf = await _storage.DownloadAsync(key, cancellationToken);\nvar message = new MailMessage(recipient, subject, body);\nmessage.Attachments.Add(new Attachment(pdf, $\"{invoice.Number}.pdf\", \"application/pdf\"));\nawait _mailer.SendAsync(message, cancellationToken);\nawait _mailAuditLog.RecordSentAsync(message.Id, cancellationToken);" }},
+                  { id: 'frag-record-history', label: '送信履歴を記録する', lines: 3, responsibility: 'storage', suggestedName: 'recordHistory' , code: { csharp: "var history = new InvoiceDeliveryHistory(invoice.Number, recipient, DateTimeOffset.UtcNow);\nawait _historyRepository.AddAsync(history, cancellationToken);\nawait _unitOfWork.CommitAsync(cancellationToken);" }},
                 ],
               },
             ],

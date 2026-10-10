@@ -60,6 +60,18 @@ describe('generateClassSource', () => {
     expect(source).toContain('        a();\n        b();');
   });
 
+  it('renders declared call arguments and matching method parameters', () => {
+    const codebase: Codebase = { files: [{ id: 'f', path: 'x', classes: [{ id: 'c', name: 'Cart', methods: [
+      { id: 'caller', name: 'checkout', visibility: 'public', fragments: [{ id: 'call', label: 'calls helper', lines: 1, responsibility: 'call', uses: ['target'], callArguments: ['order'] }] },
+      { id: 'target', name: 'calculateShippingFee', visibility: 'private', parameters: [{ type: 'Order', name: 'order' }], fragments: [] },
+    ] }] }] };
+
+    const source = generateClassSource(codebase, 'c', 'csharp');
+
+    expect(source).toContain('calculateShippingFee(order);');
+    expect(source).toContain('private void calculateShippingFee(Order order);');
+  });
+
   it('prefers explicit code on call fragments', () => {
     // Arrange
     const codebase: Codebase = { files: [{ id: 'f', path: 'x', classes: [{ id: 'c', name: 'Thing', methods: [

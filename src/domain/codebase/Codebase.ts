@@ -18,6 +18,8 @@ export type Fragment = {
   readonly lines: number;
   readonly responsibility: string;
   readonly uses?: readonly string[];
+  /** call Fragment が uses の各メソッドへ渡す引数。省略時は引数なしで呼ぶ。 */
+  readonly callArguments?: readonly string[];
   readonly suggestedName?: string;
   /**
    * この処理が、別クラスの処理と文字通り同じ実装(コピペによる重複)であることを示す隠しタグ。
@@ -57,6 +59,7 @@ export type Method = {
   readonly id: string;
   readonly name: string;
   readonly visibility: Visibility;
+  readonly parameters?: readonly { readonly type: string; readonly name: string }[];
   readonly fragments: readonly Fragment[];
 };
 

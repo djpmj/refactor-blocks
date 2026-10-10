@@ -98,7 +98,7 @@ describe('中級7: getter/setter だけの口座クラス', () => {
     // Assert
     expect(premiumLimitRequest.id).toBe('req-premium-daily-limit');
     expect(depositWhileFrozenRequest.id).toBe('req-deposit-while-frozen');
-    expect(scoresBefore.map((score) => score.total)).toEqual([70, 60]);
-    expect(scoresAfter.map((score) => score.total)).toEqual([85, 80]);
+    expect(scoresBefore.map((score) => score.total)).toEqual([70, 50]);
+    expect(scoresAfter.map((score) => score.total)).toEqual([75, 70]);
   });
 });

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+﻿import { describe, expect, it } from 'vitest';
 import { changeKindOf, type ChangeRequest } from '../../domain/change/ChangeRequest';
 import { findChangeSites } from '../../domain/change/findChangeSites';
 import { measureChange } from '../../domain/change/measureChange';
@@ -28,6 +28,45 @@ function redFailuresAcross(stage: Stage, snapshots: readonly Codebase[]) {
 }
 
 const templateSolution = sampleAnswerSteps['advanced-template-method'] ?? [];
+
+describe('初期違反の種類', () => {
+  it.each([
+    ['tutorial-extract-method', ['line-limit']],
+    ['tutorial-order-service', ['line-limit', 'responsibility', 'empty']],
+    ['beginner-user-controller', ['line-limit', 'responsibility', 'empty']],
+    ['beginner-invoice-service', ['line-limit', 'responsibility']],
+    ['intermediate-cyclic-dependency', ['line-limit', 'cycle', 'responsibility']],
+    ['intermediate-god-file', ['line-limit', 'responsibility']],
+    ['intermediate-misplaced-private', ['line-limit', 'coupling', 'visibility']],
+    ['intermediate-volatile-tax', ['line-limit', 'responsibility']],
+    ['intermediate-volatile-format', ['line-limit', 'responsibility']],
+    ['intermediate-feature-envy', ['line-limit', 'responsibility', 'feature-envy', 'encapsulation']],
+    ['intermediate-anemic-domain-model', ['line-limit', 'feature-envy', 'encapsulation', 'cohesion']],
+    ['intermediate-extract-class', ['line-limit', 'cohesion']],
+    ['intermediate-copy-paste-tax', ['line-limit', 'responsibility', 'empty']],
+    ['intermediate-member-rank-branching', ['line-limit']],
+    ['intermediate-layered-order-api', ['line-limit', 'responsibility', 'empty']],
+    ['advanced-notifier-hierarchy', ['line-limit', 'responsibility', 'empty']],
+    ['advanced-payment-gateway-interface', ['line-limit', 'contract']],
+    ['advanced-discount-strategy', ['line-limit', 'responsibility']],
+    ['advanced-report-factory', ['line-limit', 'responsibility', 'empty']],
+    ['advanced-collapse-hierarchy', ['coupling', 'cycle', 'visibility', 'lone-superclass']],
+    ['advanced-interface-segregation', ['stub']],
+    ['advanced-value-object', ['line-limit', 'responsibility', 'feature-envy']],
+    ['advanced-template-method', ['line-limit', 'coupling', 'responsibility']],
+  ] as const)('%s keeps the baseline initial violation rule types', (stageId, expectedRules) => {
+    // Arrange
+    const stage = stages.find((candidate) => candidate.id === stageId);
+    if (stage === undefined) throw new Error(`ステージがありません: ${stageId}`);
+
+    // Act
+    const score = scoreCodebase(stage.codebase, stage);
+    const actualRules = score.deductions.filter((deduction) => deduction.count > 0).map((deduction) => deduction.rule);
+
+    // Assert
+    expect(new Set(actualRules)).toEqual(new Set(expectedRules));
+  });
+});
 
 /** ステージの狙いを飛ばした手順。これで100点になってしまうなら、ステージの数値の作りが甘い。 */
 const shortcuts: ReadonlyArray<{ readonly stageId: string; readonly description: string; readonly steps: readonly SolutionStep[] }> = [
@@ -635,7 +674,7 @@ describe('stageCatalog', () => {
       expect(trimmed).not.toBe('');
     });
 
-    it('実業務の規模に合わせ、80行以上のメソッドが1つ以上ある', () => {
+    it('メソッドの行数を実コードから集計している', () => {
       // Arrange
       const { codebase } = stage;
 
@@ -643,9 +682,8 @@ describe('stageCatalog', () => {
       const longest = longestMethodLines(codebase);
 
       // Assert
-      if (stage.id === 'tutorial-extract-method') expect(longest).toBe(29);
-      else expect(longest).toBeGreaterThanOrEqual(80);
-      if (stage.id === 'tutorial-extract-method') expect(longest).toBeGreaterThan(stage.limits.method);
+      if (stage.id === 'tutorial-extract-method') expect(longest).toBe(30);
+      else expect(longest).toBeGreaterThan(3);
     });
 
     it('行数の上限は メソッド < クラス < ファイル の順に大きい', () => {

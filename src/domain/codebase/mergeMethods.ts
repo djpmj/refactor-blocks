@@ -61,6 +61,11 @@ function mergeableVisibility(methodA: Method, methodB: Method): boolean {
 
 type Validated = { readonly methodA: Method; readonly ownerA: CodeClass; readonly methodB: Method; readonly ownerB: CodeClass };
 
+function mergedCode(fragmentA: Fragment, fragmentB: Fragment): Partial<Pick<Fragment, 'code'>> {
+  const code = fragmentA.code ?? fragmentB.code;
+  return code === undefined ? {} : { code };
+}
+
 function validate(codebase: Codebase, request: MergeMethodsRequest): Result<Validated, MergeMethodsError> {
   const methodA = findMethod(codebase, request.methodAId);
   const ownerA = findClassOfMethod(codebase, request.methodAId);
@@ -87,6 +92,7 @@ function mergeFragment(newMethodId: string, index: number, fragmentA: Fragment, 
     label: fragmentA.label,
     responsibility: fragmentA.responsibility,
     lines: Math.max(fragmentA.lines, fragmentB.lines),
+    ...mergedCode(fragmentA, fragmentB),
     ...(fragmentA.suggestedName === undefined ? {} : { suggestedName: fragmentA.suggestedName }),
     ...(fragmentA.duplicateGroup === undefined ? {} : { duplicateGroup: fragmentA.duplicateGroup }),
     ...(uses.length === 0 ? {} : { uses }),

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { measureChange } from '../../domain/change/measureChange';
 import { averageScore, scoreChange } from '../../domain/change/scoreChange';
-import type { Codebase } from '../../domain/codebase/Codebase';
+import { type Codebase } from '../../domain/codebase/Codebase';
 import { scoreCodebase } from '../../domain/scoring/score';
 import type { Result } from '../../domain/shared/Result';
 import { applySolutionSteps, sampleAnswerCodebase, type SolutionStep } from '../../domain/stage/sampleAnswer';
@@ -72,7 +72,7 @@ function keepVolatileSteps(stable: (typeof axes)[keyof typeof axes]): SolutionSt
   ];
 }
 
-/** よく変わる処理を持った generate* を、誰からも呼ばれない ReportController へ持ち上げる近道。 */
+/** よく変わる処理を、既存のHTTP入口である ReportController へ持ち上げる案。 */
 function liftToControllerSteps(stable: (typeof axes)[keyof typeof axes]): SolutionStep[] {
   return [
     ...extractAllButVolatile(stable),
@@ -144,16 +144,15 @@ describe('中級4・中級5(変わる場所しだいで正解が変わる)', () 
     expect(keepScore).toBeLessThanOrEqual(sampleScore);
   });
 
-  it.each(volatileCases)('$stage.title: よく変わる処理を ReportController へ持ち上げても、模範解答を上回らない', ({ stage, stable }) => {
+  it.each(volatileCases)('$stage.title: よく変わる処理を ReportController へ持ち上げる案は模範解答より変更容易性が低い', ({ stage, stable }) => {
     // Arrange
     const lifted = applySolutionSteps(stage.codebase, liftToControllerSteps(stable));
 
     // Act
-    const liftedScore = changeReadiness(stage, lifted);
-    const sampleScore = changeReadiness(stage, sampleAnswerCodebase(stage));
+    const liftedChangeScore = changeReadiness(stage, lifted);
+    const sampleChangeScore = changeReadiness(stage, sampleAnswerCodebase(stage));
 
-    // Assert
-    expect(liftedScore).toBeLessThan(sampleScore);
+    expect(liftedChangeScore).toBeLessThan(sampleChangeScore);
   });
 
   it.each([taxStage, formatStage])('$title: 税と整形を1つのヘルパーへ移すと、模範解答より変更容易性スコアが低い', (stage) => {
