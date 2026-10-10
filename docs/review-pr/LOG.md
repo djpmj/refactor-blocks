@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-10 02:20 UTC PR #116 Add resizable left sidebar
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint ✅ / typecheck ✅ / test ✅ 1508件)。E2Eはブラウザ未導入のため再実行できず、PR本文の報告(151件pass)を参照
+- マージ: squash & delete-branch
+
 ## 2026-10-10 02:00 UTC PR #115 Implement issue 95 code fragments
 
 - 判定: 合格(blocker無し)

@@ -59,3 +59,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [code-lines-match](code-lines-match.md) | コードを持つFragmentの行数を実際のC#ソースの行数から計算し、表示・採点をそろえる |
 | [replay-maximize-method-panel](replay-maximize-method-panel.md) | 解答の再生に最大化ボタンと読み取り専用のメソッドパネルを追加する |
 | [fill-fragment-code](fill-fragment-code.md) | 全ステージの処理とフィールドに現実的なC#コードを入れ「未入力」をなくす |
+| [resizable-left-sidebar](resizable-left-sidebar.md) | 左サイドバー(課題とヒント)の幅をドラッグ・キーボードで変更できるようにする |
