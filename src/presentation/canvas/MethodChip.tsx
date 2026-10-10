@@ -63,7 +63,7 @@ export function MethodChip({ method }: Readonly<{ method: Method }>) {
   const limit = useGameStore((state) => state.stage.limits.method);
   const flagged = useGameStore((state) => {
     const rule = state.focusedRule;
-    return rule !== null && violationTargets(state.codebase, state.stage)[rule].methodIds.includes(method.id);
+    return rule !== null ? violationTargets(state.codebase, state.stage)[rule].methodIds.includes(method.id) : state.hintTarget?.methodIds.includes(method.id) ?? false;
   });
   const selected = useGameStore((state) => state.selectedMethodId === method.id);
   const inspectMethod = useGameStore((state) => state.inspectMethod);

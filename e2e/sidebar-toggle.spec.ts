@@ -56,7 +56,7 @@ test('左サイドバーをドラッグとキーボードで調整し、開閉�
   const toggle = page.getByRole('button', { name: 'サイドバーを閉じる' });
   await expect(sidebar).toBeVisible();
   await page.getByTestId('story-toggle').click();
-  const hintButton = sidebar.locator('.stage-panel__hints button');
+  const hintButton = sidebar.getByRole('button', { name: /ヒントを見る/ });
   for (let hint = 0; hint < 20 && await hintButton.isEnabled(); hint += 1) await hintButton.click();
   const painDetails = sidebar.locator('.change-pain details');
   if (await painDetails.count() > 0) await painDetails.locator('summary').click();
