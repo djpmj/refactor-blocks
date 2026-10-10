@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { selectStage } from './selectStage.js';
 
 test('右サイドバーの幅をドラッグとキーボードで調整し、白紙設計でも使える', async ({ page }) => {
   // Arrange
@@ -71,31 +72,31 @@ test('左サイドバーの幅を変えても右サイドバーの幅は独立�
 /** 既存のテストは OrderService を分解するチュートリアル2を前提にしている。 */
 async function openOrderStage(page: Page) {
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: 'チュートリアル2: 太った placeOrder' });
+  await selectStage(page, 'チュートリアル2: 太った placeOrder');
 }
 
 /** 循環依存を扱うテストは中級1を前提にしている。 */
 async function openCyclicStage(page: Page) {
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: '中級1: 循環依存を断ち切る' });
+  await selectStage(page, '中級1: 循環依存を断ち切る');
 }
 
 /** フィールド・Move Field・Feature Envyを扱うテストは中級6を前提にしている。 */
 async function openFeatureEnvyStage(page: Page) {
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: '中級6: 他人のデータばかり触るメソッド' });
+  await selectStage(page, '中級6: 他人のデータばかり触るメソッド');
 }
 
 /** 貧血ドメインモデル・アクセサ越しのアクセスを扱うテストは中級7を前提にしている。 */
 async function openAnemicDomainModelStage(page: Page) {
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: '中級7: getter/setter だけの口座クラス' });
+  await selectStage(page, '中級7: getter/setter だけの口座クラス');
 }
 
 /** 凝集度・Extract Classを扱うテストは中級8を前提にしている。 */
 async function openExtractClassStage(page: Page) {
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: '中級8: 給与と住所を抱えた社員クラス' });
+  await selectStage(page, '中級8: 給与と住所を抱えた社員クラス');
 }
 
 /**
@@ -332,7 +333,7 @@ test('ファイル・メソッド・余白のメニューにはクラスのフ�
 test('ファイルが1つだけなら移動項目を出さず、Escapeでヘッダーへフォーカスを戻す', async ({ page }) => {
   // Arrange
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: 'チュートリアル1: 長いメソッドを分ける' });
+  await selectStage(page, 'チュートリアル1: 長いメソッドを分ける');
   const header = page.getByTestId('class-header-ReportService');
   await header.click({ button: 'right' });
 
@@ -551,7 +552,7 @@ test('ステージを選ぶと、そのステージのコードベースと目�
   await expect(page.getByTestId('stage-description')).toContainText('月次の売上レポート');
 
   // Act
-  await page.getByLabel('ステージ').selectOption({ label: '中級1: 循環依存を断ち切る' });
+  await selectStage(page, '中級1: 循環依存を断ち切る');
 
   // Assert
   await expect(page.getByRole('heading', { name: '中級1: 循環依存を断ち切る' })).toBeVisible();
@@ -791,7 +792,7 @@ test('クラスを右クリックして実装するインターフェースを�
 test('上級3で3クラスがDiscountStrategyを実装すると、終点が分かれて白抜き三角マーカーが付く', async ({ page }) => {
   // Arrange: 上級3の DiscountService と同じファイルに3つの実装クラスを作る
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: '上級3: 会員ランクの割引をStrategyパターンへ組み替える' });
+  await selectStage(page, '上級3: 会員ランクの割引をStrategyパターンへ組み替える');
   const classNames = ['RegularDiscount', 'PremiumDiscount', 'VipDiscount'];
   for (const className of classNames) {
     await addClassFromMenu(page, 'calculateDiscount', className);
@@ -993,7 +994,7 @@ test('メソッドをドラッグで移したあと Ctrl+Z で元のクラスに
 /** 上級2を100点にする: 各ゲートウェイの charge からログ記録を抽出して行数超過を解き、PaymentGateway を実装させる。 */
 async function solvePaymentStage(page: Page) {
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: '上級2: 決済ゲートウェイをインターフェース越しに呼ぶ' });
+  await selectStage(page, '上級2: 決済ゲートウェイをインターフェース越しに呼ぶ');
   for (const [gateway, log] of [['Stripe', '決済ログを記録する(Stripe)'], ['Paypal', '決済ログを記録する(PayPal)']] as const) {
     await page.getByTestId(`class-${gateway}Gateway`).getByTestId('method-charge').click();
     await page.getByLabel(log).check();
@@ -1411,7 +1412,7 @@ test('クラスを余白の指定位置へドロップすると、新しいフ�
 test('越境した private メソッドの呼び出しは減点され、呼び出し元のクラスへ Move Method すると解消する', async ({ page }) => {
   // Arrange
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: '中級3: 越境する private メソッド' });
+  await selectStage(page, '中級3: 越境する private メソッド');
   await expect(page.getByRole('heading', { name: '中級3: 越境する private メソッド' })).toBeVisible();
   await expect(page.getByTestId('score')).toContainText('70点');
   await expect(page.getByTestId('score')).toContainText('行数 -10');
@@ -1461,7 +1462,7 @@ test('越境した private メソッドの呼び出しは減点され、呼び�
 test('中級3: renderTemplate を public にするとアクセス制御の減点は消えるが、依存が残るので満点にならない', async ({ page }) => {
   // Arrange
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: '中級3: 越境する private メソッド' });
+  await selectStage(page, '中級3: 越境する private メソッド');
   const score = page.getByTestId('score');
   await expect(score).toContainText('70点');
   await expect(score).toContainText('アクセス制御 -10');
@@ -1495,7 +1496,7 @@ test('中級3: renderTemplate を public にするとアクセス制御の減点
 test('上級8: upload を private にした後、ステージ開始時の public に戻せる', async ({ page }) => {
   // Arrange
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: '上級8: 取り込みの手順を Template Method にまとめる' });
+  await selectStage(page, '上級8: 取り込みの手順を Template Method にまとめる');
   await page.getByTestId('method-upload').click();
   const visibility = page.getByLabel('メソッド upload の可視性');
 
@@ -1515,7 +1516,7 @@ test('上級8: upload を private にした後、ステージ開始時の public
 test('中身のないメソッドには可視性の選択が出ない', async ({ page }) => {
   // Arrange
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: '上級6: 太ったインターフェースを役割ごとに分ける' });
+  await selectStage(page, '上級6: 太ったインターフェースを役割ごとに分ける');
   const postMessage = page.getByTestId('class-CollaborationTool').getByTestId('method-postMessage');
   await expect(async () => {
     await page.getByRole('button', { name: 'Zoom In' }).click();
@@ -1532,7 +1533,7 @@ test('中身のないメソッドには可視性の選択が出ない', async ({
 test('上級1ステージ: 重複した送信ログ記録処理をExtract Methodで取り出し統合すると、メソッドが1つになる', async ({ page }) => {
   // Arrange: EmailNotifier・SmsNotifierそれぞれから「送信ログを記録する」処理を抽出する
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: '上級1: 通知クラスの共通処理を基底クラスへ集める' });
+  await selectStage(page, '上級1: 通知クラスの共通処理を基底クラスへ集める');
   await page.getByTestId('method-notifyByEmail').click();
   await page.getByLabel('送信ログを記録する').check();
   await page.getByLabel('新しいメソッド名').fill('logEmailNotification');
@@ -1558,7 +1559,7 @@ test('上級1ステージ: 重複した送信ログ記録処理をExtract Method
 test('上級ステージ: 共通処理を基底クラスへ移してから継承元を設定すると、継承の矢印が引かれる', async ({ page }) => {
   // Arrange: 通知文を組み立てる処理を EmailNotifier から抽出する
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: '上級1: 通知クラスの共通処理を基底クラスへ集める' });
+  await selectStage(page, '上級1: 通知クラスの共通処理を基底クラスへ集める');
   await page.getByTestId('method-notifyByEmail').click();
   await page.getByLabel('通知文を組み立てる').check();
   await page.getByLabel('新しいメソッド名').fill('buildEmailBody');
@@ -1589,7 +1590,7 @@ test('上級ステージ: 共通処理を基底クラスへ移してから継承
 test('上級5: 子が1つだけの継承は減点され、右クリックメニューから継承を解除すると減点が消える', async ({ page }) => {
   // Arrange
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: '上級5: 子が1つしかない継承を畳む' });
+  await selectStage(page, '上級5: 子が1つしかない継承を畳む');
   const score = page.getByTestId('score');
   await expect(score).toContainText('子が1つだけの継承 -10');
   await page.getByTestId('class-header-CsvExporter').click({ button: 'right' });
@@ -1607,7 +1608,7 @@ test('上級5: 子が1つだけの継承は減点され、右クリックメニ�
 test('上級6: 空実装を削除するとまだ要求しているインターフェースへの約束違反になり、取り消すと戻る。実装の宣言を外すと宣言漏れになる', async ({ page }) => {
   // Arrange
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: '上級6: 太ったインターフェースを役割ごとに分ける' });
+  await selectStage(page, '上級6: 太ったインターフェースを役割ごとに分ける');
   const score = page.getByTestId('score');
   await expect(score).toContainText('使わないメソッドの空実装 -50');
   // クラスが多くfitViewの倍率が小さいので、メソッドが見える倍率までズームインする(回数はレイアウトしだいなので決め打ちしない)
@@ -1940,7 +1941,7 @@ test('移動メニュー: Escapeと外側クリックで開く前のチップに
   // Act
   await chip.press('Shift+F10');
   await expect(page.getByTestId('context-menu')).toBeVisible();
-  await page.getByLabel('ステージ').click();
+  await page.getByRole('heading', { level: 1 }).click();
 
   // Assert
   await expect(page.getByTestId('context-menu')).toHaveCount(0);
@@ -2012,7 +2013,7 @@ test('移動メニュー: 開き直したメニューに古いフォーカス復
 test('上級8: 呼び出しだけの importOrders を似た処理を持つメソッドから統合する', async ({ page }) => {
   // Arrange: 各形式の4手順を抽出する
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption('advanced-template-method');
+  await selectStage(page, '\u4e0a\u7d1a8: \u53d6\u308a\u8fbc\u307f\u306e\u624b\u9806\u3092 Template Method \u306b\u307e\u3068\u3081\u308b');
   for (const [owner, parseLabel] of [
     ['CsvOrderImporter', 'CSVの列を注文データに変換する'],
     ['JsonOrderImporter', 'JSONの項目を注文データに変換する'],

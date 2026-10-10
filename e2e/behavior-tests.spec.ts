@@ -1,8 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
+import { selectStage } from './selectStage.js';
 
 async function openStage(page: Page, label: string) {
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label });
+  await selectStage(page, label);
 }
 
 async function dragMethodToClass(page: Page, methodTestId: string, classTestId: string) {

@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { selectStage } from './selectStage.js';
 
 /** 白紙設計の画面(リファクタリング画面にも同じtestidが出ることがあるので、この中だけを見る)。 */
 function blankView(page: Page): Locator {
@@ -161,7 +162,7 @@ test('白紙設計で部品を動かしてから Ctrl+Z すると白紙設計の
 test('リファクタリングと白紙設計を行き来しても、それぞれの操作が残っている', async ({ page }) => {
   // Arrange
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: 'チュートリアル2: 太った placeOrder' });
+  await selectStage(page, 'チュートリアル2: 太った placeOrder');
   await page.getByTestId('method-placeOrder').click();
   await page.getByLabel('消費税を計算する(軽減税率あり)').check();
   await page.getByLabel('新しいメソッド名').fill('calculateTax');

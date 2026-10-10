@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { selectStage } from './selectStage.js';
 
 const STAGE = '中級11: Controller に全部書いてある注文API';
 
@@ -30,7 +31,7 @@ async function dragMethodToClass(page: Page, methodTestId: string, classTestId: 
 test('層のあるステージでは、層を持つクラスにだけ層の名前のタグが出る', async ({ page }) => {
   // Arrange & Act
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: STAGE });
+  await selectStage(page, STAGE);
 
   // Assert
   await expect(page.getByTestId('layer-OrderController')).toHaveText('Controller');
@@ -41,7 +42,7 @@ test('層のあるステージでは、層を持つクラスにだけ層の名�
 test('層を持たない既存ステージにはタグが出ない', async ({ page }) => {
   // Arrange & Act
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: 'チュートリアル2: 太った placeOrder' });
+  await selectStage(page, 'チュートリアル2: 太った placeOrder');
 
   // Assert
   await expect(page.locator('.class-node__layer')).toHaveCount(0);
@@ -50,7 +51,7 @@ test('層を持たない既存ステージにはタグが出ない', async ({ pa
 test('保存の処理だけを Repository へ移すと、タグが付き、層を飛ばしたので減点される', async ({ page }) => {
   // Arrange
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: STAGE });
+  await selectStage(page, STAGE);
   await expect(page.getByTestId('score')).not.toContainText('層の依存の向き');
   await page.getByTestId('method-placeOrder').click();
   await page.getByLabel('注文を保存して在庫を減らす').check();

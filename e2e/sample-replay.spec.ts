@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { selectStage } from './selectStage.js';
 
 test('「解答を再生」で模範解答を1手ずつ進め、図・説明・点数が変わる。閉じてもキャンバスは変わらない', async ({ page }) => {
   // Arrange
@@ -74,7 +75,7 @@ test('「解答を再生」で模範解答を1手ずつ進め、図・説明・�
 test('再生中のメソッドパネルは手順に追従し、プレイヤーの選択を変更しない', async ({ page }) => {
   // Arrange
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: '中級11: Controller に全部書いてある注文API' });
+  await selectStage(page, '中級11: Controller に全部書いてある注文API');
   const playerCanvas = page.locator('.app__canvas .react-flow');
   await expect(playerCanvas).toContainText('OrderController');
   await expect(playerCanvas).toContainText('cancelOrder');

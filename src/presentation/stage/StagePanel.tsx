@@ -18,7 +18,6 @@ import { ChangePainCard } from './ChangePainCard';
 import { StoryIntro } from './StoryIntro';
 import { StoryOutro } from './StoryOutro';
 import { ManualFixPanel } from './ManualFixPanel';
-import { LEVEL_LABEL } from './levelLabel';
 import { StageRoadmapDialog } from './StageRoadmapDialog';
 import { TestStatus } from './TestStatus';
 import { useHints } from './useHints';
@@ -39,38 +38,6 @@ function RoadmapButton() {
   );
 }
 
-function StageSelect() {
-  const stages = useGameStore((state) => state.stages);
-  // ステージは難易度順に並んでいるので、出てきた順に難易度をまとめる
-  const levels = [...new Set(stages.map((stage) => stage.level))];
-  const stageId = useGameStore((state) => state.stage.id);
-  const selectStage = useGameStore((state) => state.selectStage);
-  const progress = useGameStore((state) => state.progress);
-  return (
-    <select
-      aria-label="ステージ"
-      className="stage-panel__select"
-      value={stageId}
-      onChange={(event) => {
-        selectStage(event.target.value);
-      }}
-    >
-      {levels.map((level) => (
-        <optgroup key={level} label={LEVEL_LABEL[level]}>
-          {stages
-            .filter((stage) => stage.level === level)
-            .map((stage) => (
-              <option key={stage.id} value={stage.id}>
-                {progress[stage.id] === 100 ? '✅ ' : ''}
-                {stage.title}
-              </option>
-            ))}
-        </optgroup>
-      ))}
-    </select>
-  );
-}
-
 /** 章の導入・結びを出すかどうかの切り替え。 */
 function StoryToggle() {
   const enabled = useGameStore((state) => state.storyEnabled);
@@ -82,11 +49,10 @@ function StoryToggle() {
   );
 }
 
-/** ヘッダーの左側: ステージ選び・ステージ一覧・ストーリーの切り替え。 */
+/** ヘッダーの左側: ステージ一覧・ストーリーの切り替え。 */
 function StageNavigation() {
   return (
     <>
-      <StageSelect />
       <RoadmapButton />
       <StoryToggle />
     </>

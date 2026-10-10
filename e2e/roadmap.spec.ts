@@ -3,6 +3,14 @@ import { expect, test } from '@playwright/test';
 const STAGE_1 = 'チュートリアル1: 長いメソッドを分ける';
 const STAGE_2 = 'チュートリアル2: 太った placeOrder';
 
+test('ヘッダーにはステージ選択コンボボックスがない', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('combobox', { name: 'ステージ' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(STAGE_1);
+  await expect(page.getByTestId('roadmap-open')).toBeVisible();
+  await expect(page.getByTestId('story-toggle')).toBeVisible();
+});
+
 test('ステージ一覧を開き、カードを選ぶとそのステージへ移ってダイアログが閉じる', async ({ page }) => {
   // Arrange
   await page.goto('/');
@@ -23,7 +31,6 @@ test('ステージ一覧を開き、カードを選ぶとそのステージへ�
 
   // Assert
   await expect(dialog).toHaveCount(0);
-  await expect(page.getByLabel('ステージ')).toHaveValue('tutorial-order-service');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(STAGE_2);
 });
 
@@ -60,5 +67,5 @@ test('Escで閉じてボタンにフォーカスが戻り、キーボードだ�
 
   // Assert
   await expect(page.getByTestId('stage-roadmap')).toHaveCount(0);
-  await expect(page.getByLabel('ステージ')).toHaveValue('tutorial-order-service');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(STAGE_2);
 });

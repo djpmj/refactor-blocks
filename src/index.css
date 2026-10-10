@@ -94,7 +94,6 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .stage-panel__description { margin-top: 12px; font-size: 12px; }
 .stage-panel__description summary { cursor: pointer; color: var(--accent); width: fit-content; }
 .stage-panel__description p { margin: 4px 0 0; line-height: 1.5; overflow-y: auto; }
-.stage-panel__select { max-width: 100%; border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 6px; padding: 5px 8px; font-size: 13px; }
 .stage-panel > button, .toolbar button, .method-editor__extract button { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 6px; padding: 5px 12px; font-size: 13px; cursor: pointer; }
 .stage-panel > button:hover:not(:disabled), .toolbar button:hover:not(:disabled) { border-color: var(--accent); }
 .stage-panel > button:disabled, .toolbar button:disabled { opacity: 0.4; cursor: default; }

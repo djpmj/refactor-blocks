@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { selectStage } from './selectStage.js';
 
 const STAGE_1 = 'チュートリアル1: 長いメソッドを分ける';
 const STAGE_2 = 'チュートリアル2: 太った placeOrder';
@@ -25,13 +26,13 @@ async function makeOneChange(page: Page) {
 test('作業したあとリロードすると続きから再開し、お知らせが出る。操作すると消える', async ({ page }) => {
   // Arrange
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: STAGE_1 });
+  await selectStage(page, STAGE_1);
   await expect(page.getByTestId('draft-restored')).toHaveCount(0);
   const changed = await makeOneChange(page);
 
   // Act
   await page.reload();
-  await page.getByLabel('ステージ').selectOption({ label: STAGE_1 });
+  await selectStage(page, STAGE_1);
 
   // Assert
   await expect(page.locator('.class-node')).toHaveCount(changed);
@@ -47,13 +48,13 @@ test('作業したあとリロードすると続きから再開し、お知ら�
 test('ステージを切り替えて戻っても作業が残る', async ({ page }) => {
   // Arrange
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: STAGE_1 });
+  await selectStage(page, STAGE_1);
   const changed = await makeOneChange(page);
 
   // Act
-  await page.getByLabel('ステージ').selectOption({ label: STAGE_2 });
+  await selectStage(page, STAGE_2);
   await expect(page.getByTestId('draft-restored')).toHaveCount(0);
-  await page.getByLabel('ステージ').selectOption({ label: STAGE_1 });
+  await selectStage(page, STAGE_1);
 
   // Assert
   await expect(page.locator('.class-node')).toHaveCount(changed);
@@ -63,7 +64,7 @@ test('ステージを切り替えて戻っても作業が残る', async ({ page 
 test('最初に戻してからリロードすると初期状態で始まる', async ({ page }) => {
   // Arrange
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: STAGE_1 });
+  await selectStage(page, STAGE_1);
   const initial = await page.locator('.class-node').count();
   await makeOneChange(page);
   await page.locator('.stage-panel__reset').click();
@@ -71,7 +72,7 @@ test('最初に戻してからリロードすると初期状態で始まる', as
 
   // Act
   await page.reload();
-  await page.getByLabel('ステージ').selectOption({ label: STAGE_1 });
+  await selectStage(page, STAGE_1);
 
   // Assert
   await expect(page.locator('.class-node')).toHaveCount(initial);
@@ -89,7 +90,7 @@ for (const broken of ['not json{', '{"x":{"fingerprint":1,"codebase":{}}}', '[]'
     await page.goto('/');
 
     // Assert
-    await expect(page.getByLabel('ステージ')).toBeVisible();
+    await expect(page.getByTestId('roadmap-open')).toBeVisible();
     await expect(page.getByTestId('draft-restored')).toHaveCount(0);
   });
 }
@@ -97,7 +98,7 @@ for (const broken of ['not json{', '{"x":{"fingerprint":1,"codebase":{}}}', '[]'
 test('指紋が違う下書きは使われない', async ({ page }) => {
   // Arrange
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: STAGE_1 });
+  await selectStage(page, STAGE_1);
   await makeOneChange(page);
   await page.evaluate(() => {
     const drafts: Record<string, { fingerprint: string }> = JSON.parse(localStorage.getItem('refactor-blocks:drafts') ?? '{}');
@@ -108,8 +109,8 @@ test('指紋が違う下書きは使われない', async ({ page }) => {
 
   // Act
   await page.reload();
-  await page.getByLabel('ステージ').selectOption({ label: STAGE_2 });
-  await page.getByLabel('ステージ').selectOption({ label: STAGE_1 });
+  await selectStage(page, STAGE_2);
+  await selectStage(page, STAGE_1);
 
   // Assert
   await expect(page.locator('.class-node')).toHaveCount(initial);

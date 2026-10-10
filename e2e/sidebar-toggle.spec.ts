@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { selectStage } from './selectStage.js';
 
 test('サイドバー開閉ボタンが境界の外側に接して動く', async ({ page }) => {
   // Arrange
@@ -124,7 +125,7 @@ test('長い内容をスクロールしてもボタンがスクロールバー�
   // Arrange
   await page.setViewportSize({ width: 1440, height: 600 });
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: '上級3: 会員ランクの割引をStrategyパターンへ組み替える' });
+  await selectStage(page, '上級3: 会員ランクの割引をStrategyパターンへ組み替える');
   const sidebar = page.getByRole('complementary', { name: '課題とヒント' });
   const toggle = page.getByRole('button', { name: 'サイドバーを閉じる' });
   await expect(sidebar).toBeVisible();
@@ -162,7 +163,7 @@ test('狭い画面でも閉じたサイドバーのボタンをキーボード�
   expect(buttonBox.x).toBeLessThan(40);
 
   // Act: ヘッダーの操作部品をTabで進み、Spaceで開く
-  for (let tab = 0; tab < 11; tab++) await page.keyboard.press('Tab');
+  for (let tab = 0; tab < 10; tab++) await page.keyboard.press('Tab');
   await expect(openButton).toBeFocused();
   await page.keyboard.press('Space');
 

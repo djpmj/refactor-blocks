@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { selectStage } from './selectStage.js';
 
 async function dragMethodToClass(page: Page, methodId: string, classId: string) {
   const source = await page.getByTestId(methodId).boundingBox();
@@ -20,7 +21,7 @@ async function extract(page: Page, fragmentLabel: string, name: string) {
 async function clearTutorial2(page: Page) {
   await page.setViewportSize({ width: 1800, height: 1400 });
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: 'チュートリアル2: 太った placeOrder' });
+  await selectStage(page, 'チュートリアル2: 太った placeOrder');
   await extract(page, '消費税を計算する(軽減税率あり)', 'calculateTax');
   await dragMethodToClass(page, 'method-calculateTax', 'class-TaxCalculator');
   await extract(page, '注文をDBに保存する', 'saveOrder');
@@ -32,7 +33,7 @@ async function clearTutorial2(page: Page) {
 test('100点未満では出ず、100点で出る。キーボードで答えると解説が出て、もう一度で戻る', async ({ page }) => {
   await page.setViewportSize({ width: 1800, height: 1400 });
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: 'チュートリアル2: 太った placeOrder' });
+  await selectStage(page, 'チュートリアル2: 太った placeOrder');
   await expect(page.getByRole('region', { name: '理解度チェック' })).toBeHidden();
 
   await clearTutorial2(page);
@@ -76,6 +77,6 @@ test('ステージを切り替えると理解度チェックが消える', async
   await clearTutorial2(page);
   await expect(page.getByRole('region', { name: '理解度チェック' })).toBeVisible();
 
-  await page.getByLabel('ステージ').selectOption({ label: 'チュートリアル1: 長いメソッドを分ける' });
+  await selectStage(page, 'チュートリアル1: 長いメソッドを分ける');
   await expect(page.getByRole('region', { name: '理解度チェック' })).toBeHidden();
 });

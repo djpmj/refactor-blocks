@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { selectStage } from './selectStage.js';
 
 async function dragMethodToClass(page: Page, methodId: string, classId: string) {
   const source = await page.getByTestId(methodId).boundingBox();
@@ -20,7 +21,7 @@ async function extract(page: Page, fragmentLabel: string, name?: string) {
 test('開始時に変更の痛みが見え、責務を寄せると直すクラス数が減る', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: '中級1: 循環依存を断ち切る' });
+  await selectStage(page, '中級1: 循環依存を断ち切る');
 
   const card = page.getByRole('region', { name: 'もし、この変更が来たら?' });
   await expect(card).toContainText('価格の計算ルールを変えて');
@@ -36,7 +37,7 @@ test('開始時に変更の痛みが見え、責務を寄せると直すクラ�
 test('100点で理由を見せてサイドバーを一度だけ自動で開く', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: 'チュートリアル2: 太った placeOrder' });
+  await selectStage(page, 'チュートリアル2: 太った placeOrder');
   const openToggle = page.getByRole('button', { name: 'サイドバーを開く' });
   await expect(openToggle).toBeVisible();
   await expect(page.getByRole('region', { name: 'もし、この変更が来たら?' })).toBeHidden();
@@ -70,7 +71,7 @@ test('100点で理由を見せてサイドバーを一度だけ自動で開く',
 test('チュートリアル1の読む行数は実コードと一致する', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: 'チュートリアル1: 長いメソッドを分ける' });
+  await selectStage(page, 'チュートリアル1: 長いメソッドを分ける');
   const card = page.getByRole('region', { name: 'もし、この変更が来たら?' });
   await expect(card).toContainText('目を通す行数は今 30 行');
   await expect(card).toContainText('ReportService.printMonthlyReport(30行)');
@@ -102,7 +103,7 @@ test('チュートリアル1の読む行数は実コードと一致する', asyn
 test('種類を足すときに書き換えるクラス数が見え、ランクごとのクラスに組み替えると0になる', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: '中級10: 会員ランクごとのif分岐をクラスに分ける' });
+  await selectStage(page, '中級10: 会員ランクごとのif分岐をクラスに分ける');
   const card = page.getByRole('region', { name: 'もし、この変更が来たら?' });
   await expect(card.getByRole('heading', { name: '新しい種類を足すなら?' })).toBeVisible();
   await expect(card).toContainText('ゴールド会員を追加して');
@@ -121,7 +122,7 @@ test('種類を足すときに書き換えるクラス数が見え、ランク�
 test('ランクのクラスにMemberRankを実装させると、新しいクラスを足すだけで済む表示に変わる', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: '中級10: 会員ランクごとのif分岐をクラスに分ける' });
+  await selectStage(page, '中級10: 会員ランクごとのif分岐をクラスに分ける');
   const card = page.getByRole('region', { name: 'もし、この変更が来たら?' });
   await expect(card).toContainText('既存の 1 クラスを書き換えます');
 

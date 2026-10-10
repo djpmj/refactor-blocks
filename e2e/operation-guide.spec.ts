@@ -46,8 +46,10 @@ test('? は編集入力中は文字として入力でき、編集外でガイド
   await expect(dialog).not.toBeVisible();
   await expect(methodInput).toHaveValue('?');
 
-  await page.getByLabel('ステージ').focus();
+  await page.getByTestId('roadmap-open').focus();
   await page.keyboard.press('Shift+/');
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press('Escape');
   await expect(dialog).not.toBeVisible();
   await page.getByTestId('operation-guide-open').focus();
   await page.keyboard.press('Shift+/');
