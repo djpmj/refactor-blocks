@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-10 05:58 UTC PR #121 feat: clarify action affordances
+
+- 判定: 合格(blocker無し。suggestion: button--primaryの!importantは詳細度で解決したい)
+- 確認した内容: npm test ✅ 1561件 / npm run lint ✅ / npm run typecheck ✅。E2Eはレビュー環境にChromiumが無く起動できず未確認(PR本文は161件成功と報告)、E2E specは静的に確認
+- マージ: squash & delete-branch
+
 ## 2026-10-10 05:31 UTC PR #120 feat: restructure stage problem sidebar
 
 - 判定: 合格(blocker無し)
@@ -209,12 +215,6 @@
   失敗したため、人が手動でsquash & delete-branch
 
 ## 2026-10-03 10:44 UTC PR #3 chore(deps): Bump @types/node from 24.13.6 to 26.6.1
-
-- 判定: 合格(blocker無し)
-- 確認した内容: ブランチが古いためmasterにマージした状態で npm ci ✅ / npm test 982件 ✅ / npm run lint ✅ / npm run typecheck ✅
-- マージ: squash & delete-branch
-
-## 2026-10-03 10:42 UTC PR #1 chore(deps): Bump jsdom from 27.0.1 to 30.1.0
 
 - 判定: 合格(blocker無し)
 - 確認した内容: ブランチが古いためmasterにマージした状態で npm ci ✅ / npm test 982件 ✅ / npm run lint ✅ / npm run typecheck ✅
