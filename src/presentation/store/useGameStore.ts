@@ -109,6 +109,8 @@ type GameState = {
   history: History;
   selectedMethodId: string | null;
   selectedFieldId: string | null;
+  extractDraft: ExtractMethodInput | null;
+  setExtractDraft: (draft: ExtractMethodInput | null) => void;
   focusedRule: ScoreRule | null;
   hintTarget: ViolationTarget | null;
   hintTargetKey: string | null;
@@ -210,11 +212,11 @@ function tourActions(set: (partial: Partial<GameState>) => void, get: () => Game
 function methodSelectionActions(set: (partial: Partial<GameState>) => void, get: () => GameState): Pick<GameState, 'selectMethod' | 'selectField'> {
   return {
     selectMethod: (methodId) => {
-      set({ selectedMethodId: methodId, selectedFieldId: null, message: null });
+      set({ selectedMethodId: methodId, selectedFieldId: null, extractDraft: null, message: null });
       const method = methodId === null ? undefined : findMethod(get().codebase, methodId);
       if (method !== undefined && get().tourStep !== null) get().advanceTour({ kind: 'method-selected', methodName: method.name });
     },
-    selectField: (fieldId) => set({ selectedFieldId: fieldId, selectedMethodId: null, message: null }),
+    selectField: (fieldId) => set({ selectedFieldId: fieldId, selectedMethodId: null, extractDraft: null, message: null }),
   };
 }
 
@@ -224,6 +226,7 @@ function commit(state: GameState, codebase: Codebase): Partial<GameState> {
   const fieldStillThere = state.selectedFieldId !== null && findField(codebase, state.selectedFieldId) !== undefined;
   return {
     codebase,
+    extractDraft: null,
     ghost: null,
     history: recordChange(state.history, state.codebase),
     selectedFieldId: fieldStillThere ? state.selectedFieldId : null,
@@ -241,7 +244,7 @@ function travelTo(state: GameState, travel: Travel | undefined): Partial<GameSta
   const { codebase, history } = travel;
   const stillThere = state.selectedMethodId !== null && findMethod(codebase, state.selectedMethodId) !== undefined;
   const fieldStillThere = state.selectedFieldId !== null && findField(codebase, state.selectedFieldId) !== undefined;
-  return { codebase, history, ghost: null, selectedMethodId: stillThere ? state.selectedMethodId : null, selectedFieldId: fieldStillThere ? state.selectedFieldId : null, message: null };
+  return { codebase, history, ghost: null, selectedMethodId: stillThere ? state.selectedMethodId : null, selectedFieldId: fieldStillThere ? state.selectedFieldId : null, extractDraft: null, message: null };
 }
 
 const UNPLACED_MESSAGE = '部品がまだ部品置き場にあります。置き場所へドラッグしてください';
@@ -261,6 +264,7 @@ function finishImplementation(state: GameState): Partial<GameState> {
     history: emptyHistory(),
     selectedMethodId: null,
     selectedFieldId: null,
+    extractDraft: null,
     message: null,
   };
 }
@@ -299,7 +303,7 @@ function resetActions(set: (partial: Partial<GameState>) => void, get: () => Gam
   return {
     resetStage: () => {
       if (get().changeSession !== null) return;
-      set({ ...commit(get(), get().stage.codebase), ghost: null, manualFix: null, focusedRule: null, hintTarget: null, hintTargetKey: null, selectedMethodId: null, selectedFieldId: null, message: null });
+      set({ ...commit(get(), get().stage.codebase), ghost: null, manualFix: null, extractDraft: null, focusedRule: null, hintTarget: null, hintTargetKey: null, selectedMethodId: null, selectedFieldId: null, message: null });
     },
   };
 }
@@ -323,6 +327,7 @@ function changeSessionActions(
         history: emptyHistory(),
         selectedMethodId: null,
         selectedFieldId: null,
+        extractDraft: null,
         message: null,
       });
     },
@@ -347,6 +352,7 @@ function changeSessionActions(
         history: baseHistory,
         selectedMethodId: null,
         selectedFieldId: null,
+        extractDraft: null,
         message: null,
         lastChangeReport: outcomes.length > 0 ? { outcomes, codebase: carried } : lastChangeReport,
       });
@@ -361,7 +367,7 @@ function manualFixActions(
 ): Pick<GameState, 'startManualFix' | 'toggleFixed' | 'releaseManualFix' | 'restartManualFix' | 'endManualFix'> {
   return {
     startManualFix: () => {
-      if (get().changeSession === null) set({ manualFix: NEW_MANUAL_FIX });
+      if (get().changeSession === null) set({ manualFix: NEW_MANUAL_FIX, extractDraft: null });
     },
     toggleFixed: (methodId) => {
       const { manualFix } = get();
@@ -376,7 +382,7 @@ function manualFixActions(
       if (manualFix !== null) set({ manualFix: { ...manualFix, released: true } });
     },
     restartManualFix: () => {
-      if (get().manualFix !== null) set({ manualFix: NEW_MANUAL_FIX });
+      if (get().manualFix !== null) set({ manualFix: NEW_MANUAL_FIX, extractDraft: null });
     },
     endManualFix: () => {
       set({ manualFix: null });
@@ -415,6 +421,7 @@ function selectStageState(allStages: readonly Stage[], stageId: string, drafts: 
     history: emptyHistory(),
     selectedMethodId: null,
     selectedFieldId: null,
+    extractDraft: null,
     focusedRule: null,
     hintTarget: null,
     hintTargetKey: null,
@@ -427,6 +434,18 @@ function selectStageState(allStages: readonly Stage[], stageId: string, drafts: 
 }
 
 type Apply = <E>(result: Result<Codebase, E>, describe: (error: E) => string) => boolean;
+
+function extractActions(
+  apply: Apply,
+  set: (partial: Partial<GameState>) => void,
+  get: () => GameState,
+): Pick<GameState, 'extractMethod' | 'extractDraft' | 'setExtractDraft'> {
+  return {
+    extractMethod: (input) => apply(extractMethodUseCase(get().codebase, input, () => crypto.randomUUID()), describeExtractError),
+    extractDraft: null,
+    setExtractDraft: (draft) => set({ extractDraft: draft }),
+  };
+}
 
 /** クラス・ファイルの名前や継承元・実装先を付け替える操作。 */
 function renameActions(
@@ -618,9 +637,7 @@ export function createGameStore(allStages: readonly Stage[], saveDraftsOn = true
       ...critiqueActions(set, get),
       ...methodSelectionActions(set, get),
       ...focusActions(set),
-      extractMethod: (input) => {
-        return apply(extractMethodUseCase(get().codebase, input, () => crypto.randomUUID()), describeExtractError);
-      },
+      ...extractActions(apply, set, get),
       ...replaceMethodActions(set, get),
       addClass: (fileId, className) => {
         return apply(addClassUseCase(get().codebase, fileId, className, () => crypto.randomUUID()), describeAddClassError);

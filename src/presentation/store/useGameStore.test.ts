@@ -51,3 +51,58 @@ describe('change-request lifecycle and ghost state', () => {
     expect(store.getState().ghost).toBeNull();
   });
 });
+
+describe('extract draft lifecycle', () => {
+  const draft = { sourceMethodId: 'method-print-monthly-report', fragmentIds: ['frag-aggregate-sales'], newMethodName: 'aggregateSales' };
+
+  it('clears the draft when a different method is selected', () => {
+    // Arrange
+    const store = createGameStore(stages, false);
+    store.getState().setExtractDraft(draft);
+
+    // Act
+    store.getState().selectMethod('method-place-order');
+
+    // Assert
+    expect(store.getState().extractDraft).toBeNull();
+  });
+
+  it('clears the draft on undo, stage change, and reset', () => {
+    // Arrange
+    const store = createGameStore(stages, false);
+    store.getState().selectStage(stages[1].id);
+    store.getState().extractMethod({ sourceMethodId: 'method-place-order', fragmentIds: ['frag-validate-items'], newMethodName: 'validateItems' });
+    store.getState().setExtractDraft(draft);
+
+    // Act
+    store.getState().undo();
+
+    // Assert
+    expect(store.getState().extractDraft).toBeNull();
+    store.getState().setExtractDraft(draft);
+    store.getState().selectStage(stages[0].id);
+    expect(store.getState().extractDraft).toBeNull();
+
+    // Act
+    store.getState().setExtractDraft(draft);
+    store.getState().resetStage();
+
+    // Assert
+    expect(store.getState().extractDraft).toBeNull();
+  });
+
+  it('keeps preview state outside the codebase and undo history', () => {
+    // Arrange
+    const store = createGameStore(stages, false);
+    const codebase = store.getState().codebase;
+    const history = store.getState().history;
+
+    // Act
+    store.getState().setExtractDraft(draft);
+
+    // Assert
+    expect(store.getState().extractDraft).toEqual(draft);
+    expect(store.getState().codebase).toBe(codebase);
+    expect(store.getState().history).toBe(history);
+  });
+});

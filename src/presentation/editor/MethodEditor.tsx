@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   accessorFieldAccess,
   findClass,
@@ -13,6 +13,7 @@ import {
   type Visibility,
 } from '../../domain/codebase/Codebase';
 import { changeVisibilityUseCase } from '../../application/RefactorUseCases';
+import { previewExtractMethod } from '../../application/RefactorUseCases';
 import { findCallerOf } from '../../domain/codebase/inlineMethod';
 import { findMergeCandidates, type MergeCandidate } from '../../domain/codebase/mergeMethods';
 import { fragmentLines, methodLines } from '../../domain/codebase/lineCount';
@@ -139,11 +140,13 @@ function ExtractControls({
   disabledReason,
   onNameChange,
   onExtract,
+  previewSummary,
 }: Readonly<{
   newName: string;
   disabledReason: string | null;
   onNameChange: (name: string) => void;
   onExtract: () => void;
+  previewSummary: string | undefined;
 }>) {
   return (
     <>
@@ -165,6 +168,7 @@ function ExtractControls({
           選んだ処理をメソッドとして抽出
         </button>
       </div>
+      {previewSummary === undefined ? null : <p className="method-editor__extract-preview" aria-live="polite">{previewSummary}</p>}
       {disabledReason === null ? null : (
         <p id="method-editor-extract-disabled-reason" className="method-editor__extract-hint">
           {disabledReason}
@@ -176,6 +180,20 @@ function ExtractControls({
 
 function isVisibility(value: string): value is Visibility {
   return VISIBILITY_OPTIONS.some((visibility) => visibility === value);
+}
+
+function useExtractPreviewSummary(method: Method, selected: ReadonlySet<string>, newName: string): string | undefined {
+  const setExtractDraft = useGameStore((state) => state.setExtractDraft);
+  const codebase = useGameStore((state) => state.codebase);
+  const draft = useGameStore((state) => state.extractDraft);
+  const allowed = useGameStore((state) => state.changeSession === null && state.manualFix === null);
+  const preview = useMemo(() => draft === null || !allowed ? undefined : previewExtractMethod(codebase, draft), [allowed, codebase, draft]);
+  useEffect(() => {
+    setExtractDraft(selected.size === 0 ? null : { sourceMethodId: method.id, fragmentIds: [...selected], newMethodName: newName });
+  }, [method.id, newName, selected, setExtractDraft]);
+  return preview === undefined
+    ? undefined
+    : `抽出すると: ${method.name} ${preview.sourceLinesBefore}行 → ${preview.sourceLinesAfter}行 / 新しい ${preview.newMethodName} ${preview.newMethodLines}行`;
 }
 
 /** 可視性(public / protected / private)を選ぶ欄。選んでも前提条件を満たさない値は disabled にする。 */
@@ -269,6 +287,8 @@ function MethodEditorBody({ method, showVisibility }: Readonly<{ method: Method;
     );
   const disabledReason = extractDisabledReason(selected.size, newName);
 
+  const previewSummary = useExtractPreviewSummary(method, selected, newName);
+
   const handleExtract = () => {
     const succeeded = extractMethod({ sourceMethodId: method.id, fragmentIds: [...selected], newMethodName: newName });
     if (succeeded) {
@@ -294,6 +314,7 @@ function MethodEditorBody({ method, showVisibility }: Readonly<{ method: Method;
             disabledReason={disabledReason}
             onNameChange={setCustomName}
             onExtract={handleExtract}
+            previewSummary={previewSummary}
           />
           {mergeCandidates.length > 0 ? <MergeSection method={method} candidates={mergeCandidates} /> : null}
           <MethodActions method={method} showVisibility={showVisibility} />

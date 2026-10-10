@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { findClassOfMethod, findFileOfClass, findMethod, type Codebase } from '../domain/codebase/Codebase';
+import { methodLines } from '../domain/codebase/lineCount';
 import { sampleCodebase } from '../domain/codebase/testFixtures';
 import {
   addClassUseCase,
@@ -32,6 +33,7 @@ import {
   moveMethodToNewClassUseCase,
   moveMethodToNewClassInFileUseCase,
   moveMethodUseCase,
+  previewExtractMethod,
   removeInterfaceUseCase,
   renameClassUseCase,
   renameMethodUseCase,
@@ -81,6 +83,79 @@ describe('extractMethodUseCase', () => {
     // Assert
     if (!result.ok) throw new Error(result.error);
     expect(findMethod(result.value, 'generated-id')?.name).toBe('calculateTax');
+  });
+});
+
+describe('previewExtractMethod', () => {
+  const codebase: Codebase = { files: [{ id: 'file', path: 'src/report.ts', classes: [{ id: 'report', name: 'Report', methods: [{
+    id: 'source', name: 'printMonthlyReport', visibility: 'public', fragments: [
+      { id: 'header', label: 'header', lines: 10, responsibility: 'format' },
+      { id: 'sales', label: 'sales', lines: 24, responsibility: 'aggregate' },
+      { id: 'footer', label: 'footer', lines: 50, responsibility: 'format' },
+    ],
+  }] }] }] };
+
+  it('抽出後の元メソッドと新メソッドの行数を返し、元Codebaseを変更しない', () => {
+    // Arrange
+    const before = structuredClone(codebase);
+    const source = findMethod(codebase, 'source');
+    if (source === undefined) throw new Error('source method missing');
+
+    // Act
+    const preview = previewExtractMethod(codebase, { sourceMethodId: 'source', fragmentIds: ['sales'], newMethodName: ' aggregateSales ' });
+
+    // Assert
+    expect(preview).toEqual({
+      sourceMethodId: 'source',
+      sourceLinesBefore: methodLines(source),
+      sourceLinesAfter: methodLines({ ...source, fragments: [source.fragments[0], { id: 'preview:call', label: 'call', lines: 1, responsibility: 'call' }, source.fragments[2]] }),
+      newMethodName: 'aggregateSales',
+      newMethodLines: 27,
+    });
+    expect(codebase).toEqual(before);
+  });
+
+  it('複数の処理を抽出した結果を返す', () => {
+    // Arrange
+    const input = { sourceMethodId: 'source', fragmentIds: ['header', 'sales'], newMethodName: 'prepareReport' };
+
+    // Act
+    const preview = previewExtractMethod(codebase, input);
+
+    // Assert
+    expect(preview?.newMethodLines).toBe(37);
+    expect(preview?.sourceLinesAfter).toBe(54);
+  });
+
+  it('プレビュー用IDが既存のメソッドIDと衝突しても正しい抽出結果を返す', () => {
+    // Arrange
+    const collidingCodebase: Codebase = {
+      files: [
+        { id: 'other-file', path: 'src/other.ts', classes: [{ id: 'other', name: 'Other', methods: [{ id: 'extract-preview', name: 'existing', visibility: 'public', fragments: [] }] }] },
+        ...codebase.files,
+      ],
+    };
+
+    // Act
+    const preview = previewExtractMethod(collidingCodebase, { sourceMethodId: 'source', fragmentIds: ['sales'], newMethodName: 'aggregateSales' });
+
+    // Assert
+    expect(preview?.newMethodLines).toBe(27);
+  });
+
+  it.each([
+    { sourceMethodId: 'source', fragmentIds: [], newMethodName: 'newMethod' },
+    { sourceMethodId: 'source', fragmentIds: ['header', 'sales', 'footer'], newMethodName: 'newMethod' },
+    { sourceMethodId: 'source', fragmentIds: ['sales'], newMethodName: '   ' },
+    { sourceMethodId: 'missing', fragmentIds: ['sales'], newMethodName: 'newMethod' },
+  ])('抽出できない入力は undefined を返す: %o', (input) => {
+    // Arrange
+
+    // Act
+    const preview = previewExtractMethod(codebase, input);
+
+    // Assert
+    expect(preview).toBeUndefined();
   });
 });
 
