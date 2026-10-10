@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-10 09:10 UTC PR #127 抽出前に結果をプレビュー
+
+- 判定: 合格(blocker無し。suggestion: ClassNodeの仮メソッド行数の `-3` は METHOD_OVERHEAD_LINES を使う)
+- 確認した内容: npm run check(test 1602件/lint/typecheck) ✅。E2Eはレビュー環境にChromiumが無く起動できず未確認(PR本文は177件成功と報告)
+- マージ: squash & delete-branch
+
 ## 2026-10-10 08:40 UTC PR #126 ドラッグ中に移動可能な場所を強調
 
 - 判定: 合格(blocker無し。suggestion: 仕様は既存E2E無変更だがrefactor.spec.tsのキーボードfieldテストを更新)
