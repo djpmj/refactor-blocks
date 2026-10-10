@@ -26,6 +26,7 @@ import { useHints } from './useHints';
 import { useStageSidebar } from './useStageSidebar';
 import { useResizableSidebarWidth } from '../useResizableSidebarWidth';
 import { ClearConditionList } from './ClearConditionList';
+import { GhostHintButton } from './GhostHintButton';
 
 /** ステージ一覧のダイアログを開くボタン。 */
 function RoadmapButton() {
@@ -220,6 +221,7 @@ function StageSidebar({ stage, codebase, score, initialScore, investigating, rev
       <section className="stage-panel__hints" aria-labelledby="stage-hints-title">
         <h3 id="stage-hints-title">ヒント</h3>
         <HintButton revealed={revealedCount} total={total} disabled={investigating} onReveal={onReveal} />
+        <GhostHintButton stage={stage} score={score.total} investigating={investigating} />
         <HintList hints={hints} codebase={codebase} disabled={investigating} />
       </section>
       {!investigating && <><ChangePainCard stage={stage} codebase={codebase} score={score.total} /><ManualFixPanel stage={stage} codebase={codebase} /></>}

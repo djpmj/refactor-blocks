@@ -31,6 +31,7 @@ import { WarningEdge } from './WarningEdge';
 import { WarningEdgeStateProvider } from './WarningEdgeState';
 import { useCanvasContextMenu } from './useCanvasContextMenu';
 import { fileTopLeftAtDrop } from './dropPosition';
+import { GhostAnimation } from './GhostAnimation';
 import type { Edge } from '@xyflow/react';
 
 const nodeTypes: NodeTypes = { fileNode: FileNode, classNode: ClassNode };
@@ -192,6 +193,7 @@ function CanvasFlow({ nodes, edges, onNodesChange, setFlow, contextMenu, selectM
         onPaneClick={() => selectMethod(null)}
       >
         <InheritanceMarker /><Background gap={24} /><Controls showInteractive={false} />
+        <GhostAnimation nodes={nodes} />
         <FitViewOnLayoutChange stageId={stageId} fileCount={visibleFileCount} />
         <FitViewForRule codebase={codebase} nodes={nodes} />
       </ReactFlow>

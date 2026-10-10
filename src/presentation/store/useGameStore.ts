@@ -8,6 +8,7 @@ import { findField, findMethod, type Codebase, type Visibility } from '../../dom
 import { emptyHistory, recordChange, redoHistory, undoHistory, type History, type Travel } from '../../domain/codebase/history';
 import { scoreCodebase, type ScoreRule } from '../../domain/scoring/score';
 import type { Stage } from '../../domain/stage/Stage';
+import type { GhostMove } from '../../domain/stage/ghostMove';
 import type { ViolationTarget } from '../../domain/scoring/violationTargets';
 import { fetchCritique } from '../../infrastructure/critique/critiqueClient';
 import {
@@ -102,6 +103,9 @@ type GameState = {
   stages: readonly Stage[];
   stage: Stage;
   codebase: Codebase;
+  ghost: GhostMove | null;
+  playGhost: (move: GhostMove) => void;
+  clearGhost: () => void;
   history: History;
   selectedMethodId: string | null;
   selectedFieldId: string | null;
@@ -220,6 +224,7 @@ function commit(state: GameState, codebase: Codebase): Partial<GameState> {
   const fieldStillThere = state.selectedFieldId !== null && findField(codebase, state.selectedFieldId) !== undefined;
   return {
     codebase,
+    ghost: null,
     history: recordChange(state.history, state.codebase),
     selectedFieldId: fieldStillThere ? state.selectedFieldId : null,
   };
@@ -236,7 +241,7 @@ function travelTo(state: GameState, travel: Travel | undefined): Partial<GameSta
   const { codebase, history } = travel;
   const stillThere = state.selectedMethodId !== null && findMethod(codebase, state.selectedMethodId) !== undefined;
   const fieldStillThere = state.selectedFieldId !== null && findField(codebase, state.selectedFieldId) !== undefined;
-  return { codebase, history, selectedMethodId: stillThere ? state.selectedMethodId : null, selectedFieldId: fieldStillThere ? state.selectedFieldId : null, message: null };
+  return { codebase, history, ghost: null, selectedMethodId: stillThere ? state.selectedMethodId : null, selectedFieldId: fieldStillThere ? state.selectedFieldId : null, message: null };
 }
 
 const UNPLACED_MESSAGE = '部品がまだ部品置き場にあります。置き場所へドラッグしてください';
@@ -279,6 +284,10 @@ function messageActions(set: (partial: Partial<GameState>) => void): Pick<GameSt
   };
 }
 
+function ghostActions(set: (partial: Partial<GameState>) => void): Pick<GameState, 'ghost' | 'playGhost' | 'clearGhost'> {
+  return { ghost: null, playGhost: (ghost) => set({ ghost }), clearGhost: () => set({ ghost: null }) };
+}
+
 function focusActions(set: (partial: Partial<GameState>) => void): Pick<GameState, 'focusRule' | 'focusHint'> {
   return {
     focusRule: (focusedRule) => set({ focusedRule, hintTarget: null, hintTargetKey: null }),
@@ -290,7 +299,7 @@ function resetActions(set: (partial: Partial<GameState>) => void, get: () => Gam
   return {
     resetStage: () => {
       if (get().changeSession !== null) return;
-      set({ ...commit(get(), get().stage.codebase), manualFix: null, focusedRule: null, hintTarget: null, hintTargetKey: null, selectedMethodId: null, selectedFieldId: null, message: null });
+      set({ ...commit(get(), get().stage.codebase), ghost: null, manualFix: null, focusedRule: null, hintTarget: null, hintTargetKey: null, selectedMethodId: null, selectedFieldId: null, message: null });
     },
   };
 }
@@ -307,6 +316,7 @@ function changeSessionActions(
         focusedRule: null,
         hintTarget: null,
         hintTargetKey: null,
+        ghost: null,
         manualFix: null,
         changeSession: { index: 0, inspected: null, outcomes: [], base: codebase, carried: codebase, baseHistory: history },
         codebase: withChangePart(codebase, first),
@@ -321,7 +331,7 @@ function changeSessionActions(
       if (changeSession !== null) set({ changeSession: { ...changeSession, inspected: methodId } });
     },
     finishImplementation: () => {
-      set(finishImplementation(get()));
+      set({ ...finishImplementation(get()), ghost: null });
     },
     endChangeRequests: () => {
       const { changeSession, lastChangeReport } = get();
@@ -331,6 +341,7 @@ function changeSessionActions(
         focusedRule: null,
         hintTarget: null,
         hintTargetKey: null,
+        ghost: null,
         changeSession: null,
         codebase: base,
         history: baseHistory,
@@ -599,7 +610,7 @@ export function createGameStore(allStages: readonly Stage[], saveDraftsOn = true
       hintTarget: null,
       hintTargetKey: null,
       message: null,
-      ...messageActions(set),
+      ...messageActions(set), ...ghostActions(set),
       changeSession: null,
       manualFix: null, ...manualFixActions(set, get),
       lastChangeReport: null,
@@ -627,7 +638,7 @@ export function createGameStore(allStages: readonly Stage[], saveDraftsOn = true
         const next = selectStageState(get().stages, stageId, holder.drafts);
         if (next !== null) {
           if (get().stage.id !== stageId) get().endTour();
-          set(next);
+          set({ ...next, ghost: null });
         }
       },
       ...progressActions(set, get),
