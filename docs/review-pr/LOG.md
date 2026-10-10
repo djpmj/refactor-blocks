@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-10 02:40 UTC PR #117 Verify sidebar toggle avoids scrollbar overlap
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅ 1508件 / npm run lint ✅ / npm run typecheck ✅。E2Eはブラウザ未導入のためローカル実行できず、CIのe2eジョブ成功を参照
+- マージ: squash & delete-branch
+
 ## 2026-10-10 02:20 UTC PR #116 Add resizable left sidebar
 
 - 判定: 合格(blocker無し)
