@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-10 06:52 UTC PR #123 feat: 初回スポットライトガイドを追加
+
+- 判定: 合格(blocker無し。suggestion: methodCountがuseGameStore.tsとSpotlightTour.tsxで重複)
+- 確認した内容: npm test ✅ 1571件 / npm run lint ✅ / npm run typecheck ✅。E2Eはレビュー環境にChromiumが無く起動できず未確認(PR本文は168件成功と報告)
+- マージ: squash & delete-branch
+
 ## 2026-10-10 06:30 UTC PR #122 feat: highlight hint targets on canvas
 
 - 判定: 合格(blocker無し)
@@ -207,13 +213,6 @@
 - マージ: squash & delete-branch
 
 ## 2026-10-03 11:01 UTC PR #8 chore(deps): Bump actions/checkout from 4 to 7
-
-- 判定: 合格(blocker無し。review-pr.ymlがCIでレビュー・承認済み)
-- 確認した内容: workflow内のバージョン番号のみの変更でsrc/変更なし。PRのCI(check/e2e/knip/jscpd)全てpass
-- マージ: review-pr.ymlの自動マージがGitHubの権限制限(GitHub Appはreview-pr.yml自身を書き換えるマージ不可)で
-  失敗したため、人が手動でsquash & delete-branch
-
-## 2026-10-03 11:01 UTC PR #9 chore(deps): Bump actions/setup-node from 4 to 7
 
 - 判定: 合格(blocker無し。review-pr.ymlがCIでレビュー・承認済み)
 - 確認した内容: workflow内のバージョン番号のみの変更でsrc/変更なし。PRのCI(check/e2e/knip/jscpd)全てpass
