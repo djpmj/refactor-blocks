@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-10 05:10 UTC PR #119 feat: implement inline middle man refactoring
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint ✅ / typecheck ✅ / test ✅ 1550件)。E2Eはこの環境で実行許可が得られず未実行、PR本文の報告(inline/削除E2E 4/4、全体154/155でfield keyboard moveはmasterでも再現)を参照
+- マージ: squash & delete-branch
+
 ## 2026-10-10 03:15 UTC PR #118 Remove redundant stage select
 
 - 判定: 合格(blocker無し)
@@ -212,10 +218,4 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: workflow 1箇所のみの変更でsrc/変更なし。CI(check/e2e)pass、masterで npm test 982件 ✅ / lint ✅ / typecheck ✅
-- マージ: squash & delete-branch
-
-## 2026-10-03 10:41 UTC PR #7 chore(deps): Bump github/codeql-action from 3 to 4
-
-- 判定: 合格(blocker無し)
-- 確認した内容: workflow 1箇所のみの変更でsrc/変更なし。CI(check/e2e/jscpd)pass、masterで npm test 982件 ✅ / lint ✅ / typecheck ✅
 - マージ: squash & delete-branch
