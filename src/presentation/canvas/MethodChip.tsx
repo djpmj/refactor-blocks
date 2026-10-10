@@ -17,26 +17,33 @@ type MethodChipViewProps = {
   flagged?: boolean;
   /** 手で直すシミュレーションで「直した」印が付いている。 */
   fixed?: boolean;
+  linePreview?: { readonly before: number; readonly after: number; readonly afterOverLimit: boolean };
 };
 
+type MethodLinePreview = { readonly before: number; readonly after: number; readonly afterOverLimit: boolean };
+
+function MethodChipLineCount({ method, preview }: Readonly<{ method: Method; preview: MethodLinePreview | undefined }>) {
+  if (preview === undefined) return <span className="method-chip__lines">{methodLines(method)}行</span>;
+  return <span className="method-chip__lines"><span className="method-chip__lines-before">{preview.before}行</span> → <span className={preview.afterOverLimit ? 'method-chip__lines-after method-chip__lines-after--over' : 'method-chip__lines-after'}>{preview.after}行</span></span>;
+}
+
+function MethodChipMarkers({ fixed, changeCount }: Readonly<{ fixed: boolean; changeCount: number }>) {
+  return <>{fixed ? <span className="method-chip__fixed-mark" data-testid="fixed-mark">✔ 直した</span> : null}{changeCount > 0 ? <span className="method-chip__badge" data-testid="change-site-badge" title="直前の変更依頼で、変更が必要だったメソッド">変更×{changeCount}</span> : null}</>;
+}
+
 /** ドラッグ中のオーバーレイでも使う見た目だけのコンポーネント。 */
-export function MethodChipView({ method, overLimit, selected = false, changeCount = 0, flagged = false, fixed = false }: Readonly<MethodChipViewProps>) {
+export function MethodChipView({ method, overLimit, selected = false, changeCount = 0, flagged = false, fixed = false, linePreview }: Readonly<MethodChipViewProps>) {
   const classNames = ['method-chip', `method-chip--${method.visibility}`];
-  if (overLimit) classNames.push('method-chip--over');
+  if (linePreview?.afterOverLimit ?? overLimit) classNames.push('method-chip--over');
   if (selected) classNames.push('method-chip--selected');
   if (flagged) classNames.push('method-chip--flagged');
   if (fixed) classNames.push('method-chip--fixed');
   return (
     <div className={classNames.join(' ')}>
-      {fixed ? <span className="method-chip__fixed-mark" data-testid="fixed-mark">✔ 直した</span> : null}
+      <MethodChipMarkers fixed={fixed} changeCount={changeCount} />
       <span className="method-chip__visibility">{VISIBILITY_MARK[method.visibility]}</span>
       <span className="method-chip__name">{method.name}()</span>
-      {changeCount > 0 ? (
-        <span className="method-chip__badge" data-testid="change-site-badge" title="直前の変更依頼で、変更が必要だったメソッド">
-          変更×{changeCount}
-        </span>
-      ) : null}
-      <span className="method-chip__lines">{methodLines(method)}行</span>
+      <MethodChipLineCount method={method} preview={linePreview} />
     </div>
   );
 }
@@ -59,7 +66,7 @@ function useManualFixMark(methodId: string) {
  * クラスノードの中に並ぶ、ドラッグで別クラスへ移せるメソッド。
  * React Flowにノードのドラッグ・パンとして奪われないよう nodrag / nopan を付ける。
  */
-export function MethodChip({ method }: Readonly<{ method: Method }>) {
+export function MethodChip({ method, linePreview }: Readonly<{ method: Method; linePreview?: MethodLinePreview }>) {
   const limit = useGameStore((state) => state.stage.limits.method);
   const flagged = useGameStore((state) => {
     const rule = state.focusedRule;
@@ -119,7 +126,7 @@ export function MethodChip({ method }: Readonly<{ method: Method }>) {
       aria-pressed={manualFixing ? fixed : undefined}
       title={manualFixing ? BLOCK_OPERATION_TITLES.manualFix : BLOCK_OPERATION_TITLES.method}
     >
-      <MethodChipView method={method} overLimit={methodLines(method) > limit} selected={selected} changeCount={changeCount} flagged={flagged} fixed={fixed} />
+      <MethodChipView method={method} overLimit={methodLines(method) > limit} selected={selected} changeCount={changeCount} flagged={flagged} fixed={fixed} linePreview={linePreview} />
     </button>
   );
 }

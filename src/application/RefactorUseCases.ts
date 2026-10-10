@@ -1,11 +1,12 @@
 import { addClass, type AddClassError } from '../domain/codebase/addClass';
 import { addNewFile } from '../domain/codebase/addNewFile';
-import { findMethod, type Codebase, type Visibility } from '../domain/codebase/Codebase';
+import { findMethod, type Codebase, type CodeClass, type Visibility } from '../domain/codebase/Codebase';
 import { changeVisibility, type ChangeVisibilityError } from '../domain/codebase/changeVisibility';
 import { deleteClass, type DeleteClassError } from '../domain/codebase/deleteClass';
 import { deleteFile, type DeleteFileError } from '../domain/codebase/deleteFile';
 import { deleteMethod, type DeleteMethodError } from '../domain/codebase/deleteMethod';
 import { extractMethod, type ExtractMethodError } from '../domain/codebase/extractMethod';
+import { methodLines } from '../domain/codebase/lineCount';
 import { findCallerOf, inlineMethod, type InlineMethodError } from '../domain/codebase/inlineMethod';
 import { mergeMethods, type MergeMethodsError } from '../domain/codebase/mergeMethods';
 import { moveClass, type MoveClassError } from '../domain/codebase/moveClass';
@@ -32,6 +33,52 @@ export function extractMethodUseCase(
   generateId: IdGenerator,
 ): Result<Codebase, ExtractMethodError> {
   return extractMethod(codebase, { ...input, newMethodId: generateId() });
+}
+
+export type ExtractPreview = {
+  readonly sourceMethodId: string;
+  readonly sourceLinesBefore: number;
+  readonly sourceLinesAfter: number;
+  readonly newMethodName: string;
+  readonly newMethodLines: number;
+};
+
+function classEntityIds(codeClass: CodeClass): string[] {
+  return [
+    codeClass.id,
+    ...(codeClass.fields ?? []).map((field) => field.id),
+    ...codeClass.methods.flatMap((method) => [method.id, ...method.fragments.map((fragment) => fragment.id)]),
+  ];
+}
+
+function availablePreviewMethodId(codebase: Codebase): string {
+  const ids = new Set(codebase.files.flatMap((file) => [file.id, ...file.classes.flatMap(classEntityIds)]));
+  let candidate = 'extract-preview';
+  let suffix = 1;
+  while (ids.has(candidate) || ids.has(`${candidate}:call`)) {
+    candidate = `extract-preview-${suffix}`;
+    suffix += 1;
+  }
+  return candidate;
+}
+
+/** 抽出後の行数を算出する。プレビュー専用のIDで既存の抽出規則を再利用し、入力Codebaseは変更しない。 */
+export function previewExtractMethod(codebase: Codebase, input: ExtractMethodInput): ExtractPreview | undefined {
+  const source = findMethod(codebase, input.sourceMethodId);
+  if (source === undefined) return undefined;
+  const previewId = availablePreviewMethodId(codebase);
+  const result = extractMethodUseCase(codebase, input, () => previewId);
+  if (!result.ok) return undefined;
+  const sourceAfter = findMethod(result.value, input.sourceMethodId);
+  const extracted = findMethod(result.value, previewId);
+  if (sourceAfter === undefined || extracted === undefined) return undefined;
+  return {
+    sourceMethodId: source.id,
+    sourceLinesBefore: methodLines(source),
+    sourceLinesAfter: methodLines(sourceAfter),
+    newMethodName: extracted.name,
+    newMethodLines: methodLines(extracted),
+  };
 }
 
 export type MergeMethodsInput = {

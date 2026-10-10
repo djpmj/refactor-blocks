@@ -3,6 +3,7 @@ import type { NodeProps } from "@xyflow/react";
 import { fieldsOf, findClass, findInterfaces, findSuperclass, type CodeClass } from "../../domain/codebase/Codebase";
 import { classDependencies, cyclicClassIds } from "../../domain/codebase/dependencies";
 import { classLines } from "../../domain/codebase/lineCount";
+import { previewExtractMethod } from "../../application/RefactorUseCases";
 import { classLayers } from "../../domain/scoring/layers";
 import { violationTargets } from "../../domain/scoring/violationTargets";
 import { useGameStore } from "../store/useGameStore";
@@ -11,7 +12,8 @@ import { DependencyHandles } from "./DependencyHandles";
 import { FieldChip } from "./FieldChip";
 import { InlineEditableLabel } from "./InlineEditableLabel";
 import type { ClassFlowNode } from "./layoutCodebase";
-import { MethodChip } from "./MethodChip";
+import { MethodChip, MethodChipView } from "./MethodChip";
+import type { Method } from "../../domain/codebase/Codebase";
 import { useShowDetails } from "./semanticZoom";
 import { SuperclassLabel } from "./SuperclassLabel";
 import { BLOCK_OPERATION_TITLES } from "../guide/operationGuide";
@@ -65,6 +67,11 @@ function ClassNameLabel({ classId, name }: Readonly<{ classId: string; name: str
 /** フィールド(あれば)とメソッドの一覧。詳細表示(showDetails)のときだけ描く。 */
 function ClassBody({ codeClass }: Readonly<{ codeClass: CodeClass }>) {
   const fields = fieldsOf(codeClass);
+  const codebase = useGameStore((state) => state.codebase);
+  const draft = useGameStore((state) => state.extractDraft);
+  const methodLimit = useGameStore((state) => state.stage.limits.method);
+  const previewAllowed = useGameStore((state) => state.changeSession === null && state.manualFix === null);
+  const preview = draft === null || !previewAllowed ? undefined : previewExtractMethod(codebase, draft);
   return (
     <>
       {fields.length === 0 ? null : (
@@ -78,7 +85,30 @@ function ClassBody({ codeClass }: Readonly<{ codeClass: CodeClass }>) {
         {codeClass.methods.length === 0 ? (
           <div className="class-node__empty">ここにメソッドをドロップ</div>
         ) : (
-          codeClass.methods.map((method) => <MethodChip key={method.id} method={method} />)
+          codeClass.methods.map((method) => {
+            const isSource = preview?.sourceMethodId === method.id;
+            const placeholder: Method = {
+              id: 'extract-preview-placeholder',
+              name: preview?.newMethodName ?? '',
+              visibility: 'private',
+              fragments: [{ id: 'extract-preview-fragment', label: '', lines: Math.max(0, (preview?.newMethodLines ?? 3) - 3), responsibility: 'preview' }],
+            };
+            return (
+              <div className="method-chip-row" key={method.id}>
+                <MethodChip
+                  method={method}
+                  linePreview={isSource
+                    ? { before: preview.sourceLinesBefore, after: preview.sourceLinesAfter, afterOverLimit: preview.sourceLinesAfter > methodLimit }
+                    : undefined}
+                />
+                {isSource ? (
+                  <div className="extract-preview-chip" role="img" aria-label={`抽出後のプレビュー: ${placeholder.name}() ${preview.newMethodLines}行`} data-testid="extract-preview-chip">
+                    <MethodChipView method={placeholder} overLimit={false} />
+                  </div>
+                ) : null}
+              </div>
+            );
+          })
         )}
       </div>
     </>

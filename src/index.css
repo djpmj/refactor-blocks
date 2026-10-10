@@ -193,6 +193,11 @@ input.class-node__name { width: 14ch; }
 .method-chip__visibility { font-weight: 700; }
 .method-chip__name { flex: 1; }
 .method-chip__lines { color: var(--muted); font-size: 12px; }
+.method-chip__lines-after { color: #287a45; font-weight: 700; }
+.method-chip__lines-after--over { color: var(--danger); }
+.method-chip-row { display: contents; }
+.extract-preview-chip { pointer-events: none; opacity: 0.5; }
+.extract-preview-chip .method-chip { border-style: dashed; }
 
 .line-badge { font-size: 12px; font-weight: 400; color: var(--muted); }
 .line-badge--over { color: var(--danger); font-weight: 700; }
@@ -216,6 +221,7 @@ input.class-node__name { width: 14ch; }
 .method-editor__empty h2 { max-width: 28ch; font-size: 18px; }
 .method-editor__empty p { max-width: 38ch; margin: 4px 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
 .method-editor__extract-hint { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+.method-editor__extract-preview { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
 .error-toast {
   position: absolute;
   z-index: 5;
