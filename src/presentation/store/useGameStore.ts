@@ -59,6 +59,8 @@ import { updateProgress } from '../../domain/progress/updateProgress';
 import { loadDrafts, saveDrafts } from '../../infrastructure/progress/draftStorage';
 import { loadProgress, saveProgress } from '../../infrastructure/progress/progressStorage';
 import { loadStoryEnabled, saveStoryEnabled } from '../../infrastructure/story/storyPreference';
+import { loadTourSeen, saveTourSeen } from '../../infrastructure/tour/tourPreference';
+import { nextTourStep, TOUR_STEPS, TOUR_STAGE_ID, type TourEvent } from '../tour/tourSteps';
 
 /** 変更依頼に挑戦中の状態。依頼ごとに部品を足したコードで実装し、依頼を1件ずつ片付ける。 */
 export type ChangeSession = {
@@ -159,7 +161,58 @@ type GameState = {
   /** ストーリー(章の導入・結び)を出すか。保存される閲覧者の好み。 */
   storyEnabled: boolean;
   setStoryEnabled: (enabled: boolean) => void;
+  tourStep: number | null;
+  tourMethodCountAtStepStart: number;
+  startTour: (repeat?: boolean) => void;
+  advanceTour: (event: TourEvent) => void;
+  endTour: () => void;
 };
+
+function methodCount(codebase: Codebase): number {
+  return codebase.files.reduce((count, file) => count + file.classes.reduce((classCount, codeClass) => classCount + codeClass.methods.length, 0), 0);
+}
+
+function tourActions(set: (partial: Partial<GameState>) => void, get: () => GameState): Pick<GameState, 'tourStep' | 'tourMethodCountAtStepStart' | 'startTour' | 'advanceTour' | 'endTour'> {
+  return {
+    tourStep: null,
+    tourMethodCountAtStepStart: 0,
+    startTour: (repeat = false) => {
+      const state = get();
+      if (state.stage.id !== TOUR_STAGE_ID || state.changeSession !== null || (!repeat && loadTourSeen())) return;
+      set({ tourStep: 0, tourMethodCountAtStepStart: methodCount(state.codebase) });
+    },
+    advanceTour: (event) => {
+      const state = get();
+      if (state.tourStep === null) return;
+      const effectiveEvent = event.kind === 'method-count'
+        ? { ...event, countAtStepStart: state.tourMethodCountAtStepStart }
+        : event;
+      const next = nextTourStep(TOUR_STEPS, state.tourStep, effectiveEvent);
+      if (next === null) {
+        saveTourSeen();
+        set({ tourStep: null });
+      } else if (next !== state.tourStep) {
+        set({ tourStep: next, tourMethodCountAtStepStart: methodCount(state.codebase) });
+      }
+    },
+    endTour: () => {
+      if (get().tourStep === null) return;
+      saveTourSeen();
+      set({ tourStep: null });
+    },
+  };
+}
+
+function methodSelectionActions(set: (partial: Partial<GameState>) => void, get: () => GameState): Pick<GameState, 'selectMethod' | 'selectField'> {
+  return {
+    selectMethod: (methodId) => {
+      set({ selectedMethodId: methodId, selectedFieldId: null, message: null });
+      const method = methodId === null ? undefined : findMethod(get().codebase, methodId);
+      if (method !== undefined && get().tourStep !== null) get().advanceTour({ kind: 'method-selected', methodName: method.name });
+    },
+    selectField: (fieldId) => set({ selectedFieldId: fieldId, selectedMethodId: null, message: null }),
+  };
+}
 
 /** コードベースが変わったときだけ、変更前のものを履歴に積んで差し替える。何も変わらない操作は1手に数えない。 */
 function commit(state: GameState, codebase: Codebase): Partial<GameState> {
@@ -552,10 +605,7 @@ export function createGameStore(allStages: readonly Stage[], saveDraftsOn = true
       lastChangeReport: null,
       critique: EMPTY_CRITIQUE,
       ...critiqueActions(set, get),
-      selectMethod: (methodId) => {
-        set({ selectedMethodId: methodId, selectedFieldId: null, message: null });
-      },
-      selectField: (fieldId) => set({ selectedFieldId: fieldId, selectedMethodId: null, message: null }),
+      ...methodSelectionActions(set, get),
       ...focusActions(set),
       extractMethod: (input) => {
         return apply(extractMethodUseCase(get().codebase, input, () => crypto.randomUUID()), describeExtractError);
@@ -575,9 +625,13 @@ export function createGameStore(allStages: readonly Stage[], saveDraftsOn = true
       ...resetActions(set, get),
       selectStage: (stageId) => {
         const next = selectStageState(get().stages, stageId, holder.drafts);
-        if (next !== null) set(next);
+        if (next !== null) {
+          if (get().stage.id !== stageId) get().endTour();
+          set(next);
+        }
       },
       ...progressActions(set, get),
+      ...tourActions(set, get),
     };
   });
   if (saveDraftsOn) autosaveDrafts(store, holder);

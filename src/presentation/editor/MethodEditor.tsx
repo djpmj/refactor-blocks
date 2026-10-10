@@ -70,7 +70,7 @@ function FragmentList({
   onToggle,
 }: Readonly<{ codebase: Codebase; method: Method; selected: ReadonlySet<string>; onToggle: (id: string) => void }>) {
   return (
-    <ul className="fragment-list">
+    <ul className="fragment-list" data-tour="fragment-list">
       {method.fragments.map((fragment) => (
         <li key={fragment.id} className="fragment-list__item">
           <label>
@@ -159,6 +159,7 @@ function ExtractControls({
           className={disabledReason === null ? 'button--primary' : undefined}
           disabled={disabledReason !== null}
           aria-describedby={disabledReason === null ? undefined : 'method-editor-extract-disabled-reason'}
+          data-tour="extract-button"
           onClick={onExtract}
         >
           選んだ処理をメソッドとして抽出

@@ -18,6 +18,8 @@ import { ChangePainCard } from './ChangePainCard';
 import { StoryIntro } from './StoryIntro';
 import { StoryOutro } from './StoryOutro';
 import { ManualFixPanel } from './ManualFixPanel';
+import { SpotlightTour } from '../tour/SpotlightTour';
+import { TOUR_STAGE_ID } from '../tour/tourSteps';
 import { StageRoadmapDialog } from './StageRoadmapDialog';
 import { TestStatus } from './TestStatus';
 import { useHints } from './useHints';
@@ -138,6 +140,9 @@ function ActionToolbar({ stage, isPerfect, active }: Readonly<{ stage: Stage; is
   const startChangeRequests = useGameStore((state) => state.startChangeRequests);
   const investigating = useGameStore((state) => state.changeSession !== null);
   const challenged = useGameStore((state) => state.lastChangeReport !== null);
+  const stageId = useGameStore((state) => state.stage.id);
+  const selectStage = useGameStore((state) => state.selectStage);
+  const startTour = useGameStore((state) => state.startTour);
   const canUndo = useGameStore((state) => state.history.past.length > 0);
   const canRedo = useGameStore((state) => state.history.future.length > 0);
   useGuideShortcut(active, setGuideOpen);
@@ -166,7 +171,16 @@ function ActionToolbar({ stage, isPerfect, active }: Readonly<{ stage: Stage; is
       <button type="button" data-testid="operation-guide-open" title="操作ガイド(?)" onClick={() => setGuideOpen(true)}>
         操作ガイド
       </button>
-      <OperationGuideDialog open={guideOpen} onClose={() => setGuideOpen(false)} />
+      <OperationGuideDialog
+        open={guideOpen}
+        onClose={() => setGuideOpen(false)}
+        repeatTourDisabled={investigating}
+        onRepeatTour={() => {
+          setGuideOpen(false);
+          if (stageId !== TOUR_STAGE_ID) selectStage(TOUR_STAGE_ID);
+          startTour(true);
+        }}
+      />
     </div>
   );
 }
@@ -225,20 +239,29 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
   const codebase = useGameStore((state) => state.changeSession?.base ?? state.codebase);
   const investigating = useGameStore((state) => state.changeSession !== null);
   const recordProgress = useGameStore((state) => state.recordProgress);
+  const startTour = useGameStore((state) => state.startTour);
+  const tourStep = useGameStore((state) => state.tourStep);
   // ステージを切り替えたらヒントを閉じ直す。keyで作り直すとキャンバスまで作り直してしまうので、開いた数にステージIDを添える
   const [revealed, setRevealed] = useState({ stageId: stage.id, count: 0 });
   const score = useMemo(() => scoreCodebase(codebase, stage), [codebase, stage]);
   const initialScore = useMemo(() => scoreCodebase(stage.codebase, stage), [stage]);
   // 狭い画面ではキャンバスを優先して、最初は閉じておく(描画は残し、hiddenで隠すだけ)
-  const [sidebarOpen, toggleSidebar] = useStageSidebar(stage.id, score.total >= 100);
+  const [sidebarOpen, toggleSidebar, setSidebarOpen] = useStageSidebar(stage.id, score.total >= 100);
   const { handleProps, style: sidebarStyle } = useStageSidebarWidth();
   const revealedCount = revealed.stageId === stage.id ? revealed.count : 0;
   const { hints, total } = useHints(stage, revealedCount);
   useEffect(() => {
     recordProgress(stage.id, score.total);
   }, [stage.id, score.total, recordProgress]);
+  useEffect(() => {
+    startTour();
+  }, [stage.id, startTour]);
+  useEffect(() => {
+    if (tourStep === 0) setSidebarOpen(true);
+  }, [setSidebarOpen, tourStep]);
   return (
     <>
+      <SpotlightTour />
       <header className="stage-panel">
         <h1 className="stage-panel__title">{stage.title}</h1>
         <StageNavigation />
