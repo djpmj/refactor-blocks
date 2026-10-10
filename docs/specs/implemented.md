@@ -61,3 +61,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [fill-fragment-code](fill-fragment-code.md) | 全ステージの処理とフィールドに現実的なC#コードを入れ「未入力」をなくす |
 | [resizable-left-sidebar](resizable-left-sidebar.md) | 左サイドバー(課題とヒント)の幅をドラッグ・キーボードで変更できるようにする |
 | [sidebar-toggle-overlap](sidebar-toggle-overlap.md) | 左サイドバーの開閉ボタンをスクロールバーに重ならない境界の外側に置く |
+| [remove-stage-select](remove-stage-select.md) | ヘッダーのステージ選択コンボボックスを削除し「ステージ一覧」に一本化する |

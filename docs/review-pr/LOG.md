@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-10 03:15 UTC PR #118 Remove redundant stage select
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint ✅ / typecheck ✅ / test ✅ 1508件)。E2Eはブラウザ未導入のためローカル実行できず、差分を静的に確認(getByLabel('ステージ')の残りなし、selectStageヘルパーで集約)
+- マージ: squash & delete-branch
+
 ## 2026-10-10 02:40 UTC PR #117 Verify sidebar toggle avoids scrollbar overlap
 
 - 判定: 合格(blocker無し)
