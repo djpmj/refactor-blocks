@@ -105,7 +105,7 @@ export function ChangePainCard({ stage, codebase, score }: Readonly<{ stage: Sta
         </summary>
         <CardBody stage={stage} codebase={codebase} perfect={perfect} pain={pain} extendPain={extendPain} />
         {canFixByHand && pain !== undefined && pain.current.siteIds.length >= 2 && (
-          <button type="button" onClick={startManualFix}>実際に直してみる</button>
+          <button type="button" className="button--primary" onClick={startManualFix}>実際に直してみる</button>
         )}
       </details>
     </section>
