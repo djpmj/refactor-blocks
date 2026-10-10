@@ -1,8 +1,9 @@
-import type { Stage } from '../../domain/stage/Stage';
+﻿import type { Stage } from '../../domain/stage/Stage';
 
 /** チュートリアル1: Extract Method だけで解ける。まとまった処理を1つ抜き出せば行数の上限に収まる。 */
 const extractMethodStage: Stage = {
   id: 'tutorial-extract-method',
+  problem: 'placeOrderに検証と保存がまとまっている',
   level: 'tutorial',
   title: 'チュートリアル1: 長いメソッドを分ける',
   learns: ['Extract Method'],
@@ -73,6 +74,7 @@ const extractMethodStage: Stage = {
 /** チュートリアル2: 注文処理が1メソッドに詰め込まれた OrderService を分解し、税の計算を別クラスへ移す。 */
 const orderServiceStage: Stage = {
   id: 'tutorial-order-service',
+  problem: '注文処理の中に税計算が含まれている',
   level: 'tutorial',
   title: 'チュートリアル2: 太った placeOrder',
   learns: ['Extract Method', 'Move Method'],

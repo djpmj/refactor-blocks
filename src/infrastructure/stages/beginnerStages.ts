@@ -1,8 +1,9 @@
-import type { Stage } from '../../domain/stage/Stage';
+﻿import type { Stage } from '../../domain/stage/Stage';
 
 /** 初級1: 保存とメール送信まで抱えた UserController から、用意されたクラスへ処理を移す。 */
 const userControllerStage: Stage = {
   id: 'beginner-user-controller',
+  problem: 'ユーザー登録に保存とメール送信がまとまっている',
   level: 'beginner',
   title: '初級1: 何でも屋の UserController',
   learns: ['責務の分離', 'Move Method'],
@@ -93,6 +94,7 @@ const userControllerStage: Stage = {
 /** 初級2: 移動先のクラスが用意されていない。責務ごとのクラスを自分で作ってから移す。 */
 const invoiceServiceStage: Stage = {
   id: 'beginner-invoice-service',
+  problem: '請求処理と明細計算が同じ場所にある',
   level: 'beginner',
   title: '初級2: クラスを自分で作る',
   learns: ['クラスの追加', '責務の分離'],

@@ -1,5 +1,12 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { selectStage } from './selectStage.js';
+
+async function tabToElement(page: Page, target: Locator) {
+  for (let tab = 0; tab < 24; tab += 1) {
+    if (await target.evaluate((element) => element === element.ownerDocument.activeElement)) return;
+    await page.keyboard.press('Tab');
+  }
+}
 
 test('サイドバー開閉ボタンが境界の外側に接して動く', async ({ page }) => {
   // Arrange
@@ -48,6 +55,12 @@ test('左サイドバーをドラッグとキーボードで調整し、開閉�
   const handle = page.getByRole('separator', { name: '課題とヒントの幅を変更' });
   const toggle = page.getByRole('button', { name: 'サイドバーを閉じる' });
   await expect(sidebar).toBeVisible();
+  await page.getByTestId('story-toggle').click();
+  const hintButton = sidebar.locator('.stage-panel__hints button');
+  for (let hint = 0; hint < 20 && await hintButton.isEnabled(); hint += 1) await hintButton.click();
+  const painDetails = sidebar.locator('.change-pain details');
+  if (await painDetails.count() > 0) await painDetails.locator('summary').click();
+  await sidebar.locator('.stage-panel__description summary').click();
   await expect(handle).toHaveAttribute('aria-valuenow', '260');
   await expect(handle).toHaveAttribute('aria-valuemin', '200');
   await expect(handle).toHaveAttribute('aria-valuemax', '480');
@@ -123,7 +136,7 @@ test('狭い画面では左サイドバーを40vw以内に収めてキャンバ�
 
 test('長い内容をスクロールしてもボタンがスクロールバー上端に重ならない', async ({ page }) => {
   // Arrange
-  await page.setViewportSize({ width: 1440, height: 600 });
+  await page.setViewportSize({ width: 1440, height: 400 });
   await page.goto('/');
   await selectStage(page, '上級3: 会員ランクの割引をStrategyパターンへ組み替える');
   const sidebar = page.getByRole('complementary', { name: '課題とヒント' });
@@ -163,7 +176,7 @@ test('狭い画面でも閉じたサイドバーのボタンをキーボード�
   expect(buttonBox.x).toBeLessThan(40);
 
   // Act: ヘッダーの操作部品をTabで進み、Spaceで開く
-  for (let tab = 0; tab < 10; tab++) await page.keyboard.press('Tab');
+  await tabToElement(page, openButton);
   await expect(openButton).toBeFocused();
   await page.keyboard.press('Space');
 

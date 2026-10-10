@@ -90,7 +90,11 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .stage-panel { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 8px 16px; background: var(--surface); border-bottom: 1px solid var(--border); }
 .stage-panel__title { margin: 0; font-size: 18px; }
 .stage-panel__spacer { flex: 1; }
-.stage-panel__goal { margin: 0; font-size: 13px; line-height: 1.6; }
+.stage-panel__problem, .clear-conditions, .stage-panel__hints { margin: 12px 0; font-size: 13px; line-height: 1.6; }
+.stage-panel__problem h3, .clear-conditions h3, .stage-panel__hints h3 { margin: 0 0 4px; font-size: 14px; }
+.stage-panel__problem p { margin: 0; }
+.clear-conditions ul { margin: 0; padding-left: 20px; }
+.clear-conditions li { margin: 3px 0; }
 .stage-panel__description { margin-top: 12px; font-size: 12px; }
 .stage-panel__description summary { cursor: pointer; color: var(--accent); width: fit-content; }
 .stage-panel__description p { margin: 4px 0 0; line-height: 1.5; overflow-y: auto; }
@@ -110,7 +114,8 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .sidebar-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .sidebar__title { margin: 0 0 8px; font-size: 14px; }
 .change-pain { margin: 12px 0; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); font-size: 13px; line-height: 1.5; }
-.change-pain h3 { margin: 0 0 6px; font-size: 14px; }
+.change-pain summary { cursor: pointer; }
+.change-pain summary h3 { display: inline; margin: 0 8px 0 0; font-size: 14px; }
 .change-pain p { margin: 6px 0; }
 .change-pain ul { margin: 6px 0 0; padding-left: 20px; }
 .change-pain li { overflow-wrap: anywhere; }
@@ -411,3 +416,4 @@ input.class-node__name { width: 14ch; }
 .story-card p { margin: 6px 0; }
 .story-card__speaker { color: var(--muted, inherit); font-weight: bold; }
 .story-card button { margin-right: 6px; }
+.story-card__reopen { display: block; width: 100%; margin: 8px 0; padding: 6px; border: 0; background: transparent; color: var(--accent); text-align: left; cursor: pointer; }

@@ -1,11 +1,20 @@
 import { findClass, findClassOfMethod, type Codebase } from '../../domain/codebase/Codebase';
 import { methodLines } from '../../domain/codebase/lineCount';
-import type { PainSummary } from '../../domain/change/changePain';
+import type { ExtendPain, PainSummary } from '../../domain/change/changePain';
 
 export type PainDescription = {
   readonly locations: readonly string[];
   readonly additionalLocations: number;
 };
+
+export function summarizePain(
+  pain: Pick<PainSummary, 'siteIds' | 'readLines'> | undefined,
+  extendPain: Pick<ExtendPain, 'currentModified'> | undefined,
+): string {
+  if (pain !== undefined) return `${pain.siteIds.length}か所・${pain.readLines}行を読む`;
+  if (extendPain === undefined || extendPain.currentModified.length === 0) return '新しいクラスを足すだけ';
+  return `既存の${extendPain.currentModified.length}クラスを書き換える`;
+}
 
 /** 変更箇所のIDを「クラス.メソッド(N行)」の表示名にする。行数はメソッドチップと同じ `methodLines`。 */
 export function describePain(codebase: Codebase, summary: PainSummary): PainDescription {

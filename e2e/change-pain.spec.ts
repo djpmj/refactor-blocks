@@ -24,6 +24,7 @@ test('開始時に変更の痛みが見え、責務を寄せると直すクラ�
   await selectStage(page, '中級1: 循環依存を断ち切る');
 
   const card = page.getByRole('region', { name: 'もし、この変更が来たら?' });
+  await card.locator('summary').click();
   await expect(card).toContainText('価格の計算ルールを変えて');
   await expect(card).toContainText('直す場所は今 3 か所');
   await expect(card).toContainText('2 クラス');
@@ -73,6 +74,7 @@ test('チュートリアル1の読む行数は実コードと一致する', asyn
   await page.goto('/');
   await selectStage(page, 'チュートリアル1: 長いメソッドを分ける');
   const card = page.getByRole('region', { name: 'もし、この変更が来たら?' });
+  await card.locator('summary').click();
   await expect(card).toContainText('目を通す行数は今 30 行');
   await expect(card).toContainText('ReportService.printMonthlyReport(30行)');
 
@@ -105,6 +107,7 @@ test('種類を足すときに書き換えるクラス数が見え、ランク�
   await page.goto('/');
   await selectStage(page, '中級10: 会員ランクごとのif分岐をクラスに分ける');
   const card = page.getByRole('region', { name: 'もし、この変更が来たら?' });
+  await card.locator('summary').click();
   await expect(card.getByRole('heading', { name: '新しい種類を足すなら?' })).toBeVisible();
   await expect(card).toContainText('ゴールド会員を追加して');
   await expect(card).toContainText('既存の 1 クラスを書き換えます');
@@ -124,6 +127,7 @@ test('ランクのクラスにMemberRankを実装させると、新しいクラ�
   await page.goto('/');
   await selectStage(page, '中級10: 会員ランクごとのif分岐をクラスに分ける');
   const card = page.getByRole('region', { name: 'もし、この変更が来たら?' });
+  await card.locator('summary').click();
   await expect(card).toContainText('既存の 1 クラスを書き換えます');
 
   await page.getByTestId('method-quotePrice').click({ button: 'right' });
