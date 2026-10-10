@@ -16,7 +16,7 @@ const MODE_LABEL: Record<Mode, string> = { refactor: 'リファクタリング',
 
 function RefactorView({ active }: Readonly<{ active: boolean }>) {
   const investigating = useGameStore((state) => state.changeSession !== null);
-  const { width, handleProps } = useResizableSidebarWidth();
+  const { width, handleProps } = useResizableSidebarWidth({ side: 'right', defaultWidth: 360, minWidth: 280, maxWidth: 640 });
   useUndoRedoShortcut(active);
   return (
     <StagePanel active={active}>

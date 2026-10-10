@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import type { Codebase } from '../../domain/codebase/Codebase';
 import { scoreCodebase, type Score } from '../../domain/scoring/score';
 import { sampleAnswerCodebase, sampleAnswerSteps } from '../../domain/stage/sampleAnswer';
@@ -23,6 +23,7 @@ import { StageRoadmapDialog } from './StageRoadmapDialog';
 import { TestStatus } from './TestStatus';
 import { useHints } from './useHints';
 import { useStageSidebar } from './useStageSidebar';
+import { useResizableSidebarWidth } from '../useResizableSidebarWidth';
 
 /** ステージ一覧のダイアログを開くボタン。 */
 function RoadmapButton() {
@@ -93,6 +94,19 @@ function StageNavigation() {
 }
 
 type PreviewKind = 'before' | 'sample';
+
+function useStageSidebarWidth() {
+  const { width, handleProps } = useResizableSidebarWidth({
+    side: 'left', defaultWidth: 260, minWidth: 200, maxWidth: 480, ariaLabel: '課題とヒントの幅を変更',
+  });
+  const style: CSSProperties & { readonly '--sidebar-width': string } = { '--sidebar-width': `${width}px` };
+  return { handleProps, style };
+}
+
+function StageSidebarToggle({ open, onToggle }: Readonly<{ open: boolean; onToggle: () => void }>) {
+  const label = open ? 'サイドバーを閉じる' : 'サイドバーを開く';
+  return <button type="button" className="sidebar-toggle" aria-expanded={open} aria-controls="stage-sidebar" aria-label={label} title={label} onClick={onToggle}>{open ? '«' : '»'}</button>;
+}
 
 /** 「変更前」「解答例」の図を読み取り専用で見せるボタン。呼び出し側で key={stage.id} を付け、ステージを切り替えたら閉じるようにする。 */
 function PreviewButtons({ stage, disabled }: Readonly<{ stage: Stage; disabled: boolean }>) {
@@ -212,6 +226,7 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
   const score = useMemo(() => scoreCodebase(codebase, stage), [codebase, stage]);
   // 狭い画面ではキャンバスを優先して、最初は閉じておく(描画は残し、hiddenで隠すだけ)
   const [sidebarOpen, toggleSidebar] = useStageSidebar(stage.id, score.total >= 100);
+  const { handleProps, style: sidebarStyle } = useStageSidebarWidth();
   const revealedCount = revealed.stageId === stage.id ? revealed.count : 0;
   const { hints, total } = useHints(stage, revealedCount);
   useEffect(() => {
@@ -228,7 +243,7 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
         <ScoreArea stage={stage} codebase={codebase} score={score} disabled={investigating} />
       </header>
       <CritiqueResult />
-      <div className={`app__body${sidebarOpen ? ' app__body--sidebar-open' : ''}`}>
+      <div className={`app__body${sidebarOpen ? ' app__body--sidebar-open' : ''}`} style={sidebarStyle}>
         <aside id="stage-sidebar" className="sidebar" aria-label="課題とヒント" hidden={!sidebarOpen}>
           <h2 className="sidebar__title">課題とヒント</h2>
           <StoryIntro stageId={stage.id} />
@@ -245,17 +260,8 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
           {!investigating && score.total >= 100 && <ConceptCheckPanel key={stage.id} checks={stage.checks} />}
           <StoryOutro stage={stage} perfect={!investigating && score.total >= 100} />
         </aside>
-        <button
-          type="button"
-          className="sidebar-toggle"
-          aria-expanded={sidebarOpen}
-          aria-controls="stage-sidebar"
-          aria-label={sidebarOpen ? 'サイドバーを閉じる' : 'サイドバーを開く'}
-          title={sidebarOpen ? 'サイドバーを閉じる' : 'サイドバーを開く'}
-          onClick={toggleSidebar}
-        >
-          {sidebarOpen ? '«' : '»'}
-        </button>
+        {sidebarOpen && <div className="sidebar-resizable__handle sidebar-resizable__handle--left" {...handleProps} />}
+        <StageSidebarToggle open={sidebarOpen} onToggle={toggleSidebar} />
         <div className="workspace">
           <ActionToolbar stage={stage} isPerfect={score.total >= 100} active={active} />
           <DraftRestoredNotice />

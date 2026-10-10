@@ -18,7 +18,7 @@ const blankStore = createGameStore(blankDesignProblems, false);
 function BlankDesignBody({ active }: Readonly<{ active: boolean }>) {
   const codebase = useGameStore((state) => state.codebase);
   const [reviewing, setReviewing] = useState(false);
-  const { width, handleProps } = useResizableSidebarWidth();
+  const { width, handleProps } = useResizableSidebarWidth({ side: 'right', defaultWidth: 360, minWidth: 280, maxWidth: 640 });
   const reviewButtonRef = useRef<HTMLButtonElement>(null);
   useUndoRedoShortcut(active);
   // 答え合わせを開いている間は、配置を変えるたびに結果を計算し直す(試行錯誤しやすいように)

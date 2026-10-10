@@ -51,6 +51,23 @@ test('右サイドバーの幅をドラッグとキーボードで調整し、�
   await expect(page.getByRole('separator', { name: 'サイドバーの幅を変更' })).toHaveCount(0);
 });
 
+test('左サイドバーの幅を変えても右サイドバーの幅は独立している', async ({ page }) => {
+  // Arrange
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/');
+  const leftHandle = page.getByRole('separator', { name: '課題とヒントの幅を変更' });
+  const rightSidebar = page.locator('.sidebar-resizable').first();
+  await expect(rightSidebar).toHaveCSS('width', '360px');
+
+  // Act
+  await leftHandle.focus();
+  await page.keyboard.press('ArrowRight');
+
+  // Assert
+  await expect(leftHandle).toHaveAttribute('aria-valuenow', '276');
+  await expect(rightSidebar).toHaveCSS('width', '360px');
+});
+
 /** 既存のテストは OrderService を分解するチュートリアル2を前提にしている。 */
 async function openOrderStage(page: Page) {
   await page.goto('/');
