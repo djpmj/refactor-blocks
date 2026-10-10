@@ -1,8 +1,9 @@
 import { expect, test } from '@playwright/test';
+import { selectStage } from './selectStage.js';
 
 async function openStage(page: import('@playwright/test').Page, label: string) {
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label });
+  await selectStage(page, label);
 }
 
 test('通常ステージでは可視性欄を隠し、抽出メソッドを呼び出し元へ戻す操作は残す', async ({ page }) => {
@@ -33,7 +34,7 @@ test('上級1ではメソッドを選んでも可視性欄とヒントを表示�
   await expect(page.locator('.method-editor__visibility-hint')).toHaveCount(0);
 
   // Act
-  await page.getByLabel('ステージ').selectOption({ label: 'チュートリアル1: 長いメソッドを分ける' });
+  await selectStage(page, 'チュートリアル1: 長いメソッドを分ける');
   await page.getByTestId('method-printMonthlyReport').click();
 
   // Assert
@@ -49,7 +50,7 @@ test('visibilityEnforced のある中級3と中級7では可視性欄を表示�
   await expect(page.getByLabel('メソッド renderTemplate の可視性')).toBeVisible();
 
   // Act
-  await page.getByLabel('ステージ').selectOption({ label: '中級7: getter/setter だけの口座クラス' });
+  await selectStage(page, '中級7: getter/setter だけの口座クラス');
   await page.getByTestId('method-withdraw').click();
 
   // Assert

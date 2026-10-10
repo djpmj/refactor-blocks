@@ -1,9 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
+import { selectStage } from './selectStage.js';
 
 async function openCopyPasteTax(page: Page) {
   await page.setViewportSize({ width: 1800, height: 1400 });
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: '中級9: コピペされた消費税計算を1か所にまとめる' });
+  await selectStage(page, '中級9: コピペされた消費税計算を1か所にまとめる');
   await page.getByRole('button', { name: '実際に直してみる' }).click();
 }
 
@@ -50,7 +51,7 @@ test('変更箇所が1か所のコードではボタンが出ず、ステージ�
   await openCopyPasteTax(page);
   await expect(page.getByRole('region', { name: '手で直すシミュレーション' })).toBeVisible();
 
-  await page.getByLabel('ステージ').selectOption({ label: 'チュートリアル2: 太った placeOrder' });
+  await selectStage(page, 'チュートリアル2: 太った placeOrder');
   await expect(page.getByRole('region', { name: '手で直すシミュレーション' })).toBeHidden();
   await expect(page.getByRole('region', { name: 'もし、この変更が来たら?' })).toBeVisible();
   await expect(page.getByRole('button', { name: '実際に直してみる' })).toBeHidden();

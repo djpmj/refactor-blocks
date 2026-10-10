@@ -1,9 +1,10 @@
 import { expect, test } from '@playwright/test';
+import { selectStage } from './selectStage.js';
 
 test('コードタブにチュートリアル1のクラスソースを表示する', async ({ page }) => {
   // Arrange
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: 'チュートリアル1: 長いメソッドを分ける' });
+  await selectStage(page, 'チュートリアル1: 長いメソッドを分ける');
   await page.getByTestId('method-printMonthlyReport').click();
   await expect(page.getByTestId('class-ReportService').locator('.line-badge')).toHaveText('33行');
   await expect(page.locator('.method-editor__title .line-badge')).toHaveText('30行');
@@ -61,7 +62,7 @@ test('コードタブにチュートリアル1のクラスソースを表示す�
 test('コードタブはサイドバー幅に合わせて折り返し、横スクロールを出さない', async ({ page }) => {
   // Arrange
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: 'チュートリアル1: 長いメソッドを分ける' });
+  await selectStage(page, 'チュートリアル1: 長いメソッドを分ける');
   await page.getByTestId('method-printMonthlyReport').click();
   await page.getByRole('tab', { name: 'コード' }).click();
   const panel = page.getByRole('tabpanel', { name: 'コード' });
@@ -122,7 +123,7 @@ test('コードタブはサイドバー幅に合わせて折り返し、横ス�
 test('抽出後の呼び出し行をコードタブに呼び出し文として表示する', async ({ page }) => {
   // Arrange
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: 'チュートリアル1: 長いメソッドを分ける' });
+  await selectStage(page, 'チュートリアル1: 長いメソッドを分ける');
   await page.getByTestId('method-printMonthlyReport').click();
   await page.getByLabel('今月の売上を集計する').check();
   await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();

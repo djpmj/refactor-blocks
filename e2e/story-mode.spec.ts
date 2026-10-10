@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { selectStage } from './selectStage.js';
 
 async function dragMethodToClass(page: Page, methodId: string, classId: string) {
   const source = await page.getByTestId(methodId).boundingBox();
@@ -20,7 +21,7 @@ async function extract(page: Page, fragmentLabel: string, name: string) {
 async function clearTutorial2(page: Page) {
   await page.setViewportSize({ width: 1800, height: 1400 });
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: 'チュートリアル2: 太った placeOrder' });
+  await selectStage(page, 'チュートリアル2: 太った placeOrder');
   await extract(page, '消費税を計算する(軽減税率あり)', 'calculateTax');
   await dragMethodToClass(page, 'method-calculateTax', 'class-TaxCalculator');
   await extract(page, '注文をDBに保存する', 'saveOrder');
@@ -32,7 +33,7 @@ async function clearTutorial2(page: Page) {
 test('ストーリーはオフで始まり、オンにすると導入が出て、閉じられる。リロード後も残る', async ({ page }) => {
   await page.setViewportSize({ width: 1800, height: 1400 });
   await page.goto('/');
-  await page.getByLabel('ステージ').selectOption({ label: 'チュートリアル2: 太った placeOrder' });
+  await selectStage(page, 'チュートリアル2: 太った placeOrder');
   await expect(page.getByTestId('story-toggle')).toHaveAttribute('aria-pressed', 'false');
   await expect(page.getByTestId('story-intro')).toBeHidden();
 
@@ -63,6 +64,6 @@ test('次の章へで次のステージへ移り、次の章の導入が出る',
   await clearTutorial2(page);
   await page.getByTestId('story-toggle').click();
   await page.getByTestId('story-next').click();
-  await expect(page.getByLabel('ステージ')).toHaveValue('beginner-user-controller');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('初級1: 何でも屋の UserController');
   await expect(page.getByTestId('story-intro')).toContainText('第3章');
 });

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { selectStage } from './selectStage.js';
 
 test('「設計くらべ」に切り替えると、1問目の設計A・Bが表示される', async ({ page }) => {
   // Arrange
@@ -75,7 +76,7 @@ test('キーボードだけでモードを切り替えて回答できる', async
 
 /** チュートリアル2で税の計算を抽出する(リファクタリング側の状態を作る)。 */
 async function extractTax(page: Page) {
-  await page.getByLabel('ステージ').selectOption({ label: 'チュートリアル2: 太った placeOrder' });
+  await selectStage(page, 'チュートリアル2: 太った placeOrder');
   await page.getByTestId('method-placeOrder').click();
   await page.getByLabel('消費税を計算する(軽減税率あり)').check();
   await page.getByLabel('新しいメソッド名').fill('calculateTax');
