@@ -1,16 +1,42 @@
-import { useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
-import { clampSidebarWidth } from './clampSidebarWidth';
+import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
+import { clampSidebarWidth, widthAfterDrag } from './clampSidebarWidth';
 
-const SIDEBAR_DEFAULT_WIDTH = 360;
-const SIDEBAR_MIN_WIDTH = 280;
-const SIDEBAR_MAX_WIDTH = 640;
 const KEYBOARD_STEP = 16;
 
 type DragStart = { readonly pointerId: number; readonly x: number; readonly width: number };
+type WidthBounds = Readonly<{ min: number; max: number }>;
+type SidebarWidthOptions = Readonly<{
+  side: 'left' | 'right';
+  defaultWidth: number;
+  minWidth: number;
+  maxWidth: number;
+  ariaLabel?: string;
+}>;
 
-export function useResizableSidebarWidth() {
-  const [width, setWidth] = useState(SIDEBAR_DEFAULT_WIDTH);
+function effectiveBounds(side: 'left' | 'right', minWidth: number, maxWidth: number): WidthBounds {
+  if (side === 'right' || window.innerWidth > 700) return { min: minWidth, max: maxWidth };
+
+  const max = Math.min(maxWidth, window.innerWidth * 0.4);
+  return { min: Math.min(120, max), max };
+}
+
+export function useResizableSidebarWidth({ side, defaultWidth, minWidth, maxWidth, ariaLabel = 'サイドバーの幅を変更' }: SidebarWidthOptions) {
+  const [width, setWidth] = useState(() => {
+    const bounds = effectiveBounds(side, minWidth, maxWidth);
+    return clampSidebarWidth(defaultWidth, bounds.min, bounds.max);
+  });
   const dragStart = useRef<DragStart | null>(null);
+  const bounds = effectiveBounds(side, minWidth, maxWidth);
+
+  useEffect(() => {
+    function updateWidthForViewport() {
+      const nextBounds = effectiveBounds(side, minWidth, maxWidth);
+      setWidth((currentWidth) => clampSidebarWidth(currentWidth, nextBounds.min, nextBounds.max));
+    }
+
+    window.addEventListener('resize', updateWidthForViewport);
+    return () => window.removeEventListener('resize', updateWidthForViewport);
+  }, [side, minWidth, maxWidth]);
 
   function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -21,8 +47,7 @@ export function useResizableSidebarWidth() {
     const start = dragStart.current;
     if (start === null || event.pointerId !== start.pointerId) return;
 
-    const delta = start.x - event.clientX;
-    setWidth(clampSidebarWidth(start.width + delta, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH));
+    setWidth(widthAfterDrag(side, start.width, start.x, event.clientX, bounds.min, bounds.max));
   }
 
   function handlePointerUp(event: PointerEvent<HTMLDivElement>) {
@@ -35,8 +60,9 @@ export function useResizableSidebarWidth() {
   function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
 
-    const delta = event.key === 'ArrowLeft' ? KEYBOARD_STEP : -KEYBOARD_STEP;
-    setWidth((currentWidth) => clampSidebarWidth(currentWidth + delta, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH));
+    const expands = (side === 'left' && event.key === 'ArrowRight') || (side === 'right' && event.key === 'ArrowLeft');
+    const delta = expands ? KEYBOARD_STEP : -KEYBOARD_STEP;
+    setWidth((currentWidth) => clampSidebarWidth(currentWidth + delta, bounds.min, bounds.max));
     event.preventDefault();
   }
 
@@ -46,9 +72,9 @@ export function useResizableSidebarWidth() {
       role: 'separator' as const,
       'aria-orientation': 'vertical' as const,
       'aria-valuenow': width,
-      'aria-valuemin': SIDEBAR_MIN_WIDTH,
-      'aria-valuemax': SIDEBAR_MAX_WIDTH,
-      'aria-label': 'サイドバーの幅を変更',
+      'aria-valuemin': bounds.min,
+      'aria-valuemax': bounds.max,
+      'aria-label': ariaLabel,
       tabIndex: 0,
       onPointerDown: handlePointerDown,
       onPointerMove: handlePointerMove,
