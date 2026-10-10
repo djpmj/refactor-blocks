@@ -30,7 +30,7 @@ export function FileNode({ data }: Readonly<NodeProps<FileFlowNode>>) {
     const rule = state.focusedRule;
     return rule !== null
       ? violationTargets(state.codebase, state.stage)[rule].fileIds.includes(data.fileId)
-      : state.hintTarget?.fileIds.includes(data.fileId) ?? false;
+      : state.hintTarget?.fileIds.includes(data.fileId) ?? (state.previewRule !== null && violationTargets(state.codebase, state.stage)[state.previewRule].fileIds.includes(data.fileId));
   });
   const { setNodeRef, isOver } = useDroppable({ id: fileDropId(data.fileId) });
   const dropTargetClasses = useDropTargetClassNames('file', data.fileId);
