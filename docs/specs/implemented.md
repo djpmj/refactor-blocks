@@ -67,3 +67,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [action-affordance](action-affordance.md) | 抽出ボタンの活性/非活性、ブロックのホバー説明、メソッドエディタの空状態の案内で操作を見た目で伝える |
 | [hint-highlight](hint-highlight.md) | ヒントごとに「キャンバスで見る」ボタンを付け、模範解答の手が触るブロックを光らせて画面を寄せる |
 | [first-visit-tour](first-visit-tour.md) | チュートリアル1の初回に、操作に合わせて進むスポットライトガイドを出す |
+| [ghost-hint](ghost-hint.md) | 「少しだけヒント」で次に動かすブロックの半透明ゴーストを移動先へ動かして見せる |
