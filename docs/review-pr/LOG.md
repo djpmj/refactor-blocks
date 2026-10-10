@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-10 10:20 UTC PR #129 減点内訳をホバーして原因をプレビュー
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(test 1607件/lint/typecheck) ✅。E2Eはレビュー環境にChromiumが無く未実行(PR本文は184件成功と報告)。Issue #114の受け入れ基準を差分で確認
+- マージ: squash & delete-branch
+
 ## 2026-10-10 09:55 UTC PR #128 正しい操作の成功演出
 
 - 判定: 合格(blocker無し。suggestion: commit のJSDocが celebrationFor に付いている)
@@ -210,11 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅(E2EはChromium未導入で実行不可。差分を読んで確認)
-- マージ: squash & delete-branch
-
-## 2026-10-04 02:15 UTC PR #50 ファイル位置に合わせて矢印の接続点を切り替える (#36)
-
-- 判定: 合格(blocker無し。suggestion: 古いdocコメントの残り・論理位置/矩形の二重ルートの一本化)
-- 確認した内容: npm test 1005件 ✅ / npm run lint ✅ / npm run typecheck ✅ / E2Eはローカルにブラウザが無く未実行、PRのCI(e2e)pass
 - マージ: squash & delete-branch
 

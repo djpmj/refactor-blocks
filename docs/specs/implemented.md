@@ -71,3 +71,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [drag-drop-targets](drag-drop-targets.md) | ドラッグ中に置けるクラス・ファイルを光らせ、置けない場所を薄暗くする |
 | [extract-preview](extract-preview.md) | 抽出する処理を選んでいる間、元のメソッドの行数変化と新メソッドの仮の姿をキャンバスとエディタに表示する |
 | [success-feedback](success-feedback.md) | 点数のカウントアップとゲージの光、違反が消えたブロックの緑の演出 |
+| [score-hover-preview](score-hover-preview.md) | 減点の内訳のボタンにホバー・フォーカスしている間だけ原因ブロックを一瞬光らせる |
