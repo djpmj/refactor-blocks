@@ -1,6 +1,7 @@
 import { MarkerType, type Edge, type Node } from "@xyflow/react";
-import { allClasses, fieldsOf, findClass, parentIds, type CodeClass, type Codebase } from "../../domain/codebase/Codebase";
+import { allClasses, fieldsOf, findClass, findMethod, parentIds, type CodeClass, type Codebase } from "../../domain/codebase/Codebase";
 import { classDependencies } from "../../domain/codebase/dependencies";
+import type { VisibilityViolationDependency } from "../../domain/scoring/visibility";
 
 export type FileNodeData = { fileId: string };
 export type ClassNodeData = { classId: string };
@@ -373,6 +374,7 @@ type EdgeDescriptor = {
   kind: "dependency" | "inheritance";
   inheritanceKind?: "extends" | "implements";
   cyclic?: boolean;
+  visibility?: VisibilityViolationDependency;
 };
 
 function edgeRouting(
@@ -408,36 +410,66 @@ function handleSidesForPositions(
   return handleSidesForFiles({ sourceFileId, targetFileId, sourceClassIndex, targetClassIndex }, fileRects);
 }
 
-function edgeAppearance(descriptor: EdgeDescriptor): Pick<Edge, "className" | "markerEnd"> {
+function edgeAppearance(descriptor: EdgeDescriptor): Pick<Edge, "className" | "markerEnd" | "animated"> {
   let className: string | undefined;
   let markerEnd: Edge["markerEnd"];
+  const cyclic = descriptor.cyclic === true;
+  const visibility = descriptor.visibility !== undefined;
+  let markerColor: string | undefined;
+  if (cyclic) markerColor = "var(--danger)";
+  else if (visibility) markerColor = "var(--warning)";
   if (descriptor.kind === "inheritance") {
     className = `edge--inheritance edge--${descriptor.inheritanceKind ?? "extends"}`;
     markerEnd = descriptor.inheritanceKind === "implements" ? IMPLEMENTS_ARROW_MARKER : INHERITANCE_ARROW_MARKER;
   } else {
     markerEnd = {
       type: MarkerType.ArrowClosed,
-      color: descriptor.cyclic === true ? "var(--danger)" : undefined,
+      color: markerColor,
     };
   }
-  if (descriptor.kind === "dependency" && descriptor.cyclic === true) className = "edge--cyclic";
-  return { className, markerEnd };
+  if (descriptor.kind === "dependency") {
+    const classes = [cyclic && "edge--cyclic", visibility && "edge--visibility"].filter(Boolean);
+    className = classes.length === 0 ? undefined : classes.join(" ");
+  }
+  return { className, markerEnd, animated: cyclic || visibility };
 }
+
+type EdgeGeometry = { readonly fileRects: ReadonlyMap<string, FileRect>; readonly laneByEdgeId: ReadonlyMap<string, number>; readonly useLogicalLayout: boolean };
 
 function edgeFor(
   descriptor: EdgeDescriptor,
-  fileRects: ReadonlyMap<string, FileRect>,
-  laneByEdgeId: ReadonlyMap<string, number>,
-  useLogicalLayout: boolean,
+  codebase: Codebase,
+  geometry: EdgeGeometry,
 ): Edge {
   const { id, source, target } = descriptor;
+  const routing = edgeRouting(descriptor, geometry.fileRects, geometry.laneByEdgeId, geometry.useLogicalLayout);
+  const warning = descriptor.kind === "dependency" && (descriptor.cyclic === true || descriptor.visibility !== undefined);
+  const visibility = descriptor.visibility;
+  let routeName = "default";
+  if (routing.type === "topRoute") routeName = "topRoute";
+  else if (routing.type === "offset") routeName = "offset";
   return {
     id,
     source,
     target,
-    ...edgeRouting(descriptor, fileRects, laneByEdgeId, useLogicalLayout),
+    ...routing,
     zIndex: EDGE_Z_INDEX,
     ...edgeAppearance(descriptor),
+    ...(warning ? {
+      type: "warning",
+      data: {
+        route: routeName,
+        ...(typeof routing.data?.lane === "number" ? { lane: routing.data.lane } : {}),
+        ...(typeof routing.data?.targetOffset === "number" ? { targetOffset: routing.data.targetOffset } : {}),
+        cyclic: descriptor.cyclic === true,
+        ...(visibility === undefined ? {} : {
+          visibility: {
+            kind: visibility.kind,
+            methodNames: visibility.methodIds.map((methodId) => findMethod(codebase, methodId)?.name).filter((name): name is string => name !== undefined),
+          },
+        }),
+      },
+    } : {}),
   };
 }
 
@@ -445,17 +477,23 @@ function edgeFor(
  * クラス間の依存を矢印にする。循環している依存は赤で描く。
  * 層が違えば上下(浅い方の下端→深い方の上端)、同じ層なら左右(飛び越えるときはskip)でつなぐ。
  */
-export function dependencyEdges(codebase: Codebase, fileRects: ReadonlyMap<string, FileRect> = defaultFileRects(codebase)): Edge[] {
+export function dependencyEdges(
+  codebase: Codebase,
+  fileRects: ReadonlyMap<string, FileRect> = defaultFileRects(codebase),
+  violations: readonly VisibilityViolationDependency[] = [],
+): Edge[] {
   const positionByClassId = classPositionById(codebase);
   const filePositionByClassIdMap = filePositionByClassId(codebase);
   const useLogicalLayout = isDefaultLayout(codebase, fileRects);
   const laneByEdgeId = topLanesByEdgeId(codebase, fileRects, useLogicalLayout);
+  const violationByPair = new Map(violations.map((violation) => [`${violation.from}\u0000${violation.to}`, violation]));
   return classDependencies(codebase).map(({ from, to, cyclic }) => edgeFor({
     id: `dep-${from}-${to}`, source: from, target: to,
     sourcePosition: positionByClassId.get(from), targetPosition: positionByClassId.get(to),
     sourceFilePosition: filePositionByClassIdMap.get(from), targetFilePosition: filePositionByClassIdMap.get(to),
     kind: "dependency", cyclic,
-  }, fileRects, laneByEdgeId, useLogicalLayout));
+    visibility: violationByPair.get(`${from}\u0000${to}`),
+  }, codebase, { fileRects, laneByEdgeId, useLogicalLayout }));
 }
 
 /**
@@ -475,7 +513,7 @@ export function inheritanceEdges(codebase: Codebase, fileRects: ReadonlyMap<stri
       sourceFilePosition: filePositionByClassIdMap.get(codeClass.id), targetFilePosition: filePositionByClassIdMap.get(parentId),
       kind: "inheritance",
       inheritanceKind: inheritanceKind(codeClass, parentId),
-    }, fileRects, laneByEdgeId, useLogicalLayout)));
+    }, codebase, { fileRects, laneByEdgeId, useLogicalLayout })));
   const edgeGroups = new Map<string, Edge[]>();
   for (const edge of edges) {
     const key = `${edge.target}:${edge.targetHandle ?? ""}`;

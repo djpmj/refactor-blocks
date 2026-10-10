@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { CodeClass, Codebase, Fragment } from '../codebase/Codebase';
-import { countedVisibilityViolations, findVisibilityViolations } from './visibility';
+import { countedVisibilityViolations, findVisibilityViolations, visibilityViolationDependencies } from './visibility';
 
 function fragment(id: string, uses: readonly string[]): Fragment {
   return { id, label: id, lines: 1, responsibility: 'call', uses };
@@ -282,6 +282,59 @@ describe('findVisibilityViolations', () => {
       { methodId: 'method-C', callerClassId: 'class-A', kind: 'private' },
       { methodId: 'method-C', callerClassId: 'class-B', kind: 'private' },
     ]);
+  });
+});
+
+describe('visibilityViolationDependencies', () => {
+  it('違反呼び出しを呼び出し元・持ち主ごとにまとめ、メソッドIDを保つ', () => {
+    // Arrange
+    const codebase: Codebase = { files: [{ id: 'file', path: 'src/a.ts', classes: [
+      { id: 'a', name: 'A', methods: [{ id: 'run', name: 'run', visibility: 'public', fragments: [fragment('calls', ['private-one', 'private-two', 'protected-one'])] }] },
+      { id: 'b', name: 'B', methods: [
+        { id: 'private-one', name: 'one', visibility: 'private', fragments: [] },
+        { id: 'private-two', name: 'two', visibility: 'private', fragments: [] },
+        { id: 'protected-one', name: 'three', visibility: 'protected', fragments: [] },
+      ] },
+    ] }] };
+
+    // Act
+    const violations = visibilityViolationDependencies(codebase, true);
+
+    // Assert
+    expect(violations).toEqual([{ from: 'a', to: 'b', kind: 'private', methodIds: ['private-one', 'private-two', 'protected-one'] }]);
+  });
+
+  it('visibilityEnforced が無効なら private を除き、protected は残す', () => {
+    // Arrange
+    const codebase = codebaseOf({ A: { visibility: 'public', uses: ['method-B'] }, B: { visibility: 'protected', uses: [] } });
+
+    // Act
+    const violations = visibilityViolationDependencies(codebase, false);
+
+    // Assert
+    expect(violations).toEqual([{ from: 'class-A', to: 'class-B', kind: 'protected', methodIds: ['method-B'] }]);
+  });
+
+  it('visibilityEnforced が無効なら private の越境は含めない', () => {
+    // Arrange
+    const codebase = codebaseOf({ A: { visibility: 'public', uses: ['method-B'] }, B: { visibility: 'private', uses: [] } });
+
+    // Act
+    const violations = visibilityViolationDependencies(codebase, undefined);
+
+    // Assert
+    expect(violations).toEqual([]);
+  });
+
+  it('越境がなければ空配列を返す', () => {
+    // Arrange
+    const codebase = codebaseOf({ A: { visibility: 'public', uses: [] }, B: { visibility: 'public', uses: [] } });
+
+    // Act
+    const violations = visibilityViolationDependencies(codebase, undefined);
+
+    // Assert
+    expect(violations).toEqual([]);
   });
 });
 
