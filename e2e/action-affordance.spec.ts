@@ -54,7 +54,7 @@ test('ブロックのホバー説明と空状態の案内を出し、手動修�
   // Act: メソッドを選択して案内を閉じ、選択解除で再表示
   await method.click();
   await expect(page.getByTestId('method-editor-empty')).toHaveCount(0);
-  await page.locator('.react-flow__pane').click({ position: { x: 10, y: 10 } });
+  await page.locator('.react-flow__pane').click({ position: { x: 10, y: 100 } });
   await expect(page.getByTestId('method-editor-empty')).toBeVisible();
 
   // Act: 手動修正シミュレーションを始める
