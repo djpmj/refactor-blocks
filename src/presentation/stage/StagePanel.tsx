@@ -145,7 +145,7 @@ function ActionToolbar({ stage, isPerfect, active }: Readonly<{ stage: Stage; is
     <div className="toolbar stage-panel__actions">
       <button
         type="button"
-        className="toolbar__primary"
+        className="toolbar__primary button--primary"
         data-testid="change-request-start"
         onClick={startChangeRequests}
         disabled={investigating || !isPerfect}

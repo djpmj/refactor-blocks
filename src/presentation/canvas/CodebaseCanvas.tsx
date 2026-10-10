@@ -203,6 +203,7 @@ function useDropHandler(codebase: Codebase, onEnd: () => void, flow: ReactFlowIn
 /** active が false の間(設計くらべで隠れている間)は、開いていた右クリックメニューを閉じる。 */
 export function CodebaseCanvas({ active }: Readonly<{ active: boolean }>) {
   const codebase = useGameStore((state) => state.codebase);
+  const selectMethod = useGameStore((state) => state.selectMethod);
   const stageId = useGameStore((state) => state.stage.id);
   const { overrides, handleNodesChange, setPosition } = useFlowOverrides(stageId);
   const nodes = useMemo(() => arrangeNodes(layoutCodebase(codebase), overrides), [codebase, overrides]);
@@ -219,9 +220,6 @@ export function CodebaseCanvas({ active }: Readonly<{ active: boolean }>) {
   }, [active, closeContextMenu]);
 
 
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id);
-  };
   const handleDragEnd = useDropHandler(codebase, () => {
     setActiveId(null);
   }, flow, setPosition);
@@ -229,7 +227,7 @@ export function CodebaseCanvas({ active }: Readonly<{ active: boolean }>) {
   return (
     <DndContext
       sensors={sensors}
-      onDragStart={handleDragStart}
+      onDragStart={(event: DragStartEvent) => setActiveId(event.active.id)}
       onDragEnd={handleDragEnd}
       onDragCancel={() => {
         setActiveId(null);
@@ -246,6 +244,7 @@ export function CodebaseCanvas({ active }: Readonly<{ active: boolean }>) {
         minZoom={0.3}
         onNodeContextMenu={contextMenu.onNodeContextMenu}
         onPaneContextMenu={contextMenu.onPaneContextMenu}
+        onPaneClick={() => selectMethod(null)}
       >
         <InheritanceMarker />
         <Background gap={24} />

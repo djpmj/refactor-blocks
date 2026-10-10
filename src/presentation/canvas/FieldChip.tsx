@@ -3,6 +3,7 @@ import type { Field } from '../../domain/codebase/Codebase';
 import { fieldDragId } from './dndIds';
 import { VISIBILITY_MARK } from './visibilityMark';
 import { useGameStore } from '../store/useGameStore';
+import { BLOCK_OPERATION_TITLES } from '../guide/operationGuide';
 
 /** ドラッグ中のオーバーレイでも使う見た目だけのコンポーネント。行数は持たないので表示しない。 */
 export function FieldChipView({ field, selected = false }: Readonly<{ field: Field; selected?: boolean }>) {
@@ -35,6 +36,7 @@ export function FieldChip({ field }: Readonly<{ field: Field }>) {
       {...attributes}
       {...listeners}
       aria-pressed={selected}
+      title={BLOCK_OPERATION_TITLES.field}
       onClick={() => selectField(field.id)}
       onKeyDownCapture={(event) => {
         if (event.key === 'Enter' || event.key === ' ') selectField(field.id);

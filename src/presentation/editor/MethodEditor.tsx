@@ -128,6 +128,51 @@ function MergeSection({ method, candidates }: Readonly<{ method: Method; candida
 
 const VISIBILITY_OPTIONS: readonly Visibility[] = ['public', 'protected', 'private'];
 
+function extractDisabledReason(selectedCount: number, newName: string): string | null {
+  if (selectedCount === 0) return '処理を1つ以上選ぶと押せます';
+  if (newName.trim() === '') return 'メソッド名を入れると押せます';
+  return null;
+}
+
+function ExtractControls({
+  newName,
+  disabledReason,
+  onNameChange,
+  onExtract,
+}: Readonly<{
+  newName: string;
+  disabledReason: string | null;
+  onNameChange: (name: string) => void;
+  onExtract: () => void;
+}>) {
+  return (
+    <>
+      <div className="method-editor__extract">
+        <input
+          aria-label="新しいメソッド名"
+          placeholder="処理を選ぶと名前を自動で考えます"
+          value={newName}
+          onChange={(event) => onNameChange(event.target.value)}
+        />
+        <button
+          type="button"
+          className={disabledReason === null ? 'button--primary' : undefined}
+          disabled={disabledReason !== null}
+          aria-describedby={disabledReason === null ? undefined : 'method-editor-extract-disabled-reason'}
+          onClick={onExtract}
+        >
+          選んだ処理をメソッドとして抽出
+        </button>
+      </div>
+      {disabledReason === null ? null : (
+        <p id="method-editor-extract-disabled-reason" className="method-editor__extract-hint">
+          {disabledReason}
+        </p>
+      )}
+    </>
+  );
+}
+
 function isVisibility(value: string): value is Visibility {
   return VISIBILITY_OPTIONS.some((visibility) => visibility === value);
 }
@@ -221,6 +266,7 @@ function MethodEditorBody({ method, showVisibility }: Readonly<{ method: Method;
       method.fragments.filter((fragment) => selected.has(fragment.id)),
       owner?.methods.map((ownerMethod) => ownerMethod.name) ?? [],
     );
+  const disabledReason = extractDisabledReason(selected.size, newName);
 
   const handleExtract = () => {
     const succeeded = extractMethod({ sourceMethodId: method.id, fragmentIds: [...selected], newMethodName: newName });
@@ -242,19 +288,12 @@ function MethodEditorBody({ method, showVisibility }: Readonly<{ method: Method;
       {activeTab === 'code' ? <ClassCodePreview codebase={codebase} classId={owner?.id ?? ''} /> : (
         <div role="tabpanel" aria-label="編集">
           <FragmentList codebase={codebase} method={method} selected={selected} onToggle={(id) => { setSelected(toggle(selected, id)); }} />
-          <div className="method-editor__extract">
-            <input
-              aria-label="新しいメソッド名"
-              placeholder="処理を選ぶと名前を自動で考えます"
-              value={newName}
-              onChange={(event) => {
-                setCustomName(event.target.value);
-              }}
-            />
-            <button type="button" onClick={handleExtract}>
-              選んだ処理をメソッドとして抽出
-            </button>
-          </div>
+          <ExtractControls
+            newName={newName}
+            disabledReason={disabledReason}
+            onNameChange={setCustomName}
+            onExtract={handleExtract}
+          />
           {mergeCandidates.length > 0 ? <MergeSection method={method} candidates={mergeCandidates} /> : null}
           <MethodActions method={method} showVisibility={showVisibility} />
         </div>
@@ -271,7 +310,17 @@ export function MethodEditor({ alwaysShowVisibility = false }: Readonly<{ always
   );
   let content: ReactNode;
   if (selectedFieldId !== null) content = <FieldInfo fieldId={selectedFieldId} />;
-  else if (method === undefined) content = <p className="method-editor__hint">メソッドかフィールドをクリックすると、ここに詳しい内容が表示されます</p>;
+  else if (method === undefined) {
+    content = (
+      <div className="method-editor__empty" data-testid="method-editor-empty">
+        <span className="method-editor__empty-icon" aria-hidden="true">👈</span>
+        <h2>中央の図から、直したいメソッドをクリックしてみよう</h2>
+        <p>クリックすると、中の処理がここに並びます。まとまりを選んで「メソッドとして抽出」できます</p>
+        <p>メソッドはドラッグで別のクラスへ移せます</p>
+        <p>フィールドをクリックすると説明が出ます</p>
+      </div>
+    );
+  }
   else content = <MethodEditorBody key={method.id} method={method} showVisibility={alwaysShowVisibility || showsVisibilityControl(stage)} />;
   return (
     <aside className="method-editor" aria-label="メソッドエディタ">
