@@ -5,12 +5,14 @@ import { dependencyEdges, fileRectsFromNodes, inheritanceEdges, layoutCodebase }
 import { InheritanceMarker } from '../canvas/InheritanceMarker';
 import { OffsetEdge } from '../canvas/OffsetEdge';
 import { TopRouteEdge } from '../canvas/TopRouteEdge';
+import { WarningEdge } from '../canvas/WarningEdge';
+import { WarningEdgeStateProvider } from '../canvas/WarningEdgeState';
 import { CodebasePreviewProvider } from './CodebasePreviewContext';
 import { PreviewClassNode } from './PreviewClassNode';
 import { PreviewFileNode } from './PreviewFileNode';
 
 const nodeTypes: NodeTypes = { fileNode: PreviewFileNode, classNode: PreviewClassNode };
-const edgeTypes: EdgeTypes = { topRoute: TopRouteEdge, offset: OffsetEdge };
+const edgeTypes: EdgeTypes = { topRoute: TopRouteEdge, offset: OffsetEdge, warning: WarningEdge };
 
 type CodebasePreviewCanvasProps = {
   readonly codebase: Codebase;
@@ -30,22 +32,24 @@ export function CodebasePreviewCanvas({ codebase, methodLimit, wheelZoom = true,
   }, [codebase, nodes]);
   return (
     <CodebasePreviewProvider value={{ codebase, methodLimit, selectedMethodId, onSelectMethod }}>
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        nodeTypes={nodeTypes}
-        edgeTypes={edgeTypes}
-        nodesDraggable={false}
-        nodesConnectable={false}
-        fitView
-        minZoom={0.3}
-        zoomOnScroll={wheelZoom}
-        preventScrolling={wheelZoom}
-      >
-        <InheritanceMarker />
-        <Background gap={24} />
-        <Controls showInteractive={false} />
-      </ReactFlow>
+      <WarningEdgeStateProvider>
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
+          nodesDraggable={false}
+          nodesConnectable={false}
+          fitView
+          minZoom={0.3}
+          zoomOnScroll={wheelZoom}
+          preventScrolling={wheelZoom}
+        >
+          <InheritanceMarker />
+          <Background gap={24} />
+          <Controls showInteractive={false} />
+        </ReactFlow>
+      </WarningEdgeStateProvider>
     </CodebasePreviewProvider>
   );
 }

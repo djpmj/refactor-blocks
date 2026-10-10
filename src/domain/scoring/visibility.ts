@@ -8,6 +8,13 @@ export type VisibilityViolation = {
   readonly kind: 'private' | 'protected';
 };
 
+export type VisibilityViolationDependency = {
+  readonly from: string;
+  readonly to: string;
+  readonly kind: 'private' | 'protected';
+  readonly methodIds: readonly string[];
+};
+
 /** 呼び出しが届かないかどうか。private は自クラス以外なら届かない。protected は持ち主の子孫(自分を含む)でなければ届かない。 */
 function violationKind(codebase: Codebase, ownerClassId: string, callerClassId: string, visibility: string | undefined): 'private' | 'protected' | undefined {
   if (visibility === 'private') return 'private';
@@ -49,4 +56,26 @@ export function findVisibilityViolations(codebase: Codebase): VisibilityViolatio
 export function countedVisibilityViolations(codebase: Codebase, visibilityEnforced: boolean | undefined): VisibilityViolation[] {
   const violations = findVisibilityViolations(codebase);
   return visibilityEnforced === true ? violations : violations.filter((violation) => violation.kind === 'protected');
+}
+
+/** 採点対象の越境呼び出しを、呼び出し元・持ち主クラスごとにまとめる。 */
+export function visibilityViolationDependencies(
+  codebase: Codebase,
+  visibilityEnforced: boolean | undefined,
+): VisibilityViolationDependency[] {
+  const owners = methodOwnerMap(codebase);
+  const grouped = new Map<string, { from: string; to: string; kind: 'private' | 'protected'; methodIds: string[] }>();
+  for (const violation of countedVisibilityViolations(codebase, visibilityEnforced)) {
+    const to = owners.get(violation.methodId);
+    if (to === undefined) continue;
+    const key = `${violation.callerClassId}\u0000${to}`;
+    const group = grouped.get(key);
+    if (group === undefined) {
+      grouped.set(key, { from: violation.callerClassId, to, kind: violation.kind, methodIds: [violation.methodId] });
+      continue;
+    }
+    if (violation.kind === 'private') group.kind = 'private';
+    if (!group.methodIds.includes(violation.methodId)) group.methodIds.push(violation.methodId);
+  }
+  return [...grouped.values()];
 }

@@ -10,11 +10,12 @@ import {
   type UniqueIdentifier,
 } from '@dnd-kit/core';
 import { Background, Controls, ReactFlow, useReactFlow, type EdgeTypes, type NodeChange, type NodeTypes, type ReactFlowInstance, type XYPosition } from '@xyflow/react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
 import { createPortal } from 'react-dom';
 import { findClass, findClassOfMethod, findField, findFileOfClass, findMethod, type Codebase } from '../../domain/codebase/Codebase';
 import { methodLines } from '../../domain/codebase/lineCount';
 import { violationTargets } from '../../domain/scoring/violationTargets';
+import { visibilityViolationDependencies } from '../../domain/scoring/visibility';
 import { useGameStore } from '../store/useGameStore';
 import { CanvasContextMenu } from './CanvasContextMenu';
 import { ClassNode } from './ClassNode';
@@ -26,11 +27,14 @@ import { dependencyEdges, fileRectsFromNodes, inheritanceEdges, layoutCodebase, 
 import { MethodChipView } from './MethodChip';
 import { OffsetEdge } from './OffsetEdge';
 import { TopRouteEdge } from './TopRouteEdge';
+import { WarningEdge } from './WarningEdge';
+import { WarningEdgeStateProvider } from './WarningEdgeState';
 import { useCanvasContextMenu } from './useCanvasContextMenu';
 import { fileTopLeftAtDrop } from './dropPosition';
+import type { Edge } from '@xyflow/react';
 
 const nodeTypes: NodeTypes = { fileNode: FileNode, classNode: ClassNode };
-const edgeTypes: EdgeTypes = { topRoute: TopRouteEdge, offset: OffsetEdge };
+const edgeTypes: EdgeTypes = { topRoute: TopRouteEdge, offset: OffsetEdge, warning: WarningEdge };
 
 /** クリックでの選択とドラッグを区別するため、5px以上動かしたときだけドラッグを開始する。 */
 const POINTER_ACTIVATION = { activationConstraint: { distance: 5 } };
@@ -152,17 +156,47 @@ function arrangeNodes(nodes: CodebaseFlowNode[], overrides: FlowOverrides): Code
   });
 }
 
-function useCanvasEdges(codebase: Codebase, nodes: CodebaseFlowNode[]) {
+function useCanvasEdges(codebase: Codebase, nodes: CodebaseFlowNode[], visibilityEnforced: boolean | undefined) {
   return useMemo(() => {
     const fileRects = fileRectsFromNodes(nodes);
-    return [...dependencyEdges(codebase, fileRects), ...inheritanceEdges(codebase, fileRects)];
-  }, [codebase, nodes]);
+    const violations = visibilityViolationDependencies(codebase, visibilityEnforced);
+    return [...dependencyEdges(codebase, fileRects, violations), ...inheritanceEdges(codebase, fileRects)];
+  }, [codebase, nodes, visibilityEnforced]);
 }
 
 function fitFileCount(codebase: Codebase, overrides: FlowOverrides): number {
   const fileIds = new Set(codebase.files.map((file) => file.id));
   const manuallyPlacedFileCount = overrides.dropPositionFileIds.filter((fileId) => fileIds.has(fileId)).length;
   return codebase.files.length - manuallyPlacedFileCount;
+}
+
+type CanvasFlowProps = {
+  readonly nodes: CodebaseFlowNode[];
+  readonly edges: Edge[];
+  readonly onNodesChange: (changes: NodeChange[]) => void;
+  readonly setFlow: Dispatch<SetStateAction<ReactFlowInstance<CodebaseFlowNode> | null>>;
+  readonly contextMenu: ReturnType<typeof useCanvasContextMenu>;
+  readonly selectMethod: (methodId: string | null) => void;
+  readonly stageId: string;
+  readonly visibleFileCount: number;
+  readonly codebase: Codebase;
+};
+
+function CanvasFlow({ nodes, edges, onNodesChange, setFlow, contextMenu, selectMethod, stageId, visibleFileCount, codebase }: CanvasFlowProps) {
+  return (
+    <WarningEdgeStateProvider>
+      <ReactFlow
+        nodes={nodes} edges={edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes}
+        onNodesChange={onNodesChange} onInit={setFlow} nodesConnectable={false} fitView minZoom={0.3}
+        onNodeContextMenu={contextMenu.onNodeContextMenu} onPaneContextMenu={contextMenu.onPaneContextMenu}
+        onPaneClick={() => selectMethod(null)}
+      >
+        <InheritanceMarker /><Background gap={24} /><Controls showInteractive={false} />
+        <FitViewOnLayoutChange stageId={stageId} fileCount={visibleFileCount} />
+        <FitViewForRule codebase={codebase} nodes={nodes} />
+      </ReactFlow>
+    </WarningEdgeStateProvider>
+  );
 }
 
 /**
@@ -231,10 +265,11 @@ export function CodebaseCanvas({ active }: Readonly<{ active: boolean }>) {
   const codebase = useGameStore((state) => state.codebase);
   const selectMethod = useGameStore((state) => state.selectMethod);
   const stageId = useGameStore((state) => state.stage.id);
+  const visibilityEnforced = useGameStore((state) => state.stage.visibilityEnforced);
   const { overrides, handleNodesChange, setPosition } = useFlowOverrides(stageId);
   const nodes = useMemo(() => arrangeNodes(layoutCodebase(codebase), overrides), [codebase, overrides]);
   const visibleFileCount = fitFileCount(codebase, overrides);
-  const edges = useCanvasEdges(codebase, nodes);
+  const edges = useCanvasEdges(codebase, nodes, visibilityEnforced);
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
   const [flow, setFlow] = useState<ReactFlowInstance<CodebaseFlowNode> | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, POINTER_ACTIVATION), useSensor(KeyboardSensor));
@@ -259,25 +294,10 @@ export function CodebaseCanvas({ active }: Readonly<{ active: boolean }>) {
         setActiveId(null);
       }}
     >
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        nodeTypes={nodeTypes}
-        edgeTypes={edgeTypes}
-        onNodesChange={handleNodesChange} onInit={setFlow}
-        nodesConnectable={false}
-        fitView
-        minZoom={0.3}
-        onNodeContextMenu={contextMenu.onNodeContextMenu}
-        onPaneContextMenu={contextMenu.onPaneContextMenu}
-        onPaneClick={() => selectMethod(null)}
-      >
-        <InheritanceMarker />
-        <Background gap={24} />
-        <Controls showInteractive={false} />
-        <FitViewOnLayoutChange stageId={stageId} fileCount={visibleFileCount} />
-        <FitViewForRule codebase={codebase} nodes={nodes} />
-      </ReactFlow>
+      <CanvasFlow
+        nodes={nodes} edges={edges} onNodesChange={handleNodesChange} setFlow={setFlow} contextMenu={contextMenu}
+        selectMethod={selectMethod} stageId={stageId} visibleFileCount={visibleFileCount} codebase={codebase}
+      />
       <DraggingOverlay activeId={activeId} />
       {contextMenu.target === null ? null : (
         // 開き直すたびに入力途中の状態を捨てるため、位置でkeyを変える

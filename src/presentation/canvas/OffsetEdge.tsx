@@ -1,4 +1,5 @@
-import { BaseEdge, getBezierPath, Position, type EdgeProps } from "@xyflow/react";
+import { BaseEdge, type EdgeProps } from "@xyflow/react";
+import { offsetBezierPath } from './edgePaths';
 
 /** 終点だけを targetOffset ぶん移動した標準ベジェ曲線。 */
 export function OffsetEdge({
@@ -12,10 +13,9 @@ export function OffsetEdge({
   style,
   data,
 }: Readonly<EdgeProps>) {
-  const offset = typeof data?.targetOffset === "number" ? data.targetOffset : 0;
-  const isVerticalSide = targetPosition === Position.Left || targetPosition === Position.Right;
-  const adjustedTargetX = isVerticalSide ? targetX : targetX + offset;
-  const adjustedTargetY = isVerticalSide ? targetY + offset : targetY;
-  const [path] = getBezierPath({ sourceX, sourceY, sourcePosition, targetX: adjustedTargetX, targetY: adjustedTargetY, targetPosition });
+  const { path } = offsetBezierPath({
+    sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition,
+    targetOffset: typeof data?.targetOffset === "number" ? data.targetOffset : 0,
+  });
   return <BaseEdge path={path} markerEnd={markerEnd} style={style} />;
 }

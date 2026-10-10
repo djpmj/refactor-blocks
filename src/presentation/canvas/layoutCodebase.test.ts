@@ -140,6 +140,37 @@ describe("handleSidesForFiles", () => {
 });
 
 describe("dependencyEdges", () => {
+  it("visibility違反のある依存だけを警告辺にし、通常辺にはアニメーションを付けない", () => {
+    // Arrange
+    const codebase = codebaseOf([["a", "A", ["method-B"]], ["b", "B", []]]);
+    const violations = [{ from: "class-A", to: "class-B", kind: "private" as const, methodIds: ["method-B"] }];
+
+    // Act
+    const edges = dependencyEdges(codebase, undefined, violations);
+
+    // Assert
+    expect(edges[0]).toMatchObject({
+      type: "warning",
+      className: "edge--visibility",
+      animated: true,
+      data: { route: "default", cyclic: false, visibility: { kind: "private", methodNames: ["run"] } },
+      markerEnd: { color: "var(--warning)" },
+    });
+    expect(dependencyEdges(codebase)[0]).toMatchObject({ animated: false });
+  });
+
+  it("越境かつ循環する辺は両方の情報を持ち、循環色を優先する", () => {
+    // Arrange
+    const codebase = codebaseOf([["a", "A", ["method-B"]], ["b", "B", ["method-A"]]]);
+    const violations = [{ from: "class-A", to: "class-B", kind: "protected" as const, methodIds: ["method-B"] }];
+
+    // Act
+    const edge = dependencyEdges(codebase, undefined, violations).find((candidate) => candidate.source === "class-A");
+
+    // Assert
+    expect(edge).toMatchObject({ className: "edge--cyclic edge--visibility", animated: true, data: { cyclic: true, visibility: { kind: "protected" } }, markerEnd: { color: "var(--danger)" } });
+  });
+
   it("advanced-interface-segregation の自動配置は別層の依存を上下でつなぐ", () => {
     // Arrange
     const stage = advancedStages.find((candidate) => candidate.id === "advanced-interface-segregation");
@@ -273,8 +304,8 @@ describe("dependencyEdges", () => {
     expect(edge).toMatchObject({
       sourceHandle: "source-skip",
       targetHandle: "target-skip",
-      type: "topRoute",
-      data: { lane: 0 },
+      type: "warning",
+      data: { route: "topRoute", lane: 0, cyclic: true },
     });
   });
 
@@ -299,8 +330,8 @@ describe("dependencyEdges", () => {
     // Assert: A→C と B→D の区間はB/Cで重なるため、別レーンになる
     const aToC = edges.find((edge) => edge.source === "class-A" && edge.target === "class-C");
     const bToD = edges.find((edge) => edge.source === "class-B" && edge.target === "class-D");
-    expect(aToC).toMatchObject({ type: "topRoute", data: { lane: 0 } });
-    expect(bToD).toMatchObject({ type: "topRoute", data: { lane: 2 } });
+    expect(aToC).toMatchObject({ type: "warning", data: { route: "topRoute", lane: 0 } });
+    expect(bToD).toMatchObject({ type: "warning", data: { route: "topRoute", lane: 2 } });
   });
 });
 
@@ -555,7 +586,7 @@ describe("inheritanceEdges", () => {
     const [inheritEdge] = inheritanceEdges(codebase);
 
     // Assert
-    expect(depEdge).toMatchObject({ type: "topRoute" });
+    expect(depEdge).toMatchObject({ type: "warning", data: { route: "topRoute" } });
     expect(inheritEdge).toMatchObject({ type: "topRoute" });
     expect(depEdge?.data).not.toEqual(inheritEdge.data);
   });
