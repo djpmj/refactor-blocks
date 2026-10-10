@@ -14,6 +14,7 @@ import type { ClassFlowNode } from "./layoutCodebase";
 import { MethodChip } from "./MethodChip";
 import { useShowDetails } from "./semanticZoom";
 import { SuperclassLabel } from "./SuperclassLabel";
+import { BLOCK_OPERATION_TITLES } from "../guide/operationGuide";
 
 /** 循環依存に関与しているクラスの印。色だけに頼らずアイコンとラベルでも伝える。ズームで詳細を隠していても出す。 */
 function CyclicMark() {
@@ -123,6 +124,7 @@ export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
         style={{ opacity: isDragging ? 0.3 : 1 }}
         data-testid={`class-header-${codeClass.name}`}
         aria-label={`${codeClass.name} を別ファイルへ移動`}
+        title={BLOCK_OPERATION_TITLES.class}
         {...attributes}
         {...listeners}
       >

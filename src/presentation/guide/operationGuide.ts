@@ -1,6 +1,13 @@
 export type GuideItem = { readonly operation: string; readonly description: string };
 export type GuideSection = { readonly heading: string; readonly items: readonly GuideItem[] };
 
+export const BLOCK_OPERATION_TITLES = {
+  method: 'クリックで中身を表示 / ドラッグで別のクラスへ移動 / ダブルクリックで名前を変更',
+  manualFix: 'クリックで「直した」印を付け外し',
+  field: 'クリックで説明を表示 / ドラッグで別のクラスへ移動',
+  class: 'ドラッグで別のファイルへ移動 / ダブルクリックで名前を変更',
+} as const;
+
 export const OPERATION_GUIDE: readonly GuideSection[] = [
   {
     heading: 'ブロックを動かす',

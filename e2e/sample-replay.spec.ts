@@ -103,5 +103,5 @@ test('再生中のメソッドパネルは手順に追従し、プレイヤー�
   await expect(playerCanvas).toContainText('placeOrder()');
   await expect(playerCanvas).toContainText('cancelOrder()');
   await expect(playerCanvas).not.toContainText('processOrder');
-  await expect(page.getByLabel('メソッドエディタ')).toContainText('メソッドかフィールドをクリックすると');
+  await expect(page.getByTestId('method-editor-empty')).toContainText('中央の図から、直したいメソッドをクリックしてみよう');
 });

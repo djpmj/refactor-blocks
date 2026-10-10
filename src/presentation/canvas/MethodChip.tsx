@@ -6,6 +6,7 @@ import { useGameStore } from '../store/useGameStore';
 import { methodDragId } from './dndIds';
 import { useInlineEdit } from './useInlineEdit';
 import { VISIBILITY_MARK } from './visibilityMark';
+import { BLOCK_OPERATION_TITLES } from '../guide/operationGuide';
 
 type MethodChipViewProps = {
   method: Method;
@@ -116,6 +117,7 @@ export function MethodChip({ method }: Readonly<{ method: Method }>) {
       // 印の付け外し中は Enter/Space を、キーボードドラッグの開始ではなくボタンのクリックとして使う
       {...(manualFixing ? { ...listeners, onKeyDown: undefined } : listeners)}
       aria-pressed={manualFixing ? fixed : undefined}
+      title={manualFixing ? BLOCK_OPERATION_TITLES.manualFix : BLOCK_OPERATION_TITLES.method}
     >
       <MethodChipView method={method} overLimit={methodLines(method) > limit} selected={selected} changeCount={changeCount} flagged={flagged} fixed={fixed} />
     </button>
