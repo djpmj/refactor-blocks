@@ -5,7 +5,7 @@ import { violationTargets } from './violationTargets';
 
 const RULES: readonly ScoreRule[] = [
   'line-limit', 'coupling', 'cycle', 'responsibility', 'visibility', 'empty', 'unused',
-  'lone-superclass', 'stub', 'contract', 'feature-envy', 'encapsulation', 'cohesion', 'trivial-method', 'thin-class', 'layer',
+  'lone-superclass', 'stub', 'contract', 'feature-envy', 'encapsulation', 'cohesion', 'trivial-method', 'thin-class', 'middle-man', 'layer',
 ];
 const EMPTY = { limits: { method: 100, class: 100, file: 100 }, dependencyLimit: 100, responsibilityLimit: 100 };
 

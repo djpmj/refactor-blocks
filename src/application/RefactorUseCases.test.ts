@@ -249,7 +249,25 @@ describe('inlineMethodUseCase', () => {
     const result = inlineMethodUseCase(codebase, 'method-place');
 
     // Assert
-    expect(result).toEqual({ ok: false, error: 'not-private' });
+    expect(result).toEqual({ ok: false, error: 'call-not-found' });
+  });
+
+  it('publicな横流しメソッドを呼び出し元へ戻す', () => {
+    // Arrange
+    const codebase: Codebase = { files: [{ id: 'file', path: 'src/a.ts', classes: [
+      { id: 'controller', name: 'Controller', methods: [{ id: 'caller', name: 'place', visibility: 'public', fragments: [{ id: 'forward', label: 'Managerへ委譲', lines: 1, responsibility: 'call', uses: ['manager'] }] }] },
+      { id: 'middleman', name: 'Manager', methods: [{ id: 'manager', name: 'place', visibility: 'public', fragments: [{ id: 'work', label: 'Serviceを呼ぶ', lines: 1, responsibility: 'call', uses: ['service'] }] }] },
+      { id: 'service-class', name: 'Service', methods: [{ id: 'service', name: 'place', visibility: 'public', fragments: [{ id: 'business', label: '処理', lines: 5, responsibility: 'business' }] }] },
+    ] }] };
+
+    // Act
+    const result = inlineMethodUseCase(codebase, 'manager');
+
+    // Assert
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error(result.error);
+    expect(result.value.callerId).toBe('caller');
+    expect(findMethod(result.value.codebase, 'manager')).toBeUndefined();
   });
 });
 
@@ -407,7 +425,7 @@ describe('エラーメッセージ', () => {
     // Arrange
     const extractError = 'no-fragments-selected';
     const moveError = 'duplicate-method-name';
-    const inlineError = 'not-private';
+    const inlineError = 'multiple-callers';
     const mergeError = 'shape-mismatch';
 
     // Act
@@ -435,7 +453,7 @@ describe('エラーメッセージ', () => {
     expect(messages).toEqual([
       '抽出する処理を1つ以上選んでください',
       '移動先のクラスに同じ名前のメソッドがあります',
-      'publicメソッドは呼び出し元へ戻せません',
+      '呼び出し元または呼び出し箇所が複数あるメソッドは戻せません',
       '処理の形が一致しないため統合できません',
       '同じ名前のクラスがすでにあります',
       '移動先のファイルが見つかりません',

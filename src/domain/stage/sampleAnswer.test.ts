@@ -59,6 +59,22 @@ function withFieldsOf(codebase: Codebase, className: string, fields: NonNullable
 }
 
 describe('applySolutionSteps', () => {
+  it('inlineステップでfromClassを指定してメソッドを呼び出し元へ戻す', () => {
+    // Arrange
+    const codebase: Codebase = { files: [{ id: 'file', path: 'src/a.ts', classes: [
+      { id: 'controller', name: 'Controller', methods: [{ id: 'caller', name: 'place', visibility: 'public', fragments: [{ id: 'call', label: 'delegate', lines: 1, responsibility: 'call', uses: ['middle'] }] }] },
+      { id: 'manager', name: 'Manager', methods: [{ id: 'middle', name: 'place', visibility: 'public', fragments: [{ id: 'work', label: 'work', lines: 5, responsibility: 'business' }] }] },
+    ] }] };
+    const steps: SolutionStep[] = [{ inline: { method: 'place', fromClass: 'Manager' } }];
+
+    // Act
+    const result = applySolutionSteps(codebase, steps);
+
+    // Assert
+    expect(findClass(result, 'manager')?.methods).toEqual([]);
+    expect(findClass(result, 'controller')?.methods[0].fragments.map(({ id }) => id)).toEqual(['work']);
+  });
+
   it('extractステップで、選んだ処理を新しいメソッドとして抽出する', () => {
     // Arrange
     const codebase = twoClassCodebase();

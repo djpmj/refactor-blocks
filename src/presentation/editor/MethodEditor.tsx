@@ -13,6 +13,7 @@ import {
   type Visibility,
 } from '../../domain/codebase/Codebase';
 import { changeVisibilityUseCase } from '../../application/RefactorUseCases';
+import { findCallerOf } from '../../domain/codebase/inlineMethod';
 import { findMergeCandidates, type MergeCandidate } from '../../domain/codebase/mergeMethods';
 import { fragmentLines, methodLines } from '../../domain/codebase/lineCount';
 import { suggestMethodName } from '../../domain/codebase/suggestMethodName';
@@ -170,14 +171,16 @@ function VisibilitySelect({ method }: Readonly<{ method: Method }>) {
   );
 }
 
-/** 呼び出し元へ戻す(private)・空実装のメソッドを削除、の2つのボタン。どちらも条件を満たすときだけ表示する。 */
+/** 呼び出し元へ戻す・空実装のメソッドを削除、の2つのボタン。どちらも条件を満たすときだけ表示する。 */
 function MethodActions({ method, showVisibility }: Readonly<{ method: Method; showVisibility: boolean }>) {
+  const codebase = useGameStore((state) => state.codebase);
   const inlineMethod = useGameStore((state) => state.inlineMethod);
   const deleteMethod = useGameStore((state) => state.deleteMethod);
+  const hasCaller = findCallerOf(codebase, method.id) !== undefined;
   return (
     <>
       {showVisibility && method.fragments.length > 0 ? <VisibilitySelect method={method} /> : null}
-      {method.visibility === 'private' ? (
+      {hasCaller ? (
         <button
           type="button"
           onClick={() => {

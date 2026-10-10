@@ -5,6 +5,7 @@ import { changeVisibility } from '../codebase/changeVisibility';
 import { deleteFile } from '../codebase/deleteFile';
 import { deleteMethod } from '../codebase/deleteMethod';
 import { extractMethod } from '../codebase/extractMethod';
+import { inlineMethod } from '../codebase/inlineMethod';
 import { mergeMethods } from '../codebase/mergeMethods';
 import { moveClass } from '../codebase/moveClass';
 import { moveField } from '../codebase/moveField';
@@ -34,6 +35,7 @@ export type SolutionStep =
       };
     }
   | { readonly deleteMethod: { readonly method: string; readonly fromClass: string } }
+  | { readonly inline: { readonly method: string; readonly fromClass?: string } }
   | {
       readonly moveField: {
         readonly field: string;
@@ -110,6 +112,7 @@ function fieldIdByName(codebase: Codebase, name: string, ownerClassName: string)
 type StructuralStep = Exclude<
   SolutionStep,
   | { readonly extract: unknown }
+  | { readonly inline: unknown }
   | { readonly move: unknown }
   | { readonly merge: unknown }
   | { readonly deleteMethod: unknown }
@@ -157,6 +160,10 @@ function applyStep(codebase: Codebase, step: SolutionStep, newId: string): Codeb
   if ('deleteMethod' in step) {
     const { method, fromClass } = step.deleteMethod;
     return unwrap(deleteMethod(codebase, methodIdByName(codebase, method, fromClass)));
+  }
+  if ('inline' in step) {
+    const { method, fromClass } = step.inline;
+    return unwrap(inlineMethod(codebase, methodIdByName(codebase, method, fromClass)));
   }
   if ('merge' in step) {
     const { methodA, methodAClass, methodB, methodBClass, name } = step.merge;
@@ -339,6 +346,11 @@ export const sampleAnswerSteps: Partial<Record<string, readonly SolutionStep[]>>
     { move: { method: 'saveCancellation', toClass: 'OrderRepository' } },
     { move: { method: 'processOrder', toClass: 'OrderService' } },
     { move: { method: 'processCancel', toClass: 'OrderService' } },
+  ],
+  'intermediate-middle-man': [
+    { inline: { method: 'placeOrder', fromClass: 'OrderManager' } },
+    { inline: { method: 'cancelOrder', fromClass: 'OrderManager' } },
+    { deleteFile: 'src/order/OrderManager.ts' },
   ],
   'advanced-interface-segregation': [
     { renameClass: { name: 'CollaborationTool', newName: 'ChatClient' } },

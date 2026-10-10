@@ -2,6 +2,7 @@
 import { classDependencies } from '../codebase/dependencies';
 import type { Stage } from '../stage/Stage';
 import { findLowCohesionClasses } from './cohesion';
+import { findMiddleManClasses } from './middleMan';
 import { findEncapsulationViolations, findFeatureEnvy, findOpenSetters } from './fieldAccess';
 import { findContractViolations, findStubMethods } from './interfaceContracts';
 import { findEmptyContainers, findUnusedPrivateMethods } from './leftovers';
@@ -32,7 +33,7 @@ function emptyTargets(): TargetRecord {
     'line-limit': emptyTarget(), coupling: emptyTarget(), cycle: emptyTarget(), responsibility: emptyTarget(),
     visibility: emptyTarget(), empty: emptyTarget(), unused: emptyTarget(), 'lone-superclass': emptyTarget(),
     stub: emptyTarget(), contract: emptyTarget(), 'feature-envy': emptyTarget(), encapsulation: emptyTarget(),
-    cohesion: emptyTarget(), 'trivial-method': emptyTarget(), 'thin-class': emptyTarget(),
+    cohesion: emptyTarget(), 'trivial-method': emptyTarget(), 'thin-class': emptyTarget(), 'middle-man': emptyTarget(),
     layer: emptyTarget(),
   };
 }
@@ -58,6 +59,7 @@ function freezeTargets(targets: TargetRecord): Record<ScoreRule, ViolationTarget
     contract: freezeTarget(targets.contract), 'feature-envy': freezeTarget(targets['feature-envy']),
     encapsulation: freezeTarget(targets.encapsulation), cohesion: freezeTarget(targets.cohesion),
     'trivial-method': freezeTarget(targets['trivial-method']), 'thin-class': freezeTarget(targets['thin-class']),
+    'middle-man': freezeTarget(targets['middle-man']),
     layer: freezeTarget(targets.layer),
   };
 }
@@ -106,6 +108,7 @@ export function violationTargets(
   addClasses(targets.cohesion, findLowCohesionClasses(codebase).map(({ classId }) => classId));
   addMethods(targets['trivial-method'], findTrivialMethods(codebase));
   addClasses(targets['thin-class'], findThinClasses(codebase));
+  addClasses(targets['middle-man'], findMiddleManClasses(codebase));
   addClasses(targets.layer, findLayerViolations(codebase, stage.layers).map(({ fromClassId }) => fromClassId));
   return freezeTargets(targets);
 }

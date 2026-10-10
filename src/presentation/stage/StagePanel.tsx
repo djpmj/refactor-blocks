@@ -139,7 +139,7 @@ function ActionToolbar({ stage, isPerfect, active }: Readonly<{ stage: Stage; is
   const challenged = useGameStore((state) => state.lastChangeReport !== null);
   const canUndo = useGameStore((state) => state.history.past.length > 0);
   const canRedo = useGameStore((state) => state.history.future.length > 0);
-  useGuideShortcut(active, guideOpen, setGuideOpen);
+  useGuideShortcut(active, setGuideOpen);
   return (
     <div className="toolbar stage-panel__actions">
       <button

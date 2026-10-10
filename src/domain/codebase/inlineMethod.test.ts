@@ -70,6 +70,66 @@ describe('inlineMethod', () => {
     expect(findMethod(result.value, 'method-place')?.fragments.map((fragment) => fragment.id)).toContain('f-tax');
   });
 
+  it('publicな横流しメソッドを別クラスから呼ぶ行へインラインできる', () => {
+    // Arrange
+    const extracted = extractedCodebase();
+    const [file] = extracted.files;
+    const [codeClass] = file.classes;
+    const [originalCaller] = codeClass.methods;
+    const caller = { ...originalCaller, fragments: originalCaller.fragments.map((fragment) => fragment.id === 'method-tax:call' ? { ...fragment, uses: ['middleman'] } : fragment) };
+    const service = { id: 'service', name: 'Service', methods: [{ id: 'service-call', name: 'place', visibility: 'public' as const, fragments: [{ id: 'service-work', label: 'work', lines: 4, responsibility: 'business' }] }] };
+    const manager = { id: 'manager', name: 'Manager', methods: [{ id: 'middleman', name: 'placeOrder', visibility: 'public' as const, fragments: [{ id: 'forward', label: 'forward', lines: 1, responsibility: 'call', uses: ['service-call'] }] }] };
+    const codebase: Codebase = { files: [{ ...file, classes: [{ ...codeClass, methods: [caller] }, manager, service] }] };
+
+    // Act
+    const result = inlineMethod(codebase, 'middleman');
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    expect(findMethod(result.value, 'middleman')).toBeUndefined();
+    expect(findMethod(result.value, 'method-place')?.fragments.map((fragment) => fragment.id)).toContain('forward');
+  });
+
+  it('複数の呼び出し元がある場合は拒否する', () => {
+    // Arrange
+    const base = extractedCodebase();
+    const order = base.files[0].classes[0];
+    const caller = order.methods[0];
+    const caller2 = { ...caller, id: 'other-caller', name: 'other', fragments: caller.fragments.map((fragment) => fragment.id === 'method-tax:call' ? { ...fragment, id: 'other-call' } : fragment) };
+    const codebase: Codebase = { files: [{ ...base.files[0], classes: [{ ...order, methods: [caller, caller2, order.methods[1]] }] }, base.files[1]] };
+
+    // Act
+    const result = inlineMethod(codebase, 'method-tax');
+
+    // Assert
+    expect(result).toEqual({ ok: false, error: 'multiple-callers' });
+  });
+
+  it('1つの呼び出し元に複数の呼び出し行がある場合は拒否し、入力を変更しない', () => {
+    // Arrange
+    const base = extractedCodebase();
+    const [file] = base.files;
+    const [codeClass] = file.classes;
+    const [caller, method] = codeClass.methods;
+    const call = caller.fragments.find((fragment) => fragment.id === 'method-tax:call');
+    if (call === undefined) throw new Error('呼び出し行が見つかりません');
+    const callerWithTwoCalls = {
+      ...caller,
+      fragments: [...caller.fragments, { ...call, id: 'method-tax:call:second' }],
+    };
+    const codebase: Codebase = {
+      files: [{ ...file, classes: [{ ...codeClass, methods: [callerWithTwoCalls, method] }] }, base.files[1]],
+    };
+    const original = structuredClone(codebase);
+
+    // Act
+    const result = inlineMethod(codebase, 'method-tax');
+
+    // Assert
+    expect(result).toEqual({ ok: false, error: 'multiple-callers' });
+    expect(codebase).toEqual(original);
+  });
+
   it('元のCodebaseは変更しない', () => {
     // Arrange
     const codebase = extractedCodebase();
@@ -83,7 +143,7 @@ describe('inlineMethod', () => {
 
   it.each([
     ['存在しないメソッド', extractedCodebase(), 'missing', 'method-not-found'],
-    ['publicメソッド', extractedCodebase(), 'method-place', 'not-private'],
+    ['publicメソッドに呼び出し行がない', extractedCodebase(), 'method-place', 'call-not-found'],
   ])('%sを指定したときはエラーになる', (_label, codebase, methodId, expected) => {
     // Arrange (it.each の引数)
 
@@ -135,5 +195,38 @@ describe('findCallerOf', () => {
 
     // Assert
     expect(caller?.id).toBe('method-place');
+  });
+
+  it('responsibility=callかつusesが対象IDだけの処理をID規約なしで見つける', () => {
+    // Arrange
+    const base = extractedCodebase();
+    const [file] = base.files;
+    const [codeClass] = file.classes;
+    const [caller, method] = codeClass.methods;
+    const forwarding = { ...caller, fragments: [{ id: 'arbitrary-id', label: 'forward', lines: 1, responsibility: 'call', uses: [method.id] }] };
+    const codebase: Codebase = { files: [{ ...file, classes: [{ ...codeClass, methods: [forwarding, method] }] }, base.files[1]] };
+
+    // Act
+    const result = findCallerOf(codebase, method.id);
+
+    // Assert
+    expect(result?.id).toBe(caller.id);
+  });
+
+  it('非callや複数usesは呼び出し行とみなさない', () => {
+    // Arrange
+    const base = extractedCodebase();
+    const [file] = base.files;
+    const [codeClass] = file.classes;
+    const [caller, method] = codeClass.methods;
+    const nonCall = { ...caller, fragments: [{ id: 'business', label: 'business', lines: 1, responsibility: 'business', uses: [method.id] }] };
+    const multiCall = { ...caller, id: 'multi', fragments: [{ id: 'calls', label: 'calls', lines: 1, responsibility: 'call', uses: [method.id, 'other'] }] };
+    const codebase: Codebase = { files: [{ ...file, classes: [{ ...codeClass, methods: [nonCall, multiCall, method] }] }, base.files[1]] };
+
+    // Act
+    const result = findCallerOf(codebase, method.id);
+
+    // Assert
+    expect(result).toBeUndefined();
   });
 });

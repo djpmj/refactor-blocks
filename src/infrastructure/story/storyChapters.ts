@@ -116,6 +116,13 @@ export const storyChapters: readonly StoryChapter[] = [
     outro: '2月。インフラ担当から、保存まわりについて連絡が入りました。',
   },
   {
+    stageId: 'intermediate-middle-man',
+    title: '横流しするだけの注文管理',
+    speaker: TANAKA,
+    intro: 'OrderManager を経由して OrderService を呼んでいますが、ここには独自の処理がありません。分ける理由がなくなった層を整理してください。',
+    outro: '2月の半ば。QAの高橋さんから、注文の受付とキャンセルについて確認がありました。',
+  },
+  {
     stageId: 'advanced-notifier-hierarchy',
     title: '通知クラスの共通処理',
     speaker: TANAKA,

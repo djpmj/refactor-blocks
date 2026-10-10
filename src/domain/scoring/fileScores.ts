@@ -2,6 +2,7 @@ import type { Codebase } from "../codebase/Codebase";
 import { classDependencies } from "../codebase/dependencies";
 import type { Stage } from "../stage/Stage";
 import { findLowCohesionClasses } from "./cohesion";
+import { findMiddleManClasses } from "./middleMan";
 import { findEncapsulationViolations, findFeatureEnvy, findOpenSetters } from "./fieldAccess";
 import { findContractViolations, findStubMethods } from "./interfaceContracts";
 import { findEmptyContainers, findUnusedPrivateMethods } from "./leftovers";
@@ -57,6 +58,7 @@ export function fileDeductions(
     ...findLowCohesionClasses(codebase).map((violation) => violation.classId),
     ...findTrivialMethods(codebase),
     ...findThinClasses(codebase),
+    ...findMiddleManClasses(codebase),
   ];
   const owners = fileIdByTargetId(codebase);
   const points = new Map(

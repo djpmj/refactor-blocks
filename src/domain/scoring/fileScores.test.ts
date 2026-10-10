@@ -18,6 +18,7 @@ function classOf(name: string, uses: readonly string[]): CodeClass {
   return {
     id: `class-${name}`,
     name,
+    fields: [{ id: `field-${name}`, name: "value", visibility: "private" }],
     methods: [
       {
         id: `method-${name}`,
