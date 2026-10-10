@@ -24,6 +24,7 @@ import { StageRoadmapDialog } from './StageRoadmapDialog';
 import { TestStatus } from './TestStatus';
 import { useHints } from './useHints';
 import { useStageSidebar } from './useStageSidebar';
+import { useCountUp } from './useCountUp';
 import { useResizableSidebarWidth } from '../useResizableSidebarWidth';
 import { ClearConditionList } from './ClearConditionList';
 import { GhostHintButton } from './GhostHintButton';
@@ -108,12 +109,17 @@ function PreviewButtons({ stage, disabled }: Readonly<{ stage: Stage; disabled: 
 
 /** 点数を丸いゲージで見せる。詳細(減点の内訳)は隣のテキストに出す。 */
 function ScoreBadge({ score }: Readonly<{ score: Score }>) {
-  const degrees = Math.max(0, Math.min(100, score.total)) * 3.6;
+  const celebration = useGameStore((state) => state.celebration);
+  const rising = celebration !== null && celebration.scoreAfter === score.total && celebration.scoreAfter > celebration.scoreBefore;
+  const animation = useCountUp(score.total, rising ? celebration.seq : null, rising ? celebration.scoreBefore : score.total, rising);
+  const degrees = Math.max(0, Math.min(100, animation.value)) * 3.6;
+  const ringClass = ['score-badge__ring', animation.active ? 'score-badge__ring--celebrate' : '', animation.active && score.total === 100 ? 'score-badge__ring--perfect' : ''].filter(Boolean).join(' ');
   return (
-    <div className="score-badge" aria-live="polite">
-      <div className="score-badge__ring" style={{ background: `conic-gradient(var(--accent) ${String(degrees)}deg, var(--border) 0)` }}>
-        <span className="score-badge__value">{score.total}点</span>
+    <div className="score-badge">
+      <div className={ringClass} data-testid="score-ring" style={{ background: `conic-gradient(var(--accent) ${String(degrees)}deg, var(--border) 0)` }}>
+        <span className="score-badge__value" aria-hidden="true" data-testid="score-value">{animation.value}点</span>
       </div>
+      <span className="sr-only" aria-live="polite" data-testid="score-announcement">{score.total}点</span>
       <span className="score-badge__detail" data-testid="score">
         {describeScore(score)}
       </span>

@@ -8,6 +8,7 @@ import { fileDropId } from './dndIds';
 import type { FileFlowNode } from './layoutCodebase';
 import { useShowDetails } from './semanticZoom';
 import { useDropTargetClassNames } from './DropTargetsContext';
+import { useResolvedCelebration } from './useResolvedCelebration';
 
 /** 修正が必要なファイルの印。色だけに頼らずアイコンとラベルでも伝える。ズームで詳細を隠していても出す。 */
 function FileMark({ severity, points }: Readonly<{ severity: FileSeverity; points: number }>) {
@@ -21,6 +22,7 @@ function FileMark({ severity, points }: Readonly<{ severity: FileSeverity; point
 }
 
 export function FileNode({ data }: Readonly<NodeProps<FileFlowNode>>) {
+  const resolved = useResolvedCelebration('fileIds', data.fileId);
   const file = useGameStore((state) => state.codebase.files.find((candidate) => candidate.id === data.fileId));
   const limit = useGameStore((state) => state.stage.limits.file);
   const points = useGameStore((state) => fileDeductions(state.codebase, state.stage).get(data.fileId) ?? 0);
@@ -38,7 +40,7 @@ export function FileNode({ data }: Readonly<NodeProps<FileFlowNode>>) {
   return (
     <div
       ref={setNodeRef}
-      className={['file-node', isOver ? 'file-node--drop-target' : '', dropTargetClasses, flagged ? 'file-node--flagged' : ''].filter(Boolean).join(' ')}
+      className={['file-node', isOver ? 'file-node--drop-target' : '', dropTargetClasses, flagged ? 'file-node--flagged' : '', resolved ? 'file-node--resolved' : ''].filter(Boolean).join(' ')}
       data-testid={`file-${file.path}`}
     >
       <div className="file-node__header">

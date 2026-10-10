@@ -7,9 +7,10 @@ import { withChangePart } from '../../domain/change/changePart';
 import { findField, findMethod, type Codebase, type Visibility } from '../../domain/codebase/Codebase';
 import { emptyHistory, recordChange, redoHistory, undoHistory, type History, type Travel } from '../../domain/codebase/history';
 import { scoreCodebase, type ScoreRule } from '../../domain/scoring/score';
+import { resolvedTargets } from '../../domain/scoring/resolvedTargets';
+import type { ViolationTarget } from '../../domain/scoring/violationTargets';
 import type { Stage } from '../../domain/stage/Stage';
 import type { GhostMove } from '../../domain/stage/ghostMove';
-import type { ViolationTarget } from '../../domain/scoring/violationTargets';
 import { fetchCritique } from '../../infrastructure/critique/critiqueClient';
 import {
   addClassUseCase,
@@ -103,6 +104,7 @@ type GameState = {
   stages: readonly Stage[];
   stage: Stage;
   codebase: Codebase;
+  celebration: { readonly seq: number; readonly scoreBefore: number; readonly scoreAfter: number; readonly resolved: ViolationTarget } | null;
   ghost: GhostMove | null;
   playGhost: (move: GhostMove) => void;
   clearGhost: () => void;
@@ -221,11 +223,23 @@ function methodSelectionActions(set: (partial: Partial<GameState>) => void, get:
 }
 
 /** コードベースが変わったときだけ、変更前のものを履歴に積んで差し替える。何も変わらない操作は1手に数えない。 */
-function commit(state: GameState, codebase: Codebase): Partial<GameState> {
+function celebrationFor(state: GameState, codebase: Codebase, enabled: boolean): GameState['celebration'] | undefined {
+  if (!enabled || state.changeSession !== null) return undefined;
+  const scoreBefore = scoreCodebase(state.codebase, state.stage).total;
+  const scoreAfter = scoreCodebase(codebase, state.stage).total;
+  const resolved = resolvedTargets(state.codebase, codebase, state.stage);
+  const hasResolved = resolved.fileIds.length + resolved.classIds.length + resolved.methodIds.length > 0;
+  if (scoreAfter <= scoreBefore && !hasResolved) return undefined;
+  return { seq: (state.celebration?.seq ?? 0) + 1, scoreBefore, scoreAfter, resolved };
+}
+
+function commit(state: GameState, codebase: Codebase, celebrate = true): Partial<GameState> {
   if (codebase === state.codebase) return {};
   const fieldStillThere = state.selectedFieldId !== null && findField(codebase, state.selectedFieldId) !== undefined;
+  const celebration = celebrationFor(state, codebase, celebrate);
   return {
     codebase,
+    ...(celebration === undefined ? {} : { celebration }),
     extractDraft: null,
     ghost: null,
     history: recordChange(state.history, state.codebase),
@@ -244,7 +258,7 @@ function travelTo(state: GameState, travel: Travel | undefined): Partial<GameSta
   const { codebase, history } = travel;
   const stillThere = state.selectedMethodId !== null && findMethod(codebase, state.selectedMethodId) !== undefined;
   const fieldStillThere = state.selectedFieldId !== null && findField(codebase, state.selectedFieldId) !== undefined;
-  return { codebase, history, ghost: null, selectedMethodId: stillThere ? state.selectedMethodId : null, selectedFieldId: fieldStillThere ? state.selectedFieldId : null, extractDraft: null, message: null };
+  return { codebase, history, celebration: null, ghost: null, selectedMethodId: stillThere ? state.selectedMethodId : null, selectedFieldId: fieldStillThere ? state.selectedFieldId : null, extractDraft: null, message: null };
 }
 
 const UNPLACED_MESSAGE = '部品がまだ部品置き場にあります。置き場所へドラッグしてください';
@@ -303,7 +317,7 @@ function resetActions(set: (partial: Partial<GameState>) => void, get: () => Gam
   return {
     resetStage: () => {
       if (get().changeSession !== null) return;
-      set({ ...commit(get(), get().stage.codebase), ghost: null, manualFix: null, extractDraft: null, focusedRule: null, hintTarget: null, hintTargetKey: null, selectedMethodId: null, selectedFieldId: null, message: null });
+      set({ ...commit(get(), get().stage.codebase, false), celebration: null, ghost: null, manualFix: null, extractDraft: null, focusedRule: null, hintTarget: null, hintTargetKey: null, selectedMethodId: null, selectedFieldId: null, message: null });
     },
   };
 }
@@ -417,6 +431,7 @@ function selectStageState(allStages: readonly Stage[], stageId: string, drafts: 
   return {
     stage,
     codebase: draft ?? stage.codebase,
+    celebration: null,
     restoredDraft: draft !== undefined,
     history: emptyHistory(),
     selectedMethodId: null,
@@ -620,6 +635,7 @@ export function createGameStore(allStages: readonly Stage[], saveDraftsOn = true
       stages: allStages,
       stage: firstStage,
       codebase: restored ?? firstStage.codebase,
+      celebration: null,
       restoredDraft: restored !== undefined,
       draftStageIds: Object.keys(holder.drafts),
       history: emptyHistory(),

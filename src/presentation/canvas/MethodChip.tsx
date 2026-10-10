@@ -7,6 +7,7 @@ import { methodDragId } from './dndIds';
 import { useInlineEdit } from './useInlineEdit';
 import { VISIBILITY_MARK } from './visibilityMark';
 import { BLOCK_OPERATION_TITLES } from '../guide/operationGuide';
+import { useResolvedCelebration } from './useResolvedCelebration';
 
 type MethodChipViewProps = {
   method: Method;
@@ -67,6 +68,7 @@ function useManualFixMark(methodId: string) {
  * React Flowにノードのドラッグ・パンとして奪われないよう nodrag / nopan を付ける。
  */
 export function MethodChip({ method, linePreview }: Readonly<{ method: Method; linePreview?: MethodLinePreview }>) {
+  const resolved = useResolvedCelebration('methodIds', method.id);
   const limit = useGameStore((state) => state.stage.limits.method);
   const flagged = useGameStore((state) => {
     const rule = state.focusedRule;
@@ -89,7 +91,7 @@ export function MethodChip({ method, linePreview }: Readonly<{ method: Method; l
   // buttonの中にinputを入れると無効なHTMLになるため、編集中は draggable なボタンごと入力欄に差し替える
   if (editing) {
     return (
-      <div className={`method-chip nodrag nopan${flagged ? ' method-chip--flagged' : ''}`} data-testid={`method-${method.name}`}>
+      <div className={`method-chip nodrag nopan${flagged ? ' method-chip--flagged' : ''}${resolved ? ' method-chip--resolved' : ''}`} data-testid={`method-${method.name}`}>
         <input {...inputProps} aria-label="メソッド名" className="method-chip__name-input" />
       </div>
     );
@@ -100,7 +102,7 @@ export function MethodChip({ method, linePreview }: Readonly<{ method: Method; l
       data-method-id={method.id}
       ref={setNodeRef}
       type="button"
-      className="method-chip-button nodrag nopan"
+      className={`method-chip-button nodrag nopan${resolved ? ' method-chip-button--resolved' : ''}`}
       style={{ opacity: isDragging ? 0.3 : 1 }}
       data-testid={`method-${method.name}`}
       onMouseEnter={() => {

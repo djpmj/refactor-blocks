@@ -18,6 +18,7 @@ import { useShowDetails } from "./semanticZoom";
 import { SuperclassLabel } from "./SuperclassLabel";
 import { BLOCK_OPERATION_TITLES } from "../guide/operationGuide";
 import { useDropTargetClassNames } from "./DropTargetsContext";
+import { useResolvedCelebration } from "./useResolvedCelebration";
 
 /** 循環依存に関与しているクラスの印。色だけに頼らずアイコンとラベルでも伝える。ズームで詳細を隠していても出す。 */
 function CyclicMark() {
@@ -121,6 +122,7 @@ function ClassLineBadge({ codeClass, limit }: Readonly<{ codeClass: CodeClass; l
 }
 
 export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
+  const resolved = useResolvedCelebration('classIds', data.classId);
   const codeClass = useGameStore((state) =>
     findClass(state.codebase, data.classId),
   );
@@ -151,7 +153,7 @@ export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
   } = useDraggable({ id: classDragId(data.classId) });
   if (codeClass === undefined) return null;
   return (
-    <div ref={setNodeRef} className={[classNodeClassName({ isOver, isCyclic }), dropTargetClasses, flagged ? 'class-node--flagged' : ''].filter(Boolean).join(' ')} data-testid={`class-${codeClass.name}`}>
+    <div ref={setNodeRef} className={[classNodeClassName({ isOver, isCyclic }), dropTargetClasses, flagged ? 'class-node--flagged' : '', resolved ? 'class-node--resolved' : ''].filter(Boolean).join(' ')} data-testid={`class-${codeClass.name}`}>
       {/* 依存の矢印の接続点。つなぐ操作はさせないので見た目には出さない。 */}
       <DependencyHandles />
       <div

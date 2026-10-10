@@ -12,6 +12,7 @@
   --protected: #c9861c;
   --danger: #d64545;
   --warning: #d49b00;
+  --success: #2e9e6a;
   --file-bg: #eef1fa;
   --code-bg: #ffffff;
   --code-text: #1f1f1f;
@@ -38,6 +39,7 @@
     --edge-extends: #7c93ff;
     --edge-implements: #f0a050;
     --warning: #f0c34e;
+    --success: #55d69a;
     --file-bg: #1a1d27;
     --code-bg: #1e1e1e;
     --code-text: #d4d4d4;
@@ -55,6 +57,7 @@
 
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--text); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
 .app { display: flex; flex-direction: column; height: 100vh; }
 .app__body { position: relative; display: flex; flex: 1; min-height: 0; }
@@ -134,6 +137,10 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .score-badge { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); max-width: 360px; }
 .score-badge__ring { display: grid; place-items: center; width: 44px; height: 44px; flex: none; border-radius: 50%; }
 .score-badge__value { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--surface); color: var(--text); font-size: 11px; font-weight: 700; }
+.score-badge__ring--celebrate { animation: score-glow 650ms ease-out; }
+.score-badge__ring--perfect { animation-name: score-glow-perfect; animation-duration: 1s; }
+@keyframes score-glow { 0% { filter: drop-shadow(0 0 0 color-mix(in srgb, var(--accent) 0%, transparent)); } 35% { filter: drop-shadow(0 0 12px var(--accent)); } 100% { filter: drop-shadow(0 0 0 transparent); } }
+@keyframes score-glow-perfect { 0% { transform: scale(1); filter: drop-shadow(0 0 0 transparent); } 35% { transform: scale(1.18); filter: drop-shadow(0 0 20px var(--accent)); } 100% { transform: scale(1); filter: drop-shadow(0 0 0 transparent); } }
 
 .file-node { width: 100%; height: 100%; background: var(--file-bg); border: 2px dashed var(--border); border-radius: 12px; }
 .file-node__header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; font-size: 13px; font-family: ui-monospace, monospace; }
@@ -369,6 +376,18 @@ input.class-node__name { width: 14ch; }
 .score-breakdown__items button[aria-pressed='true'] { border: 3px solid var(--warning); }
 .score-breakdown__items button:disabled { opacity: 0.55; cursor: not-allowed; }
 .class-node--flagged, .file-node--flagged { border: 4px solid var(--warning); background-color: color-mix(in srgb, var(--warning) 10%, var(--surface)); }
+.class-node--resolved, .file-node--resolved { animation: resolved-success 650ms ease-out; }
+.method-chip-button--resolved .method-chip, .method-chip--resolved { animation: resolved-success 650ms ease-out; }
+@keyframes resolved-success { 0% { transform: translateY(0) scale(1); box-shadow: 0 0 0 0 color-mix(in srgb, var(--success) 0%, transparent); } 35% { transform: translateY(-4px) scale(1.025); box-shadow: 0 0 0 5px color-mix(in srgb, var(--success) 55%, transparent); background-color: color-mix(in srgb, var(--success) 22%, var(--surface)); } 100% { transform: translateY(0) scale(1); box-shadow: 0 0 0 0 color-mix(in srgb, var(--success) 0%, transparent); } }
+@media (prefers-reduced-motion: reduce) {
+  .score-badge__ring--celebrate, .class-node--resolved, .file-node--resolved,
+  .method-chip-button--resolved .method-chip, .method-chip--resolved { animation: none; }
+  .class-node--resolved, .file-node--resolved, .method-chip-button--resolved .method-chip, .method-chip--resolved {
+    outline: 2px solid var(--success);
+    outline-offset: 2px;
+    background-color: color-mix(in srgb, var(--success) 14%, var(--surface));
+  }
+}
 .class-node--flagged { box-shadow: 0 0 0 4px color-mix(in srgb, var(--warning) 24%, transparent); }
 .file-node--flagged { background-color: color-mix(in srgb, var(--warning) 10%, var(--file-bg)); }
 .class-node--can-drop.class-node--cyclic { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent); outline: 2px solid var(--danger); outline-offset: 2px; }
