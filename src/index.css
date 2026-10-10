@@ -512,3 +512,45 @@ input.class-node__name { width: 14ch; }
   justify-content: flex-end;
   gap: 8px;
 }
+
+.ghost-hint-button--idle:not(:disabled) {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 28%, transparent);
+  animation: ghost-hint-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes ghost-hint-pulse {
+  50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 12%, transparent); }
+}
+
+.ghost-hint-animation {
+  position: fixed;
+  z-index: 10000;
+  pointer-events: none;
+  opacity: 0.5;
+  transition: left 1.2s ease-in-out, top 1.2s ease-in-out, opacity 0.4s ease;
+}
+
+.ghost-hint-animation--travel { opacity: 0.5; }
+.ghost-hint-animation:not(.ghost-hint-animation--travel) { opacity: 0; }
+
+.ghost-hint-target {
+  outline: 3px solid var(--flagged, var(--accent));
+  outline-offset: 3px;
+  transition: outline-color 160ms ease;
+}
+
+.ghost-hint-live {
+  position: fixed;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ghost-hint-button--idle:not(:disabled) { animation: none; }
+  .ghost-hint-animation { display: none; transition: none; }
+  .ghost-hint-target { transition: none; }
+}
