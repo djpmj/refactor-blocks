@@ -139,8 +139,10 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .file-node__header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; font-size: 13px; font-family: ui-monospace, monospace; }
 
 .class-node { width: 100%; height: 100%; background: var(--surface); border: 2px solid var(--border); border-radius: 10px; transition: border-color 0.15s, box-shadow 0.15s; }
-.class-node--drop-target { border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent); }
+.class-node--can-drop { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); background: color-mix(in srgb, var(--accent) 5%, var(--surface)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 12%, transparent); }
+.class-node--cannot-drop { opacity: 0.45; }
 .class-node--cyclic { border-color: var(--danger); box-shadow: 0 0 0 4px color-mix(in srgb, var(--danger) 25%, transparent); }
+.class-node--drop-target { border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent); }
 .cyclic-mark { font-size: 14px; margin-right: 6px; }
 .class-node__header { display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid var(--border); font-weight: 700; }
 .class-node__name-group { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
@@ -310,6 +312,8 @@ input.class-node__name { width: 14ch; }
 .react-flow__edge.edge--implements .react-flow__edge-path { stroke: var(--edge-implements); stroke-width: 2.5; stroke-dasharray: 6 4; }
 #inheritance-arrow path { fill: var(--surface); stroke: var(--edge-extends); stroke-width: 2; }
 #implements-arrow path { fill: var(--surface); stroke: var(--edge-implements); stroke-width: 2; }
+.file-node--can-drop { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); background-color: color-mix(in srgb, var(--accent) 5%, var(--file-bg)); }
+.file-node--cannot-drop { opacity: 0.45; }
 .file-node--drop-target { border-color: var(--accent); }
 .file-node__empty { color: var(--muted); font-size: 12px; text-align: center; padding: 24px 0; }
 .class-node__header { cursor: grab; }
@@ -361,6 +365,12 @@ input.class-node__name { width: 14ch; }
 .class-node--flagged, .file-node--flagged { border: 4px solid var(--warning); background-color: color-mix(in srgb, var(--warning) 10%, var(--surface)); }
 .class-node--flagged { box-shadow: 0 0 0 4px color-mix(in srgb, var(--warning) 24%, transparent); }
 .file-node--flagged { background-color: color-mix(in srgb, var(--warning) 10%, var(--file-bg)); }
+.class-node--can-drop.class-node--cyclic { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent); outline: 2px solid var(--danger); outline-offset: 2px; }
+.class-node--can-drop.class-node--cyclic.class-node--drop-target { border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent); }
+.class-node--can-drop.class-node--flagged { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent); outline: 2px solid var(--warning); outline-offset: 2px; }
+.class-node--can-drop.class-node--flagged.class-node--drop-target { border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent); }
+.file-node--can-drop.file-node--flagged { border-color: var(--accent); outline: 2px solid var(--warning); outline-offset: 2px; }
+.file-node--can-drop.file-node--flagged.file-node--drop-target { border-color: var(--accent); }
 .method-chip--flagged { border: 3px solid var(--warning); background-color: color-mix(in srgb, var(--warning) 12%, var(--bg)); }
 
 .operation-guide { width: min(90vw, 720px); max-width: calc(100vw - 24px); max-height: 85vh; padding: 0; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--text); }

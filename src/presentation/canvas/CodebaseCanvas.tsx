@@ -11,6 +11,7 @@ import {
 } from '@dnd-kit/core';
 import { Background, Controls, ReactFlow, useReactFlow, type EdgeTypes, type NodeChange, type NodeTypes, type ReactFlowInstance, type XYPosition } from '@xyflow/react';
 import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
+import { DropTargetsContext, type DropTargetsState } from './DropTargetsContext';
 import { createPortal } from 'react-dom';
 import { findClass, findClassOfMethod, findField, findFileOfClass, findMethod, type Codebase } from '../../domain/codebase/Codebase';
 import { methodLines } from '../../domain/codebase/lineCount';
@@ -33,6 +34,7 @@ import { useCanvasContextMenu } from './useCanvasContextMenu';
 import { fileTopLeftAtDrop } from './dropPosition';
 import { GhostAnimation } from './GhostAnimation';
 import type { Edge } from '@xyflow/react';
+import { dropTargetIds, type Dragging } from './dropTargets';
 
 const nodeTypes: NodeTypes = { fileNode: FileNode, classNode: ClassNode };
 const edgeTypes: EdgeTypes = { topRoute: TopRouteEdge, offset: OffsetEdge, warning: WarningEdge };
@@ -273,6 +275,18 @@ export function CodebaseCanvas({ active }: Readonly<{ active: boolean }>) {
   const visibleFileCount = fitFileCount(codebase, overrides);
   const edges = useCanvasEdges(codebase, nodes, visibilityEnforced);
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
+  const dragging = useMemo<Dragging | null>(() => {
+    if (activeId === null) return null;
+    const methodId = parseMethodDragId(activeId);
+    if (methodId !== null) return { kind: 'method', id: methodId };
+    const fieldId = parseFieldDragId(activeId);
+    if (fieldId !== null) return { kind: 'field', id: fieldId };
+    const classId = parseClassDragId(activeId);
+    return classId === null ? null : { kind: 'class', id: classId };
+  }, [activeId]);
+  const dropTargets = useMemo<DropTargetsState | null>(() => (
+    dragging === null ? null : { dragging, targets: dropTargetIds(codebase, dragging) }
+  ), [codebase, dragging]);
   const [flow, setFlow] = useState<ReactFlowInstance<CodebaseFlowNode> | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, POINTER_ACTIVATION), useSensor(KeyboardSensor));
   const contextMenu = useCanvasContextMenu();
@@ -296,10 +310,12 @@ export function CodebaseCanvas({ active }: Readonly<{ active: boolean }>) {
         setActiveId(null);
       }}
     >
-      <CanvasFlow
-        nodes={nodes} edges={edges} onNodesChange={handleNodesChange} setFlow={setFlow} contextMenu={contextMenu}
-        selectMethod={selectMethod} stageId={stageId} visibleFileCount={visibleFileCount} codebase={codebase}
-      />
+      <DropTargetsContext.Provider value={dropTargets}>
+        <CanvasFlow
+          nodes={nodes} edges={edges} onNodesChange={handleNodesChange} setFlow={setFlow} contextMenu={contextMenu}
+          selectMethod={selectMethod} stageId={stageId} visibleFileCount={visibleFileCount} codebase={codebase}
+        />
+      </DropTargetsContext.Provider>
       <DraggingOverlay activeId={activeId} />
       {contextMenu.target === null ? null : (
         // 開き直すたびに入力途中の状態を捨てるため、位置でkeyを変える

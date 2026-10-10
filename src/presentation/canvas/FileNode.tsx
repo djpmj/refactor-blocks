@@ -7,6 +7,7 @@ import { useGameStore } from '../store/useGameStore';
 import { fileDropId } from './dndIds';
 import type { FileFlowNode } from './layoutCodebase';
 import { useShowDetails } from './semanticZoom';
+import { useDropTargetClassNames } from './DropTargetsContext';
 
 /** 修正が必要なファイルの印。色だけに頼らずアイコンとラベルでも伝える。ズームで詳細を隠していても出す。 */
 function FileMark({ severity, points }: Readonly<{ severity: FileSeverity; points: number }>) {
@@ -30,13 +31,14 @@ export function FileNode({ data }: Readonly<NodeProps<FileFlowNode>>) {
       : state.hintTarget?.fileIds.includes(data.fileId) ?? false;
   });
   const { setNodeRef, isOver } = useDroppable({ id: fileDropId(data.fileId) });
+  const dropTargetClasses = useDropTargetClassNames('file', data.fileId);
   const showDetails = useShowDetails();
   if (file === undefined) return null;
   const lines = fileLines(file);
   return (
     <div
       ref={setNodeRef}
-      className={`file-node${isOver ? ' file-node--drop-target' : ''}${flagged ? ' file-node--flagged' : ''}`}
+      className={['file-node', isOver ? 'file-node--drop-target' : '', dropTargetClasses, flagged ? 'file-node--flagged' : ''].filter(Boolean).join(' ')}
       data-testid={`file-${file.path}`}
     >
       <div className="file-node__header">
