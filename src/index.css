@@ -422,3 +422,69 @@ input.class-node__name { width: 14ch; }
 .story-card__speaker { color: var(--muted, inherit); font-weight: bold; }
 .story-card button { margin-right: 6px; }
 .story-card__reopen { display: block; width: 100%; margin: 8px 0; padding: 6px; border: 0; background: transparent; color: var(--accent); text-align: left; cursor: pointer; }
+.spotlight-tour__shade {
+  position: fixed;
+  z-index: 1000;
+  background: rgb(8 12 22 / 72%);
+  pointer-events: auto;
+}
+
+.spotlight-tour__shade--full {
+  inset: 0;
+}
+
+.spotlight-tour__hole {
+  position: fixed;
+  z-index: 1001;
+  box-sizing: border-box;
+  border: 2px solid var(--accent);
+  border-radius: 6px;
+  pointer-events: none;
+}
+
+.spotlight-tour__shade--top {
+  inset: 0 0 auto;
+}
+
+.spotlight-tour__shade--left {
+  left: 0;
+}
+
+.spotlight-tour__shade--right {
+  right: 0;
+}
+
+.spotlight-tour__shade--bottom {
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+
+.spotlight-tour__callout {
+  position: fixed;
+  z-index: 1001;
+  width: min(360px, calc(100vw - 32px));
+  box-sizing: border-box;
+  padding: 16px;
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  background: var(--surface, white);
+  color: var(--text, #172033);
+  box-shadow: 0 12px 36px rgb(0 0 0 / 28%);
+}
+
+.spotlight-tour__callout p {
+  margin: 0 0 12px;
+}
+
+.spotlight-tour__step {
+  color: var(--muted, #596579);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.spotlight-tour__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}

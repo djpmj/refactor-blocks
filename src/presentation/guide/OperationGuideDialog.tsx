@@ -11,7 +11,12 @@ function OperationText({ text }: Readonly<{ text: string }>) {
   );
 }
 
-export function OperationGuideDialog({ open, onClose }: Readonly<{ open: boolean; onClose: () => void }>) {
+export function OperationGuideDialog({ open, onClose, onRepeatTour, repeatTourDisabled }: Readonly<{
+  open: boolean;
+  onClose: () => void;
+  onRepeatTour: () => void;
+  repeatTourDisabled: boolean;
+}>) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const dialog = ref.current;
@@ -39,6 +44,9 @@ export function OperationGuideDialog({ open, onClose }: Readonly<{ open: boolean
             </dl>
           </section>
         ))}
+        <button type="button" onClick={onRepeatTour} disabled={repeatTourDisabled} data-testid="repeat-first-visit-tour">
+          初回ガイドをもう一度
+        </button>
       </div>
     </dialog>
   );
