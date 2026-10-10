@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('サイドバー開閉ボタンが境界に沿って動く', async ({ page }) => {
+test('サイドバー開閉ボタンが境界の外側に接して動く', async ({ page }) => {
   // Arrange
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/');
@@ -10,12 +10,14 @@ test('サイドバー開閉ボタンが境界に沿って動く', async ({ page 
   await expect(sidebar).toBeVisible();
   await expect(header.getByRole('button', { name: /サイドバー/ })).toHaveCount(0);
 
-  // Assert: 開いているときはサイドバー右端に重なり、ヘッダーより下にある
+  // Assert: 開いているときはサイドバーの右端に接し、ヘッダーより下にある
   const sidebarBox = await sidebar.boundingBox();
   const openButtonBox = await closeButton.boundingBox();
   const headerBox = await header.boundingBox();
   if (sidebarBox === null || openButtonBox === null || headerBox === null) throw new Error('要素の位置を取得できません');
-  expect(Math.abs(openButtonBox.x - (sidebarBox.x + sidebarBox.width))).toBeLessThanOrEqual(30);
+  const buttonGap = openButtonBox.x - (sidebarBox.x + sidebarBox.width);
+  expect(buttonGap).toBeGreaterThanOrEqual(0);
+  expect(buttonGap).toBeLessThanOrEqual(2);
   expect(openButtonBox.y).toBeGreaterThanOrEqual(headerBox.y + headerBox.height);
 
   // Act: 閉じる
@@ -101,8 +103,12 @@ test('狭い画面では左サイドバーを40vw以内に収めてキャンバ�
 
   // Assert
   const sidebarBox = await sidebar.boundingBox();
-  if (sidebarBox === null) throw new Error('サイドバーの位置を取得できません');
+  const toggleBox = await page.getByRole('button', { name: 'サイドバーを閉じる' }).boundingBox();
+  if (sidebarBox === null || toggleBox === null) throw new Error('サイドバーまたは開閉ボタンの位置を取得できません');
   expect(sidebarBox.width).toBeLessThanOrEqual(375 * 0.4 + 1);
+  const buttonGap = toggleBox.x - (sidebarBox.x + sidebarBox.width);
+  expect(buttonGap).toBeGreaterThanOrEqual(0);
+  expect(buttonGap).toBeLessThanOrEqual(2);
   const handle = page.getByRole('separator', { name: '課題とヒントの幅を変更' });
   await expect(handle).toHaveAttribute('aria-valuenow', '150');
   await expect(handle).toHaveAttribute('aria-valuemin', '120');
@@ -114,9 +120,38 @@ test('狭い画面では左サイドバーを40vw以内に収めてキャンバ�
   await expect(page.locator('.app__canvas')).toBeVisible();
 });
 
+test('長い内容をスクロールしてもボタンがスクロールバー上端に重ならない', async ({ page }) => {
+  // Arrange
+  await page.setViewportSize({ width: 1440, height: 600 });
+  await page.goto('/');
+  await page.getByLabel('ステージ').selectOption({ label: '上級3: 会員ランクの割引をStrategyパターンへ組み替える' });
+  const sidebar = page.getByRole('complementary', { name: '課題とヒント' });
+  const toggle = page.getByRole('button', { name: 'サイドバーを閉じる' });
+  await expect(sidebar).toBeVisible();
+
+  // Assert: 縦スクロールが必要な高さでも境界外にボタンがある
+  const hasOverflow = await sidebar.evaluate((element) => element.scrollHeight > element.clientHeight);
+  expect(hasOverflow).toBe(true);
+  const sidebarBox = await sidebar.boundingBox();
+  const toggleBox = await toggle.boundingBox();
+  if (sidebarBox === null || toggleBox === null) throw new Error('サイドバーまたは開閉ボタンの位置を取得できません');
+  const buttonGap = toggleBox.x - (sidebarBox.x + sidebarBox.width);
+  expect(buttonGap).toBeGreaterThanOrEqual(0);
+  expect(buttonGap).toBeLessThanOrEqual(2);
+
+  // Act: スクロールしてもサイドバーがボタンの下に残る
+  await sidebar.evaluate((element) => { element.scrollTop = element.scrollHeight; });
+
+  // Assert
+  const scrollTop = await sidebar.evaluate((element) => element.scrollTop);
+  expect(scrollTop).toBeGreaterThan(0);
+  await expect(toggle).toBeVisible();
+});
+
 test('狭い画面でも閉じたサイドバーのボタンをキーボードで操作できる', async ({ page }) => {
   // Arrange
   await page.setViewportSize({ width: 1280, height: 900 });
+  await page.emulateMedia({ colorScheme: 'dark' });
   await page.goto('/');
   const sidebar = page.getByRole('complementary', { name: '課題とヒント' });
   const openButton = page.getByRole('button', { name: 'サイドバーを開く' });
@@ -132,6 +167,21 @@ test('狭い画面でも閉じたサイドバーのボタンをキーボード�
   await page.keyboard.press('Space');
 
   // Assert
+  await expect(sidebar).toBeVisible();
+  const closeButton = page.getByRole('button', { name: 'サイドバーを閉じる' });
+  await expect(closeButton).toHaveAttribute('aria-expanded', 'true');
+  await expect(closeButton).toBeFocused();
+  await expect(closeButton).toBeVisible();
+  const focusVisible = await closeButton.evaluate((element) => element.matches(':focus-visible'));
+  expect(focusVisible).toBe(true);
+
+  // Act: Enterでも閉じ、再度開く
+  await page.keyboard.press('Enter');
+
+  // Assert
+  await expect(sidebar).toBeHidden();
+  await expect(openButton).toHaveAttribute('aria-expanded', 'false');
+  await page.keyboard.press('Enter');
   await expect(sidebar).toBeVisible();
   await expect(page.getByRole('button', { name: 'サイドバーを閉じる' })).toHaveAttribute('aria-expanded', 'true');
 });
