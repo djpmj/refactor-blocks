@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-10 15:05 UTC PR #137 ボタンの見た目を共通の既定スタイルにそろえる
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(test 1607件/lint/typecheck) ✅。E2Eはレビュー環境で起動できず未実行(PR本文は185件成功と報告)。Issue #130の受け入れ基準(重複定義の削除・`!important`除去・ChangePainCardの主要ボタン化)を差分で確認
+- マージ: squash & delete-branch
+
 ## 2026-10-10 10:20 UTC PR #129 減点内訳をホバーして原因をプレビュー
 
 - 判定: 合格(blocker無し)
@@ -207,12 +213,6 @@
 - マージ: squash & delete-branch
 
 ## 2026-10-04 02:40 UTC PR #52 可視性が関係するステージだけ選択欄を出す (#39)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅(E2EはChromium未導入で実行不可。差分を読んで確認)
-- マージ: squash & delete-branch
-
-## 2026-10-04 02:30 UTC PR #51 元のメソッド可視性へ戻せるようにする (#37)
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅(E2EはChromium未導入で実行不可。差分を読んで確認)
