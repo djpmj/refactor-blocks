@@ -37,7 +37,7 @@ describe('deleteFile', () => {
     expect(result).toEqual({ ok: false, error: 'has-code' });
   });
 
-  it('public にした切り出しメソッドがあるファイルは拒み、入力を変更しない', () => {
+  it('public にした切り出しメソッドがあるファイルも呼び出し元へ戻して削除する', () => {
     // Arrange
     const extracted = extractMethod(sampleCodebase(), {
       sourceMethodId: 'method-place', fragmentIds: ['f-tax'], newMethodId: 'method-tax', newMethodName: 'calculateTax',
@@ -56,7 +56,10 @@ describe('deleteFile', () => {
     // Act
     const result = deleteFile(codebase, 'file-tax');
     // Assert
-    expect(result).toEqual({ ok: false, error: 'has-code' });
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error(result.error);
+    expect(result.value.files).toHaveLength(1);
+    expect(findMethod(result.value, 'method-place')?.fragments.map(({ id }) => id)).toEqual(['f-validate', 'f-tax', 'f-save']);
     expect(codebase).toEqual(snapshot);
   });
 
@@ -110,6 +113,23 @@ describe('deleteFile', () => {
       'f-tax',
       'f-save',
     ]);
+  });
+
+  it('publicな横流しメソッドを含むファイルを削除すると、呼び出し行が呼び先へ付け替わる', () => {
+    // Arrange
+    const codebase: Codebase = { files: [
+      { id: 'controller-file', path: 'src/Controller.ts', classes: [{ id: 'controller', name: 'Controller', methods: [{ id: 'caller', name: 'place', visibility: 'public', fragments: [{ id: 'manager-call', label: 'Managerへ委譲', lines: 1, responsibility: 'call', uses: ['manager-method'] }] }] }] },
+      { id: 'manager-file', path: 'src/Manager.ts', classes: [{ id: 'manager', name: 'Manager', methods: [{ id: 'manager-method', name: 'place', visibility: 'public', fragments: [{ id: 'service-call', label: 'Serviceへ委譲', lines: 1, responsibility: 'call', uses: ['service-method'] }] }] }] },
+      { id: 'service-file', path: 'src/Service.ts', classes: [{ id: 'service', name: 'Service', methods: [{ id: 'service-method', name: 'place', visibility: 'public', fragments: [{ id: 'business', label: '処理', lines: 5, responsibility: 'business' }] }] }] },
+    ] };
+
+    // Act
+    const result = deleteFile(codebase, 'manager-file');
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    expect(result.value.files.map(({ id }) => id)).toEqual(['controller-file', 'service-file']);
+    expect(findMethod(result.value, 'caller')?.fragments.map(({ id }) => id)).toEqual(['service-call']);
   });
 
   it('存在しないファイルを指定するとエラーになる', () => {

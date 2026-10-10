@@ -51,9 +51,15 @@ function describeChangeVisibility({ class: className, method, visibility }: Chan
   return `${className} の ${method} を、メソッドエディタの「可視性」で ${visibility} にしよう`;
 }
 
+function describeInlineStep({ method, fromClass }: Extract<SolutionStep, { readonly inline: unknown }>['inline']): string {
+  const source = fromClass === undefined ? method : `${fromClass} の ${method}`;
+  return `${source} をメソッドエディタの「呼び出し元へ戻す」でInlineしよう`;
+}
+
 type StructuralStep = Exclude<
   SolutionStep,
   | { readonly extract: unknown }
+  | { readonly inline: unknown }
   | { readonly move: unknown }
   | { readonly merge: unknown }
   | { readonly deleteMethod: unknown }
@@ -80,6 +86,9 @@ export function describeSolutionStep(codebase: Codebase, step: SolutionStep): st
     const labels = fragmentIds.map((id) => fragmentLabel(codebase, id)).join('・');
     const source = fromClass === undefined ? from : `${fromClass} の ${from}`;
     return `${source} から「${labels}」をExtract Methodで取り出し、${name} という名前にしよう`;
+  }
+  if ('inline' in step) {
+    return describeInlineStep(step.inline);
   }
   if ('move' in step) {
     const { method, fromClass, toClass } = step.move;

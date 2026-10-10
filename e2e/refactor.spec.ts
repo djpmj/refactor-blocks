@@ -143,19 +143,31 @@ async function emptyPanePoint(page: Page) {
  * Fit View で縮めるとセマンティックズームでメソッドが隠れるので、プレイヤーと同じく余白をドラッグしてパンし、
  * 対象をキャンバスの中央へ寄せてから、位置が落ち着いたところでクリックする。
  */
-async function clickInCanvas(page: Page, testId: string) {
-  const box = await stableBoundingBox(page, testId);
-  const pane = await page.locator('.react-flow__pane').boundingBox();
-  if (pane === null) throw new Error('キャンバスの位置を取得できません');
-  const from = await emptyPanePoint(page);
-  const dx = pane.x + pane.width / 2 - (box.x + box.width / 2);
-  const dy = pane.y + pane.height / 2 - (box.y + box.height / 2);
-  await page.mouse.move(from.x, from.y);
-  await page.mouse.down();
-  await page.mouse.move(from.x + dx, from.y + dy, { steps: 10 });
-  await page.mouse.up();
-  const moved = await stableBoundingBox(page, testId);
-  await page.mouse.click(moved.x + moved.width / 2, moved.y + moved.height / 2);
+/** ノードが重なるキャンバスでも、対象要素が実際にヒットする点をマウス操作する。 */
+async function clickExposedTarget(page: Page, target: Locator, button: 'left' | 'right' = 'left') {
+  const result = await target.evaluate((element) => {
+    const bounds = element.getBoundingClientRect();
+    const sampled: string[] = [];
+    for (const xRatio of [0.5, 0.2, 0.8]) {
+      for (const yRatio of [0.5, 0.2, 0.8]) {
+        const x = bounds.left + bounds.width * xRatio;
+        const y = bounds.top + bounds.height * yRatio;
+        const hit = element.ownerDocument.elementFromPoint(x, y);
+        if (hit !== null && element.contains(hit)) return { x, y };
+        sampled.push(`${hit?.tagName}.${hit?.className?.toString() ?? ''}`);
+      }
+    }
+    return { error: `${bounds.x},${bounds.y} ${bounds.width}x${bounds.height}; hits=${sampled.join('|')}` };
+  });
+  if ('error' in result) throw new Error(`対象要素のクリックできる位置が見つかりません: ${result.error}`);
+  await page.mouse.click(result.x, result.y, { button });
+}
+
+async function clickMethodInView(page: Page, methodId: string) {
+  const method = page.getByTestId(methodId);
+  await page.getByRole('button', { name: 'Fit View' }).click();
+  await expect(method).toBeInViewport();
+  await clickExposedTarget(page, method);
 }
 
 /** ドラッグ操作(Move Method)で、あるメソッドを別クラスへ移す。 */
@@ -238,6 +250,52 @@ test('抽出したメソッドを「呼び出し元へ戻す」と、処理が�
   await expect(page.getByRole('heading', { name: /OrderService\.placeOrder\(\)/ })).toBeVisible();
 });
 
+test('中級12: 横流しメソッドを呼び出し元へ戻してOrderManagerを削除する', async ({ page }) => {
+  // Arrange
+  await page.setViewportSize({ width: 1920, height: 1200 });
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: '呼び出し元へ戻す' })).toHaveCount(0);
+  await selectStage(page, '中級12: 横流しするだけの OrderManager');
+  const score = page.getByTestId('score');
+  await expect(score).toContainText('90点');
+  await expect(score).toContainText('横流しするだけのクラス -10');
+  const managerPlaceOrder = page.getByTestId('method-placeOrder').nth(1);
+  await expect(managerPlaceOrder).toBeVisible();
+  await clickExposedTarget(page, managerPlaceOrder);
+  await expect(page.getByRole('heading', { name: /OrderManager\.placeOrder\(\)/ })).toBeVisible();
+
+  // Act / Assert: publicな中継メソッドにも呼び出し元へ戻す操作がある
+  await expect(page.getByRole('button', { name: '呼び出し元へ戻す' })).toBeVisible();
+  await page.getByRole('button', { name: '呼び出し元へ戻す' }).click();
+  const managerCancelOrder = page.getByTestId('method-cancelOrder').nth(1);
+  await expect(managerCancelOrder).toBeVisible();
+  await clickExposedTarget(page, managerCancelOrder);
+  await expect(page.getByRole('heading', { name: /OrderManager\.cancelOrder\(\)/ })).toBeVisible();
+  await page.getByRole('button', { name: '呼び出し元へ戻す' }).click();
+  await expect(page.getByTestId('class-OrderManager').getByTestId('method-placeOrder')).toHaveCount(0);
+  await expect(page.getByTestId('class-OrderManager').getByTestId('method-cancelOrder')).toHaveCount(0);
+
+  // Act: 空のOrderManagerファイルを削除する
+  await clickExposedTarget(page, page.getByTestId('file-src/order/OrderManager.ts'), 'right');
+  await page.getByTestId('context-menu').getByRole('menuitem', { name: 'ファイルを削除' }).click();
+
+  // Assert
+  await expect(page.getByTestId('file-src/order/OrderManager.ts')).toHaveCount(0);
+  await expect(score).toContainText('100点');
+  await expect(score).not.toContainText('横流しするだけのクラス');
+});
+
+test('横流し先のないメソッドには「呼び出し元へ戻す」を表示しない', async ({ page }) => {
+  // Arrange
+  await page.setViewportSize({ width: 1920, height: 1200 });
+  await page.goto('/');
+  await selectStage(page, '中級12: 横流しするだけの OrderManager');
+  await clickExposedTarget(page, page.getByTestId('method-placeOrder').first());
+
+  // Assert
+  await expect(page.getByRole('button', { name: '呼び出し元へ戻す' })).toHaveCount(0);
+});
+
 test('メソッドを別クラスへドラッグ&ドロップすると移動する', async ({ page }) => {
   // Arrange
   await openOrderStage(page);
@@ -245,12 +303,11 @@ test('メソッドを別クラスへドラッグ&ドロップすると移動す�
   await page.getByLabel('消費税を計算する(軽減税率あり)').check();
   await page.getByLabel('新しいメソッド名').fill('calculateTax');
   await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
-  const source = page.getByTestId('method-calculateTax');
   const target = page.getByTestId('class-TaxCalculator');
 
   // Act
-  const from = await source.boundingBox();
-  const to = await target.boundingBox();
+  const from = await stableBoundingBox(page, 'method-calculateTax');
+  const to = await stableBoundingBox(page, 'class-TaxCalculator');
   if (from === null || to === null) throw new Error('要素の位置を取得できません');
   await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
   await page.mouse.down();
@@ -1224,6 +1281,11 @@ test('実装中に Ctrl+Z で部品が部品置き場に戻る。挑戦をやめ
 
   // Act(やめて、挑戦前の手を戻す)
   await page.getByRole('button', { name: 'やめる' }).click();
+  await expect(page.getByTestId('change-panel')).toHaveCount(0);
+  await expect(page.getByTestId('change-request-start')).toBeEnabled();
+  const undoButton = page.locator('button[title="Ctrl+Z"]').first();
+  await expect(undoButton).toBeEnabled();
+  await undoButton.focus();
   await page.keyboard.press('Control+z');
 
   // Assert
@@ -1819,7 +1881,7 @@ test('中級7: setter 越しの書き換えが見え、ルールを移して可�
 
   // Act: debit をキーボードで public にする
   const debitSelect = page.getByLabel('メソッド debit の可視性');
-  await clickInCanvas(page, 'method-debit');
+  await clickMethodInView(page, 'method-debit');
   await expect(debitSelect).toBeVisible();
   await debitSelect.focus();
   await debitSelect.press('ArrowUp');
@@ -1829,22 +1891,22 @@ test('中級7: setter 越しの書き換えが見え、ルールを移して可�
   await expect(score).not.toContainText('アクセス制御');
 
   // Act: deposit からも credit を抽出して Account へ移し、public にする
-  await clickInCanvas(page, 'method-deposit');
+  await clickMethodInView(page, 'method-deposit');
   await page.getByLabel('getStatus() で状態を取り出し、凍結されていないか確かめる').check();
   await page.getByLabel('残高を増やして setBalance() で書き戻す').check();
   await page.getByLabel('新しいメソッド名').fill('credit');
   await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
   await dragMethodToClass(page, 'method-credit', 'class-Account');
   const creditSelect = page.getByLabel('メソッド credit の可視性');
-  await clickInCanvas(page, 'method-credit');
+  await clickMethodInView(page, 'method-credit');
   await expect(creditSelect).toBeVisible();
   await creditSelect.focus();
   await creditSelect.press('ArrowUp');
 
   // Act: setBalance・setDailyWithdrawn を private にする
-  await clickInCanvas(page, 'method-setBalance');
+  await clickMethodInView(page, 'method-setBalance');
   await page.getByLabel('メソッド setBalance の可視性').selectOption('private');
-  await clickInCanvas(page, 'method-setDailyWithdrawn');
+  await clickMethodInView(page, 'method-setDailyWithdrawn');
   await page.getByLabel('メソッド setDailyWithdrawn の可視性').selectOption('private');
 
   // Assert

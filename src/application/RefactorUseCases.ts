@@ -240,8 +240,8 @@ const MOVE_ERROR_MESSAGES: Record<Exclude<MoveMethodError, 'same-class'>, string
 
 const INLINE_ERROR_MESSAGES: Record<InlineMethodError, string> = {
   'method-not-found': 'メソッドが見つかりません',
-  'not-private': 'publicメソッドは呼び出し元へ戻せません',
   'call-not-found': 'このメソッドの呼び出し元が見つかりません',
+  'multiple-callers': '呼び出し元または呼び出し箇所が複数あるメソッドは戻せません',
 };
 
 const ADD_CLASS_ERROR_MESSAGES: Record<AddClassError, string> = {

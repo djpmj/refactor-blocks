@@ -17,6 +17,7 @@ function codebaseWithPrivateCallAcrossClasses(): Codebase {
           {
             id: 'class-A',
             name: 'A',
+            fields: [{ id: 'field-A', name: 'value', visibility: 'private' }],
             methods: [
               {
                 id: 'method-A',
@@ -29,6 +30,7 @@ function codebaseWithPrivateCallAcrossClasses(): Codebase {
           {
             id: 'class-B',
             name: 'B',
+            fields: [{ id: 'field-B', name: 'value', visibility: 'private' }],
             methods: [{ id: 'method-B', name: 'helper', visibility: 'private', fragments: [] }],
           },
         ],
@@ -49,6 +51,7 @@ function codebaseOf(classes: Record<string, readonly string[]>): Codebase {
   const codeClasses: CodeClass[] = Object.entries(classes).map(([name, uses]) => ({
     id: `class-${name}`,
     name,
+    fields: [{ id: `field-${name}`, name: 'value', visibility: 'private' }],
     methods: [
       {
         id: `method-${name}`,
@@ -62,7 +65,7 @@ function codebaseOf(classes: Record<string, readonly string[]>): Codebase {
 }
 
 describe('scoreCodebase', () => {
-  it('違反がなければ100点で、13ルールとも減点0件を返す', () => {
+  it('違反がなければ100点で、全ルールとも減点0件を返す', () => {
     // Arrange
     const codebase = codebaseOf({ A: ['method-B'], B: [] });
 
@@ -88,9 +91,25 @@ describe('scoreCodebase', () => {
         { rule: 'cohesion', count: 0, points: 0 },
         { rule: 'trivial-method', count: 0, points: 0 },
         { rule: 'thin-class', count: 0, points: 0 },
+        { rule: 'middle-man', count: 0, points: 0 },
         { rule: 'layer', count: 0, points: 0 },
       ],
     });
+  });
+
+  it('横流しだけのクラス1つにつき10点減点する', () => {
+    // Arrange
+    const codebase: Codebase = { files: [{ id: 'file', path: 'src/a.ts', classes: [
+      { id: 'manager', name: 'Manager', methods: [{ id: 'forward', name: 'forward', visibility: 'public', fragments: [{ id: 'call', label: 'delegate', lines: 1, responsibility: 'call', uses: ['work'] }] }] },
+      { id: 'service', name: 'Service', methods: [{ id: 'work', name: 'work', visibility: 'public', fragments: [{ id: 'business', label: 'work', lines: 5, responsibility: 'business' }] }] },
+    ] }] };
+
+    // Act
+    const score = scoreCodebase(codebase, { ...LOOSE, dependencyLimit: 10 });
+
+    // Assert
+    expect(score.total).toBe(90);
+    expect(score.deductions.find(({ rule }) => rule === 'middle-man')).toEqual({ rule: 'middle-man', count: 1, points: 10 });
   });
 
   it('行数の上限違反1件につき10点減点する', () => {
@@ -498,7 +517,7 @@ describe('scoreCodebase', () => {
 
     // Assert
     expect(score.total).toBe(80);
-    expect(score.deductions.slice(-3, -1)).toEqual([
+    expect(score.deductions.filter(({ rule }) => rule === 'trivial-method' || rule === 'thin-class')).toEqual([
       { rule: 'trivial-method', count: 1, points: 10 },
       { rule: 'thin-class', count: 1, points: 10 },
     ]);

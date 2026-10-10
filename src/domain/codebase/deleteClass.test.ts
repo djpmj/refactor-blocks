@@ -73,7 +73,7 @@ describe('deleteClass', () => {
     expect(result).toEqual({ ok: false, error: 'has-code' });
   });
 
-  it('public にした切り出しメソッドは戻らず、処理も失わない', () => {
+  it('public にした切り出しメソッドも呼び出し元へ戻してから削除する', () => {
     // Arrange
     const base = extractedIntoOwnClass();
     const codebase = mapClasses(base, makeTaxLogicPublic);
@@ -81,7 +81,9 @@ describe('deleteClass', () => {
     // Act
     const result = deleteClass(codebase, 'class-tax-logic');
     // Assert
-    expect(result).toEqual({ ok: false, error: 'has-code' });
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error(result.error);
+    expect(findMethod(result.value, 'method-place')?.fragments.map((fragment) => fragment.id)).toEqual(['f-validate', 'f-tax', 'f-save']);
     expect(codebase).toEqual(snapshot);
   });
 
@@ -121,6 +123,23 @@ describe('deleteClass', () => {
       'f-save',
     ]);
     expect(result.value.files[1].classes.some((codeClass) => codeClass.id === 'class-tax-logic')).toBe(false);
+  });
+
+  it('publicな横流しメソッドを持つクラスを削除すると、呼び出し行が呼び先へ付け替わる', () => {
+    // Arrange
+    const codebase: Codebase = { files: [{ id: 'file', path: 'src/a.ts', classes: [
+      { id: 'controller', name: 'Controller', methods: [{ id: 'caller', name: 'place', visibility: 'public', fragments: [{ id: 'manager-call', label: 'Managerへ委譲', lines: 1, responsibility: 'call', uses: ['manager-method'] }] }] },
+      { id: 'manager', name: 'Manager', methods: [{ id: 'manager-method', name: 'place', visibility: 'public', fragments: [{ id: 'service-call', label: 'Serviceへ委譲', lines: 1, responsibility: 'call', uses: ['service-method'] }] }] },
+      { id: 'service', name: 'Service', methods: [{ id: 'service-method', name: 'place', visibility: 'public', fragments: [{ id: 'business', label: '処理', lines: 5, responsibility: 'business' }] }] },
+    ] }] };
+
+    // Act
+    const result = deleteClass(codebase, 'manager');
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    expect(result.value.files[0].classes.map(({ id }) => id)).not.toContain('manager');
+    expect(findMethod(result.value, 'caller')?.fragments.map(({ id }) => id)).toEqual(['service-call']);
   });
 
   it('呼び出し元も削除対象の同じクラスにある場合は処理が残るため削除できない', () => {

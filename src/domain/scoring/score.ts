@@ -2,6 +2,7 @@ import type { Codebase } from '../codebase/Codebase';
 import { classDependencies, type ClassDependency } from '../codebase/dependencies';
 import type { Stage } from '../stage/Stage';
 import { findLowCohesionClasses } from './cohesion';
+import { findMiddleManClasses } from './middleMan';
 import { findEncapsulationViolations, findFeatureEnvy, findOpenSetters } from './fieldAccess';
 import { findContractViolations, findStubMethods } from './interfaceContracts';
 import { findEmptyContainers, findUnusedPrivateMethods } from './leftovers';
@@ -28,6 +29,7 @@ export type ScoreRule =
   | 'cohesion'
   | 'trivial-method'
   | 'thin-class'
+  | 'middle-man'
   | 'layer';
 
 export type ScoreDeduction = {
@@ -76,6 +78,7 @@ export function scoreCodebase(
     cohesion: findLowCohesionClasses(codebase).length,
     'trivial-method': findTrivialMethods(codebase).length,
     'thin-class': findThinClasses(codebase).length,
+    'middle-man': findMiddleManClasses(codebase).length,
     layer: findLayerViolations(codebase, stage.layers).length,
   };
   const deductions = (
@@ -95,6 +98,7 @@ export function scoreCodebase(
       'cohesion',
       'trivial-method',
       'thin-class',
+      'middle-man',
       'layer',
     ] as const
   ).map((rule): ScoreDeduction => ({ rule, count: counts[rule], points: counts[rule] * POINTS_PER_VIOLATION }));

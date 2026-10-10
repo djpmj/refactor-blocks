@@ -136,7 +136,7 @@ test('狭い画面でもトーストはキャンバスコントロールに重�
   }
 });
 
-test('public にした抽出メソッドが残るクラスは削除できない', async ({ page }) => {
+test('public の横流しメソッドが残るクラスは処理を呼び出し元へ戻して削除できる', async ({ page }) => {
   await openStage(page, '中級3: 越境する private メソッド');
   await page.getByTestId('method-notifyShipment').click();
   await page.getByLabel('通知に必要な情報を集める').check();
@@ -150,6 +150,10 @@ test('public にした抽出メソッドが残るクラスは削除できない'
   await page.getByTestId('class-header-NewClass').click({ button: 'right' });
   await page.getByTestId('context-menu').getByRole('menuitem', { name: 'クラスを削除' }).click();
 
-  await expect(page.locator('.app__canvas').getByRole('alert')).toContainText('処理が残っているクラスは削除できません。先にメソッドを別のクラスへ移してください');
-  await expect(page.getByTestId('class-NewClass').getByTestId('method-gatherNotificationInfo')).toBeVisible();
+  await expect(page.getByTestId('class-NewClass')).toHaveCount(0);
+  await expect(page.getByTestId('method-gatherNotificationInfo')).toHaveCount(0);
+  await clickInCanvas(page, 'method-notifyShipment');
+  await page.getByRole('tab', { name: 'コード' }).click();
+  await expect(page.getByRole('tabpanel', { name: 'コード' }).locator('pre code')).toContainText('var recipient');
+  await expect(page.getByRole('tabpanel', { name: 'コード' }).locator('pre code')).toContainText('var subject');
 });

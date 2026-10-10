@@ -1391,6 +1391,80 @@ const layeredOrderApiStage: Stage = {
   },
 };
 
+const middleManStage: Stage = {
+  id: 'intermediate-middle-man',
+  level: 'intermediate',
+  title: '中級12: 横流しするだけの OrderManager',
+  learns: ['Middle Man', 'Inline Method / Inline Class'],
+  checks: [
+    {
+      id: 'check-1',
+      question: '呼び出しを横流しするだけのクラスが避けられるのはなぜ?',
+      choices: [
+        { text: '呼び出し元と呼び先の間に変更する場所が増え、独立した役割がないから', explanation: '正解です。横流しだけのクラスは変更を閉じ込めず、間の層を増やすだけです。' },
+        { text: 'publicメソッドは常に使ってはいけないから', explanation: 'public自体が問題なのではなく、委譲だけで価値を足さないクラスが問題です。' },
+        { text: 'メソッド呼び出しが一度増えるから', explanation: '呼び出し回数より、独立した責務がない層を保守する負担が問題です。' },
+      ],
+      answer: 0,
+    },
+    {
+      id: 'check-2',
+      question: 'Extract Method / Extract Class と Inline はどう使い分ける?',
+      choices: [
+        { text: '一度Extractしたものは、後から戻さない', explanation: '設計は固定ではありません。理由がなくなればInlineできます。' },
+        { text: '分けると変更が整理されるならExtractし、横流しだけなど分ける理由がなくなったらInlineする', explanation: '正解です。分割も統合も、変更のまとまりに合わせて選びます。' },
+        { text: 'Inlineは行数を減らすために常に使う', explanation: '行数ではなく、独立した役割や変更理由があるかで判断します。' },
+      ],
+      answer: 1,
+    },
+  ],
+  why: 'OrderManager は呼び出しを OrderService へ渡すだけで、独自のルールや状態を持ちません。処理を呼び出し元へ戻し、役割のないクラスを削除します。',
+  description: 'OrderController が OrderManager を呼び、OrderManager が OrderService へそのまま渡しています。OrderManager に独立した役割はありません。',
+  goal: '分けすぎ・横流しだけの層は、戻して消すのも設計の判断です。メソッドエディタの「呼び出し元へ戻す」を使い、OrderManager を削除しましょう。',
+  limits: { method: 50, class: 100, file: 300 },
+  dependencyLimit: 2,
+  responsibilityLimit: 2,
+  changeRequests: [
+    { id: 'req-stock-rule', title: '在庫確認のルールを変えて', description: '注文時に予約する在庫の条件を変更する。', responsibility: 'order-rule', linesPerSite: 4, partName: 'reviseStockRule' },
+    { id: 'req-response', title: 'レスポンスの形式を変えて', description: '注文APIが返すレスポンスの形式を変更する。', responsibility: 'http', linesPerSite: 3, partName: 'reviseResponse' },
+  ],
+  codebase: {
+    files: [
+      {
+        id: 'file-order-controller', path: 'src/order/OrderController.ts', classes: [{ id: 'class-order-controller', name: 'OrderController', methods: [
+          { id: 'method-place-order', name: 'placeOrder', visibility: 'public', fragments: [
+            { id: 'frag-place-request', label: 'リクエストを検証する', lines: 10, responsibility: 'http', code: { csharp: 'if (request is null) throw new ArgumentNullException(nameof(request));\nif (request.CustomerId <= 0) throw new ValidationException("顧客IDが不正です");\nif (request.Items is null) throw new ValidationException("商品がありません");\nif (request.Items.Count == 0) throw new ValidationException("商品がありません");\nif (request.Address is null) throw new ValidationException("住所がありません");\nif (request.Items.Any(item => item.Quantity <= 0)) throw new ValidationException("数量が不正です");\nif (request.Items.Any(item => item.UnitPrice < 0)) throw new ValidationException("価格が不正です");\nif (request.Currency is null) throw new ValidationException("通貨がありません");\nvar customer = await _customers.FindAsync(request.CustomerId);\nvar validated = OrderRequest.Validate(request, customer);' } },
+            { id: 'frag-place-manager', label: 'OrderManager.placeOrder() を呼び出す', lines: 1, responsibility: 'call', uses: ['method-manager-place'] },
+            { id: 'frag-place-response', label: 'レスポンスを組み立てる', lines: 8, responsibility: 'http', code: { csharp: 'var response = new OrderResponse(order.Id, order.Total);\nresponse.Status = "created";\nresponse.CustomerId = order.CustomerId;\nresponse.ItemCount = order.Items.Count;\nresponse.Total = order.Total;\nresponse.Currency = order.Currency;\nresponse.Message = "注文を受け付けました";\nreturn Results.Ok(response);' } },
+          ] },
+          { id: 'method-cancel-order', name: 'cancelOrder', visibility: 'public', fragments: [
+            { id: 'frag-cancel-request', label: 'リクエストを検証する', lines: 8, responsibility: 'http', code: { csharp: 'if (request is null) throw new ArgumentNullException(nameof(request));\nif (request.OrderId <= 0) throw new ValidationException("注文IDが不正です");\nif (request.Reason is null) throw new ValidationException("理由がありません");\nif (request.Reason.Length > 200) throw new ValidationException("理由が長すぎます");\nvar order = await _orders.FindAsync(request.OrderId);\nif (order is null) throw new NotFoundException("注文がありません");\nif (order.IsClosed) throw new ValidationException("注文は終了しています");\nvar validated = CancelRequest.Validate(request, order);' } },
+            { id: 'frag-cancel-manager', label: 'OrderManager.cancelOrder() を呼び出す', lines: 1, responsibility: 'call', uses: ['method-manager-cancel'] },
+            { id: 'frag-cancel-response', label: 'レスポンスを組み立てる', lines: 6, responsibility: 'http', code: { csharp: 'var response = new CancelResponse(orderId, refundAmount);\nresponse.Status = "cancelled";\nresponse.RefundAmount = refundAmount;\nresponse.Message = "注文をキャンセルしました";\nresponse.Timestamp = DateTimeOffset.UtcNow;\nreturn Results.Ok(response);' } },
+          ] },
+        ] }],
+      },
+      {
+        id: 'file-order-manager', path: 'src/order/OrderManager.ts', classes: [{ id: 'class-order-manager', name: 'OrderManager', methods: [
+          { id: 'method-manager-place', name: 'placeOrder', visibility: 'public', fragments: [{ id: 'frag-manager-place', label: 'OrderService.place() を呼び出す', lines: 1, responsibility: 'call', uses: ['method-service-place'] }] },
+          { id: 'method-manager-cancel', name: 'cancelOrder', visibility: 'public', fragments: [{ id: 'frag-manager-cancel', label: 'OrderService.cancel() を呼び出す', lines: 1, responsibility: 'call', uses: ['method-service-cancel'] }] },
+        ] }],
+      },
+      {
+        id: 'file-order-service', path: 'src/order/OrderService.ts', classes: [{ id: 'class-order-service', name: 'OrderService', methods: [
+          { id: 'method-service-place', name: 'place', visibility: 'public', fragments: [
+            { id: 'frag-service-stock', label: '在庫を確認する', lines: 18, responsibility: 'order-rule', code: { csharp: 'if (quantity <= 0) throw new ArgumentOutOfRangeException(nameof(quantity));\nvar product = await _products.FindAsync(productId);\nif (product is null) throw new NotFoundException("商品がありません");\nif (!product.IsActive) throw new InvalidOperationException("販売停止中です");\nvar available = await _inventory.GetAvailableAsync(productId);\nif (available < quantity) throw new InsufficientStockException(productId);\nvar reservation = new StockReservation(productId, quantity);\nreservation.RequestedAt = DateTimeOffset.UtcNow;\nreservation.OrderId = orderId;\nreservation.CustomerId = customerId;\nreservation.Status = ReservationStatus.Pending;\nawait _inventory.ReserveAsync(reservation);\nawait _inventory.SaveAsync(reservation);\nawait _unitOfWork.CommitAsync();\nvar current = await _inventory.GetAvailableAsync(productId);\nif (current < 0) throw new InvalidOperationException("在庫数が不正です");\n_logger.Information("在庫を予約しました: {ProductId}", productId);\nreservationId = reservation.Id;' } },
+            { id: 'frag-service-total', label: '送料込みの金額を計算する', lines: 22, responsibility: 'order-rule', code: { csharp: 'if (items.Count == 0) throw new ArgumentException("商品がありません", nameof(items));\nvar subtotal = items.Sum(item => item.Quantity * item.UnitPrice);\nvar weight = items.Sum(item => item.Quantity * item.Weight);\nvar zone = _zoneResolver.Resolve(address);\nvar shipping = _shippingRates.Calculate(zone, weight);\nvar discount = _discounts.Calculate(customerId, subtotal);\nvar taxable = subtotal - discount;\nvar taxRate = _taxPolicy.RateFor(address.Prefecture);\nvar tax = decimal.Round(taxable * taxRate, 0);\nvar total = taxable + tax + shipping;\nif (total < 0) throw new InvalidOperationException("合計が不正です");\nvar quote = new OrderQuote();\nquote.Subtotal = subtotal;\nquote.Discount = discount;\nquote.TaxableAmount = taxable;\nquote.Tax = tax;\nquote.ShippingFee = shipping;\nquote.Total = total;\nquote.Currency = items[0].Currency;\nquote.CalculatedAt = DateTimeOffset.UtcNow;\n_logger.Information("注文合計を計算しました: {Total}", total);\nreturn quote;' } },
+          ] },
+          { id: 'method-service-cancel', name: 'cancel', visibility: 'public', fragments: [
+            { id: 'frag-service-refund', label: 'キャンセルできるか判定し、返金額を計算する', lines: 16, responsibility: 'order-rule', code: { csharp: 'if (order.Status != OrderStatus.Confirmed) throw new InvalidOperationException("キャンセルできません");\nif (order.ShippedAt is not null) throw new InvalidOperationException("発送済みです");\nif (order.CancelledAt is not null) throw new InvalidOperationException("キャンセル済みです");\nvar policy = await _refundPolicies.FindAsync(order.CustomerType);\nvar elapsed = DateTimeOffset.UtcNow - order.ConfirmedAt;\nvar rate = policy.RateFor(elapsed);\nvar amount = decimal.Round(order.PaidAmount * rate, 2);\nif (amount < 0) throw new InvalidOperationException("返金額が不正です");\nvar refund = new Refund(order.Id, amount);\nrefund.RequestedAt = DateTimeOffset.UtcNow;\nawait _payments.ValidateRefundAsync(refund);\norder.MarkCancellationRequested(refund.Id);\nawait _orders.SaveAsync(order);\nawait _refunds.SaveAsync(refund);\nawait _unitOfWork.CommitAsync();\nreturn refund.Amount;' } },
+          ] },
+        ] }],
+      },
+    ],
+  },
+};
+
 export const intermediateStages: readonly Stage[] = [
   cyclicDependencyStage,
   godFileStage,
@@ -1403,4 +1477,5 @@ export const intermediateStages: readonly Stage[] = [
   copyPasteTaxStage,
   memberRankBranchingStage,
   layeredOrderApiStage,
+  middleManStage,
 ];

@@ -16,6 +16,7 @@ export const RULE_LABEL: Record<ScoreRule, string> = {
   cohesion: '無関係なデータの塊が同居(凝集度が低い)',
   'trivial-method': '極小メソッドの量産',
   'thin-class': '役割の薄い極小クラス',
+  'middle-man': '横流しするだけのクラス',
   layer: '層の依存の向き',
 };
 
