@@ -15,6 +15,7 @@ import { MethodChip } from "./MethodChip";
 import { useShowDetails } from "./semanticZoom";
 import { SuperclassLabel } from "./SuperclassLabel";
 import { BLOCK_OPERATION_TITLES } from "../guide/operationGuide";
+import { useDropTargetClassNames } from "./DropTargetsContext";
 
 /** 循環依存に関与しているクラスの印。色だけに頼らずアイコンとラベルでも伝える。ズームで詳細を隠していても出す。 */
 function CyclicMark() {
@@ -84,6 +85,11 @@ function ClassBody({ codeClass }: Readonly<{ codeClass: CodeClass }>) {
   );
 }
 
+function ClassLineBadge({ codeClass, limit }: Readonly<{ codeClass: CodeClass; limit: number }>) {
+  const lines = classLines(codeClass);
+  return <span className={lines > limit ? 'line-badge line-badge--over' : 'line-badge'}>{lines}行</span>;
+}
+
 export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
   const codeClass = useGameStore((state) =>
     findClass(state.codebase, data.classId),
@@ -102,6 +108,7 @@ export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
     return rule !== null ? violationTargets(state.codebase, state.stage)[rule].classIds.includes(data.classId) : state.hintTarget?.classIds.includes(data.classId) ?? false;
   });
   const showDetails = useShowDetails();
+  const dropTargetClasses = useDropTargetClassNames('class', data.classId);
   const { setNodeRef, isOver } = useDroppable({
     id: classDropId(data.classId),
   });
@@ -113,9 +120,8 @@ export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
     isDragging,
   } = useDraggable({ id: classDragId(data.classId) });
   if (codeClass === undefined) return null;
-  const lines = classLines(codeClass);
   return (
-    <div ref={setNodeRef} className={`${classNodeClassName({ isOver, isCyclic })}${flagged ? " class-node--flagged" : ""}`} data-testid={`class-${codeClass.name}`}>
+    <div ref={setNodeRef} className={[classNodeClassName({ isOver, isCyclic }), dropTargetClasses, flagged ? 'class-node--flagged' : ''].filter(Boolean).join(' ')} data-testid={`class-${codeClass.name}`}>
       {/* 依存の矢印の接続点。つなぐ操作はさせないので見た目には出さない。 */}
       <DependencyHandles />
       <div
@@ -131,15 +137,7 @@ export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
         <ClassNameLabel classId={data.classId} name={codeClass.name} />
         {layerName === undefined ? null : <LayerTag name={layerName} className={codeClass.name} />}
         {isCyclic ? <CyclicMark /> : null}
-        {showDetails ? (
-          <span
-            className={
-              lines > limit ? "line-badge line-badge--over" : "line-badge"
-            }
-          >
-            {lines}行
-          </span>
-        ) : null}
+        {showDetails ? <ClassLineBadge codeClass={codeClass} limit={limit} /> : null}
       </div>
       {showDetails ? <ClassBody codeClass={codeClass} /> : null}
     </div>

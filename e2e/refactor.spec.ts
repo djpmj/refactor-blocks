@@ -1743,24 +1743,31 @@ test('フィールドをTabでフォーカスしてSpaceと矢印キーで別ク
   await openFeatureEnvyStage(page);
   const source = page.getByTestId('field-trialDays');
   const target = page.getByTestId('class-Subscription');
+
+  // Act: Tabフォーカス後、Spaceで掴む
+  await source.focus();
+  await page.keyboard.press('Shift+Tab');
+  await page.keyboard.press('Tab');
+  await expect(source).toBeFocused();
+  await page.keyboard.press('Space');
+
+  // Assert: ドラッグ中に対象表示が更新された後の位置から、キーボードの移動量を求める
+  await expect(page.getByTestId('class-BillingService')).toHaveClass(/class-node--cannot-drop/);
+  await expect(target).toHaveClass(/class-node--can-drop/);
   const from = await source.boundingBox();
   const to = await target.boundingBox();
   if (from === null || to === null) throw new Error('フィールドまたは移動先クラスが見つかりません');
   const deltaX = to.x + to.width / 2 - (from.x + from.width / 2);
   const deltaY = to.y + to.height / 2 - (from.y + from.height / 2);
 
-  // Act: Tabフォーカス後、Spaceで掴み、矢印キーで移動してSpaceでドロップ
-  await source.focus();
-  await page.keyboard.press('Shift+Tab');
-  await page.keyboard.press('Tab');
-  await expect(source).toBeFocused();
-  await page.keyboard.press('Space');
+  // Act: 矢印キーで移動し、対象クラスを確認してSpaceでドロップ
   for (let step = 0; step < Math.ceil(Math.abs(deltaX) / 25); step += 1) {
     await page.keyboard.press(deltaX > 0 ? 'ArrowRight' : 'ArrowLeft');
   }
   for (let step = 0; step < Math.ceil(Math.abs(deltaY) / 25); step += 1) {
     await page.keyboard.press(deltaY > 0 ? 'ArrowDown' : 'ArrowUp');
   }
+  await expect(target).toHaveClass(/class-node--drop-target/);
   await page.keyboard.press('Space');
 
   // Assert
