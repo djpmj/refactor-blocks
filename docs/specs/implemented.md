@@ -68,3 +68,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [hint-highlight](hint-highlight.md) | ヒントごとに「キャンバスで見る」ボタンを付け、模範解答の手が触るブロックを光らせて画面を寄せる |
 | [first-visit-tour](first-visit-tour.md) | チュートリアル1の初回に、操作に合わせて進むスポットライトガイドを出す |
 | [ghost-hint](ghost-hint.md) | 「少しだけヒント」で次に動かすブロックの半透明ゴーストを移動先へ動かして見せる |
+| [drag-drop-targets](drag-drop-targets.md) | ドラッグ中に置けるクラス・ファイルを光らせ、置けない場所を薄暗くする |

@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-10 08:40 UTC PR #126 ドラッグ中に移動可能な場所を強調
+
+- 判定: 合格(blocker無し。suggestion: 仕様は既存E2E無変更だがrefactor.spec.tsのキーボードfieldテストを更新)
+- 確認した内容: npm run check(test 1592件/lint/typecheck) ✅。E2Eはレビュー環境にChromiumが無く起動できず未確認(PR本文は176件成功と報告)
+- マージ: squash & delete-branch
+
 ## 2026-10-10 08:20 UTC PR #125 feat: add subtle ghost movement hints
 
 - 判定: 合格(blocker無し)
@@ -210,10 +216,4 @@
 
 - 判定: 合格(blocker無し。suggestion: pointercancel時のドラッグ状態クリア)
 - 確認した内容: master取り込み後 npm test 995件 ✅ / npm run lint ✅ / npm run typecheck ✅ / E2Eはローカルにブラウザが無く未実行、PRのCI(e2e)pass
-- マージ: squash & delete-branch
-
-## 2026-10-03 19:10 UTC PR #38 call Fragment を呼び出し文で表示する (#31)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test 992件 ✅ / npm run lint ✅ / npm run typecheck ✅ / E2Eはローカルにブラウザが無く未実行、PRのCI(e2e)pass
 - マージ: squash & delete-branch
