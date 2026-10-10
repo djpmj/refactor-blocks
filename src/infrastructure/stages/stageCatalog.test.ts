@@ -558,6 +558,17 @@ function danglingFieldRefs(stage: Stage): string[] {
 }
 
 describe('stageCatalog', () => {
+  it('全ステージに60文字以内の問題症状がある', () => {
+    // Arrange
+    const allStages = stages;
+
+    // Act
+    const problems = allStages.map((stage) => stage.problem.trim());
+
+    // Assert
+    expect(problems.every((problem) => problem.length > 0 && problem.length <= 60)).toBe(true);
+  });
+
   it('チュートリアル・初級・中級・上級の順に、それぞれ1つ以上のステージが並んでいる', () => {
     // Arrange
     const expectedOrder = ['tutorial', 'beginner', 'intermediate', 'advanced'];

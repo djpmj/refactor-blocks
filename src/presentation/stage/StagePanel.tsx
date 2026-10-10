@@ -23,6 +23,7 @@ import { TestStatus } from './TestStatus';
 import { useHints } from './useHints';
 import { useStageSidebar } from './useStageSidebar';
 import { useResizableSidebarWidth } from '../useResizableSidebarWidth';
+import { ClearConditionList } from './ClearConditionList';
 
 /** ステージ一覧のダイアログを開くボタン。 */
 function RoadmapButton() {
@@ -181,6 +182,43 @@ function DraftRestoredNotice() {
   );
 }
 
+function StageSidebar({ stage, codebase, score, initialScore, investigating, revealedCount, hints, total, onReveal, hidden }: Readonly<{
+  stage: Stage;
+  codebase: Codebase;
+  score: Score;
+  initialScore: Score;
+  investigating: boolean;
+  revealedCount: number;
+  hints: readonly string[];
+  total: number;
+  onReveal: () => void;
+  hidden: boolean;
+}>) {
+  return (
+    <aside id="stage-sidebar" className="sidebar" aria-label="課題とヒント" hidden={hidden}>
+      <h2 className="sidebar__title">課題とヒント</h2>
+      <StoryIntro key={`story-intro-${stage.id}`} stageId={stage.id} />
+      <section className="stage-panel__problem" aria-labelledby="stage-problem-title">
+        <h3 id="stage-problem-title">困っていること</h3>
+        <p>{stage.problem}</p>
+      </section>
+      <ClearConditionList stage={stage} codebase={codebase} initial={initialScore} current={score} />
+      <section className="stage-panel__hints" aria-labelledby="stage-hints-title">
+        <h3 id="stage-hints-title">ヒント</h3>
+        <HintButton revealed={revealedCount} total={total} disabled={investigating} onReveal={onReveal} />
+        <HintList hints={hints} />
+      </section>
+      {!investigating && <><ChangePainCard stage={stage} codebase={codebase} score={score.total} /><ManualFixPanel stage={stage} codebase={codebase} /></>}
+      <details className="stage-panel__description">
+        <summary>どんなコード?</summary>
+        <p data-testid="stage-description">{stage.description}</p>
+      </details>
+      {!investigating && score.total >= 100 && <ConceptCheckPanel key={stage.id} checks={stage.checks} />}
+      <StoryOutro stage={stage} perfect={!investigating && score.total >= 100} />
+    </aside>
+  );
+}
+
 /** ステージの目標と、行数・結合度・循環依存・責務の混在から出した点数を表示する。責務の中身(responsibility の値)は見せない。 */
 function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage; children: ReactNode; active: boolean }>) {
   // 実装中は部品置き場入りのコードなので、点数と進捗は挑戦前のコードで数える
@@ -190,6 +228,7 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
   // ステージを切り替えたらヒントを閉じ直す。keyで作り直すとキャンバスまで作り直してしまうので、開いた数にステージIDを添える
   const [revealed, setRevealed] = useState({ stageId: stage.id, count: 0 });
   const score = useMemo(() => scoreCodebase(codebase, stage), [codebase, stage]);
+  const initialScore = useMemo(() => scoreCodebase(stage.codebase, stage), [stage]);
   // 狭い画面ではキャンバスを優先して、最初は閉じておく(描画は残し、hiddenで隠すだけ)
   const [sidebarOpen, toggleSidebar] = useStageSidebar(stage.id, score.total >= 100);
   const { handleProps, style: sidebarStyle } = useStageSidebarWidth();
@@ -205,27 +244,22 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
         <StageNavigation />
         <div className="stage-panel__spacer" />
         <CritiqueButton disabled={investigating} />
-        <HintButton revealed={revealedCount} total={total} disabled={investigating} onReveal={() => setRevealed({ stageId: stage.id, count: revealedCount + 1 })} />
         <ScoreArea stage={stage} codebase={codebase} score={score} disabled={investigating} />
       </header>
       <CritiqueResult />
       <div className={`app__body${sidebarOpen ? ' app__body--sidebar-open' : ''}`} style={sidebarStyle}>
-        <aside id="stage-sidebar" className="sidebar" aria-label="課題とヒント" hidden={!sidebarOpen}>
-          <h2 className="sidebar__title">課題とヒント</h2>
-          <StoryIntro stageId={stage.id} />
-          <p className="stage-panel__goal">
-            <strong>課題: </strong>
-            {stage.goal}
-          </p>
-          {!investigating && <><ChangePainCard stage={stage} codebase={codebase} score={score.total} /><ManualFixPanel stage={stage} codebase={codebase} /></>}
-          <HintList hints={hints} />
-          <details className="stage-panel__description" open>
-            <summary>どんなコード?</summary>
-            <p data-testid="stage-description">{stage.description}</p>
-          </details>
-          {!investigating && score.total >= 100 && <ConceptCheckPanel key={stage.id} checks={stage.checks} />}
-          <StoryOutro stage={stage} perfect={!investigating && score.total >= 100} />
-        </aside>
+        <StageSidebar
+          stage={stage}
+          codebase={codebase}
+          score={score}
+          initialScore={initialScore}
+          investigating={investigating}
+          revealedCount={revealedCount}
+          hints={hints}
+          total={total}
+          onReveal={() => setRevealed({ stageId: stage.id, count: revealedCount + 1 })}
+          hidden={!sidebarOpen}
+        />
         {sidebarOpen && <div className="sidebar-resizable__handle sidebar-resizable__handle--left" {...handleProps} />}
         <StageSidebarToggle open={sidebarOpen} onToggle={toggleSidebar} />
         <div className="workspace">

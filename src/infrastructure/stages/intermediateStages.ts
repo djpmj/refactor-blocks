@@ -1,4 +1,4 @@
-import type { Stage } from '../../domain/stage/Stage';
+﻿import type { Stage } from '../../domain/stage/Stage';
 
 /**
  * 中級1: 置き場所を間違えたメソッドのせいで Order と Customer が互いに依存している。
@@ -7,6 +7,7 @@ import type { Stage } from '../../domain/stage/Stage';
  */
 const cyclicDependencyStage: Stage = {
   id: 'intermediate-cyclic-dependency',
+  problem: '注文と顧客の処理が互いを呼び合っている',
   level: 'intermediate',
   title: '中級1: 循環依存を断ち切る',
   learns: ['循環依存', 'Move Method'],
@@ -140,6 +141,7 @@ const cyclicDependencyStage: Stage = {
 /** 中級2: 3つのクラスが1ファイルに同居している。メソッドを持ち主へ返し、クラスごとにファイルを分ける。 */
 const godFileStage: Stage = {
   id: 'intermediate-god-file',
+  problem: '複数の業務クラスが1つのファイルに集まっている',
   level: 'intermediate',
   title: '中級2: 何でも入った1つのファイル',
   learns: ['ファイル分割', '責務の分離'],
@@ -276,6 +278,7 @@ const godFileStage: Stage = {
  */
 const misplacedPrivateStage: Stage = {
   id: 'intermediate-misplaced-private',
+  problem: '通知クラスの非公開処理が別クラスから呼ばれている',
   level: 'intermediate',
   title: '中級3: 越境する private メソッド',
   learns: ['カプセル化', 'private'],
@@ -447,6 +450,7 @@ const salesReportGoal = 'メソッドは15行・クラスは60行以内、1フ�
 /** 中級4: 税の計算がよく変わる。税の計算を別クラスへ出すのが正解。 */
 const volatileTaxStage: Stage = {
   id: 'intermediate-volatile-tax',
+  problem: '売上処理の中に税率ごとの計算が混在している',
   level: 'intermediate',
   title: '中級4: 変わるのは税の計算',
   learns: ['変わる部分の分離', '責務の分離'],
@@ -488,6 +492,7 @@ const volatileTaxStage: Stage = {
 /** 中級5: 中級4と同じコードで、帳票の形式がよく変わる。整形を別クラスへ出すのが正解。 */
 const volatileFormatStage: Stage = {
   id: 'intermediate-volatile-format',
+  problem: '売上処理の中に帳票形式ごとの出力が混在している',
   level: 'intermediate',
   title: '中級5: 変わるのは帳票の形式',
   learns: ['変わる部分の分離', '責務の分離'],
@@ -534,6 +539,7 @@ const volatileFormatStage: Stage = {
  */
 const featureEnvyStage: Stage = {
   id: 'intermediate-feature-envy',
+  problem: '契約処理が別クラスのデータを多く読み書きしている',
   level: 'intermediate',
   title: '中級6: 他人のデータばかり触るメソッド',
   learns: ['Feature Envy', 'Move Method'],
@@ -689,6 +695,7 @@ const featureEnvyStage: Stage = {
  */
 const anemicDomainModelStage: Stage = {
   id: 'intermediate-anemic-domain-model',
+  problem: '口座の状態変更がサービス側に集まっている',
   level: 'intermediate',
   title: '中級7: getter/setter だけの口座クラス',
   learns: ['貧血ドメインモデル', 'カプセル化'],
@@ -886,6 +893,7 @@ const anemicDomainModelStage: Stage = {
  */
 const extractClassStage: Stage = {
   id: 'intermediate-extract-class',
+  problem: '社員の給与と住所の情報が同じクラスにある',
   level: 'intermediate',
   title: '中級8: 給与と住所を抱えた社員クラス',
   learns: ['Extract Class', '責務の分離'],
@@ -1027,6 +1035,7 @@ const extractClassStage: Stage = {
  */
 const copyPasteTaxStage: Stage = {
   id: 'intermediate-copy-paste-tax',
+  problem: '同じ消費税計算が複数の場所に書かれている',
   level: 'intermediate',
   title: '中級9: コピペされた消費税計算を1か所にまとめる',
   learns: ['重複の排除', 'Merge Methods'],
@@ -1151,6 +1160,7 @@ const copyPasteTaxStage: Stage = {
  */
 const memberRankBranchingStage: Stage = {
   id: 'intermediate-member-rank-branching',
+  problem: '会員ランクごとの振る舞いが条件分岐に集まっている',
   level: 'intermediate',
   title: '中級10: 会員ランクごとのif分岐をクラスに分ける',
   learns: ['分岐の分離', '継承'],
@@ -1286,6 +1296,7 @@ const memberRankBranchingStage: Stage = {
  */
 const layeredOrderApiStage: Stage = {
   id: 'intermediate-layered-order-api',
+  problem: '注文APIに画面・業務・保存の処理が混在している',
   level: 'intermediate',
   title: '中級11: Controller に全部書いてある注文API',
   learns: ['層(Controller/Service/Repository)', '依存の向き'],
@@ -1393,6 +1404,7 @@ const layeredOrderApiStage: Stage = {
 
 const middleManStage: Stage = {
   id: 'intermediate-middle-man',
+  problem: '注文の受付とキャンセルが横流しだけの管理クラスを経由している',
   level: 'intermediate',
   title: '中級12: 横流しするだけの OrderManager',
   learns: ['Middle Man', 'Inline Method / Inline Class'],

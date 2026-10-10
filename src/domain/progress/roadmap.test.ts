@@ -9,6 +9,7 @@ function stageOf(id: string): Stage {
     title: id,
     why: '',
     goal: '',
+    problem: '',
     description: '',
     learns: ['Extract Method'],
     checks: [],

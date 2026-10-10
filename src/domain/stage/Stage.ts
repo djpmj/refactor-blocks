@@ -33,6 +33,8 @@ export type Stage = {
   /** 100点になったときに見せる、この題材で分ける理由。 */
   readonly why: string;
   readonly goal: string;
+  /** サイドバーに出す問題の症状。解き方や数値条件は含めない。 */
+  readonly problem: string;
   /** どんなコードで、何が困っているのか。プレイヤーが題材を思い浮かべられるように書く。 */
   readonly description: string;
   /** ステージ一覧に出す「学べること」。1〜3個の短い名前。 */

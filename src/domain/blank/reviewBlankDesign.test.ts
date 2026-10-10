@@ -39,6 +39,7 @@ function makeProblem(overrides: Partial<BlankDesignProblem> = {}): BlankDesignPr
     checks: [],
     why: '役割ごとに処理を配置すると、変更時に関係する部品を見つけやすくなります。',
     goal: '全部品を配置しよう',
+    problem: '',
     description: 'テスト用の要求文',
     limits: { method: 40, class: 80, file: 200 },
     dependencyLimit: 3,

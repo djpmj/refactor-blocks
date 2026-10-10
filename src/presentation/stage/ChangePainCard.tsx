@@ -2,7 +2,7 @@ import type { Codebase } from '../../domain/codebase/Codebase';
 import { measureExtendPain, measurePain, painRequestsOf, type ChangePain, type ExtendPain } from '../../domain/change/changePain';
 import type { Stage } from '../../domain/stage/Stage';
 import { useGameStore } from '../store/useGameStore';
-import { describeClasses, describePain, type PainDescription } from './describePain';
+import { describeClasses, describePain, summarizePain, type PainDescription } from './describePain';
 
 function LocationList({ description }: Readonly<{ description: PainDescription }>) {
   return (
@@ -98,11 +98,16 @@ export function ChangePainCard({ stage, codebase, score }: Readonly<{ stage: Sta
   const titleId = `change-pain-title-${stage.id}`;
   return (
     <section className="change-pain" aria-labelledby={titleId}>
-      <h3 id={titleId}>{cardHeading(perfect, pain !== undefined)}</h3>
-      <CardBody stage={stage} codebase={codebase} perfect={perfect} pain={pain} extendPain={extendPain} />
-      {canFixByHand && pain !== undefined && pain.current.siteIds.length >= 2 && (
-        <button type="button" onClick={startManualFix}>実際に直してみる</button>
-      )}
+      <details open={perfect}>
+        <summary>
+          <h3 id={titleId}>{cardHeading(perfect, pain !== undefined)}</h3>
+          <span>{summarizePain(pain?.current, extendPain)}</span>
+        </summary>
+        <CardBody stage={stage} codebase={codebase} perfect={perfect} pain={pain} extendPain={extendPain} />
+        {canFixByHand && pain !== undefined && pain.current.siteIds.length >= 2 && (
+          <button type="button" onClick={startManualFix}>実際に直してみる</button>
+        )}
+      </details>
     </section>
   );
 }

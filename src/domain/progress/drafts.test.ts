@@ -15,6 +15,7 @@ function stageOf(id: string, lines: number): Stage {
     title: id,
     why: '',
     goal: '',
+    problem: '',
     description: '',
     learns: ['Extract Method'],
     checks: [],

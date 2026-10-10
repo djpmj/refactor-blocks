@@ -5,6 +5,7 @@ async function openCopyPasteTax(page: Page) {
   await page.setViewportSize({ width: 1800, height: 1400 });
   await page.goto('/');
   await selectStage(page, '中級9: コピペされた消費税計算を1か所にまとめる');
+  await page.locator('.change-pain summary').click();
   await page.getByRole('button', { name: '実際に直してみる' }).click();
 }
 

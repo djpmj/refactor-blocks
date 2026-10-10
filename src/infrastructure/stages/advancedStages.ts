@@ -1,4 +1,4 @@
-import type { Stage } from '../../domain/stage/Stage';
+﻿import type { Stage } from '../../domain/stage/Stage';
 
 /**
  * 上級1: メール通知(EmailNotifier)とSMS通知(SmsNotifier)が、
@@ -10,6 +10,7 @@ import type { Stage } from '../../domain/stage/Stage';
  */
 const notifierHierarchyStage: Stage = {
   id: 'advanced-notifier-hierarchy',
+  problem: '通知方式ごとに共通手順が重複している',
   level: 'advanced',
   title: '上級1: 通知クラスの共通処理を基底クラスへ集める',
   learns: ['継承', '共通処理の集約'],
@@ -118,6 +119,7 @@ const notifierHierarchyStage: Stage = {
  */
 const paymentGatewayInterfaceStage: Stage = {
   id: 'advanced-payment-gateway-interface',
+  problem: '決済処理が特定のゲートウェイに直接依存している',
   level: 'advanced',
   title: '上級2: 決済ゲートウェイをインターフェース越しに呼ぶ',
   learns: ['インターフェース', 'implements'],
@@ -278,6 +280,7 @@ const paymentGatewayInterfaceStage: Stage = {
  */
 const discountStrategyStage: Stage = {
   id: 'advanced-discount-strategy',
+  problem: '会員ランクごとの割引計算が1つの処理に混在している',
   level: 'advanced',
   title: '上級3: 会員ランクの割引をStrategyパターンへ組み替える',
   learns: ['Strategy', 'implements'],
@@ -370,6 +373,7 @@ const discountStrategyStage: Stage = {
  */
 const reportFactoryStage: Stage = {
   id: 'advanced-report-factory',
+  problem: '帳票ごとの生成方法が呼び出し側に散らばっている',
   level: 'advanced',
   title: '上級4: レポート生成処理をFactoryへ集約する',
   learns: ['Factory', '生成の集約'],
@@ -476,6 +480,7 @@ const reportFactoryStage: Stage = {
  */
 const collapseHierarchyStage: Stage = {
   id: 'advanced-collapse-hierarchy',
+  problem: '子クラスが1つだけの基底クラスが残っている',
   level: 'advanced',
   title: '上級5: 子が1つしかない継承を畳む',
   learns: ['継承の見直し', 'Collapse Hierarchy'],
@@ -613,6 +618,7 @@ const collapseHierarchyStage: Stage = {
  */
 const interfaceSegregationStage: Stage = {
   id: 'advanced-interface-segregation',
+  problem: '通知とタスク管理の約束が1つに集まっている',
   level: 'advanced',
   title: '上級6: 太ったインターフェースを役割ごとに分ける',
   learns: ['ISP', 'implements'],
@@ -891,6 +897,7 @@ const interfaceSegregationStage: Stage = {
  */
 const valueObjectStage: Stage = {
   id: 'advanced-value-object',
+  problem: '金額と通貨が別々の値として扱われている',
   level: 'advanced',
   title: '上級7: 金額と通貨を Money にまとめる',
   learns: ['Value Object', 'カプセル化'],
@@ -1129,6 +1136,7 @@ const valueObjectStage: Stage = {
 
 const templateMethodStage: Stage = {
   id: 'advanced-template-method',
+  problem: '形式ごとの取り込み処理に共通手順が重複している',
   level: 'advanced',
   title: '上級8: 取り込みの手順を Template Method にまとめる',
   learns: ['Template Method', '継承'],
