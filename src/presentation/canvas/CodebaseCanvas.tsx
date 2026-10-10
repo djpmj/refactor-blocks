@@ -85,14 +85,39 @@ function FitViewOnLayoutChange({ stageId, fileCount }: Readonly<{ stageId: strin
   return null;
 }
 
+function hasFileId(codebase: Codebase, id: string): boolean {
+  return codebase.files.some((file) => file.id === id);
+}
+
+function hasClassId(codebase: Codebase, id: string): boolean {
+  return codebase.files.some((file) => file.classes.some((codeClass) => codeClass.id === id));
+}
+
+function hasMethodId(codebase: Codebase, id: string): boolean {
+  return codebase.files.some((file) => file.classes.some((codeClass) => codeClass.methods.some((method) => method.id === id)));
+}
+
+function targetIdsExist(codebase: Codebase, target: { readonly fileIds: readonly string[]; readonly classIds: readonly string[]; readonly methodIds: readonly string[] }): boolean {
+  return target.fileIds.every((id) => hasFileId(codebase, id))
+    && target.classIds.every((id) => hasClassId(codebase, id))
+    && target.methodIds.every((id) => hasMethodId(codebase, id));
+}
+
 function FitViewForRule({ codebase, nodes }: Readonly<{ codebase: Codebase; nodes: CodebaseFlowNode[] }>) {
   const { fitView } = useReactFlow<CodebaseFlowNode>();
   const stage = useGameStore((state) => state.stage);
   const focusedRule = useGameStore((state) => state.focusedRule);
+  const hintTarget = useGameStore((state) => state.hintTarget);
   const focusRule = useGameStore((state) => state.focusRule);
+  const focusHint = useGameStore((state) => state.focusHint);
   useEffect(() => {
-    if (focusedRule === null) return;
-    const target = violationTargets(codebase, stage)[focusedRule];
+    const target = focusedRule === null ? hintTarget : violationTargets(codebase, stage)[focusedRule];
+    if (target === null) return;
+    if (!targetIdsExist(codebase, target)) {
+      if (focusedRule === null) focusHint(null);
+      else focusRule(null);
+      return;
+    }
     const classIds = new Set(target.classIds);
     for (const methodId of target.methodIds) {
       const owner = findClassOfMethod(codebase, methodId);
@@ -101,11 +126,12 @@ function FitViewForRule({ codebase, nodes }: Readonly<{ codebase: Codebase; node
     const nodeIds = new Set([...target.fileIds, ...classIds]);
     const targetNodes = nodes.filter((node) => nodeIds.has(node.id));
     if (targetNodes.length === 0) {
-      focusRule(null);
+      if (focusedRule === null) focusHint(null);
+      else focusRule(null);
       return;
     }
     void fitView({ nodes: targetNodes, padding: 0.25, duration: 350, maxZoom: 0.9 });
-  }, [codebase, fitView, focusRule, focusedRule, nodes, stage]);
+  }, [codebase, fitView, focusHint, focusRule, focusedRule, hintTarget, nodes, stage]);
   return null;
 }
 

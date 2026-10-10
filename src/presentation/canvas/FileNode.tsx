@@ -25,7 +25,9 @@ export function FileNode({ data }: Readonly<NodeProps<FileFlowNode>>) {
   const points = useGameStore((state) => fileDeductions(state.codebase, state.stage).get(data.fileId) ?? 0);
   const flagged = useGameStore((state) => {
     const rule = state.focusedRule;
-    return rule !== null && violationTargets(state.codebase, state.stage)[rule].fileIds.includes(data.fileId);
+    return rule !== null
+      ? violationTargets(state.codebase, state.stage)[rule].fileIds.includes(data.fileId)
+      : state.hintTarget?.fileIds.includes(data.fileId) ?? false;
   });
   const { setNodeRef, isOver } = useDroppable({ id: fileDropId(data.fileId) });
   const showDetails = useShowDetails();

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import type { Codebase } from '../../domain/codebase/Codebase';
 import { scoreCodebase, type Score } from '../../domain/scoring/score';
-import { sampleAnswerCodebase, sampleAnswerSteps } from '../../domain/stage/sampleAnswer';
+import { sampleAnswerCodebase, sampleAnswerSteps, type SolutionStep } from '../../domain/stage/sampleAnswer';
 import type { Stage } from '../../domain/stage/Stage';
 import { CritiqueButton, CritiqueResult } from '../critique/CritiquePanel';
 import { SampleAnswerReplayDialog } from './SampleAnswerReplayDialog';
@@ -189,7 +189,7 @@ function StageSidebar({ stage, codebase, score, initialScore, investigating, rev
   initialScore: Score;
   investigating: boolean;
   revealedCount: number;
-  hints: readonly string[];
+  hints: readonly { text: string; step: SolutionStep }[];
   total: number;
   onReveal: () => void;
   hidden: boolean;
@@ -206,7 +206,7 @@ function StageSidebar({ stage, codebase, score, initialScore, investigating, rev
       <section className="stage-panel__hints" aria-labelledby="stage-hints-title">
         <h3 id="stage-hints-title">ヒント</h3>
         <HintButton revealed={revealedCount} total={total} disabled={investigating} onReveal={onReveal} />
-        <HintList hints={hints} />
+        <HintList hints={hints} codebase={codebase} disabled={investigating} />
       </section>
       {!investigating && <><ChangePainCard stage={stage} codebase={codebase} score={score.total} /><ManualFixPanel stage={stage} codebase={codebase} /></>}
       <details className="stage-panel__description">

@@ -99,7 +99,7 @@ export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
   });
   const flagged = useGameStore((state) => {
     const rule = state.focusedRule;
-    return rule !== null && violationTargets(state.codebase, state.stage)[rule].classIds.includes(data.classId);
+    return rule !== null ? violationTargets(state.codebase, state.stage)[rule].classIds.includes(data.classId) : state.hintTarget?.classIds.includes(data.classId) ?? false;
   });
   const showDetails = useShowDetails();
   const { setNodeRef, isOver } = useDroppable({

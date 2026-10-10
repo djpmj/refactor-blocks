@@ -8,6 +8,7 @@ import { findField, findMethod, type Codebase, type Visibility } from '../../dom
 import { emptyHistory, recordChange, redoHistory, undoHistory, type History, type Travel } from '../../domain/codebase/history';
 import { scoreCodebase, type ScoreRule } from '../../domain/scoring/score';
 import type { Stage } from '../../domain/stage/Stage';
+import type { ViolationTarget } from '../../domain/scoring/violationTargets';
 import { fetchCritique } from '../../infrastructure/critique/critiqueClient';
 import {
   addClassUseCase,
@@ -103,6 +104,8 @@ type GameState = {
   selectedMethodId: string | null;
   selectedFieldId: string | null;
   focusedRule: ScoreRule | null;
+  hintTarget: ViolationTarget | null;
+  hintTargetKey: string | null;
   message: string | null;
   dismissMessage: () => void;
   changeSession: ChangeSession | null;
@@ -118,6 +121,7 @@ type GameState = {
   selectMethod: (methodId: string | null) => void;
   selectField: (fieldId: string) => void;
   focusRule: (rule: ScoreRule | null) => void;
+  focusHint: (target: ViolationTarget | null, hintKey?: string) => void;
   moveMethod: (methodId: string, targetClassId: string) => void;
   moveField: (fieldId: string, targetClassId: string) => void;
   changeVisibility: (methodId: string, visibility: Visibility) => void;
@@ -222,6 +226,22 @@ function messageActions(set: (partial: Partial<GameState>) => void): Pick<GameSt
   };
 }
 
+function focusActions(set: (partial: Partial<GameState>) => void): Pick<GameState, 'focusRule' | 'focusHint'> {
+  return {
+    focusRule: (focusedRule) => set({ focusedRule, hintTarget: null, hintTargetKey: null }),
+    focusHint: (hintTarget, hintKey) => set({ hintTarget, hintTargetKey: hintTarget === null ? null : hintKey ?? null, focusedRule: null }),
+  };
+}
+
+function resetActions(set: (partial: Partial<GameState>) => void, get: () => GameState): Pick<GameState, 'resetStage'> {
+  return {
+    resetStage: () => {
+      if (get().changeSession !== null) return;
+      set({ ...commit(get(), get().stage.codebase), manualFix: null, focusedRule: null, hintTarget: null, hintTargetKey: null, selectedMethodId: null, selectedFieldId: null, message: null });
+    },
+  };
+}
+
 function changeSessionActions(
   set: (partial: Partial<GameState>) => void,
   get: () => GameState,
@@ -232,6 +252,8 @@ function changeSessionActions(
       const [first] = stage.changeRequests;
       set({
         focusedRule: null,
+        hintTarget: null,
+        hintTargetKey: null,
         manualFix: null,
         changeSession: { index: 0, inspected: null, outcomes: [], base: codebase, carried: codebase, baseHistory: history },
         codebase: withChangePart(codebase, first),
@@ -254,6 +276,8 @@ function changeSessionActions(
       const { outcomes, base, carried, baseHistory } = changeSession;
       set({
         focusedRule: null,
+        hintTarget: null,
+        hintTargetKey: null,
         changeSession: null,
         codebase: base,
         history: baseHistory,
@@ -328,6 +352,8 @@ function selectStageState(allStages: readonly Stage[], stageId: string, drafts: 
     selectedMethodId: null,
     selectedFieldId: null,
     focusedRule: null,
+    hintTarget: null,
+    hintTargetKey: null,
     message: null,
     changeSession: null,
     manualFix: null,
@@ -517,6 +543,8 @@ export function createGameStore(allStages: readonly Stage[], saveDraftsOn = true
       selectedMethodId: null,
       selectedFieldId: null,
       focusedRule: null,
+      hintTarget: null,
+      hintTargetKey: null,
       message: null,
       ...messageActions(set),
       changeSession: null,
@@ -528,7 +556,7 @@ export function createGameStore(allStages: readonly Stage[], saveDraftsOn = true
         set({ selectedMethodId: methodId, selectedFieldId: null, message: null });
       },
       selectField: (fieldId) => set({ selectedFieldId: fieldId, selectedMethodId: null, message: null }),
-      focusRule: (focusedRule) => set({ focusedRule }),
+      ...focusActions(set),
       extractMethod: (input) => {
         return apply(extractMethodUseCase(get().codebase, input, () => crypto.randomUUID()), describeExtractError);
       },
@@ -544,12 +572,7 @@ export function createGameStore(allStages: readonly Stage[], saveDraftsOn = true
       ...moveActions(apply, set, get),
       ...historyActions(set, get),
       ...changeSessionActions(set, get),
-      // 「最初に戻す」も1手として記録し、取り消しで戻せるようにする
-      resetStage: () => {
-        // 実装中に戻すと、部品置き場ごと消えてしまう
-        if (get().changeSession !== null) return;
-        set({ ...commit(get(), get().stage.codebase), manualFix: null, focusedRule: null, selectedMethodId: null, selectedFieldId: null, message: null });
-      },
+      ...resetActions(set, get),
       selectStage: (stageId) => {
         const next = selectStageState(get().stages, stageId, holder.drafts);
         if (next !== null) set(next);
