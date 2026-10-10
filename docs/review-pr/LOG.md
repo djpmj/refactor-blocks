@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-10 05:31 UTC PR #120 feat: restructure stage problem sidebar
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅ 1561件 / npm run lint ✅ / npm run typecheck ✅。E2Eはレビュー環境にChromiumが無く起動できず未確認(PR本文は159件成功と報告)
+- マージ: squash & delete-branch
+
 ## 2026-10-10 05:10 UTC PR #119 feat: implement inline middle man refactoring
 
 - 判定: 合格(blocker無し)
@@ -212,10 +218,4 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: ブランチが古いためmasterにマージした状態で npm ci ✅ / npm test 982件 ✅ / npm run lint ✅ / npm run typecheck ✅
-- マージ: squash & delete-branch
-
-## 2026-10-03 10:41 UTC PR #6 chore(deps): Bump actions/upload-artifact from 4 to 7
-
-- 判定: 合格(blocker無し)
-- 確認した内容: workflow 1箇所のみの変更でsrc/変更なし。CI(check/e2e)pass、masterで npm test 982件 ✅ / lint ✅ / typecheck ✅
 - マージ: squash & delete-branch

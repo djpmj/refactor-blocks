@@ -63,3 +63,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [sidebar-toggle-overlap](sidebar-toggle-overlap.md) | 左サイドバーの開閉ボタンをスクロールバーに重ならない境界の外側に置く |
 | [remove-stage-select](remove-stage-select.md) | ヘッダーのステージ選択コンボボックスを削除し「ステージ一覧」に一本化する |
 | [#102 inline-middle-man](https://github.com/djpmj/refactor-blocks/issues/102) | Inline Methodを一般化し、横流しだけのクラスを採点する中級ステージを追加する |
+| [sidebar-problem-structure](sidebar-problem-structure.md) | サイドバーを「困っていること」と採点から自動で出す「クリア条件」中心に組み替え、他は折りたたむ |
