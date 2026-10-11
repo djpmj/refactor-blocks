@@ -673,6 +673,7 @@ const featureEnvyStage: Stage = {
           {
             id: 'class-subscription',
             name: 'Subscription',
+            roleResponsibilities: ['trial', 'pricing', 'cancellation'],
             fields: [
               { id: 'field-status', name: 'status', visibility: 'public', description: '契約の状態', type: { csharp: 'string' } },
               { id: 'field-started-at', name: 'startedAt', visibility: 'public', description: '契約を開始した日時', type: { csharp: 'DateTime' } },
@@ -1146,7 +1147,7 @@ const copyPasteTaxStage: Stage = {
       {
         id: 'file-tax-calculator',
         path: 'src/sales/TaxCalculator.ts',
-        classes: [{ id: 'class-tax-calculator', name: 'TaxCalculator', methods: [] }],
+        classes: [{ id: 'class-tax-calculator', name: 'TaxCalculator', roleResponsibilities: ['tax'], methods: [] }],
       },
     ],
   },
@@ -1391,12 +1392,12 @@ const layeredOrderApiStage: Stage = {
       {
         id: 'file-order-service',
         path: 'src/order/OrderService.ts',
-        classes: [{ id: 'class-order-service', name: 'OrderService', methods: [] }],
+        classes: [{ id: 'class-order-service', name: 'OrderService', roleResponsibilities: ['order-rule'], methods: [] }],
       },
       {
         id: 'file-order-repository',
         path: 'src/order/OrderRepository.ts',
-        classes: [{ id: 'class-order-repository', name: 'OrderRepository', methods: [] }],
+        classes: [{ id: 'class-order-repository', name: 'OrderRepository', roleResponsibilities: ['persistence'], methods: [] }],
       },
     ],
   },

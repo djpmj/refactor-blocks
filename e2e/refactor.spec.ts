@@ -541,6 +541,30 @@ test('税の計算を抽出して TaxCalculator へ移すと、責務の混在�
   await expect(mark).not.toHaveAttribute('aria-label', /-20点/);
 });
 
+test('保存とメール送信を TaxCalculator に移しても100点にならず、役割違反の処理名が分かる', async ({ page }) => {
+  // Arrange
+  await openOrderStage(page);
+  await page.getByTestId('method-placeOrder').click();
+  await page.getByLabel('注文をDBに保存する').check();
+  await page.getByLabel('確認メールを送る').check();
+  await page.getByLabel('新しいメソッド名').fill('saveOrderAndSendConfirmationMail');
+  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+
+  // Act
+  await dragMethodToClass(page, 'method-saveOrderAndSendConfirmationMail', 'class-TaxCalculator');
+
+  // Assert
+  await expect(page.getByTestId('score')).not.toContainText('100点');
+  const breakdown = page.locator('.score-breakdown');
+  await breakdown.locator('summary').click();
+  await expect(breakdown).toContainText('役割と違う処理が入ったクラス ×1');
+  await expect(breakdown.getByTestId('misplaced-violations')).toContainText('TaxCalculator');
+  await expect(breakdown.getByTestId('misplaced-violations')).toContainText('注文をDBに保存する');
+  await expect(breakdown.getByTestId('misplaced-violations')).toContainText('確認メールを送る');
+  await expect(breakdown.getByTestId('misplaced-violations')).not.toContainText('persistence');
+  await expect(breakdown.getByTestId('misplaced-violations')).not.toContainText('notification');
+});
+
 test('クラスとファイルを追加し、クラスを新しいファイルへドラッグ&ドロップで移せる', async ({ page }) => {
   // Arrange
   await openOrderStage(page);

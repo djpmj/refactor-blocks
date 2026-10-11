@@ -102,7 +102,7 @@ const notifierHierarchyStage: Stage = {
       {
         id: 'file-notifier-base',
         path: 'src/notify/NotifierBase.ts',
-        classes: [{ id: 'class-notifier-base', name: 'NotifierBase', methods: [] }],
+        classes: [{ id: 'class-notifier-base', name: 'NotifierBase', roleResponsibilities: ['logging'], methods: [] }],
       },
     ],
   },
@@ -465,7 +465,7 @@ const reportFactoryStage: Stage = {
       {
         id: 'file-report-factory',
         path: 'src/report/ReportFactory.ts',
-        classes: [{ id: 'class-report-factory', name: 'ReportFactory', methods: [] }],
+        classes: [{ id: 'class-report-factory', name: 'ReportFactory', roleResponsibilities: ['report-building'], methods: [] }],
       },
     ],
   },

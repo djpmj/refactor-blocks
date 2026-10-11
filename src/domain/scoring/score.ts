@@ -10,6 +10,7 @@ import { findLineLimitViolations } from './lineLimits';
 import { findLayerViolations } from './layers';
 import { findLoneSuperclasses } from './loneSuperclass';
 import { findResponsibilityViolations } from './responsibilities';
+import { findMisplacedResponsibilities } from './misplacedResponsibilities';
 import { findThinClasses, findTrivialMethods } from './overExtraction';
 import { countedVisibilityViolations } from './visibility';
 
@@ -18,6 +19,7 @@ export type ScoreRule =
   | 'coupling'
   | 'cycle'
   | 'responsibility'
+  | 'misplaced'
   | 'visibility'
   | 'empty'
   | 'unused'
@@ -67,6 +69,7 @@ export function scoreCodebase(
     coupling: findCouplingViolations(dependencies, stage.dependencyLimit).length,
     cycle: dependencies.filter((dependency) => dependency.cyclic).length,
     responsibility: findResponsibilityViolations(codebase, stage.responsibilityLimit).length,
+    misplaced: findMisplacedResponsibilities(codebase).length,
     visibility: countedVisibilityViolations(codebase, stage.visibilityEnforced).length,
     empty: findEmptyContainers(codebase).length,
     unused: findUnusedPrivateMethods(codebase).length,
@@ -87,6 +90,7 @@ export function scoreCodebase(
       'coupling',
       'cycle',
       'responsibility',
+      'misplaced',
       'visibility',
       'empty',
       'unused',

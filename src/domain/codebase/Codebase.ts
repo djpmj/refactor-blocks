@@ -73,6 +73,8 @@ export type CodeClass = {
   readonly interfaceIds?: readonly string[];
   /** クラスが持つフィールド。宣言順。省略は [] と同じ(既存ステージは書かない)。 */
   readonly fields?: readonly Field[];
+  /** ステージ作者が用意したクラスの役割を示す隠しタグ。省略時は役割の採点をしない。 */
+  readonly roleResponsibilities?: readonly string[];
 };
 
 export type CodeFile = {

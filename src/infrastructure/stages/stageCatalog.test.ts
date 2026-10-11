@@ -7,6 +7,7 @@ import { averageScore, scoreChange } from '../../domain/change/scoreChange';
 import { allClasses, fieldsOf, isAbstractLike, isInterfaceLike, touchedFieldIds, type Codebase } from '../../domain/codebase/Codebase';
 import { methodLines } from '../../domain/codebase/lineCount';
 import { scoreCodebase } from '../../domain/scoring/score';
+import { findMisplacedResponsibilities } from '../../domain/scoring/misplacedResponsibilities';
 import { behaviorTests, runBehaviorTests } from '../../domain/testing/behaviorTests';
 import type { Result } from '../../domain/shared/Result';
 import { applySolutionSteps, sampleAnswerSteps, solutionSnapshots, type SolutionStep } from '../../domain/stage/sampleAnswer';
@@ -30,6 +31,18 @@ function redFailuresAcross(stage: Stage, snapshots: readonly Codebase[]) {
 const templateSolution = sampleAnswerSteps['advanced-template-method'] ?? [];
 
 describe('初期違反の種類', () => {
+  it('役割タグを付けた全クラスは初期状態で減点されない', () => {
+    // Arrange
+    const roleClasses = stages.flatMap((stage) => allClasses(stage.codebase)).filter((codeClass) => codeClass.roleResponsibilities !== undefined);
+
+    // Act
+    const violations = stages.flatMap((stage) => findMisplacedResponsibilities(stage.codebase));
+
+    // Assert
+    expect(roleClasses).toHaveLength(9);
+    expect(violations).toEqual([]);
+  });
+
   it.each([
     ['tutorial-extract-method', ['line-limit']],
     ['tutorial-order-service', ['line-limit', 'responsibility', 'empty']],

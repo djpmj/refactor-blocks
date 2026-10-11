@@ -75,6 +75,25 @@ describe('putDraft / takeDraft', () => {
     expect(taken).toBeUndefined();
   });
 
+  it('以前の役割タグなしの下書きも復元し、ステージの役割タグを引き継ぐ', () => {
+    // Arrange
+    const oldStage = stageOf('a', 10);
+    const stage: Stage = {
+      ...oldStage,
+      codebase: { files: [{ id: 'f', path: 'a.cs', classes: [{ ...codebase(10).files[0].classes[0], roleResponsibilities: ['tax'] }] }] },
+    };
+    const legacy = codebase(5);
+    const drafts: Drafts = { a: { fingerprint: stageFingerprint(oldStage), codebase: legacy } };
+
+    // Act
+    const restored = takeDraft(drafts, stage);
+
+    // Assert
+    expect(stageFingerprint(stage)).toBe(stageFingerprint(oldStage));
+    expect(restored?.files[0].classes[0].roleResponsibilities).toEqual(['tax']);
+    expect(restored?.files[0].classes[0].methods[0].fragments[0].lines).toBe(5);
+  });
+
   it('別のステージの下書きには影響しない', () => {
     // Arrange
     const a = stageOf('a', 10);

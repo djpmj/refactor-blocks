@@ -4,7 +4,7 @@ import { scoreCodebase, type ScoreRule } from './score';
 import { violationTargets } from './violationTargets';
 
 const RULES: readonly ScoreRule[] = [
-  'line-limit', 'coupling', 'cycle', 'responsibility', 'visibility', 'empty', 'unused',
+  'line-limit', 'coupling', 'cycle', 'responsibility', 'misplaced', 'visibility', 'empty', 'unused',
   'lone-superclass', 'stub', 'contract', 'feature-envy', 'encapsulation', 'cohesion', 'trivial-method', 'thin-class', 'middle-man', 'layer',
 ];
 const EMPTY = { limits: { method: 100, class: 100, file: 100 }, dependencyLimit: 100, responsibilityLimit: 100 };
@@ -55,6 +55,20 @@ describe('violationTargets', () => {
     // Assert
     expect(targets['line-limit']).toEqual({ fileIds: ['large-file'], classIds: ['large-class'], methodIds: ['long-method'] });
     expect(targets.empty).toEqual({ fileIds: ['empty-file'], classIds: ['empty-class'], methodIds: [] });
+  });
+
+  it('役割の違反箇所は該当クラスを対象にする', () => {
+    // Arrange
+    const codebase = { files: [{ id: 'file', path: 'a.cs', classes: [{
+      id: 'tax', name: 'TaxCalculator', roleResponsibilities: ['tax'], methods: [{ id: 'method', name: 'run', visibility: 'public' as const,
+        fragments: [{ id: 'save', label: '保存する', lines: 1, responsibility: 'persistence' }] }],
+    }] }] };
+
+    // Act
+    const targets = violationTargets(codebase, EMPTY);
+
+    // Assert
+    expect(targets.misplaced).toEqual({ fileIds: [], classIds: ['tax'], methodIds: [] });
   });
 
   it('複数の違反が同じブロックに集約されてもIDを重複させず、違反の有無を保つ', () => {

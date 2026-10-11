@@ -80,12 +80,12 @@ const userControllerStage: Stage = {
       {
         id: 'file-user-repository',
         path: 'src/user/UserRepository.ts',
-        classes: [{ id: 'class-user-repository', name: 'UserRepository', methods: [] }],
+        classes: [{ id: 'class-user-repository', name: 'UserRepository', roleResponsibilities: ['persistence'], methods: [] }],
       },
       {
         id: 'file-mailer',
         path: 'src/mail/Mailer.ts',
-        classes: [{ id: 'class-mailer', name: 'Mailer', methods: [] }],
+        classes: [{ id: 'class-mailer', name: 'Mailer', roleResponsibilities: ['notification'], methods: [] }],
       },
     ],
   },
