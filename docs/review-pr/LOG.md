@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-11 23:40 UTC PR #152 feat: automatically name new classes by role
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(1637件) / npm run lint ✅ / npm run typecheck ✅(E2EはChromium未導入のため未実行。PR本文では全E2E 189/190、失敗1件は単独再実行でPASSの報告)
+- マージ: squash & delete-branch
+
 ## 2026-10-11 15:30 UTC PR #145 feat: add method panel to code previews
 
 - 判定: 合格(blocker無し)
@@ -216,11 +222,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(1028件) / npm run lint ✅ / npm run typecheck ✅(E2EはChromium未導入で実行不可。PR本文では107件成功と報告)
-- マージ: squash & delete-branch
-
-## 2026-10-04 11:30 UTC PR #70 フィールドの説明と型を表示 (#56)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(1028件) / npm run lint ✅ / npm run typecheck ✅(E2EはChromium未導入で実行不可。PR本文では106件成功と報告)
 - マージ: squash & delete-branch
 

@@ -79,3 +79,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [class-role-misplacement](class-role-misplacement.md) | 用意されたクラスに隠しの役割タグを持たせ、役割と違う処理が入ったら減点する |
 | [freeze-file-positions](freeze-file-positions.md) | 表示済みファイルの位置を固定し、「整列」ボタンで依存の向きに並べ直す |
 | [preview-method-panel](preview-method-panel.md) | 変更前・解答例の図でもメソッドパネルを出し、最大化できるようにする |
+| [auto-class-naming](auto-class-naming.md) | 新しく作ったクラスに、中身の責務から名前を自動で付ける |
