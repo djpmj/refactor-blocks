@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-11 04:40 UTC PR #142 Wait for drag overlay before clicking in anemic model E2E
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅(E2EはChromium未導入のため未実行。PR本文では185件成功の報告)
+- マージ: squash & delete-branch
+
 ## 2026-10-11 02:55 UTC PR #141 Show fragment labels as comments in the code tab
 
 - 判定: 合格(blocker無し)
@@ -210,17 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(995件) / npm run lint ✅ / npm run typecheck ✅(前回指摘のコンフリクト解消を確認。CSSと aria-hidden アイコンのみの変更でE2Eは未実行、PR本文では94件成功と報告)
-- マージ: squash & delete-branch
-
-## 2026-10-04 03:50 UTC PR #55 継承と実装の矢印を色と線種で分ける (#43)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(1021件) / npm run lint ✅ / npm run typecheck ✅(E2EはChromium未導入で実行不可。PR本文では102件成功と報告)
-- マージ: squash & delete-branch
-
-## 2026-10-04 03:40 UTC PR #54 継承の矢じりと着地点を見やすくする (#42)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(1020件) / npm run lint ✅ / npm run typecheck ✅(E2EはChromium未導入で実行不可。PR本文では102件成功と報告)
 - マージ: squash & delete-branch
 
