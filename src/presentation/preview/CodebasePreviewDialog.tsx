@@ -25,9 +25,11 @@ export function CodebasePreviewDialog({ title, codebase, methodLimit, onClose }:
         <h2 className="codebase-preview__title" id={TITLE_ID}>
           {title}
         </h2>
-        <button type="button" onClick={onClose} aria-label="閉じる">
-          ✕
-        </button>
+        <div className="window-controls">
+          <button type="button" className="window-control window-control--close" onClick={onClose} aria-label="閉じる" title="閉じる">
+            ✕
+          </button>
+        </div>
       </div>
       <div className="codebase-preview__canvas">
         <CodebasePreviewCanvas codebase={codebase} methodLimit={methodLimit} />
