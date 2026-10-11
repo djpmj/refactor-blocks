@@ -9,13 +9,22 @@ import { StagePanel } from './stage/StagePanel';
 import { useGameStore } from './store/useGameStore';
 import { useUndoRedoShortcut } from './useUndoRedoShortcut';
 import { useResizableSidebarWidth } from './useResizableSidebarWidth';
+import { ManualFixMethodViewer } from './stage/ManualFixMethodViewer';
 
 type Mode = 'refactor' | 'quiz' | 'blank';
 
 const MODE_LABEL: Record<Mode, string> = { refactor: 'リファクタリング', quiz: '設計くらべ', blank: '白紙設計' };
 
-function RefactorView({ active }: Readonly<{ active: boolean }>) {
+function RightSidebarContent() {
   const investigating = useGameStore((state) => state.changeSession !== null);
+  const manualFix = useGameStore((state) => state.manualFix);
+  const codebase = useGameStore((state) => state.codebase);
+  if (investigating) return <ChangeRequestPanel />;
+  if (manualFix !== null) return <ManualFixMethodViewer codebase={codebase} methodId={manualFix.viewedMethodId} />;
+  return <MethodEditor />;
+}
+
+function RefactorView({ active }: Readonly<{ active: boolean }>) {
   const { width, handleProps } = useResizableSidebarWidth({ side: 'right', defaultWidth: 360, minWidth: 280, maxWidth: 640 });
   useUndoRedoShortcut(active);
   return (
@@ -27,7 +36,7 @@ function RefactorView({ active }: Readonly<{ active: boolean }>) {
         </section>
         <div className="sidebar-resizable" style={{ width }}>
           <div className="sidebar-resizable__handle" {...handleProps} />
-          {investigating ? <ChangeRequestPanel /> : <MethodEditor />}
+          <RightSidebarContent />
         </div>
       </main>
     </StagePanel>
