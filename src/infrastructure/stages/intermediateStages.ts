@@ -6,6 +6,14 @@
  * calculateOrderTotal を Order に、countOrdersOf を Customer に置いて初めて循環が消える。
  */
 const cyclicDependencyStage: Stage = {
+  classNames: {
+    "inventory": "InventoryHandler",
+    "pricing": "PricingHandler",
+    "discount": "DiscountHandler",
+    "payment": "PaymentHandler",
+    "history": "HistoryHandler",
+    "membership": "MembershipHandler",
+  },
   id: 'intermediate-cyclic-dependency',
   problem: '注文と顧客の処理が互いを呼び合っている',
   level: 'intermediate',
@@ -140,6 +148,12 @@ const cyclicDependencyStage: Stage = {
 
 /** 中級2: 3つのクラスが1ファイルに同居している。メソッドを持ち主へ返し、クラスごとにファイルを分ける。 */
 const godFileStage: Stage = {
+  classNames: {
+    "validation": "Validator",
+    "pricing": "PriceCalculator",
+    "shipping": "ShippingHandler",
+    "points": "PointsHandler",
+  },
   id: 'intermediate-god-file',
   problem: '複数の業務クラスが1つのファイルに集まっている',
   level: 'intermediate',
@@ -277,6 +291,12 @@ const godFileStage: Stage = {
  * public にするだけでは依存が残るよう、依存先の上限を0にしている(メソッドエディタの「可視性」で public にするだけでは解決させない)。
  */
 const misplacedPrivateStage: Stage = {
+  classNames: {
+    "notification": "InvoiceMailer",
+    "delivery": "DeliveryHandler",
+    "logging": "Logger",
+    "rendering": "InvoicePdfRenderer",
+  },
   id: 'intermediate-misplaced-private',
   problem: '通知クラスの非公開処理が別クラスから呼ばれている',
   level: 'intermediate',
@@ -449,6 +469,12 @@ const salesReportGoal = 'メソッドは17行・クラスは60行以内、1フ�
 
 /** 中級4: 税の計算がよく変わる。税の計算を別クラスへ出すのが正解。 */
 const volatileTaxStage: Stage = {
+  classNames: {
+    "aggregation": "AggregationHandler",
+    "tax": "CopyTaxCalculator",
+    "formatting": "ReportFormatter",
+    "http": "HttpHandler",
+  },
   id: 'intermediate-volatile-tax',
   problem: '売上処理の中に税率ごとの計算が混在している',
   level: 'intermediate',
@@ -491,6 +517,12 @@ const volatileTaxStage: Stage = {
 
 /** 中級5: 中級4と同じコードで、帳票の形式がよく変わる。整形を別クラスへ出すのが正解。 */
 const volatileFormatStage: Stage = {
+  classNames: {
+    "aggregation": "AggregationHandler",
+    "tax": "TaxCalculator",
+    "formatting": "ReportFormatter",
+    "http": "HttpHandler",
+  },
   id: 'intermediate-volatile-format',
   problem: '売上処理の中に帳票形式ごとの出力が混在している',
   level: 'intermediate',
@@ -538,6 +570,13 @@ const volatileFormatStage: Stage = {
  * Extract Method してから Subscription へ Move Method し、一緒に使うフィールドを Move Field で運ぶ。
  */
 const featureEnvyStage: Stage = {
+  classNames: {
+    "trial": "TrialHandler",
+    "pricing": "MemberPriceCalculator",
+    "payment": "PaymentHandler",
+    "notification": "InvoiceMailer",
+    "cancellation": "CancellationHandler",
+  },
   id: 'intermediate-feature-envy',
   problem: '契約処理が別クラスのデータを多く読み書きしている',
   level: 'intermediate',
@@ -695,6 +734,14 @@ const featureEnvyStage: Stage = {
  * アクセサ越しのアクセスも Feature Envy・カプセル化の破れに数え、visibilityEnforced で「移したメソッドを public にする」必要を見せる。
  */
 const anemicDomainModelStage: Stage = {
+  classNames: {
+    "accessor": "AccessorHandler",
+    "account-status": "AccountStatusHandler",
+    "withdrawal-limit": "WithdrawalLimitHandler",
+    "balance": "BalanceHandler",
+    "history": "HistoryHandler",
+    "notification": "InvoiceMailer",
+  },
   id: 'intermediate-anemic-domain-model',
   problem: '口座の状態変更がサービス側に集まっている',
   level: 'intermediate',
@@ -893,6 +940,12 @@ const anemicDomainModelStage: Stage = {
  * 互いに使わないフィールドの塊を抱えており、凝集度(cohesion)で検出できる。responsibilityLimit を4にして二重に減点しない。
  */
 const extractClassStage: Stage = {
+  classNames: {
+    "payroll": "PayrollHandler",
+    "withholding": "WithholdingHandler",
+    "transfer": "TransferHandler",
+    "address": "AddressHandler",
+  },
   id: 'intermediate-extract-class',
   problem: '社員の給与と住所の情報が同じクラスにある',
   level: 'intermediate',
@@ -1035,6 +1088,12 @@ const extractClassStage: Stage = {
  * Extract Method → 統合(Merge Methods)→ TaxCalculator へ移動、の既存の操作だけで解ける。
  */
 const copyPasteTaxStage: Stage = {
+  classNames: {
+    "ordering": "OrderingHandler",
+    "tax": "CopyTaxCalculator",
+    "invoicing": "InvoicingHandler",
+    "quoting": "QuotingHandler",
+  },
   id: 'intermediate-copy-paste-tax',
   problem: '同じ消費税計算が複数の場所に書かれている',
   level: 'intermediate',
@@ -1160,6 +1219,17 @@ const copyPasteTaxStage: Stage = {
  * 上級3(割引のStrategy、受け皿は1メソッド)と違い、1クラスが価格と送料の2メソッドを持つ。既存の操作だけで解ける。
  */
 const memberRankBranchingStage: Stage = {
+  classNames: {
+    "price-regular": "RegularRank",
+    "price-premium": "PremiumRank",
+    "price-vip": "VipRank",
+    "shipping-regular": "RegularRank",
+    "shipping-premium": "PremiumRank",
+    "shipping-vip": "VipRank",
+    "validation": "Validator",
+    "pricing": "MemberPriceCalculator",
+    "ordering": "OrderingHandler",
+  },
   id: 'intermediate-member-rank-branching',
   problem: '会員ランクごとの振る舞いが条件分岐に集まっている',
   level: 'intermediate',
@@ -1296,6 +1366,11 @@ const memberRankBranchingStage: Stage = {
  * 層はファイルのパスではなく、処理の責務から決める。既存の操作(Extract Method / Move Method)だけで解ける。
  */
 const layeredOrderApiStage: Stage = {
+  classNames: {
+    "http": "HttpHandler",
+    "order-rule": "OrderRuleHandler",
+    "persistence": "Repository",
+  },
   id: 'intermediate-layered-order-api',
   problem: '注文APIに画面・業務・保存の処理が混在している',
   level: 'intermediate',
@@ -1404,6 +1479,10 @@ const layeredOrderApiStage: Stage = {
 };
 
 const middleManStage: Stage = {
+  classNames: {
+    "http": "HttpHandler",
+    "order-rule": "OrderRuleHandler",
+  },
   id: 'intermediate-middle-man',
   problem: '注文の受付とキャンセルが横流しだけの管理クラスを経由している',
   level: 'intermediate',

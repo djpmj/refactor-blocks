@@ -137,7 +137,7 @@ test('ランクのクラスにMemberRankを実装させると、新しいクラ�
   await menu.getByRole('button', { name: '追加' }).click();
   await expect(card).toContainText('既存の 1 クラスを書き換えます');
 
-  await page.getByTestId('class-header-RegularRank').click({ button: 'right' });
+  await page.getByTestId('class-header-NewClass').click({ button: 'right' });
   await menu.getByRole('menuitem', { name: '実装するインターフェースを設定' }).click();
   await menu.getByRole('menuitemcheckbox', { name: 'MemberRank' }).click();
   await page.keyboard.press('Escape');

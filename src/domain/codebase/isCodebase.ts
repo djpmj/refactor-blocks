@@ -31,6 +31,10 @@ function isBool(value: unknown): boolean {
   return typeof value === 'boolean';
 }
 
+function isAutoNamed(value: unknown): boolean {
+  return value === true;
+}
+
 function isFragment(f: Obj): boolean {
   const requiredOk = isStr(f.id) && isStr(f.label) && isStr(f.responsibility) && typeof f.lines === 'number' && Number.isInteger(f.lines) && f.lines >= 0;
   const arraysOk = [f.uses, f.reads, f.writes].every((value) => optional(value, isStrArray));
@@ -48,7 +52,7 @@ function isField(f: Obj): boolean {
 
 function isClass(c: Obj): boolean {
   const inheritanceOk = optional(c.superclassId, isStr) && optional(c.interfaceIds, isStrArray);
-  return isStr(c.id) && isStr(c.name) && allObjects(c.methods, isMethod) && inheritanceOk && optional(c.fields, (v) => allObjects(v, isField)) && optional(c.roleResponsibilities, isStrArray);
+  return isStr(c.id) && isStr(c.name) && allObjects(c.methods, isMethod) && inheritanceOk && optional(c.fields, (v) => allObjects(v, isField)) && optional(c.roleResponsibilities, isStrArray) && optional(c.autoNamed, isAutoNamed);
 }
 
 function isFile(f: Obj): boolean {

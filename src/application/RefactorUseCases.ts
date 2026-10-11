@@ -155,7 +155,7 @@ export function addClassUseCase(
   className: string,
   generateId: IdGenerator,
 ): Result<Codebase, AddClassError> {
-  return addClass(codebase, fileId, className, generateId());
+  return addClass(codebase, fileId, className, { id: generateId(), autoNamed: true });
 }
 
 /** プレイヤーの「ファイルを追加」操作。 */

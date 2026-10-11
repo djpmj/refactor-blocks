@@ -356,7 +356,7 @@ describe('addClassUseCase / addNewFileUseCase', () => {
 
     // Assert
     if (!result.ok) throw new Error(result.error);
-    expect(result.value.files[1].classes[1]).toEqual({ id: 'generated-class', name: 'TaxRateTable', methods: [] });
+    expect(result.value.files[1].classes[1]).toEqual({ id: 'generated-class', name: 'TaxRateTable', methods: [], autoNamed: true });
   });
 
   it('注入されたIDで新しいファイルを作る', () => {

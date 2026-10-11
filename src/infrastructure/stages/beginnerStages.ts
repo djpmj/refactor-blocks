@@ -2,6 +2,11 @@
 
 /** 初級1: 保存とメール送信まで抱えた UserController から、用意されたクラスへ処理を移す。 */
 const userControllerStage: Stage = {
+  classNames: {
+    "http": "HttpHandler",
+    "persistence": "PersistenceHandler",
+    "notification": "WelcomeMailer",
+  },
   id: 'beginner-user-controller',
   problem: 'ユーザー登録に保存とメール送信がまとまっている',
   level: 'beginner',
@@ -93,6 +98,12 @@ const userControllerStage: Stage = {
 
 /** 初級2: 移動先のクラスが用意されていない。責務ごとのクラスを自分で作ってから移す。 */
 const invoiceServiceStage: Stage = {
+  classNames: {
+    "pricing": "InvoicePricing",
+    "rendering": "InvoicePdfRenderer",
+    "storage": "InvoiceStorage",
+    "notification": "InvoiceMailer",
+  },
   id: 'beginner-invoice-service',
   problem: '請求処理と明細計算が同じ場所にある',
   level: 'beginner',

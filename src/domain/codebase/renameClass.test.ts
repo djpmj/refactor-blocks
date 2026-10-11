@@ -1,8 +1,21 @@
 import { describe, expect, it } from 'vitest';
+import { mapClasses } from './Codebase';
 import { renameClass } from './renameClass';
 import { sampleCodebase } from './testFixtures';
 
 describe('renameClass', () => {
+  it('自動命名対象をリネームしたら自動命名を解除する', () => {
+    // Arrange
+    const marked = mapClasses(sampleCodebase(), (codeClass) => codeClass.id === 'class-order' ? { ...codeClass, autoNamed: true } : codeClass);
+
+    // Act
+    const result = renameClass(marked, 'class-order', 'OrderHandler');
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    expect(result.value.files[0].classes[0]).not.toHaveProperty('autoNamed');
+  });
+
   it('前後の空白を除いた名前に変わり、メソッドはそのまま残る', () => {
     // Arrange
     const codebase = sampleCodebase();

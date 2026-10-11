@@ -15,7 +15,12 @@ export function renameClass(codebase: Codebase, classId: string, newName: string
   return ok({
     files: codebase.files.map((file) => ({
       ...file,
-      classes: file.classes.map((codeClass) => (codeClass.id === classId ? { ...codeClass, name } : codeClass)),
+      classes: file.classes.map((codeClass) => {
+        if (codeClass.id !== classId) return codeClass;
+        const { autoNamed: _autoNamed, ...renamed } = codeClass;
+        void _autoNamed;
+        return { ...renamed, name };
+      }),
     })),
   });
 }

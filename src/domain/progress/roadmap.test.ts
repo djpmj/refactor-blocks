@@ -17,6 +17,7 @@ function stageOf(id: string): Stage {
     dependencyLimit: 3,
     responsibilityLimit: 2,
     codebase: { files: [] },
+    classNames: {},
     changeRequests: [],
   };
 }

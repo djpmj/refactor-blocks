@@ -64,6 +64,7 @@ describe('moveMethodToNewClass', () => {
     // Assert
     if (!result.ok) throw new Error(result.error);
     expect(findClassOfMethod(result.value, 'method-place')?.id).toBe('new-class');
+    expect(findClass(result.value, 'new-class')?.autoNamed).toBe(true);
     expect(findFileOfClass(result.value, 'new-class')?.path).toBe('src/NewClass.ts');
     expect(findClass(result.value, 'class-order')?.methods).toEqual([]);
   });
@@ -79,6 +80,7 @@ describe('moveMethodToNewClass', () => {
     // Assert
     if (!result.ok) throw new Error(result.error);
     expect(findClass(result.value, 'c2')?.name).toBe('NewClass2');
+    expect(findClass(result.value, 'c2')?.autoNamed).toBe(true);
     expect(findFileOfClass(result.value, 'c2')?.path).toBe('src/NewClass2.ts');
   });
 
@@ -123,6 +125,7 @@ describe('moveMethodToNewClassInFile', () => {
     // Assert
     if (!next.ok) throw new Error(next.error);
     expect(findClass(next.value, 'next-class')?.name).toBe('NewClass2');
+    expect(findClass(next.value, 'next-class')?.autoNamed).toBe(true);
     expect(findFileOfClass(next.value, 'next-class')?.id).toBe('target-file');
   });
 

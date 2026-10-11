@@ -38,6 +38,7 @@ function makeStage({ id, level = 'beginner', violations = 1, kinds = ['modify'],
     dependencyLimit: 5,
     responsibilityLimit: 5,
     codebase,
+    classNames: {},
     changeRequests: kinds.map((kind, index) => ({ id: `${id}-r${index}`, title: 't', description: 'd', responsibility: 'a', linesPerSite: 1, kind })),
   };
 }

@@ -56,7 +56,7 @@ async function openChangeRequestResult(page: Page) {
   }
   await page.getByTestId('change-request-start').click();
   await dragPlayerMethodToEmptyCanvas(page, page.getByTestId('class-部品置き場').getByTestId('method-charge'));
-  await page.getByTestId('class-header-NewClass').click({ button: 'right' });
+  await page.getByTestId('class-header-GatewayIntegrationHandler').click({ button: 'right' });
   const menu = page.getByTestId('context-menu');
   await menu.getByRole('menuitem', { name: '実装するインターフェースを設定' }).click();
   await menu.getByRole('menuitemcheckbox', { name: 'PaymentGateway' }).click();
