@@ -1,11 +1,11 @@
 const STORAGE_KEY = 'refactor-blocks:story';
 
-/** ストーリーのオン/オフを読み込む。無い・壊れている・読めないときは false(例外は投げない)。 */
+/** ストーリーのオン/オフを読み込む。オフの保存値が無い・読めないときはオン(例外は投げない)。 */
 export function loadStoryEnabled(): boolean {
   try {
-    return localStorage.getItem(STORAGE_KEY) === 'true';
+    return localStorage.getItem(STORAGE_KEY) !== 'false';
   } catch {
-    return false;
+    return true;
   }
 }
 

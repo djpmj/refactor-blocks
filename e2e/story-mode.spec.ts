@@ -30,21 +30,37 @@ async function clearTutorial2(page: Page) {
   await expect(page.getByTestId('score')).toContainText('100');
 }
 
-test('ストーリーはオフで始まり、オンにすると導入が出て、閉じられる。リロード後も残る', async ({ page }) => {
+test('保存値が無ければオンで始まり、導入と押下中の色が出る。オフにするとリロード後も残る', async ({ page }) => {
   await page.setViewportSize({ width: 1800, height: 1400 });
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem('story-preference-initialized') !== 'true') {
+      localStorage.removeItem('refactor-blocks:story');
+      sessionStorage.setItem('story-preference-initialized', 'true');
+    }
+  });
   await page.goto('/');
-  await selectStage(page, 'チュートリアル2: 太った placeOrder');
-  await expect(page.getByTestId('story-toggle')).toHaveAttribute('aria-pressed', 'false');
-  await expect(page.getByTestId('story-intro')).toBeHidden();
+  const toggle = page.getByTestId('story-toggle');
+  await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('story-intro')).toContainText('第1章');
+  const colors = await toggle.evaluate((element) => {
+    const view = element.ownerDocument.defaultView;
+    if (view === null) throw new Error('ページのウィンドウがありません');
+    const buttonColor = view.getComputedStyle(element).backgroundColor;
+    const probe = element.ownerDocument.createElement('div');
+    probe.style.backgroundColor = 'var(--accent)';
+    element.ownerDocument.body.append(probe);
+    const accentColor = view.getComputedStyle(probe).backgroundColor;
+    probe.remove();
+    return { buttonColor, accentColor };
+  });
+  expect(colors.buttonColor).toBe(colors.accentColor);
 
-  await page.getByTestId('story-toggle').click();
-  await expect(page.getByTestId('story-intro')).toContainText('第2章');
-  await page.getByTestId('story-intro').getByRole('button', { name: '閉じる' }).click();
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
   await expect(page.getByTestId('story-intro')).toBeHidden();
 
   await page.reload();
-  await expect(page.getByTestId('story-toggle')).toHaveAttribute('aria-pressed', 'true');
-  await page.getByTestId('story-toggle').click();
+  await expect(page.getByTestId('story-toggle')).toHaveAttribute('aria-pressed', 'false');
   await expect(page.getByTestId('story-intro')).toBeHidden();
 });
 
