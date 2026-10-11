@@ -180,6 +180,8 @@ async function dragMethodToClass(page: Page, methodTestId: string, classTestId: 
   await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 15 });
   await expect(page.getByTestId(classTestId)).toHaveClass(/class-node--drop-target/);
   await page.mouse.up();
+  // ドロップ後のアニメーション中は、同じ見た目の DragOverlay が移した先のメソッドに重なり、クリックを奪う
+  await expect(page.locator('.drag-overlay')).toHaveCount(0);
 }
 
 /** キャンバスの余白を右クリックし、メニューからファイルを追加する。 */

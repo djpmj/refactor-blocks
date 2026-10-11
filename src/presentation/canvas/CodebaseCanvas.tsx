@@ -54,7 +54,7 @@ function DraggingOverlay({ activeId }: Readonly<{ activeId: UniqueIdentifier | n
   // React Flowのビューポートには transform: scale() がかかっているため、
   // オーバーレイはbody直下へポータルしてズーム倍率の影響を受けないようにする。
   return createPortal(
-    <DragOverlay>
+    <DragOverlay className="drag-overlay">
       {method === undefined ? null : <MethodChipView method={method} overLimit={methodLines(method, codebase) > limit} />}
       {codeClass === undefined ? null : <div className="class-drag-preview">{codeClass.name}</div>}
       {field === undefined ? null : <FieldChipView field={field} />}
