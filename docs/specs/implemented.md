@@ -75,3 +75,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [button-style-base](button-style-base.md) | ボタンの見た目を詳細度0の共通既定スタイルにそろえ、主要ボタンから!importantを除去 |
 | [replay-window-controls](replay-window-controls.md) | 解答の再生ヘッダー右上に最大化(□/重なった□)と閉じる(✕)をChromeのウィンドウ風に並べる |
 | [story-default-on](story-default-on.md) | ストーリーを初回からオンにし、オン中の「ストーリー」ボタンをアクセント色で表示 |
+| [fragment-label-comments](fragment-label-comments.md) | コードタブで各処理の前に処理名をコメント表示し、コメント・空行も行数に数える |

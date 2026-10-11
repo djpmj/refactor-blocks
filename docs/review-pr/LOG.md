@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-11 02:55 UTC PR #141 Show fragment labels as comments in the code tab
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(test 1610件/lint/typecheck) ✅。E2Eはレビュー環境にChromiumが無く未実行(PR本文は185件成功と報告、E2E期待値の更新は差分で確認)。Issue #133・仕様書fragment-label-commentsの受け入れ基準を差分で確認(fragmentCodeで表示と行数計算の判定を共通化)
+- マージ: squash & delete-branch
+
 ## 2026-10-11 01:40 UTC PR #140 Enable story mode by default
 
 - 判定: 合格(blocker無し)
