@@ -93,6 +93,7 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .quiz-design__result ul { margin: 4px 0 0; padding-left: 20px; }
 
 .stage-panel { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 8px 16px; background: var(--surface); border-bottom: 1px solid var(--border); }
+.stage-panel > button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
 .stage-panel__title { margin: 0; font-size: 18px; }
 .stage-panel__spacer { flex: 1; }
 .stage-panel__problem, .clear-conditions, .stage-panel__hints { margin: 12px 0; font-size: 13px; line-height: 1.6; }
