@@ -77,7 +77,7 @@ function topDeductionsOf(stage: Stage): string[] {
 function sizeOf(codebase: Codebase) {
   const classes = allClasses(codebase);
   const methods = classes.flatMap((codeClass) => codeClass.methods);
-  return { files: codebase.files.length, classes: classes.length, methods: methods.length, longest: Math.max(0, ...methods.map(methodLines)) };
+  return { files: codebase.files.length, classes: classes.length, methods: methods.length, longest: Math.max(0, ...methods.map((method) => methodLines(method, codebase))) };
 }
 
 function levelMedians(stages: readonly Stage[], solutions: Solutions): Map<StageLevel, number> {

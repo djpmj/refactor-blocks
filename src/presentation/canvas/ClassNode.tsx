@@ -117,7 +117,8 @@ function ClassBody({ codeClass }: Readonly<{ codeClass: CodeClass }>) {
 }
 
 function ClassLineBadge({ codeClass, limit }: Readonly<{ codeClass: CodeClass; limit: number }>) {
-  const lines = classLines(codeClass);
+  const codebase = useGameStore((state) => state.codebase);
+  const lines = classLines(codeClass, codebase);
   return <span className={lines > limit ? 'line-badge line-badge--over' : 'line-badge'}>{lines}行</span>;
 }
 

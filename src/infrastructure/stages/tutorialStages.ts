@@ -33,13 +33,13 @@ const extractMethodStage: Stage = {
   why: '前年同月比や表の列を変えるたびに、集計から出力まで続く長い処理を読み直すことになります。集計と表示を分ければ、数字や見せ方の変更箇所を追いやすくなります。',
   description:
     '月次の売上レポートを画面に出す ReportService。売上の集計・前月比の計算・表の組み立て・出力が、1つのメソッド printMonthlyReport に上から順に書かれている。',
-  goal: 'メソッドは20行以内に。メソッドをクリックし、まとまった処理を選んで「メソッドとして抽出」しよう',
-  limits: { method: 20, class: 50, file: 55 },
+  goal: 'メソッドは28行以内に。メソッドをクリックし、まとまった処理を選んで「メソッドとして抽出」しよう',
+  limits: { method: 28, class: 54, file: 61 },
   dependencyLimit: 2,
   responsibilityLimit: 3,
   changeRequests: [
-    { id: 'req-report-yoy', title: '前年同月比も出して', description: '経営会議用に、前月比だけでなく前年同月比もレポートに出したい。', responsibility: 'aggregation', linesPerSite: 10, partName: 'compareWithLastYear' },
-    { id: 'req-report-share', title: '表に「構成比」列を追加して', description: '売上の表に、全体に占める割合の列を足したい。', responsibility: 'formatting', linesPerSite: 8, partName: 'buildShareColumn' },
+    { id: 'req-report-yoy', title: '前年同月比も出して', description: '経営会議用に、前月比だけでなく前年同月比もレポートに出したい。', responsibility: 'aggregation', linesPerSite: 12, partName: 'compareWithLastYear' },
+    { id: 'req-report-share', title: '表に「構成比」列を追加して', description: '売上の表に、全体に占める割合の列を足したい。', responsibility: 'formatting', linesPerSite: 12, partName: 'buildShareColumn' },
   ],
   codebase: {
     files: [
@@ -104,8 +104,8 @@ const orderServiceStage: Stage = {
   why: '税率やメール文面の変更が注文の検証や保存処理に紛れ、関係ない手順まで確認することになります。役割ごとに置き場所が分かれていれば、変更する理由のある処理を探せます。',
   description:
     'ネットショップの注文を受け付ける OrderService。placeOrder の中に、入力と在庫の検証・小計と消費税(軽減税率あり)の計算・DBへの保存・確認メールの送信が全部入っている。税の計算を担当する TaxCalculator は用意されているが、まだ空っぽ。',
-  goal: 'メソッドは15行以内に。税の計算は抽出してから TaxCalculator へドラッグで移そう',
-  limits: { method: 15, class: 50, file: 60 },
+  goal: 'メソッドは22行以内に。税の計算は抽出してから TaxCalculator へドラッグで移そう',
+  limits: { method: 22, class: 50, file: 60 },
   dependencyLimit: 2,
   // 税の計算を TaxCalculator へ移せば OrderService の責務が4種類になり、上限を満たす
   responsibilityLimit: 4,

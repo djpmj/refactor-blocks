@@ -23,7 +23,8 @@ function FileMark({ severity, points }: Readonly<{ severity: FileSeverity; point
 
 export function FileNode({ data }: Readonly<NodeProps<FileFlowNode>>) {
   const resolved = useResolvedCelebration('fileIds', data.fileId);
-  const file = useGameStore((state) => state.codebase.files.find((candidate) => candidate.id === data.fileId));
+  const codebase = useGameStore((state) => state.codebase);
+  const file = codebase.files.find((candidate) => candidate.id === data.fileId);
   const limit = useGameStore((state) => state.stage.limits.file);
   const points = useGameStore((state) => fileDeductions(state.codebase, state.stage).get(data.fileId) ?? 0);
   const flagged = useGameStore((state) => {
@@ -36,7 +37,7 @@ export function FileNode({ data }: Readonly<NodeProps<FileFlowNode>>) {
   const dropTargetClasses = useDropTargetClassNames('file', data.fileId);
   const showDetails = useShowDetails();
   if (file === undefined) return null;
-  const lines = fileLines(file);
+  const lines = fileLines(file, codebase);
   return (
     <div
       ref={setNodeRef}

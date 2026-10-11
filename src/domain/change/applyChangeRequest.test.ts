@@ -18,7 +18,7 @@ describe('applyChangeRequest', () => {
     // Assert
     if (!result.ok) throw new Error('成功するはず');
     const [placeOrder] = allClasses(result.value).flatMap((codeClass) => codeClass.methods);
-    expect(methodLines(placeOrder)).toBe(methodLines(sampleCodebase().files[0].classes[0].methods[0]) + 8);
+    expect(methodLines(placeOrder)).toBe(methodLines(sampleCodebase().files[0].classes[0].methods[0]) + 8 + 1);
     expect(placeOrder.fragments.at(-1)).toMatchObject({ id: 'req-tax:method-place', lines: 8, responsibility: 'tax' });
   });
 

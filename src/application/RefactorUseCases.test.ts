@@ -108,7 +108,7 @@ describe('previewExtractMethod', () => {
     expect(preview).toEqual({
       sourceMethodId: 'source',
       sourceLinesBefore: methodLines(source),
-      sourceLinesAfter: methodLines({ ...source, fragments: [source.fragments[0], { id: 'preview:call', label: 'call', lines: 1, responsibility: 'call' }, source.fragments[2]] }),
+      sourceLinesAfter: 67,
       newMethodName: 'aggregateSales',
       newMethodLines: 27,
     });
@@ -123,8 +123,8 @@ describe('previewExtractMethod', () => {
     const preview = previewExtractMethod(codebase, input);
 
     // Assert
-    expect(preview?.newMethodLines).toBe(37);
-    expect(preview?.sourceLinesAfter).toBe(54);
+    expect(preview?.newMethodLines).toBe(38);
+    expect(preview?.sourceLinesAfter).toBe(56);
   });
 
   it('プレビュー用IDが既存のメソッドIDと衝突しても正しい抽出結果を返す', () => {

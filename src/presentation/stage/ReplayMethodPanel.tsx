@@ -12,7 +12,7 @@ export function ReplayMethodPanel({ codebase, methodId }: Readonly<{ codebase: C
 
   return (
     <aside className="sample-replay__panel" aria-label="メソッドの内容">
-      <h2 className="method-editor__title">{owner.name}.{method.name}() <span className="line-badge">{methodLines(method)}行</span></h2>
+      <h2 className="method-editor__title">{owner.name}.{method.name}() <span className="line-badge">{methodLines(method, codebase)}行</span></h2>
       <p className="sample-replay__visibility">{method.visibility}</p>
       <div className="method-editor__tabs" role="tablist" aria-label="メソッド表示">
         <button className="method-editor__tab" type="button" role="tab" aria-selected={activeTab === 'edit'} onClick={() => setActiveTab('edit')}>編集</button>
@@ -25,7 +25,7 @@ export function ReplayMethodPanel({ codebase, methodId }: Readonly<{ codebase: C
               <li key={fragment.id} className="fragment-list__item">
                 <div className="sample-replay__fragment">
                   <span className="fragment-list__label">{fragment.label}</span>
-                  <span className="fragment-list__lines">{fragmentLines(fragment)}行</span>
+                  <span className="fragment-list__lines">{fragmentLines(fragment, codebase)}行</span>
                 </div>
                 <FragmentFieldRefs codebase={codebase} fragment={fragment} />
               </li>

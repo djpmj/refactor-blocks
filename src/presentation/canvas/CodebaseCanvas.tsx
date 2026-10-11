@@ -47,6 +47,7 @@ function DraggingOverlay({ activeId }: Readonly<{ activeId: UniqueIdentifier | n
   const classId = activeId === null ? null : parseClassDragId(activeId);
   const fieldId = activeId === null ? null : parseFieldDragId(activeId);
   const method = useGameStore((state) => (methodId === null ? undefined : findMethod(state.codebase, methodId)));
+  const codebase = useGameStore((state) => state.codebase);
   const codeClass = useGameStore((state) => (classId === null ? undefined : findClass(state.codebase, classId)));
   const field = useGameStore((state) => (fieldId === null ? undefined : findField(state.codebase, fieldId)));
   const limit = useGameStore((state) => state.stage.limits.method);
@@ -54,7 +55,7 @@ function DraggingOverlay({ activeId }: Readonly<{ activeId: UniqueIdentifier | n
   // オーバーレイはbody直下へポータルしてズーム倍率の影響を受けないようにする。
   return createPortal(
     <DragOverlay>
-      {method === undefined ? null : <MethodChipView method={method} overLimit={methodLines(method) > limit} />}
+      {method === undefined ? null : <MethodChipView method={method} overLimit={methodLines(method, codebase) > limit} />}
       {codeClass === undefined ? null : <div className="class-drag-preview">{codeClass.name}</div>}
       {field === undefined ? null : <FieldChipView field={field} />}
     </DragOverlay>,

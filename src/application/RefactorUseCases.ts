@@ -74,10 +74,10 @@ export function previewExtractMethod(codebase: Codebase, input: ExtractMethodInp
   if (sourceAfter === undefined || extracted === undefined) return undefined;
   return {
     sourceMethodId: source.id,
-    sourceLinesBefore: methodLines(source),
-    sourceLinesAfter: methodLines(sourceAfter),
+    sourceLinesBefore: methodLines(source, codebase),
+    sourceLinesAfter: methodLines(sourceAfter, result.value),
     newMethodName: extracted.name,
-    newMethodLines: methodLines(extracted),
+    newMethodLines: methodLines(extracted, result.value),
   };
 }
 

@@ -6,8 +6,8 @@ test('コードタブにチュートリアル1のクラスソースを表示す�
   await page.goto('/');
   await selectStage(page, 'チュートリアル1: 長いメソッドを分ける');
   await page.getByTestId('method-printMonthlyReport').click();
-  await expect(page.getByTestId('class-ReportService').locator('.line-badge')).toHaveText('33行');
-  await expect(page.locator('.method-editor__title .line-badge')).toHaveText('30行');
+  await expect(page.getByTestId('class-ReportService').locator('.line-badge')).toHaveText('42行');
+  await expect(page.locator('.method-editor__title .line-badge')).toHaveText('39行');
 
   // Act
   await page.getByRole('tab', { name: 'コード' }).click();
@@ -20,7 +20,11 @@ test('コードタブにチュートリアル1のクラスソースを表示す�
   const source = panel.locator('pre code');
   expect(await source.locator('.hljs-keyword').count()).toBeGreaterThan(0);
   await expect(source.locator('.hljs-string').first()).toContainText('商品名 | 数量 | 売上');
-  await expect(source.locator('.hljs-comment')).toContainText('レポートを出力する');
+  await expect(source.locator('.hljs-comment', { hasText: 'レポートを出力する' })).toHaveCount(1);
+  // 各処理のコードの前に編集タブと同じ処理名のコメントが付き、処理と処理の間に空行が入る
+  await expect(source).toContainText('{\n        // 今月の売上を集計する\n        var monthlySales');
+  await expect(source).toContainText('\n\n        // 前月比を計算する\n');
+  await expect(source).toContainText('\n\n        // 画面に出力する\n        // レポートを出力する\n');
   expect(await source.locator('.hljs-number').count()).toBeGreaterThan(0);
   const sourceLineCount = (await source.textContent() ?? '').split('\n').length;
   const sourceLines = panel.locator('.code-preview__line');
@@ -28,34 +32,34 @@ test('コードタブにチュートリアル1のクラスソースを表示す�
   await expect(sourceLines.first()).toHaveCSS('display', 'grid');
   await expect(sourceLines.first()).toHaveAttribute('data-line-number', '1');
   await expect(sourceLines.last()).toHaveAttribute('data-line-number', String(sourceLineCount));
-  await expect(sourceLines.last()).toHaveAttribute('data-line-number', '33');
+  await expect(sourceLines.last()).toHaveAttribute('data-line-number', '42');
   await expect(source).toContainText('public void printMonthlyReport()\n    {');
   await expect(source).toContainText('foreach (var row in rows)\n        {\n            Console.WriteLine(row);\n        }');
   await expect(source).toContainText('.GroupBy(s => s.ProductName)\n            .Select(');
   await expect(panel.getByRole('combobox', { name: 'コードの言語' })).toHaveValue('csharp');
   await page.getByRole('tab', { name: '編集' }).click();
   await expect(page.getByRole('tabpanel', { name: '編集' })).toBeVisible();
-  await expect(page.locator('.fragment-list__lines')).toHaveText(['6行', '7行', '2行', '3行', '9行']);
+  await expect(page.locator('.fragment-list__lines')).toHaveText(['7行', '8行', '3行', '4行', '10行']);
 
   await page.getByLabel('今月の売上を集計する').check();
   await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
-  await expect(page.locator('.method-editor__title .line-badge')).toHaveText('25行');
-  await expect(page.getByTestId('class-ReportService').locator('.line-badge')).toHaveText('38行');
+  await expect(page.locator('.method-editor__title .line-badge')).toHaveText('34行');
+  await expect(page.getByTestId('class-ReportService').locator('.line-badge')).toHaveText('48行');
   await page.getByRole('tab', { name: 'コード' }).click();
   const extractedSourceLines = page.getByRole('tabpanel', { name: 'コード' }).locator('.code-preview__line');
-  await expect(extractedSourceLines.last()).toHaveAttribute('data-line-number', '38');
+  await expect(extractedSourceLines.last()).toHaveAttribute('data-line-number', '48');
 
   await page.getByTestId('method-aggregateSales').click();
-  await expect(page.locator('.method-editor__title .line-badge')).toHaveText('9行');
+  await expect(page.locator('.method-editor__title .line-badge')).toHaveText('10行');
   await page.getByTestId('method-printMonthlyReport').click();
   await page.getByLabel('前月比を計算する').check();
   await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
-  await expect(page.locator('.method-editor__title .line-badge')).toHaveText('19行');
-  await expect(page.getByTestId('class-ReportService').locator('.line-badge')).toHaveText('43行');
+  await expect(page.locator('.method-editor__title .line-badge')).toHaveText('28行');
+  await expect(page.getByTestId('class-ReportService').locator('.line-badge')).toHaveText('54行');
   await page.getByRole('tab', { name: 'コード' }).click();
-  await expect(page.getByRole('tabpanel', { name: 'コード' }).locator('.code-preview__line').last()).toHaveAttribute('data-line-number', '43');
+  await expect(page.getByRole('tabpanel', { name: 'コード' }).locator('.code-preview__line').last()).toHaveAttribute('data-line-number', '54');
   await page.getByTestId('method-compareWithLastMonth').click();
-  await expect(page.locator('.method-editor__title .line-badge')).toHaveText('10行');
+  await expect(page.locator('.method-editor__title .line-badge')).toHaveText('11行');
   await expect(page.getByTestId('score')).toContainText('100');
 });
 

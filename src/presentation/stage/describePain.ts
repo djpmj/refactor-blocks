@@ -21,7 +21,7 @@ export function describePain(codebase: Codebase, summary: PainSummary): PainDesc
   const locations = summary.siteIds.flatMap((methodId) => {
     const owner = findClassOfMethod(codebase, methodId);
     const method = owner?.methods.find((candidate) => candidate.id === methodId);
-    return owner === undefined || method === undefined ? [] : [`${owner.name}.${method.name}(${methodLines(method)}行)`];
+    return owner === undefined || method === undefined ? [] : [`${owner.name}.${method.name}(${methodLines(method, codebase)}行)`];
   });
   return { locations: locations.slice(0, 6), additionalLocations: Math.max(0, locations.length - 6) };
 }

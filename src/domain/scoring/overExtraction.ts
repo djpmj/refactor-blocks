@@ -8,7 +8,7 @@ export const TRIVIAL_METHOD_MAX_LINES = 2;
 export function findTrivialMethods(codebase: Codebase): string[] {
   return allClasses(codebase).flatMap((codeClass) => codeClass.methods)
     .filter((method) => {
-      const lines = method.fragments.reduce((total, fragment) => total + fragmentLines(fragment), 0);
+      const lines = method.fragments.reduce((total, fragment) => total + fragmentLines(fragment, codebase), 0);
       return method.fragments.length > 0
         && !isStubMethod(method)
         && !isAccessorMethod(method)

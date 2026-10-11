@@ -12,8 +12,8 @@ describe('findLineLimitViolations', () => {
 
     // Assert
     expect(violations).toEqual([
-      { kind: 'method', targetId: 'method-place', lines: 27, limit: 20 },
-      { kind: 'file', targetId: 'file-order', lines: 30, limit: 27 },
+      { kind: 'method', targetId: 'method-place', lines: 29, limit: 20 },
+      { kind: 'file', targetId: 'file-order', lines: 32, limit: 27 },
     ]);
   });
 
@@ -22,7 +22,7 @@ describe('findLineLimitViolations', () => {
     const codebase = sampleCodebase();
 
     // Act
-    const violations = findLineLimitViolations(codebase, { method: 27, class: 30, file: 30 });
+    const violations = findLineLimitViolations(codebase, { method: 29, class: 32, file: 32 });
 
     // Assert
     expect(violations).toEqual([]);
