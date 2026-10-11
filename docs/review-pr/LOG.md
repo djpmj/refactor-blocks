@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-11 15:30 UTC PR #145 feat: add method panel to code previews
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(1625件) / npm run lint ✅ / npm run typecheck ✅(E2EはPR記載のPASSを確認、本レビューでは未実行)
+- マージ: squash & delete-branch
+
 ## 2026-10-11 14:55 UTC PR #144 feat: keep existing file positions stable
 
 - 判定: 合格(blocker無し)
