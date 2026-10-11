@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-11 23:42 UTC PR #153 feat: show method details during manual fix
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(1629件) / npm run lint ✅ / npm run typecheck ✅(E2EはChromium未導入のため未実行。PR本文では全E2E 191/191 PASSの報告)
+- マージ: squash & delete-branch
+
 ## 2026-10-11 23:40 UTC PR #152 feat: automatically name new classes by role
 
 - 判定: 合格(blocker無し)
@@ -210,17 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm run check(lint ✅ / typecheck ✅ / test 1032件 ✅)。E2Eは環境で実行できず未検証(PR記載では114件成功)。差分は仕様どおりでDDD層境界にも問題なし
-- マージ: squash & delete-branch
-
-## 2026-10-04 12:25 UTC PR #76 減点対象へのジャンプと強調を追加
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(lint ✅ / typecheck ✅ / test 1032件 ✅)。E2Eは環境にChromiumが無く実行できず未検証(PR記載では109件成功)。差分は仕様どおりでDDD層境界にも問題なし
-- マージ: squash & delete-branch
-
-## 2026-10-04 11:58 UTC PR #75 操作エラーをキャンバスに表示 (#57)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(1028件) / npm run lint ✅ / npm run typecheck ✅(E2EはChromium未導入で実行不可。PR本文では107件成功と報告)
 - マージ: squash & delete-branch
 

@@ -80,3 +80,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [freeze-file-positions](freeze-file-positions.md) | 表示済みファイルの位置を固定し、「整列」ボタンで依存の向きに並べ直す |
 | [preview-method-panel](preview-method-panel.md) | 変更前・解答例の図でもメソッドパネルを出し、最大化できるようにする |
 | [auto-class-naming](auto-class-naming.md) | 新しく作ったクラスに、中身の責務から名前を自動で付ける |
+| [manual-fix-method-viewer](manual-fix-method-viewer.md) | 手で直す最中、クリックしたメソッドの処理一覧を右サイドバーに読み取り専用で出す |
