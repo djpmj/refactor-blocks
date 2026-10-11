@@ -15,10 +15,10 @@ test('抽出の選択中に結果をプレビューし、抽出・Undo・ステ�
   await checks.nth(0).check();
 
   // Assert: 現在の実コード行数を使い、メソッドエディタとキャンバスの両方に表示する
-  await expect(sourceLines).toHaveText('30行 → 25行');
+  await expect(sourceLines).toHaveText('39行 → 34行');
   await expect(previewMethod).toBeVisible();
-  await expect(previewMethod).toHaveAttribute('aria-label', '抽出後のプレビュー: aggregateSales() 9行');
-  await expect(summary).toContainText('printMonthlyReport 30行 → 25行 / 新しい aggregateSales 9行');
+  await expect(previewMethod).toHaveAttribute('aria-label', '抽出後のプレビュー: aggregateSales() 10行');
+  await expect(summary).toContainText('printMonthlyReport 39行 → 34行 / 新しい aggregateSales 10行');
   await expect(previewMethod).toHaveCSS('pointer-events', 'none');
   await expect(previewMethod.locator('.method-chip')).toHaveCSS('border-top-style', 'dashed');
 
@@ -38,26 +38,26 @@ test('抽出の選択中に結果をプレビューし、抽出・Undo・ステ�
 
   // Act: 抽出する処理を増やし、新しい名前を入力する
   await checks.nth(1).check();
-  await expect(sourceLines).toHaveText('30行 → 18行');
-  await expect(previewMethod).toHaveAttribute('aria-label', '抽出後のプレビュー: aggregateSalesAndCompareWithLastMonth() 16行');
+  await expect(sourceLines).toHaveText('39行 → 25行');
+  await expect(previewMethod).toHaveAttribute('aria-label', '抽出後のプレビュー: aggregateSalesAndCompareWithLastMonth() 19行');
   const name = page.getByLabel('新しいメソッド名');
   await name.fill('summarizeSales');
-  await expect(previewMethod).toHaveAttribute('aria-label', '抽出後のプレビュー: summarizeSales() 16行');
-  await expect(summary).toContainText('新しい summarizeSales 16行');
+  await expect(previewMethod).toHaveAttribute('aria-label', '抽出後のプレビュー: summarizeSales() 19行');
+  await expect(summary).toContainText('新しい summarizeSales 19行');
 
   // Act: 上限内に収まる選び方を確認してから、確定する選択へ戻す
   await checks.nth(2).check();
   await checks.nth(3).check();
 
-  // Assert: 抽出後13行は上限15行以内なので、赤い上限超過表示が外れる
-  await expect(sourceLines).toHaveText('30行 → 13行');
+  // Assert: 抽出後16行は上限28行以内なので、赤い上限超過表示が外れる
+  await expect(sourceLines).toHaveText('39行 → 16行');
   await expect(page.getByTestId('method-printMonthlyReport').locator('.method-chip--over')).toHaveCount(0);
   await expect(page.getByTestId('method-printMonthlyReport').locator('.method-chip__lines-after')).not.toHaveClass(/--over/);
 
   // Act: 1つ選んだ状態と2つ選んだ状態の確定フローに戻す
   await checks.nth(2).uncheck();
   await checks.nth(3).uncheck();
-  await expect(sourceLines).toHaveText('30行 → 18行');
+  await expect(sourceLines).toHaveText('39行 → 25行');
 
   // Assert: 下書きの表示は点数・Undo履歴・自動保存を変更しない
   await expect(page.getByRole('button', { name: '元に戻す' })).toBeDisabled();
@@ -70,8 +70,8 @@ test('抽出の選択中に結果をプレビューし、抽出・Undo・ステ�
   // Assert: プレビューと下書き文が消え、本物のメソッドが同じ名前・行数でできる
   await expect(previewMethod).toHaveCount(0);
   await expect(summary).toHaveCount(0);
-  await expect(page.getByTestId('method-summarizeSales').locator('.method-chip__lines')).toHaveText('16行');
-  await expect(sourceLines).toHaveText('18行');
+  await expect(page.getByTestId('method-summarizeSales').locator('.method-chip__lines')).toHaveText('19行');
+  await expect(sourceLines).toHaveText('25行');
 
   // Act: 元メソッドでプレビューを出し、別メソッドを選択して下書きを閉じる
   await checks.nth(0).check();

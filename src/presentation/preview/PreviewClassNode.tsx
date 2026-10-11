@@ -24,7 +24,7 @@ export function PreviewClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
           {codeClass.name}
           <SuperclassLabel superclassName={superclass?.name} interfaceNames={interfaceNames} />
         </span>
-        <span className="line-badge">{classLines(codeClass)}行</span>
+        <span className="line-badge">{classLines(codeClass, codebase)}行</span>
       </div>
       {fields.length === 0 ? null : (
         <div className="class-node__fields" aria-label="フィールド">
@@ -38,7 +38,7 @@ export function PreviewClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
           <div className="class-node__empty">メソッドなし</div>
         ) : (
           codeClass.methods.map((method) => {
-            const chip = <MethodChipView method={method} overLimit={methodLines(method) > methodLimit} selected={selectedMethodId === method.id} />;
+            const chip = <MethodChipView method={method} overLimit={methodLines(method, codebase) > methodLimit} selected={selectedMethodId === method.id} />;
             return onSelectMethod === undefined ? <div key={method.id}>{chip}</div> : (
               <button key={method.id} type="button" data-testid={`preview-method-${method.id}`} className="method-chip-button nodrag nopan" onClick={() => onSelectMethod(method.id)} aria-pressed={selectedMethodId === method.id}>
                 {chip}

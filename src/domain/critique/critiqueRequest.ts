@@ -72,13 +72,13 @@ export function buildCritiqueRequest(
   const enviedNames = enviedClassNameByMethodId(codebase);
   const files = codebase.files.map(
     (file): CritiqueFileSummary => ({
-      lines: fileLines(file),
+      lines: fileLines(file, codebase),
       deductionPoints: deductionsByFile.get(file.id) ?? 0,
       classes: file.classes.map((codeClass): CritiqueClassSummary => {
         const fields = fieldSummariesOf(codeClass);
         return {
           name: codeClass.name,
-          lines: classLines(codeClass),
+          lines: classLines(codeClass, codebase),
           superclassName: findSuperclass(codebase, codeClass.id)?.name,
           interfaceNames: interfaceNamesOf(codebase, codeClass.id),
           ...(fields === undefined ? {} : { fields }),
@@ -86,7 +86,7 @@ export function buildCritiqueRequest(
             (method): CritiqueMethodSummary => ({
               name: method.name,
               visibility: method.visibility,
-              lines: methodLines(method),
+              lines: methodLines(method, codebase),
               ...(isStubMethod(method) ? { stub: true } : {}),
               ...(enviedNames.has(method.id) ? { enviedClassName: enviedNames.get(method.id) } : {}),
             }),

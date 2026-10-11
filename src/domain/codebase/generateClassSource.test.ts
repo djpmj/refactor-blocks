@@ -5,6 +5,19 @@ import { generateClassSource } from './generateClassSource';
 import { renameMethod } from './renameMethod';
 
 describe('generateClassSource', () => {
+  it('adds a label comment before coded fragments and separates later fragments with a blank line', () => {
+    const codebase: Codebase = { files: [{ id: 'f', path: 'x', classes: [{ id: 'c', name: 'Thing', methods: [
+      { id: 'm', name: 'run', visibility: 'public', fragments: [
+        { id: 'a', label: 'first work', lines: 1, responsibility: 'x', code: { csharp: 'first();' } },
+        { id: 'b', label: 'second work', lines: 2, responsibility: 'x', code: { csharp: '// existing note\nsecond();' } },
+      ] },
+    ] }] }] };
+
+    const source = generateClassSource(codebase, 'c', 'csharp');
+
+    expect(source).toContain('        // first work\n        first();\n\n        // second work\n        // existing note\n        second();');
+  });
+
   it('renders the class, method, and fragment code in order', () => {
     // Arrange
     const codebase: Codebase = { files: [{ id: 'f', path: 'x', classes: [{ id: 'c', name: 'Report', methods: [{ id: 'm', name: 'run', visibility: 'public', fragments: [{ id: 'a', label: 'a', lines: 1, responsibility: 'x', code: { csharp: 'var x = 1;' } }, { id: 'b', label: 'b', lines: 1, responsibility: 'x', code: { csharp: 'print(x);' } }] }] }] }] };
@@ -181,7 +194,7 @@ describe('generateClassSource', () => {
     // Act
     const source = generateClassSource(codebase, 'c', 'csharp');
     // Assert
-    expect(source).toBe('public class Thing\n{\n    public void run()\n    {\n        work();\n    }\n}');
+    expect(source).toBe('public class Thing\n{\n    public void run()\n    {\n        // a\n        work();\n    }\n}');
   });
 
   it('renders the superclass and interfaces in order and ignores missing parent IDs', () => {

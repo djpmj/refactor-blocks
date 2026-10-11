@@ -18,12 +18,12 @@ export type LineLimitViolation = {
 export function findLineLimitViolations(codebase: Codebase, limits: LineLimits): LineLimitViolation[] {
   const methodViolations = allClasses(codebase)
     .flatMap((codeClass) => codeClass.methods)
-    .map((method): LineLimitViolation => ({ kind: 'method', targetId: method.id, lines: methodLines(method), limit: limits.method }));
+    .map((method): LineLimitViolation => ({ kind: 'method', targetId: method.id, lines: methodLines(method, codebase), limit: limits.method }));
   const classViolations = allClasses(codebase).map(
-    (codeClass): LineLimitViolation => ({ kind: 'class', targetId: codeClass.id, lines: classLines(codeClass), limit: limits.class }),
+    (codeClass): LineLimitViolation => ({ kind: 'class', targetId: codeClass.id, lines: classLines(codeClass, codebase), limit: limits.class }),
   );
   const fileViolations = codebase.files.map(
-    (file): LineLimitViolation => ({ kind: 'file', targetId: file.id, lines: fileLines(file), limit: limits.file }),
+    (file): LineLimitViolation => ({ kind: 'file', targetId: file.id, lines: fileLines(file, codebase), limit: limits.file }),
   );
   return [...methodViolations, ...classViolations, ...fileViolations].filter((item) => item.lines > item.limit);
 }

@@ -37,8 +37,8 @@ const cyclicDependencyStage: Stage = {
   why: '価格ルールを変えるとき、注文・顧客・在庫が互いに呼び合う経路まで確かめる必要があります。各データの扱いをそれぞれの役割に寄せると、変更の影響を追いやすくなります。',
   description:
     '注文(Order)と顧客(Customer)のクラス。注文の合計金額を求めるメソッドが Customer に、顧客の過去の注文数を数えるメソッドが Order に置かれているせいで、2つのクラスがお互いを呼び合っている。',
-  goal: '赤い矢印(循環依存)をなくそう。メソッドが本来いるべきクラスはどこ? メソッドは11行以内、クラスは38行・ファイルは39行以内、1クラスの責務は4種類まで',
-  limits: { method: 11, class: 38, file: 39 },
+  goal: '赤い矢印(循環依存)をなくそう。メソッドが本来いるべきクラスはどこ? メソッドは16行以内、クラスは48行・ファイルは49行以内、1クラスの責務は4種類まで',
+  limits: { method: 16, class: 48, file: 49 },
   dependencyLimit: 2,
   responsibilityLimit: 4,
   changeRequests: [
@@ -171,8 +171,8 @@ const godFileStage: Stage = {
   why: '一つのファイルに複数の業務処理が集まると、小さな変更でも無関係な処理との絡みを読み解くことになります。役割で置き場所を分ければ、修正対象を見つけやすくなります。',
   description:
     'カート(CartService)・配送(ShippingService)・ポイント(PointService)の3クラスが、1つのファイルに同居している。しかも CartService が、送料の計算とポイントの付与を private メソッドとして抱え込んでいる。',
-  goal: 'ファイルは26行、クラスは25行以内、1クラスの責務は2種類まで。メソッドは11行以内。メソッドを持ち主へ返し、「ファイルを追加」してクラスを移そう',
-  limits: { method: 11, class: 25, file: 26 },
+  goal: 'ファイルは29行、クラスは28行以内、1クラスの責務は2種類まで。メソッドは17行以内。メソッドを持ち主へ返し、「ファイルを追加」してクラスを移そう',
+  limits: { method: 17, class: 28, file: 29 },
   dependencyLimit: 2,
   responsibilityLimit: 2,
   changeRequests: [
@@ -309,9 +309,9 @@ const misplacedPrivateStage: Stage = {
   description:
     '配送完了を知らせる NotificationService。通知メールの文面を組み立てる処理の中で、実は TemplateEngine クラスに private として置かれた renderTemplate() を直接呼んでいる。TemplateEngine 側は自分の中でしか使わないつもりで private にしたはずなのに、外から呼ばれてしまっている。',
   goal:
-    'メソッドは10行以内に。private なメソッドを他クラスから呼んでいる箇所(アクセス制御の違反)をなくそう。呼んでいる側と同じクラスへ Move Method で移動し、空になったクラスやファイルは片付けよう。' +
+    'メソッドは17行以内に。private なメソッドを他クラスから呼んでいる箇所(アクセス制御の違反)をなくそう。呼んでいる側と同じクラスへ Move Method で移動し、空になったクラスやファイルは片付けよう。' +
     'NotificationService だけで通知を組み立てられるようにしよう(依存先は0クラス)',
-  limits: { method: 10, class: 100, file: 300 },
+  limits: { method: 17, class: 100, file: 300 },
   dependencyLimit: 0,
   responsibilityLimit: 4,
   visibilityEnforced: true,
@@ -440,12 +440,12 @@ const salesReportCodebase: Stage['codebase'] = {
 
 /** 中級4・中級5で共通の数値。依存1本・責務2種類なので、税と整形のうち片方だけを別クラスへ出すことになる。 */
 const salesReportRules = {
-  limits: { method: 15, class: 60, file: 63 },
+  limits: { method: 17, class: 60, file: 72 },
   dependencyLimit: 1,
   responsibilityLimit: 2,
 } satisfies Pick<Stage, 'limits' | 'dependencyLimit' | 'responsibilityLimit'>;
 
-const salesReportGoal = 'メソッドは15行・クラスは60行以内、1ファイルは63行以内、1クラスの責務は2種類まで、依存先は1クラスまで。よく変わる所を1つのクラスに閉じ込めよう';
+const salesReportGoal = 'メソッドは17行・クラスは60行以内、1ファイルは72行以内、1クラスの責務は2種類まで、依存先は1クラスまで。よく変わる所を1つのクラスに閉じ込めよう';
 
 /** 中級4: 税の計算がよく変わる。税の計算を別クラスへ出すのが正解。 */
 const volatileTaxStage: Stage = {
@@ -569,8 +569,8 @@ const featureEnvyStage: Stage = {
   why: '契約内容を変えるたびに、契約データを持たないサービス側の処理を調べる必要があります。データを扱う側に振る舞いがまとまれば、変更先を見つけやすくなります。',
   description:
     'SaaS の月額課金を担当する BillingService。契約(Subscription)は public なフィールドを持つだけのクラスで、トライアル中かの判定も、席数と単価からの請求額の計算も、解約の手続きも、すべて BillingService が Subscription のフィールドを読んで行い、最後に subscription.status を外から書き換えている。しかも、キャンペーンで契約ごとに変わるようになったトライアル日数(trialDays)が、まだ BillingService のフィールドのまま残っている。',
-  goal: 'データを持つクラスに仕事を頼もう(Tell, Don\'t Ask)。他クラスのフィールドばかり触る処理は Extract Method してからデータの持ち主へ移し、一緒に使うフィールドは Move Field で運ぼう。メソッドは12行以内、1クラスの責務は3種類まで、依存先は1クラスまで',
-  limits: { method: 12, class: 150, file: 300 },
+  goal: 'データを持つクラスに仕事を頼もう(Tell, Don\'t Ask)。他クラスのフィールドばかり触る処理は Extract Method してからデータの持ち主へ移し、一緒に使うフィールドは Move Field で運ぼう。メソッドは19行以内、1クラスの責務は3種類まで、依存先は1クラスまで',
+  limits: { method: 19, class: 150, file: 300 },
   dependencyLimit: 1,
   responsibilityLimit: 3,
   changeRequests: [
@@ -729,8 +729,8 @@ const anemicDomainModelStage: Stage = {
   goal:
     'getter で取り出して判断し、setter で書き戻すのは、public フィールドを外から触るのと同じ。口座のルールは Account に任せよう(Tell, Don\'t Ask)。' +
     'ルールの処理を Extract Method して Account へ移し、外から呼ぶメソッドは public に、もう外から使わない setter は private にしよう(メソッドエディタの「可視性」)。' +
-    'メソッドは13行以内、依存先は1クラスまで',
-  limits: { method: 13, class: 150, file: 300 },
+    'メソッドは18行以内、依存先は1クラスまで',
+  limits: { method: 18, class: 150, file: 300 },
   dependencyLimit: 1,
   responsibilityLimit: 5,
   visibilityEnforced: true,
@@ -926,8 +926,8 @@ const extractClassStage: Stage = {
     '給与のメソッドは住所のフィールドを一切使わず、住所のメソッドも給与のフィールドを一切使わない。住所の書式を直すたびに、給与計算の入った大きなクラスを開くことになっている。',
   goal:
     'メソッドがどのフィールドを使っているかを見て、一緒に使われるフィールドとメソッドの塊ごとにクラスを分けよう(Extract Class)。' +
-    '新しいクラスを作り、フィールドは Move Field、メソッドは Move Method で移す。メソッドは10行・クラスは50行以内',
-  limits: { method: 10, class: 50, file: 60 },
+    '新しいクラスを作り、フィールドは Move Field、メソッドは Move Method で移す。メソッドは15行・クラスは50行以内',
+  limits: { method: 15, class: 50, file: 60 },
   dependencyLimit: 1,
   responsibilityLimit: 4,
   changeRequests: [
@@ -1067,8 +1067,8 @@ const copyPasteTaxStage: Stage = {
     '販売システムの注文確定(OrderService.confirm)・請求書発行(InvoiceService.issue)・見積作成(QuoteService.create)。' +
     'どのメソッドにも、ほぼ同じ「消費税を計算する」処理がコピペされていて、注文・請求・見積それぞれの処理と同居している。' +
     '空のクラス TaxCalculator は用意されているが、まだどこからも使われていない。',
-  goal: '消費税の計算が3か所にコピペされています。1か所にまとめて、変更に強くしよう。Extract Methodで取り出し、似た処理を持つメソッドを統合して TaxCalculator へ移す。メソッドは10行以内、1クラスの責務は1種類まで',
-  limits: { method: 10, class: 13, file: 14 },
+  goal: '消費税の計算が3か所にコピペされています。1か所にまとめて、変更に強くしよう。Extract Methodで取り出し、似た処理を持つメソッドを統合して TaxCalculator へ移す。メソッドは14行以内、1クラスの責務は1種類まで',
+  limits: { method: 14, class: 17, file: 19 },
   dependencyLimit: 1,
   responsibilityLimit: 1,
   changeRequests: [
@@ -1194,8 +1194,8 @@ const memberRankBranchingStage: Stage = {
     '価格と送料の契約だけを持つ MemberRank は用意され、CheckoutService が呼んでいるが、まだどのクラスとも実装関係で結ばれていない。',
   goal:
     '会員ランクごとの分岐を、ランクごとの新しいクラス(RegularRank/PremiumRank/VipRank)に集めよう。Extract Methodで分岐を calculatePrice / calculateShipping として取り出し、Move Methodでランクのクラスへ移す。' +
-    '1つのクラスが価格と送料の両方を持つ。3クラスとも MemberRank を実装(implements)すると、新しいランクはクラスを足すだけで済む。メソッドは12行・クラスは18行以内',
-  limits: { method: 12, class: 18, file: 19 },
+    '1つのクラスが価格と送料の両方を持つ。3クラスとも MemberRank を実装(implements)すると、新しいランクはクラスを足すだけで済む。メソッドは17行・クラスは23行以内',
+  limits: { method: 17, class: 23, file: 24 },
   // 模範解答では、価格・送料の両方がランクごとの3クラスを呼ぶ。結合度の改善はこのステージの狙いではない。
   dependencyLimit: 3,
   responsibilityLimit: 3,
@@ -1338,8 +1338,8 @@ const layeredOrderApiStage: Stage = {
     '注文APIの OrderController。placeOrder(注文する)と cancelOrder(キャンセルする)の中に、リクエストの検証・レスポンスの組み立て(http)、' +
     '在庫の確認や金額の計算などの業務ルール(order-rule)、注文や在庫のDB保存(persistence)がすべて書かれている。' +
     '空のクラス OrderService と OrderRepository は用意されているが、まだ使われていない。',
-  goal: 'Controller に何でも書いてあります。業務ルールは OrderService へ、保存は OrderRepository へ移し、Controller → Service → Repository の一方通行にしよう。Controller から Repository を直接呼ぶのは層を飛ばす形。メソッドは10行以内、1クラスの責務は1種類まで',
-  limits: { method: 10, class: 24, file: 25 },
+  goal: 'Controller に何でも書いてあります。業務ルールは OrderService へ、保存は OrderRepository へ移し、Controller → Service → Repository の一方通行にしよう。Controller から Repository を直接呼ぶのは層を飛ばす形。メソッドは14行以内、1クラスの責務は1種類まで',
+  limits: { method: 14, class: 32, file: 33 },
   dependencyLimit: 1,
   responsibilityLimit: 1,
   layers: [

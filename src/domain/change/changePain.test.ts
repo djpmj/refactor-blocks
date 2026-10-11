@@ -144,7 +144,7 @@ describe('measurePain readLines', () => {
     const result = measurePain(stage(codebase), codebase);
 
     // Assert
-    expect(result?.current.readLines).toBe(23);
+    expect(result?.current.readLines).toBe(24);
   });
 
   it('長いメソッドから責務の処理だけ抽出すると読む行数が減りimprovedになる', () => {
@@ -156,7 +156,7 @@ describe('measurePain readLines', () => {
     const result = measurePain(stage(initial), current);
 
     // Assert
-    expect(result?.initial.readLines).toBe(108);
+    expect(result?.initial.readLines).toBe(109);
     expect(result?.current.readLines).toBe(8);
     expect(result?.improved).toBe(true);
   });

@@ -83,7 +83,7 @@ function FragmentList({
               }}
             />
             <span className="fragment-list__label">{fragment.label}</span>
-            <span className="fragment-list__lines">{fragmentLines(fragment)}行</span>
+            <span className="fragment-list__lines">{fragmentLines(fragment, codebase)}行</span>
           </label>
           <FragmentFieldRefs codebase={codebase} fragment={fragment} />
         </li>
@@ -300,7 +300,7 @@ function MethodEditorBody({ method, showVisibility }: Readonly<{ method: Method;
   return (
     <>
       <h2 className="method-editor__title">
-        {owner?.name ?? '?'}.{method.name}() <span className="line-badge">{methodLines(method)}行</span>
+        {owner?.name ?? '?'}.{method.name}() <span className="line-badge">{methodLines(method, codebase)}行</span>
       </h2>
       <div className="method-editor__tabs" role="tablist" aria-label="メソッド表示">
         <button className="method-editor__tab" type="button" role="tab" aria-selected={activeTab === 'edit'} onClick={() => { setActiveTab('edit'); }}>編集</button>

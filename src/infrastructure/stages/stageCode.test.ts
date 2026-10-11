@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { allClasses, fieldsOf } from '../../domain/codebase/Codebase';
-import { fragmentLines } from '../../domain/codebase/lineCount';
 import { generateClassSource } from '../../domain/codebase/generateClassSource';
 import type { Fragment } from '../../domain/codebase/Codebase';
 import type { Stage } from '../../domain/stage/Stage';
@@ -449,7 +448,7 @@ describe('ステージのC#コード', () => {
 
     // Act
     const mismatches = fragments.filter((fragment) => fragment.code?.csharp !== undefined
-      && fragment.lines !== fragmentLines(fragment));
+      && fragment.lines !== fragment.code.csharp.split('\n').length);
 
     // Assert
     expect(mismatches.map((fragment) => fragment.id)).toEqual([]);

@@ -5,7 +5,7 @@ import { violationTargets } from './violationTargets';
 describe('resolvedTargets', () => {
   it('違反がなくなったメソッドを返し、残る違反のクラスは返さない', () => {
     // Arrange
-    const stage = { limits: { method: 7, class: 100, file: 100 }, dependencyLimit: 100, responsibilityLimit: 100, visibilityEnforced: false, layers: [] };
+    const stage = { limits: { method: 8, class: 100, file: 100 }, dependencyLimit: 100, responsibilityLimit: 100, visibilityEnforced: false, layers: [] };
     const before = { files: [{ id: 'file', path: 'sample.ts', classes: [{ id: 'class', name: 'Sample', methods: [{ id: 'method', name: 'run', visibility: 'public' as const, fragments: [{ id: 'fragment-1', label: 'validate input', lines: 4, responsibility: 'validation' }, { id: 'fragment-2', label: 'write output', lines: 4, responsibility: 'io' }] }] }] }] };
     const [file] = before.files;
     const [codeClass] = file.classes;

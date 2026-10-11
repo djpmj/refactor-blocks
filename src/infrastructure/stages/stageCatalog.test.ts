@@ -693,7 +693,7 @@ describe('stageCatalog', () => {
       const longest = longestMethodLines(codebase);
 
       // Assert
-      if (stage.id === 'tutorial-extract-method') expect(longest).toBe(30);
+      if (stage.id === 'tutorial-extract-method') expect(longest).toBe(39);
       else expect(longest).toBeGreaterThan(3);
     });
 

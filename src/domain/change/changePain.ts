@@ -40,7 +40,7 @@ function summarize(codebase: Codebase, request: ChangeRequest, limits: Stage['li
 function readLinesOf(codebase: Codebase, siteIds: readonly string[]): number {
   return [...new Set(siteIds)].reduce((sum, id) => {
     const method = findClassOfMethod(codebase, id)?.methods.find((candidate) => candidate.id === id);
-    return method === undefined ? sum : sum + methodLines(method);
+    return method === undefined ? sum : sum + methodLines(method, codebase);
   }, 0);
 }
 

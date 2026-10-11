@@ -33,8 +33,8 @@ const userControllerStage: Stage = {
   why: 'メールの案内を変えるだけでも、ユーザー登録や削除の処理に埋もれた送信箇所を探す必要があります。通知をまとめれば、メールの変更を通知処理に集められます。',
   description:
     'Web APIでユーザー登録・削除のリクエストを受ける UserController。本来の仕事はリクエストの検証とレスポンスの組み立てなのに、DBへの保存・削除やメール送信まで自分でやっている。',
-  goal: 'メソッドは11行・クラスは23行・ファイルは24行以内、1クラスの責務は1種類まで。DBとメールの処理は UserRepository と Mailer に任せよう',
-  limits: { method: 11, class: 23, file: 24 },
+  goal: 'メソッドは17行・クラスは34行・ファイルは35行以内、1クラスの責務は1種類まで。DBとメールの処理は UserRepository と Mailer に任せよう',
+  limits: { method: 17, class: 34, file: 35 },
   dependencyLimit: 2,
   // 入力値の検証とレスポンスの組み立ては、どちらもHTTPの受け口としての責務に数える
   responsibilityLimit: 1,
@@ -69,7 +69,7 @@ const userControllerStage: Stage = {
                 visibility: 'public',
                 fragments: [
                   { id: 'frag-delete-user', label: 'ユーザーをDBから削除する', lines: 3, responsibility: 'persistence', suggestedName: 'removeUserRecord' , code: { csharp: "cancellationToken.ThrowIfCancellationRequested();\nawait _repository.DeleteAsync(userId, cancellationToken);\nawait _unitOfWork.CommitAsync(cancellationToken);" }},
-                  { id: 'frag-farewell-mail', label: 'お別れメールを送る', lines: 3, responsibility: 'notification', suggestedName: 'sendFarewellMail' , code: { csharp: "var message = new MailMessage(recipient, subject, body);\nawait _mailer.SendAsync(message, cancellationToken);\nawait _mailAuditLog.RecordSentAsync(message.Id, cancellationToken);" }},
+                  { id: 'frag-farewell-mail', label: 'お別れメールを送る', lines: 4, responsibility: 'notification', suggestedName: 'sendFarewellMail' , code: { csharp: "var body = $\"{userName} さん、これまでご利用ありがとうございました\";\nvar message = new MailMessage(recipient, subject, body);\nawait _mailer.SendAsync(message, cancellationToken);\nawait _mailAuditLog.RecordSentAsync(message.Id, cancellationToken);" }},
                   { id: 'frag-delete-response', label: 'レスポンスを組み立てる', lines: 3, responsibility: 'http', suggestedName: 'buildDeleteResponse' , code: { csharp: "if (input is null) throw new ArgumentNullException(nameof(input));\nvar response = new ApiResponse(statusCode, message);\nreturn Results.Json(response, statusCode: statusCode);" }},
                 ],
               },
@@ -124,8 +124,8 @@ const invoiceServiceStage: Stage = {
   why: 'PDFの見た目を変えるだけなのに、金額計算や保存、送信まで抱えた請求処理を追うことになります。描画の役割が分かれていれば、レイアウト変更の確認先を絞れます。',
   description:
     '請求書を作って送る InvoiceService。金額の計算・PDFの描画・ストレージへの保存・メール送信・送信履歴の記録を1クラスで抱えている。今回は受け皿のクラスが用意されていない。',
-  goal: 'メソッドは11行、クラスは22行・ファイルは50行以内、1クラスの責務は2種類まで。「クラスを追加」で受け皿を作ろう',
-  limits: { method: 11, class: 22, file: 50 },
+  goal: 'メソッドは16行、クラスは31行・ファイルは65行以内、1クラスの責務は2種類まで。「クラスを追加」で受け皿を作ろう',
+  limits: { method: 16, class: 31, file: 65 },
   dependencyLimit: 3,
   responsibilityLimit: 2,
   changeRequests: [
@@ -158,8 +158,8 @@ const invoiceServiceStage: Stage = {
                 name: 'sendInvoice',
                 visibility: 'public',
                 fragments: [
-                  { id: 'frag-attach-mail', label: '請求書をメールに添付して送る', lines: 6, responsibility: 'notification', suggestedName: 'mailInvoice' , code: { csharp: "var key = $\"invoices/{invoice.Number}.pdf\";\nawait using var pdf = await _storage.DownloadAsync(key, cancellationToken);\nvar message = new MailMessage(recipient, subject, body);\nmessage.Attachments.Add(new Attachment(pdf, $\"{invoice.Number}.pdf\", \"application/pdf\"));\nawait _mailer.SendAsync(message, cancellationToken);\nawait _mailAuditLog.RecordSentAsync(message.Id, cancellationToken);" }},
-                  { id: 'frag-record-history', label: '送信履歴を記録する', lines: 3, responsibility: 'storage', suggestedName: 'recordHistory' , code: { csharp: "var history = new InvoiceDeliveryHistory(invoice.Number, recipient, DateTimeOffset.UtcNow);\nawait _historyRepository.AddAsync(history, cancellationToken);\nawait _unitOfWork.CommitAsync(cancellationToken);" }},
+                  { id: 'frag-attach-mail', label: '請求書をメールに添付して送る', lines: 7, responsibility: 'notification', suggestedName: 'mailInvoice' , code: { csharp: "var key = $\"invoices/{invoice.Number}.pdf\";\nvar subject = $\"請求書 {invoice.Number} のご案内\";\nawait using var pdf = await _storage.DownloadAsync(key, cancellationToken);\nvar message = new MailMessage(recipient, subject, body);\nmessage.Attachments.Add(new Attachment(pdf, $\"{invoice.Number}.pdf\", \"application/pdf\"));\nawait _mailer.SendAsync(message, cancellationToken);\nawait _mailAuditLog.RecordSentAsync(message.Id, cancellationToken);" }},
+                  { id: 'frag-record-history', label: '送信履歴を記録する', lines: 4, responsibility: 'storage', suggestedName: 'recordHistory' , code: { csharp: "var history = new InvoiceDeliveryHistory(invoice.Number, recipient, DateTimeOffset.UtcNow);\nawait _historyRepository.AddAsync(history, cancellationToken);\nawait _unitOfWork.CommitAsync(cancellationToken);\n_logger.LogInformation(\"請求書 {Number} の送信履歴を記録しました\", invoice.Number);" }},
                 ],
               },
             ],

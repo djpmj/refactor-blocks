@@ -111,12 +111,12 @@ function MethodContents({ method, codebase }: Readonly<{ method: Method; codebas
   return (
     <li className="change-inspect__method" data-testid={`change-inspect-${method.name}`}>
       <h3 className="change-inspect__title">
-        {findClassOfMethod(codebase, method.id)?.name}.{method.name}() — {methodLines(method)}行
+        {findClassOfMethod(codebase, method.id)?.name}.{method.name}() — {methodLines(method, codebase)}行
       </h3>
       <ul className="change-inspect__fragments">
         {method.fragments.map((fragment) => (
           <li key={fragment.id}>
-            {fragment.label}({fragmentLines(fragment)}行)
+            {fragment.label}({fragmentLines(fragment, codebase)}行)
           </li>
         ))}
       </ul>

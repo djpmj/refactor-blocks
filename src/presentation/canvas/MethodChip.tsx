@@ -23,8 +23,15 @@ type MethodChipViewProps = {
 
 type MethodLinePreview = { readonly before: number; readonly after: number; readonly afterOverLimit: boolean };
 
+function useMethodOverLimit(method: Method): boolean {
+  const codebase = useGameStore((state) => state.codebase);
+  const limit = useGameStore((state) => state.stage.limits.method);
+  return methodLines(method, codebase) > limit;
+}
+
 function MethodChipLineCount({ method, preview }: Readonly<{ method: Method; preview: MethodLinePreview | undefined }>) {
-  if (preview === undefined) return <span className="method-chip__lines">{methodLines(method)}行</span>;
+  const codebase = useGameStore((state) => state.codebase);
+  if (preview === undefined) return <span className="method-chip__lines">{methodLines(method, codebase)}行</span>;
   return <span className="method-chip__lines"><span className="method-chip__lines-before">{preview.before}行</span> → <span className={preview.afterOverLimit ? 'method-chip__lines-after method-chip__lines-after--over' : 'method-chip__lines-after'}>{preview.after}行</span></span>;
 }
 
@@ -69,7 +76,7 @@ function useManualFixMark(methodId: string) {
  */
 export function MethodChip({ method, linePreview }: Readonly<{ method: Method; linePreview?: MethodLinePreview }>) {
   const resolved = useResolvedCelebration('methodIds', method.id);
-  const limit = useGameStore((state) => state.stage.limits.method);
+  const overLimit = useMethodOverLimit(method);
   const flagged = useGameStore((state) => {
     const rule = state.focusedRule ?? (state.hintTarget === null ? state.previewRule : null);
     return rule !== null ? violationTargets(state.codebase, state.stage)[rule].methodIds.includes(method.id) : state.hintTarget?.methodIds.includes(method.id) ?? false;
@@ -128,7 +135,7 @@ export function MethodChip({ method, linePreview }: Readonly<{ method: Method; l
       aria-pressed={manualFixing ? fixed : undefined}
       title={manualFixing ? BLOCK_OPERATION_TITLES.manualFix : BLOCK_OPERATION_TITLES.method}
     >
-      <MethodChipView method={method} overLimit={methodLines(method) > limit} selected={selected} changeCount={changeCount} flagged={flagged} fixed={fixed} linePreview={linePreview} />
+      <MethodChipView method={method} overLimit={overLimit} selected={selected} changeCount={changeCount} flagged={flagged} fixed={fixed} linePreview={linePreview} />
     </button>
   );
 }

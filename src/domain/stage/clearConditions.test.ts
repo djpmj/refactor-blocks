@@ -53,7 +53,7 @@ describe('worstMeasures', () => {
     const measures = worstMeasures(codebase, { limits: { method: 20, class: 100, file: 27 }, dependencyLimit: 0, responsibilityLimit: 2 });
 
     // Assert
-    expect(measures).toEqual({ method: 27, file: 30, responsibilities: 3 });
+    expect(measures).toEqual({ method: 29, file: 32, responsibilities: 3 });
   });
 
   it('上限内なら値を返さない', () => {
@@ -61,7 +61,7 @@ describe('worstMeasures', () => {
     const codebase = sampleCodebase();
 
     // Act
-    const measures = worstMeasures(codebase, { limits: { method: 27, class: 30, file: 30 }, dependencyLimit: 1, responsibilityLimit: 3 });
+    const measures = worstMeasures(codebase, { limits: { method: 29, class: 32, file: 32 }, dependencyLimit: 1, responsibilityLimit: 3 });
 
     // Assert
     expect(measures).toEqual({});
@@ -111,7 +111,7 @@ describe('worstMeasures', () => {
     const measures = worstMeasures(codebase, { limits: { method: 20, class: 30, file: 50 }, dependencyLimit: 1, responsibilityLimit: 2 });
 
     // Assert
-    expect(measures).toEqual({ method: 43, class: 46, file: 94, dependencies: 3, responsibilities: 4 });
+    expect(measures).toEqual({ method: 46, class: 49, file: 97, dependencies: 3, responsibilities: 4 });
     expect(worstMeasures(codebase, { limits: { method: 100, class: 100, file: 200 }, dependencyLimit: 3, responsibilityLimit: 4 })).toEqual({});
   });
 

@@ -130,7 +130,7 @@ describe('mergeMethods', () => {
     if (!result.ok) throw new Error(result.error);
     const mergedFragment = findMethod(result.value, 'method-merged')?.fragments[0];
     expect(mergedFragment?.code?.csharp).toBe(duplicateCode);
-    expect(mergedFragment === undefined ? undefined : fragmentLines(mergedFragment)).toBe(2);
+      expect(mergedFragment === undefined ? undefined : fragmentLines(mergedFragment)).toBe(3);
   });
 
   it('統合後のFragmentのreads/writesはA/Bの和集合になる', () => {

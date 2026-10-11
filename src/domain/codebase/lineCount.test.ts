@@ -1,10 +1,34 @@
 import { describe, expect, it } from 'vitest';
+import type { Codebase } from './Codebase';
 import { classLines, fileLines, fragmentLines, methodLines } from './lineCount';
 import { tutorialStages } from '../../infrastructure/stages/tutorialStages';
 import { generateClassSource } from './generateClassSource';
 import { sampleCodebase } from './testFixtures';
 
 describe('lineCount', () => {
+  it('counts label comments for code and blank lines between fragments', () => {
+    const fragments = [
+      { id: 'a', label: 'a', lines: 2, responsibility: 'x', code: { csharp: 'one\ntwo' } },
+      { id: 'b', label: 'b', lines: 3, responsibility: 'x', code: { csharp: 'one\ntwo\nthree' } },
+      { id: 'c', label: 'c', lines: 4, responsibility: 'x' },
+    ] as const;
+    const method = { id: 'm', name: 'run', visibility: 'public' as const, fragments };
+
+    expect(fragmentLines(fragments[0])).toBe(3);
+    expect(fragmentLines(fragments[2])).toBe(4);
+    expect(methodLines(method)).toBe(16);
+  });
+
+  it('counts inferred call fragments as a call line plus a label comment', () => {
+    const codebase: Codebase = { files: [{ id: 'f', path: 'x', classes: [{ id: 'c', name: 'Thing', methods: [
+      { id: 'caller', name: 'run', visibility: 'public', fragments: [{ id: 'call', label: 'do work', lines: 1, responsibility: 'call', uses: ['target'] }] },
+      { id: 'target', name: 'work', visibility: 'private', fragments: [] },
+    ] }] }] };
+
+    expect(fragmentLines(codebase.files[0].classes[0].methods[0].fragments[0], codebase)).toBe(2);
+    expect(methodLines(codebase.files[0].classes[0].methods[0], codebase)).toBe(5);
+  });
+
   it('コードがないメソッドの行数は処理の行数の合計にシグネチャと波括弧の3行を足したもの', () => {
     // Arrange
     const method = sampleCodebase().files[0].classes[0].methods[0];
@@ -13,7 +37,7 @@ describe('lineCount', () => {
     const lines = methodLines(method);
 
     // Assert
-    expect(lines).toBe(10 + 8 + 6 + 3);
+    expect(lines).toBe(10 + 8 + 6 + 3 + 2);
   });
 
   it('コードがあるFragmentは登録値ではなくコードの行数を数える', () => {
@@ -24,7 +48,7 @@ describe('lineCount', () => {
     const lines = fragmentLines(codeFragment);
 
     // Assert
-    expect(lines).toBe(3);
+    expect(lines).toBe(4);
   });
 
   it('コードがないFragmentは登録された行数を使う', () => {
@@ -46,7 +70,7 @@ describe('lineCount', () => {
     const lines = fragmentLines(codeFragment);
 
     // Assert
-    expect(lines).toBe(4);
+    expect(lines).toBe(5);
   });
 
   it('コードを持つメソッドは実コード行数に3行のオーバーヘッドを足す', () => {
@@ -57,7 +81,7 @@ describe('lineCount', () => {
     const lines = methodLines(method);
 
     // Assert
-    expect(lines).toBe(4);
+    expect(lines).toBe(5);
   });
 
   it('メソッド間に空行を1行含めてクラスの行数を数える', () => {
@@ -74,7 +98,7 @@ describe('lineCount', () => {
     const lines = classLines(codeClass);
 
     // Assert
-    expect(lines).toBe(3 + 4 + 5 + 1);
+    expect(lines).toBe(15);
   });
 
   it('メソッドが0個または1個のクラスにメソッド間の空行を加えない', () => {
@@ -88,7 +112,7 @@ describe('lineCount', () => {
 
     // Assert
     expect(emptyLines).toBe(3);
-    expect(oneMethodLines).toBe(30);
+    expect(oneMethodLines).toBe(32);
   });
 
   it('チュートリアル1のクラス行数を生成コードの行数に合わせる', () => {
@@ -99,12 +123,12 @@ describe('lineCount', () => {
     const source = generateClassSource(codebase, codeClass.id, 'csharp');
 
     // Act
-    const lines = classLines(codeClass);
+    const lines = classLines(codeClass, codebase);
 
     // Assert
     expect(lines).toBe(source.split('\n').length);
-    expect(lines).toBe(33);
-    expect(methodLines(method)).toBe(30);
+    expect(lines).toBe(42);
+    expect(methodLines(method, codebase)).toBe(39);
   });
 
   it('クラスの行数はメソッドの行数の合計にクラス宣言と波括弧の3行を足したもの', () => {
@@ -115,7 +139,7 @@ describe('lineCount', () => {
     const lines = classLines(codeClass);
 
     // Assert
-    expect(lines).toBe(27 + 3);
+    expect(lines).toBe(29 + 3);
   });
 
   it('メソッドのない空クラスは宣言と波括弧の3行だけ', () => {

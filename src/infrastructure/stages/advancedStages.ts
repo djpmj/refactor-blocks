@@ -45,8 +45,8 @@ const notifierHierarchyStage: Stage = {
   goal:
     '重複した「送信ログを記録する」処理をExtract Methodで取り出し、メソッドエディタの「似た処理を持つメソッド」から統合してNotifierBaseへ移そう。' +
     '「通知文を組み立てる」処理はチャネルごとに違う本物の実装なので、それぞれのクラスに残したままでよい。' +
-    '最後にEmailNotifier・SmsNotifierの継承元をNotifierBaseに設定しよう。メソッドは8行以内、1クラスの責務は2種類まで',
-  limits: { method: 8, class: 19, file: 20 },
+    '最後にEmailNotifier・SmsNotifierの継承元をNotifierBaseに設定しよう。メソッドは13行以内、1クラスの責務は2種類まで',
+  limits: { method: 13, class: 24, file: 25 },
   dependencyLimit: 2,
   responsibilityLimit: 2,
   changeRequests: [
@@ -155,8 +155,8 @@ const paymentGatewayInterfaceStage: Stage = {
   goal:
     'StripeGateway・PaypalGateway の charge を、Extract Methodで責務(API呼び出し/ログ記録)ごとに分け、PaymentGateway を実装(implements)するよう設定しよう。' +
     'StripeGateway・PaypalGatewayの中身がどう変わっても、PaymentServiceの依存先は最初から最後まで PaymentGateway 1つのまま変わらない。上級3(方針を増やすほど依存も増える)と見比べてみよう。' +
-    'メソッドは9行以内、1クラスの責務は3種類まで。実装を宣言していないと約束違反になる。',
-  limits: { method: 9, class: 250, file: 400 },
+    'メソッドは11行以内、1クラスの責務は3種類まで。実装を宣言していないと約束違反になる。',
+  limits: { method: 11, class: 250, file: 400 },
   dependencyLimit: 1,
   // stripe-config/paypal-configは各ゲートウェイに残る正当な3つ目の責務(このステージの狙いと無関係なため違反にしない)。
   responsibilityLimit: 3,
@@ -314,8 +314,8 @@ const discountStrategyStage: Stage = {
     'calculateメソッドの型だけを宣言した DiscountStrategy は用意されているが、まだどのクラスとも実装関係で結ばれていない。',
   goal:
     '3つの割引ロジックを、それぞれ新しく作るクラス(RegularDiscount/PremiumDiscount/VipDiscount)へ切り出し、' +
-    'どのクラスも DiscountStrategy を実装(implements)するよう設定しよう。上級1・2とは違い、受け皿は1つに集約せず3つに分ける。メソッドは11行以内、1クラスは14行・ファイルは15行以内、1クラスの責務は2種類まで',
-  limits: { method: 11, class: 14, file: 15 },
+    'どのクラスも DiscountStrategy を実装(implements)するよう設定しよう。上級1・2とは違い、受け皿は1つに集約せず3つに分ける。メソッドは18行以内、1クラスは21行・ファイルは22行以内、1クラスの責務は2種類まで',
+  limits: { method: 18, class: 21, file: 22 },
   // 模範解答は3つの具象クラスをそれぞれ呼ぶため常に3依存になる。結合度の改善はこのステージの狙いではない(仕様書参照)。
   dependencyLimit: 3,
   responsibilityLimit: 2,
@@ -408,8 +408,8 @@ const reportFactoryStage: Stage = {
     '空のクラス ReportFactory は用意されているが、まだどちらのクラスからも使われていない。',
   goal:
     '重複した「レポートオブジェクトを組み立てる」処理をExtract Methodで取り出し、メソッドエディタの「似た処理を持つメソッド」から統合してReportFactoryへ移そう。' +
-    '上級1と違い、継承(継承元の設定)は使わない。別クラスへ処理を任せる(委譲)だけで解けるはず。メソッドは11行以内、1クラスの責務は2種類まで',
-  limits: { method: 11, class: 14, file: 15 },
+    '上級1と違い、継承(継承元の設定)は使わない。別クラスへ処理を任せる(委譲)だけで解けるはず。メソッドは15行以内、1クラスの責務は2種類まで',
+  limits: { method: 15, class: 18, file: 21 },
   dependencyLimit: 1,
   responsibilityLimit: 2,
   changeRequests: [
@@ -653,7 +653,7 @@ const interfaceSegregationStage: Stage = {
   goal:
     'CollaborationTool を、投稿の役割(ChatClient)とタスク管理の役割(TaskTracker)に分けよう。各クラスには本当に使うインターフェースだけを実装させ、' +
     '両方できる ChatworkClient には両方を実装させよう。要らなくなった空実装は、メソッドエディタの「空実装のメソッドを削除」で消そう。依存先は1クラスまで',
-  limits: { method: 12, class: 23, file: 24 },
+  limits: { method: 16, class: 26, file: 27 },
   dependencyLimit: 1,
   // 空実装の責務でresponsibilityとstubが二重に減点されないよう、実装クラスは空実装込みで最大3種類までにする。
   responsibilityLimit: 3,
@@ -931,8 +931,8 @@ const valueObjectStage: Stage = {
     '「金額が0より大きく対応している通貨か」「同じ通貨どうしで合計する」「通貨ごとの小数桁で表示する」を、それぞれコピペで持っている。',
   goal:
     '金額と通貨をひとまとまりの値(Money)として扱おう。コピペされた処理は抽出して統合(Merge Methods)し、amount・currency と一緒に新しい Money クラスへ移す。' +
-    'Money は自分で自分を検証し、足し算や表示も自分でする(値オブジェクト)。Expense に直接入れるのではなく、別のクラスにしよう。メソッドは13行・クラスは23行以内、1クラスの責務は3種類まで、依存先は2クラスまで',
-  limits: { method: 13, class: 23, file: 24 },
+    'Money は自分で自分を検証し、足し算や表示も自分でする(値オブジェクト)。Expense に直接入れるのではなく、別のクラスにしよう。メソッドは19行・クラスは26行以内、1クラスの責務は3種類まで、依存先は2クラスまで',
+  limits: { method: 19, class: 26, file: 27 },
   dependencyLimit: 2,
   responsibilityLimit: 3,
   changeRequests: [
@@ -1165,11 +1165,11 @@ const templateMethodStage: Stage = {
   /** 100点になったときに見せる、この題材で分ける理由。 */
   why: '取込手順の共通部分と形式ごとの違いが混ざると、形式追加のたびに既存の手順全体を編集することになります。共通の流れと形式固有の処理が分かれていれば、追加箇所が明確になります。',
   description: 'ネットショップの注文取り込み。取引先ごとに CSV と JSON で注文ファイルが届き、CsvOrderImporter と JsonOrderImporter が「ファイルを読み込む → 注文データに変換する → 検証する → 保存する」をそれぞれ持っている。違うのは変換だけで、残りの3手順はコピペ。OrderImporter には parse の宣言(中身のない protected メソッド)だけが用意されている。',
-  goal: '共通の3手順は抽出して統合し OrderImporter へ移そう。変換だけは子に parse として残し、OrderImporter を継承させてから parse を protected にしよう。最後に呼び出しだけになった2つの importOrders も統合して OrderImporter へ移そう。上級1と違い、親が手順を持ち、子は違う1手順だけを書く。メソッドは13行以内、1クラスの責務は3種類まで、依存先は1クラスまで',
+  goal: '共通の3手順は抽出して統合し OrderImporter へ移そう。変換だけは子に parse として残し、OrderImporter を継承させてから parse を protected にしよう。最後に呼び出しだけになった2つの importOrders も統合して OrderImporter へ移そう。上級1と違い、親が手順を持ち、子は違う1手順だけを書く。メソッドは16行以内、1クラスの責務は3種類まで、依存先は1クラスまで',
   limits: {
-    method: 13,
-    class: 35,
-    file: 36,
+    method: 16,
+    class: 46,
+    file: 47,
   },
   dependencyLimit: 1,
   responsibilityLimit: 3,
