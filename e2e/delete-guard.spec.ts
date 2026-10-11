@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { selectStage } from './selectStage.js';
 
 async function openStage(page: Page, label: string) {
@@ -6,15 +6,33 @@ async function openStage(page: Page, label: string) {
   await selectStage(page, label);
 }
 
+async function stableBoundingBox(page: Page, locator: Locator) {
+  let previous = await locator.boundingBox();
+  const deadline = Date.now() + 3000;
+  while (Date.now() < deadline) {
+    await page.waitForTimeout(50);
+    const current = await locator.boundingBox();
+    if (previous !== null && current !== null && current.x === previous.x && current.y === previous.y) return current;
+    previous = current;
+  }
+  return previous;
+}
+
 async function dragMethodToEmptyCanvas(page: Page, methodId: string) {
-  const source = await page.getByTestId(methodId).boundingBox();
-  const pane = await page.locator('.react-flow__pane').boundingBox();
+  const source = await stableBoundingBox(page, page.getByTestId(methodId));
+  const pane = await stableBoundingBox(page, page.locator('.react-flow__pane'));
+  const file = await stableBoundingBox(page, page.getByTestId('file-src/notification/NotificationService.ts'));
   if (source === null || pane === null) throw new Error('要素の位置を取得できません');
   await page.mouse.move(source.x + source.width / 2, source.y + source.height / 2);
   await page.mouse.down();
   await page.mouse.move(source.x + source.width / 2 + 20, source.y + source.height / 2, { steps: 5 });
-  await page.mouse.move(pane.x + pane.width - 20, pane.y + pane.height - 20, { steps: 15 });
+  await expect(page.locator('.drag-overlay')).toBeVisible();
+  if (file === null) throw new Error('File position unavailable');
+  await page.mouse.move(file.x + file.width - 20, file.y + 20, { steps: 15 });
   await page.mouse.up();
+  await page.waitForTimeout(300);
+  await page.getByRole('button', { name: 'Fit View' }).click();
+  await expect(page.locator('.drag-overlay')).toHaveCount(0);
 }
 
 async function clickInCanvas(page: Page, testId: string) {
@@ -144,13 +162,29 @@ test('public の横流しメソッドが残るクラスは処理を呼び出し�
   await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
   await dragMethodToEmptyCanvas(page, 'method-gatherNotificationInfo');
   const visibility = page.getByLabel('メソッド gatherNotificationInfo の可視性');
-  await clickInCanvas(page, 'method-gatherNotificationInfo');
+  const extractedMethod = page.getByTestId('method-gatherNotificationInfo');
+  await expect(extractedMethod).toHaveCount(1);
+  await expect(extractedMethod).toBeVisible();
+  await stableBoundingBox(page, extractedMethod);
+  const clickPoint = await extractedMethod.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    for (const ratio of [0.2, 0.8]) {
+      const x = rect.left + rect.width * ratio;
+      const y = rect.top + rect.height / 2;
+      const hit = element.ownerDocument.elementFromPoint(x, y);
+      if (hit !== null && element.contains(hit)) return { x, y };
+    }
+    return null;
+  });
+  if (clickPoint === null) throw new Error('No exposed point for extracted method');
+  await page.mouse.click(clickPoint.x, clickPoint.y);
   await expect(visibility).toBeVisible();
   await visibility.selectOption('public');
-  await page.getByTestId('class-header-NewClass').click({ button: 'right' });
+  const extractedClass = page.getByTestId('class-InvoiceMailer');
+  await extractedClass.locator('[data-testid^="class-header-"]').click({ button: 'right' });
   await page.getByTestId('context-menu').getByRole('menuitem', { name: 'クラスを削除' }).click();
 
-  await expect(page.getByTestId('class-NewClass')).toHaveCount(0);
+  await expect(extractedClass).toHaveCount(0);
   await expect(page.getByTestId('method-gatherNotificationInfo')).toHaveCount(0);
   await clickInCanvas(page, 'method-notifyShipment');
   await page.getByRole('tab', { name: 'コード' }).click();

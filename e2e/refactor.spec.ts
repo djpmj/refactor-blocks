@@ -104,12 +104,14 @@ async function openExtractClassStage(page: Page) {
  * 古い位置へドラッグしてしまい失敗することがある(連続でMove Methodするテストで発生)。
  * 位置が2回連続で同じになるまで待ってから返す。
  */
-async function stableBoundingBox(page: Page, testId: string) {
+async function stableBoundingBox(page: Page, target: string | Locator) {
+  const testId = typeof target === 'string' ? target : 'locator';
+  const locator = typeof target === 'string' ? page.getByTestId(target) : target;
   const deadline = Date.now() + 3000;
-  let previous = await page.getByTestId(testId).boundingBox();
+  let previous = await locator.boundingBox();
   while (Date.now() < deadline) {
     await page.waitForTimeout(50);
-    const current = await page.getByTestId(testId).boundingBox();
+    const current = await locator.boundingBox();
     if (previous !== null && current !== null && current.x === previous.x && current.y === previous.y) return current;
     previous = current;
   }
@@ -171,14 +173,15 @@ async function clickMethodInView(page: Page, methodId: string) {
 }
 
 /** ドラッグ操作(Move Method)で、あるメソッドを別クラスへ移す。 */
-async function dragMethodToClass(page: Page, methodTestId: string, classTestId: string) {
+async function dragMethodToClass(page: Page, methodTestId: string, classTarget: string | Locator) {
+  const classLocator = typeof classTarget === 'string' ? page.getByTestId(classTarget) : classTarget;
   const from = await stableBoundingBox(page, methodTestId);
-  const to = await stableBoundingBox(page, classTestId);
+  const to = await stableBoundingBox(page, classLocator);
   await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
   await page.mouse.down();
   await page.mouse.move(from.x + from.width / 2 + 20, from.y + from.height / 2, { steps: 5 });
   await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 15 });
-  await expect(page.getByTestId(classTestId)).toHaveClass(/class-node--drop-target/);
+  await expect(classLocator).toHaveClass(/class-node--drop-target/);
   await page.mouse.up();
   // ドロップ後のアニメーション中は、同じ見た目の DragOverlay が移した先のメソッドに重なり、クリックを奪う
   await expect(page.locator('.drag-overlay')).toHaveCount(0);
@@ -573,7 +576,7 @@ test('クラスとファイルを追加し、クラスを新しいファイル�
   // クラスノードはファイルノードのDOMの子にならないため、空ファイルの案内の有無で移動先を確かめる
   const emptyFileHint = page.getByText('ここにクラスをドロップ');
   await expect(emptyFileHint).toHaveCount(1);
-  const source = page.getByTestId('class-header-Mailer');
+  const source = page.getByTestId('class-header-NewClass');
   const target = page.getByTestId('file-src/NewFile.ts');
   await expect(source).toBeVisible();
   await expect(target).toBeVisible();
@@ -589,7 +592,7 @@ test('クラスとファイルを追加し、クラスを新しいファイル�
   await page.mouse.up();
 
   // Assert
-  await expect(page.getByTestId('class-Mailer')).toHaveCount(1);
+  await expect(page.getByTestId('class-NewClass')).toHaveCount(1);
   await expect(emptyFileHint).toHaveCount(0);
 });
 
@@ -611,7 +614,7 @@ test('追加した空ファイルへメソッドをドラッグすると、新�
   await page.mouse.up();
 
   // Assert
-  await expect(page.getByTestId('class-NewClass').getByTestId('method-placeOrder')).toBeVisible();
+  await expect(page.getByTestId('class-Validator').getByTestId('method-placeOrder')).toBeVisible();
   await expect(target).toBeVisible();
 });
 
@@ -680,7 +683,7 @@ test('メソッドを右クリックしてメニューから、そのクラス�
   await menu.getByLabel('追加するクラス名').press('Enter');
 
   // Assert
-  await expect(page.getByTestId('class-OrderValidator')).toBeVisible();
+  await expect(page.getByTestId('class-NewClass')).toBeVisible();
   await expect(menu).toHaveCount(0);
 });
 
@@ -876,7 +879,7 @@ test('上級3で3クラスがDiscountStrategyを実装すると、終点が分�
   // Arrange: 上級3の DiscountService と同じファイルに3つの実装クラスを作る
   await page.goto('/');
   await selectStage(page, '上級3: 会員ランクの割引をStrategyパターンへ組み替える');
-  const classNames = ['RegularDiscount', 'PremiumDiscount', 'VipDiscount'];
+  const classNames = ['NewClass', 'NewClass2', 'NewClass3'];
   for (const className of classNames) {
     await addClassFromMenu(page, 'calculateDiscount', className);
   }
@@ -933,17 +936,17 @@ test('1つのクラスに2つのインターフェースを実装すると"imple
 
   // Act(2つ実装する)
   await menu.getByRole('menuitemcheckbox', { name: 'OrderService' }).click();
-  await menu.getByRole('menuitemcheckbox', { name: 'Extra' }).click();
+  await menu.getByRole('menuitemcheckbox', { name: /^NewClass\d*$/ }).click();
 
   // Assert
-  await expect(page.getByTestId('class-TaxCalculator')).toContainText('implements OrderService, Extra');
+  await expect(page.getByTestId('class-TaxCalculator')).toContainText('implements OrderService, NewClass');
   await expect(page.locator('[data-testid^="rf__edge-inherit-class-tax-calculator-"]')).toHaveCount(2);
 
   // Act(1つ外す)
   await menu.getByRole('menuitemcheckbox', { name: 'OrderService' }).click();
 
   // Assert
-  await expect(page.getByTestId('class-TaxCalculator')).toContainText('implements Extra');
+  await expect(page.getByTestId('class-TaxCalculator')).toContainText('implements NewClass');
   await expect(page.getByTestId('class-TaxCalculator')).not.toContainText('OrderService');
   await expect(page.locator('[data-testid^="rf__edge-inherit-class-tax-calculator-"]')).toHaveCount(1);
 });
@@ -1326,12 +1329,12 @@ test('上級2: PayPay の追加は、新しいクラスで PaymentGateway を実
 
   // Act(1件目: 余白へ出して PaymentGateway を実装する。charge という同名メソッドが他にもあるので部品置き場の中に絞る)
   await dragToEmptyCanvas(page, page.getByTestId('class-部品置き場').getByTestId('method-charge'));
-  await page.getByTestId('class-header-NewClass').click({ button: 'right' });
+  await page.getByTestId('class-header-GatewayIntegrationHandler').click({ button: 'right' });
   const menu = page.getByTestId('context-menu');
   await menu.getByRole('menuitem', { name: '実装するインターフェースを設定' }).click();
   await menu.getByRole('menuitemcheckbox', { name: 'PaymentGateway' }).click();
   await page.keyboard.press('Escape');
-  await expect(page.getByTestId('class-NewClass')).toContainText('implements PaymentGateway');
+  await expect(page.getByTestId('class-GatewayIntegrationHandler')).toContainText('implements PaymentGateway');
   await finishRequest(page);
   // 2件目: 余白へ出すだけ(どこからも呼ばれない)
   await dragToEmptyCanvas(page, 'method-logRetryCount');
@@ -1358,12 +1361,12 @@ test('依頼1で作った新しいクラスは、依頼2のキャンバスにも
 
   // Act(1件目: 余白へ出して新しいクラスを作り、終える。charge という同名メソッドが他にもあるので部品置き場の中に絞る)
   await dragToEmptyCanvas(page, page.getByTestId('class-部品置き場').getByTestId('method-charge'));
-  await expect(page.getByTestId('class-NewClass')).toBeVisible();
+  await expect(page.getByTestId('class-GatewayIntegrationHandler')).toBeVisible();
   await finishRequest(page);
 
   // Assert(2件目のキャンバスに、1件目で作ったクラスとメソッドが残っている)
   await expect(page.getByTestId('change-request-title')).not.toHaveText('PayPayでも払えるようにして');
-  await expect(page.getByTestId('class-NewClass').getByTestId('method-charge')).toBeVisible();
+  await expect(page.getByTestId('class-GatewayIntegrationHandler').getByTestId('method-charge')).toBeVisible();
 });
 
 test('ファイルの箱をドラッグして位置をずらせる', async ({ page }) => {
@@ -1389,12 +1392,13 @@ test('ファイルの箱をドラッグして位置をずらせる', async ({ pa
 /** 要素をつかんで、キャンバスの右下の余白(どのファイルの枠外)へドラッグして離す。testIdの文字列か、絞り込み済みのLocatorを渡せる。 */
 async function dragToEmptyCanvas(page: Page, target: string | Locator) {
   const locator = typeof target === 'string' ? page.getByTestId(target) : target;
-  const from = await locator.boundingBox();
-  const pane = await page.locator('.react-flow__pane').boundingBox();
+  const from = await stableBoundingBox(page, locator);
+  const pane = await stableBoundingBox(page, page.locator('.react-flow__pane'));
   if (from === null || pane === null) throw new Error('要素の位置を取得できません');
   await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
   await page.mouse.down();
   await page.mouse.move(from.x + from.width / 2 + 20, from.y + from.height / 2, { steps: 5 });
+  await expect(page.locator('.drag-overlay')).toBeVisible();
   await page.mouse.move(pane.x + pane.width - 20, pane.y + pane.height - 20, { steps: 15 });
   await page.mouse.up();
   await page.getByRole('button', { name: 'Fit View' }).click();
@@ -1439,7 +1443,7 @@ test('メソッドをファイルの枠外へドラッグすると、新しい�
   await dragToEmptyCanvas(page, 'method-calculateTax');
 
   // Assert
-  await expect(page.getByTestId('class-NewClass').getByTestId('method-calculateTax')).toBeVisible();
+  await expect(page.getByTestId('class-OrderTaxCalculator').getByTestId('method-calculateTax')).toBeVisible();
   await expect(page.getByTestId('file-src/NewClass.ts')).toBeVisible();
 });
 
@@ -1958,14 +1962,15 @@ test('中級8: 住所のフィールドとメソッドを新しいクラスへ�
   await menu.getByRole('menuitem', { name: 'このファイルにクラスを追加' }).click();
   await menu.getByLabel('追加するクラス名').fill('Address');
   await menu.getByLabel('追加するクラス名').press('Enter');
-  await expect(page.getByTestId('class-Address')).toBeVisible();
+  await expect(page.getByTestId('class-NewClass')).toBeVisible();
 
   // Act: 住所の3フィールドと2メソッドをAddressへドラッグする
-  await dragMethodToClass(page, 'field-postalCode', 'class-Address');
-  await dragMethodToClass(page, 'field-prefecture', 'class-Address');
-  await dragMethodToClass(page, 'field-addressLine', 'class-Address');
-  await dragMethodToClass(page, 'method-formatMailingAddress', 'class-Address');
-  await dragMethodToClass(page, 'method-changeAddress', 'class-Address');
+  const addressClass = page.locator('.class-node').filter({ has: page.getByTestId('field-postalCode') });
+  await dragMethodToClass(page, 'field-postalCode', 'class-NewClass');
+  await dragMethodToClass(page, 'field-prefecture', addressClass);
+  await dragMethodToClass(page, 'field-addressLine', addressClass);
+  await dragMethodToClass(page, 'method-formatMailingAddress', addressClass);
+  await dragMethodToClass(page, 'method-changeAddress', addressClass);
 
   // Assert
   await expect(score).not.toContainText('無関係なデータの塊が同居(凝集度が低い)');

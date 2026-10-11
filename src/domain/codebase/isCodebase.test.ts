@@ -34,6 +34,17 @@ function codebaseWith(patch: Patch): unknown {
 }
 
 describe('isCodebase', () => {
+  it('autoNamed は true のみを許し、省略時は有効なまま', () => {
+    // Arrange
+    const marked = codebaseWith({ codeClass: { autoNamed: true } });
+    const invalid = codebaseWith({ codeClass: { autoNamed: false } });
+
+    // Act / Assert
+    expect(isCodebase(marked)).toBe(true);
+    expect(isCodebase(invalid)).toBe(false);
+    expect(isCodebase(codebaseWith({}))).toBe(true);
+  });
+
   it('既存の全ステージの初期コードは true', () => {
     // Arrange
     const all = stages.map((stage) => stage.codebase);

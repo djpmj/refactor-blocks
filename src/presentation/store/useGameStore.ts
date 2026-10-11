@@ -5,6 +5,7 @@ import { describeCritiqueError, requestCritiqueUseCase } from '../../application
 import { withoutTray } from '../../domain/blank/tray';
 import { withChangePart } from '../../domain/change/changePart';
 import { findField, findMethod, type Codebase, type Visibility } from '../../domain/codebase/Codebase';
+import { autoNameClasses } from '../../domain/codebase/autoNameClasses';
 import { emptyHistory, recordChange, redoHistory, undoHistory, type History, type Travel } from '../../domain/codebase/history';
 import { scoreCodebase, type ScoreRule } from '../../domain/scoring/score';
 import { resolvedTargets } from '../../domain/scoring/resolvedTargets';
@@ -241,10 +242,11 @@ function celebrationFor(state: GameState, codebase: Codebase, enabled: boolean):
 
 function commit(state: GameState, codebase: Codebase, celebrate = true): Partial<GameState> {
   if (codebase === state.codebase) return {};
-  const fieldStillThere = state.selectedFieldId !== null && findField(codebase, state.selectedFieldId) !== undefined;
-  const celebration = celebrationFor(state, codebase, celebrate);
+  const namedCodebase = autoNameClasses(codebase, state.stage.classNames);
+  const fieldStillThere = state.selectedFieldId !== null && findField(namedCodebase, state.selectedFieldId) !== undefined;
+  const celebration = celebrationFor(state, namedCodebase, celebrate);
   return {
-    codebase,
+    codebase: namedCodebase,
     ...(celebration === undefined ? {} : { celebration }),
     extractDraft: null,
     ghost: null,

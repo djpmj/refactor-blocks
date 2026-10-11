@@ -2,6 +2,11 @@
 
 /** チュートリアル1: Extract Method だけで解ける。まとまった処理を1つ抜き出せば行数の上限に収まる。 */
 const extractMethodStage: Stage = {
+  classNames: {
+    "aggregation": "AggregationHandler",
+    "formatting": "FormattingHandler",
+    "output": "OutputHandler",
+  },
   id: 'tutorial-extract-method',
   problem: 'placeOrderに検証と保存がまとまっている',
   level: 'tutorial',
@@ -73,6 +78,13 @@ const extractMethodStage: Stage = {
 
 /** チュートリアル2: 注文処理が1メソッドに詰め込まれた OrderService を分解し、税の計算を別クラスへ移す。 */
 const orderServiceStage: Stage = {
+  classNames: {
+    "validation": "Validator",
+    "pricing": "PriceCalculator",
+    "tax": "OrderTaxCalculator",
+    "persistence": "Repository",
+    "notification": "InvoiceMailer",
+  },
   id: 'tutorial-order-service',
   problem: '注文処理の中に税計算が含まれている',
   level: 'tutorial',

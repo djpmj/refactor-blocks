@@ -9,6 +9,12 @@
  * 中身が本質的に違うので、統合せず各クラスに残したまま Move Method で共通の受け皿には集めない。
  */
 const notifierHierarchyStage: Stage = {
+  classNames: {
+    "formatting": "FormattingHandler",
+    "logging": "LoggingHandler",
+    "email-delivery": "EmailDeliveryHandler",
+    "sms-delivery": "SmsDeliveryHandler",
+  },
   id: 'advanced-notifier-hierarchy',
   problem: '通知方式ごとに共通手順が重複している',
   level: 'advanced',
@@ -118,6 +124,14 @@ const notifierHierarchyStage: Stage = {
  * 実装数に比例して増える)との対比になる(詳細: docs/specs/payment-gateway-true-dip.md)。
  */
 const paymentGatewayInterfaceStage: Stage = {
+  classNames: {
+    "validation": "Validator",
+    "gateway-dispatch": "GatewayDispatchHandler",
+    "gateway-integration": "GatewayIntegrationHandler",
+    "payment-logging": "PaymentLoggingHandler",
+    "stripe-config": "StripeConfigHandler",
+    "paypal-config": "PaypalConfigHandler",
+  },
   id: 'advanced-payment-gateway-interface',
   problem: '決済処理が特定のゲートウェイに直接依存している',
   level: 'advanced',
@@ -279,6 +293,12 @@ const paymentGatewayInterfaceStage: Stage = {
  * (Strategyパターン本来の「方針を増やしても既存クラスに触らずに済む」形)。
  */
 const discountStrategyStage: Stage = {
+  classNames: {
+    "validation": "Validator",
+    "discount-regular": "RegularDiscount",
+    "discount-premium": "PremiumDiscount",
+    "discount-vip": "VipDiscount",
+  },
   id: 'advanced-discount-strategy',
   problem: '会員ランクごとの割引計算が1つの処理に混在している',
   level: 'advanced',
@@ -372,6 +392,11 @@ const discountStrategyStage: Stage = {
  * 統合し、Move Methodで別クラス(Factory)へ委譲するだけで解ける、という対比になる。
  */
 const reportFactoryStage: Stage = {
+  classNames: {
+    "data-aggregation": "DataAggregationHandler",
+    "report-building": "ReportBuildingHandler",
+    "report-delivery": "ReportDeliveryHandler",
+  },
   id: 'advanced-report-factory',
   problem: '帳票ごとの生成方法が呼び出し側に散らばっている',
   level: 'advanced',
@@ -479,6 +504,11 @@ const reportFactoryStage: Stage = {
  * (上級2)のために正当に使われるので、この減点(lone-superclass)の対象にしていない。
  */
 const collapseHierarchyStage: Stage = {
+  classNames: {
+    "http": "HttpHandler",
+    "query": "QueryHandler",
+    "csv-format": "CsvFormatHandler",
+  },
   id: 'advanced-collapse-hierarchy',
   problem: '子クラスが1つだけの基底クラスが残っている',
   level: 'advanced',
@@ -617,6 +647,15 @@ const collapseHierarchyStage: Stage = {
  * タスク管理だけ使う IncidentService は、どちらも太った CollaborationTool に依存している。
  */
 const interfaceSegregationStage: Stage = {
+  classNames: {
+    "alert-format": "AlertFormatHandler",
+    "alert-dispatch": "AlertDispatchHandler",
+    "triage": "TriageHandler",
+    "incident-dispatch": "IncidentDispatchHandler",
+    "chat-post": "ChatPostHandler",
+    "task-create": "TaskCreateHandler",
+    "task-complete": "TaskCompleteHandler",
+  },
   id: 'advanced-interface-segregation',
   problem: '通知とタスク管理の約束が1つに集まっている',
   level: 'advanced',
@@ -896,6 +935,17 @@ const interfaceSegregationStage: Stage = {
  * submitがcategoryも読むのは、凝集度の全ステージ化でExpenseがsubmit・isReceiptRequiredの2塊に分かれないようにするため。
  */
 const valueObjectStage: Stage = {
+  classNames: {
+    "workflow": "WorkflowHandler",
+    "category-rule": "CategoryRuleHandler",
+    "application": "ApplicationHandler",
+    "money-validation": "MoneyValidationHandler",
+    "money-format": "MoneyFormatHandler",
+    "approval-request": "ApprovalRequestHandler",
+    "aggregation": "AggregationHandler",
+    "money-arithmetic": "MoneyArithmeticHandler",
+    "transfer": "TransferHandler",
+  },
   id: 'advanced-value-object',
   problem: '金額と通貨が別々の値として扱われている',
   level: 'advanced',
@@ -1135,6 +1185,14 @@ const valueObjectStage: Stage = {
 };
 
 const templateMethodStage: Stage = {
+  classNames: {
+    "http": "HttpHandler",
+    "import-dispatch": "ImportDispatchHandler",
+    "file-read": "FileReadHandler",
+    "order-parse": "OrderParseHandler",
+    "order-validation": "OrderValidationHandler",
+    "persistence": "Repository",
+  },
   id: 'advanced-template-method',
   problem: '形式ごとの取り込み処理に共通手順が重複している',
   level: 'advanced',

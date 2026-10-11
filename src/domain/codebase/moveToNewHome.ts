@@ -40,7 +40,7 @@ export function moveMethodToNewClass(
   const className = uniqueName('NewClass', (name) => allClasses(codebase).some((codeClass) => codeClass.name === name));
   const withFile = addFile(codebase, newFilePath(codebase, className), ids.fileId);
   if (!withFile.ok) return err('method-not-found');
-  const withClass = addClass(withFile.value, ids.fileId, className, ids.classId);
+  const withClass = addClass(withFile.value, ids.fileId, className, { id: ids.classId, autoNamed: true });
   if (!withClass.ok) return err('method-not-found');
   const moved = moveMethod(withClass.value, methodId, ids.classId);
   return moved.ok ? moved : err('method-not-found');
@@ -56,7 +56,7 @@ export function moveMethodToNewClassInFile(
   if (findMethod(codebase, methodId) === undefined) return err('method-not-found');
   if (!codebase.files.some((file) => file.id === targetFileId)) return err('file-not-found');
   const className = uniqueName('NewClass', (name) => allClasses(codebase).some((codeClass) => codeClass.name === name));
-  const withClass = addClass(codebase, targetFileId, className, newClassId);
+  const withClass = addClass(codebase, targetFileId, className, { id: newClassId, autoNamed: true });
   if (!withClass.ok) return err('file-not-found');
   const moved = moveMethod(withClass.value, methodId, newClassId);
   return moved.ok ? moved : err('method-not-found');

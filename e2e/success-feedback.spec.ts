@@ -101,7 +101,7 @@ test('通常の操作で点数が下がるときは即時更新し成功演出�
   await menu.getByRole('button', { name: '追加' }).click();
 
   // Assert
-  await expect(page.getByTestId('class-EmptyClass')).toBeVisible();
+  await expect(page.getByTestId('class-NewClass')).toBeVisible();
   await expect(page.getByTestId('score-announcement')).toHaveText('60点');
   await expect(page.getByTestId('score-value')).toHaveText('60点');
   await expect(page.getByTestId('score-ring')).not.toHaveClass(/score-badge__ring--celebrate/);

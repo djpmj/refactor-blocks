@@ -66,6 +66,8 @@ export type Method = {
 export type CodeClass = {
   readonly id: string;
   readonly name: string;
+  /** プレイヤーが作り、まだ名前を変更していないクラス。 */
+  readonly autoNamed?: true;
   readonly methods: readonly Method[];
   /** 継承元(extends)のクラスID。継承なしなら省略する。 */
   readonly superclassId?: string;

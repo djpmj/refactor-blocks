@@ -4,8 +4,9 @@ import { findChangeSites } from '../../domain/change/findChangeSites';
 import { measureChange } from '../../domain/change/measureChange';
 import { measureExtendPain, measurePain, painRequestsOf } from '../../domain/change/changePain';
 import { averageScore, scoreChange } from '../../domain/change/scoreChange';
-import { allClasses, fieldsOf, isAbstractLike, isInterfaceLike, touchedFieldIds, type Codebase } from '../../domain/codebase/Codebase';
+import { allClasses, fieldsOf, isAbstractLike, isInterfaceLike, mapClasses, touchedFieldIds, type Codebase } from '../../domain/codebase/Codebase';
 import { methodLines } from '../../domain/codebase/lineCount';
+import { autoNameClasses } from '../../domain/codebase/autoNameClasses';
 import { scoreCodebase } from '../../domain/scoring/score';
 import { findMisplacedResponsibilities } from '../../domain/scoring/misplacedResponsibilities';
 import { behaviorTests, runBehaviorTests } from '../../domain/testing/behaviorTests';
@@ -15,6 +16,31 @@ import type { Stage } from '../../domain/stage/Stage';
 import { blankDesignProblems } from '../blankDesigns/blankDesignProblems';
 import { validateCheck } from '../../domain/stage/conceptCheck';
 import { stages } from './stageCatalog';
+
+function stageResponsibilities(stage: Stage): Set<string> {
+  const responsibilities = new Set<string>();
+  for (const codeClass of allClasses(stage.codebase)) {
+    for (const method of codeClass.methods) {
+      for (const fragment of method.fragments) {
+        if (fragment.responsibility !== 'call') responsibilities.add(fragment.responsibility);
+      }
+    }
+  }
+  return responsibilities;
+}
+
+function classNameFailures(stage: Stage): string[] {
+  const responsibilities = stageResponsibilities(stage);
+  const existingNames = new Set(allClasses(stage.codebase).map((codeClass) => codeClass.name));
+  const failures: string[] = [];
+  for (const responsibility of responsibilities) {
+    if (!Object.hasOwn(stage.classNames, responsibility)) failures.push(`${stage.id}: missing ${responsibility}`);
+  }
+  for (const [responsibility, name] of Object.entries(stage.classNames)) {
+    if (existingNames.has(name)) failures.push(`${stage.id}: ${responsibility} uses initial name ${name}`);
+  }
+  return failures;
+}
 
 /** 赤になっているテストの失敗。onlyNonCompile なら、コンパイルエラー以外だけ。 */
 function redFailures(stage: Stage, snapshot: Codebase, onlyNonCompile: boolean) {
@@ -571,6 +597,28 @@ function danglingFieldRefs(stage: Stage): string[] {
 }
 
 describe('stageCatalog', () => {
+  it('全ステージの自動命名表がコード上の全責務を覆い、初期クラス名と重ならない', () => {
+    // Arrange / Act
+    const failures = stages.flatMap(classNameFailures);
+
+    // Assert
+    expect(failures).toEqual([]);
+  });
+
+  it('自動命名で名前だけ変わっても採点結果は変わらない', () => {
+    // Arrange
+    const stage = stages.find((candidate) => candidate.id === 'beginner-invoice-service');
+    if (stage === undefined) throw new Error('初級2がありません');
+    const firstClass = allClasses(stage.codebase)[0];
+    const codebase = mapClasses(stage.codebase, (codeClass) => codeClass.id === firstClass.id ? { ...codeClass, autoNamed: true } : codeClass);
+
+    // Act
+    const named = autoNameClasses(codebase, stage.classNames);
+
+    // Assert
+    expect(scoreCodebase(named, stage)).toEqual(scoreCodebase(codebase, stage));
+  });
+
   it('全ステージに60文字以内の問題症状がある', () => {
     // Arrange
     const allStages = stages;
