@@ -11,7 +11,7 @@ export type CodebaseFlowNode = FileFlowNode | ClassFlowNode;
 
 type CodeFile = Codebase["files"][number];
 
-const FILE_GAP = 60;
+export const FILE_GAP = 60;
 const FILE_PADDING = 24;
 const FILE_HEADER = 36;
 const CLASS_WIDTH = 280;
