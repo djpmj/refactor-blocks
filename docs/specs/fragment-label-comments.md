@@ -70,6 +70,12 @@
   - 足した行に合わせて各Fragmentの `lines` も更新し、class・fileの上限も上の基準で合わせ直す
     (目安: 初級1は method 17 / class 34 / file 35、初級2は method 16 / class 31 / file 65。
     初級2は模範解答で新しいクラスを同じファイルに作るため、fileの上限は模範解答後の65行に合わせる)
+- `src/infrastructure/stages/tutorialStages.ts`(infrastructure)のチュートリアル1の**変更依頼の行数**
+  - E2E(`e2e/class-code-preview.spec.ts`)は処理を1つずつ抽出して100点にするため、クラスが54行になり class 上限は54以上が要る。
+    一方 `stageCatalog.test.ts` の「模範解答にすると変更依頼のコストが初期状態より下がる」には、初期状態に変更依頼を足したときに
+    class 上限超えが出る必要があり、変更依頼の行数(10・8行)のままでは初期状態+変更依頼のクラスが51・53行で、上限をどう選んでも両立しない
+  - そこで `req-report-yoy` / `req-report-share` の `linesPerSite` を 10・8 から 12・12 に増やし、上限を method 28 / class 54 / file 61 にする
+    (file 61 は、模範解答に変更依頼を足したときのファイル61行に合わせる)
 - `docs/stages/report.md`: `npm run stage-report` で再生成する
 - 行数の数字を決め打ちしているテスト(Vitest・E2E)の期待値を、新しい数え方に合わせて更新する
   (例: `e2e/class-code-preview.spec.ts` の最終行番号 `33` / `38` / `43`、チュートリアル1のメソッド・クラスの行数表示、
@@ -78,7 +84,7 @@
 ## データ・型の変更
 
 型の変更はなし(`Fragment` の型・ステージ定義の形式は変えない)。データは各ステージの `limits` の数値と、
-初級1・初級2の一部のFragmentのコード(と `lines`)だけを変える。
+初級1・初級2の一部のFragmentのコード(と `lines`)、チュートリアル1の変更依頼の `linesPerSite` だけを変える。
 
 ## TDD対象の純粋関数
 
