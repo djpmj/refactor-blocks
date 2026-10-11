@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-11 01:25 UTC PR #139 解答の再生ダイアログのウィンドウコントロールをそろえる
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(test 1607件/lint/typecheck) ✅。E2Eはレビュー環境で起動できず未実行(PR本文は185件成功と報告)。Issue #131の受け入れ基準(window-controls/SVGアイコン/aria-label・title/CSS)を差分で確認
+- マージ: squash & delete-branch
+
 ## 2026-10-10 15:05 UTC PR #137 ボタンの見た目を共通の既定スタイルにそろえる
 
 - 判定: 合格(blocker無し)
@@ -210,11 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(1018件) / npm run lint ✅ / npm run typecheck ✅(E2EはChromium未導入で実行不可。PR本文では101件成功と報告)
-- マージ: squash & delete-branch
-
-## 2026-10-04 02:40 UTC PR #52 可視性が関係するステージだけ選択欄を出す (#39)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅(E2EはChromium未導入で実行不可。差分を読んで確認)
 - マージ: squash & delete-branch
 

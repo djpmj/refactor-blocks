@@ -73,3 +73,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [success-feedback](success-feedback.md) | 点数のカウントアップとゲージの光、違反が消えたブロックの緑の演出 |
 | [score-hover-preview](score-hover-preview.md) | 減点の内訳のボタンにホバー・フォーカスしている間だけ原因ブロックを一瞬光らせる |
 | [button-style-base](button-style-base.md) | ボタンの見た目を詳細度0の共通既定スタイルにそろえ、主要ボタンから!importantを除去 |
+| [replay-window-controls](replay-window-controls.md) | 解答の再生ヘッダー右上に最大化(□/重なった□)と閉じる(✕)をChromeのウィンドウ風に並べる |
