@@ -14,15 +14,76 @@ test('「解答を再生」で模範解答を1手ずつ進め、図・説明・�
   const dialog = page.getByTestId('sample-replay');
   await expect(dialog).toBeVisible();
   const maximize = dialog.getByTestId('sample-replay-maximize');
+  const controls = dialog.locator('.window-controls');
+  const close = controls.getByRole('button', { name: '閉じる' });
+  await expect(maximize).toHaveAttribute('aria-label', '最大化');
+  await expect(maximize).toHaveAttribute('title', '最大化');
+  await expect(maximize).toHaveText('');
+  await expect(maximize.locator('svg rect')).toHaveCount(1);
+  await expect(close).toHaveAttribute('title', '閉じる');
+  await expect(controls.getByTestId('sample-replay-maximize')).toHaveCount(1);
+  const maximizeBox = await maximize.boundingBox();
+  const closeBox = await close.boundingBox();
+  const dialogBox = await dialog.boundingBox();
+  expect(maximizeBox).not.toBeNull();
+  expect(closeBox).not.toBeNull();
+  expect(dialogBox).not.toBeNull();
+  expect((maximizeBox?.x ?? 0) + (maximizeBox?.width ?? 0)).toBeLessThan(closeBox?.x ?? 0);
+  expect((closeBox?.x ?? 0) - ((maximizeBox?.x ?? 0) + (maximizeBox?.width ?? 0))).toBeLessThanOrEqual(16);
+  expect((dialogBox?.x ?? 0) + (dialogBox?.width ?? 0) - ((closeBox?.x ?? 0) + (closeBox?.width ?? 0))).toBeLessThanOrEqual(24);
+  await maximize.hover();
+  const hoverBackground = await maximize.evaluate((button) => {
+    const view = button.ownerDocument.defaultView;
+    if (view === null) throw new Error('表示中のドキュメントに window がありません');
+    return view.getComputedStyle(button).backgroundColor;
+  });
+  expect(hoverBackground).not.toBe('rgba(0, 0, 0, 0)');
+  await close.hover();
+  const closeHover = await close.evaluate((button) => {
+    const view = button.ownerDocument.defaultView;
+    if (view === null) throw new Error('表示中のドキュメントに window がありません');
+    const style = view.getComputedStyle(button);
+    return { background: style.backgroundColor, color: style.color };
+  });
+  expect(closeHover.background).not.toBe('rgba(0, 0, 0, 0)');
+  expect(closeHover.color).toBe('rgb(255, 255, 255)');
+  await maximize.focus();
+  await page.keyboard.press('Tab');
+  await expect(close).toBeFocused();
+  expect(await close.evaluate((button) => {
+    const view = button.ownerDocument.defaultView;
+    if (view === null) throw new Error('表示中のドキュメントに window がありません');
+    return view.getComputedStyle(button).outlineStyle;
+  })).toBe('solid');
+  await page.keyboard.press('Shift+Tab');
+  await expect(maximize).toBeFocused();
+  expect(await maximize.evaluate((button) => {
+    const view = button.ownerDocument.defaultView;
+    if (view === null) throw new Error('表示中のドキュメントに window がありません');
+    return view.getComputedStyle(button).outlineStyle;
+  })).toBe('solid');
   await expect(maximize).toHaveAttribute('aria-pressed', 'false');
-  await maximize.click();
+  await maximize.press('Enter');
   await expect(maximize).toHaveAttribute('aria-pressed', 'true');
+  await expect(maximize).toHaveAttribute('aria-label', '元のサイズに戻す');
+  await expect(maximize).toHaveAttribute('title', '元のサイズに戻す');
+  await expect(maximize.locator('svg rect')).toHaveCount(2);
   await expect(dialog).toHaveClass(/sample-replay--maximized/);
+  const maximizedControlsBox = await controls.boundingBox();
+  const maximizedMaximizeBox = await maximize.boundingBox();
+  const maximizedCloseBox = await close.boundingBox();
+  const maximizedDialogBox = await dialog.boundingBox();
+  expect((maximizedMaximizeBox?.x ?? 0) + (maximizedMaximizeBox?.width ?? 0)).toBeLessThan(maximizedCloseBox?.x ?? 0);
+  expect((maximizedCloseBox?.x ?? 0) - ((maximizedMaximizeBox?.x ?? 0) + (maximizedMaximizeBox?.width ?? 0))).toBeLessThanOrEqual(16);
+  expect((maximizedDialogBox?.x ?? 0) + (maximizedDialogBox?.width ?? 0) - ((maximizedCloseBox?.x ?? 0) + (maximizedCloseBox?.width ?? 0))).toBeLessThanOrEqual(24);
+  expect(maximizedControlsBox).not.toBeNull();
   const maximizedBox = await dialog.boundingBox();
   expect(maximizedBox?.width).toBe(page.viewportSize()?.width);
   expect(maximizedBox?.height).toBe(page.viewportSize()?.height);
-  await maximize.click();
+  await maximize.press('Space');
   await expect(maximize).toHaveAttribute('aria-pressed', 'false');
+  await expect(maximize).toHaveAttribute('aria-label', '最大化');
+  await expect(maximize.locator('svg rect')).toHaveCount(1);
   const restoredBox = await dialog.boundingBox();
   expect(restoredBox?.width).toBeLessThanOrEqual(1100);
   await expect(dialog.getByTestId('sample-replay-position')).toHaveText('0 / 1 手');
@@ -70,6 +131,27 @@ test('「解答を再生」で模範解答を1手ずつ進め、図・説明・�
   // Assert
   await expect(page.getByTestId('sample-replay-position')).toHaveText('0 / 1 手');
   await expect(page.getByTestId('sample-replay-maximize')).toHaveAttribute('aria-pressed', 'false');
+  await page.keyboard.press('Tab');
+  await expect(dialog.getByRole('button', { name: '閉じる' })).toBeFocused();
+  await page.keyboard.press('Space');
+  await expect(dialog).toBeHidden();
+
+  // Act: 解答例の図を開く
+  await page.getByRole('button', { name: '解答例の図を見る' }).click();
+  const preview = page.getByTestId('codebase-preview');
+  const previewClose = preview.getByRole('button', { name: '閉じる' });
+  await expect(preview.locator('.window-controls')).toContainText('✕');
+  await expect(previewClose).toHaveClass(/window-control--close/);
+  const previewCloseBox = await previewClose.boundingBox();
+  const previewBox = await preview.boundingBox();
+  expect((previewBox?.x ?? 0) + (previewBox?.width ?? 0) - ((previewCloseBox?.x ?? 0) + (previewCloseBox?.width ?? 0))).toBeLessThanOrEqual(24);
+  await previewClose.hover();
+  expect(await previewClose.evaluate((button) => {
+    const view = button.ownerDocument.defaultView;
+    if (view === null) throw new Error('表示中のドキュメントに window がありません');
+    return view.getComputedStyle(button).backgroundColor;
+  })).not.toBe('rgba(0, 0, 0, 0)');
+  await previewClose.click();
 });
 
 test('再生中のメソッドパネルは手順に追従し、プレイヤーの選択を変更しない', async ({ page }) => {

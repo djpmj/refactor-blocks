@@ -43,17 +43,7 @@ export function SampleAnswerReplayDialog({ stage, steps, onClose }: SampleAnswer
   const description = position === 0 ? INITIAL_DESCRIPTION : describeSolutionStep(stage.codebase, steps[position - 1]);
   return (
     <dialog ref={ref} className={`codebase-preview sample-replay${maximized ? ' sample-replay--maximized' : ''}`} aria-labelledby={TITLE_ID} onClose={onClose} data-testid="sample-replay">
-      <div className="codebase-preview__header">
-        <h2 className="codebase-preview__title" id={TITLE_ID}>
-          解答の再生
-        </h2>
-        <button type="button" data-testid="sample-replay-maximize" aria-pressed={maximized} aria-label={maximized ? '元のサイズに戻す' : '最大化'} onClick={() => setMaximized((current) => !current)}>
-          {maximized ? '縮小' : '最大化'}
-        </button>
-        <button type="button" onClick={onClose} aria-label="閉じる">
-          ✕
-        </button>
-      </div>
+      <ReplayWindowHeader maximized={maximized} onToggleMaximized={() => setMaximized((current) => !current)} onClose={onClose} />
       <div className="sample-replay__status">
         <span data-testid="sample-replay-position">
           {position} / {last} 手
@@ -74,6 +64,29 @@ export function SampleAnswerReplayDialog({ stage, steps, onClose }: SampleAnswer
       </div>
       <ReplayControls position={position} last={last} goTo={goTo} />
     </dialog>
+  );
+}
+
+function ReplayWindowHeader({ maximized, onToggleMaximized, onClose }: Readonly<{ maximized: boolean; onToggleMaximized: () => void; onClose: () => void }>) {
+  const maximizeLabel = maximized ? '元のサイズに戻す' : '最大化';
+  return (
+    <div className="codebase-preview__header">
+      <h2 className="codebase-preview__title" id={TITLE_ID}>解答の再生</h2>
+      <div className="window-controls">
+        <button type="button" className="window-control" data-testid="sample-replay-maximize" aria-pressed={maximized} aria-label={maximizeLabel} title={maximizeLabel} onClick={onToggleMaximized}>
+          <MaximizeIcon maximized={maximized} />
+        </button>
+        <button type="button" className="window-control window-control--close" onClick={onClose} aria-label="閉じる" title="閉じる">✕</button>
+      </div>
+    </div>
+  );
+}
+
+function MaximizeIcon({ maximized }: Readonly<{ maximized: boolean }>) {
+  return (
+    <svg viewBox="0 0 10 10" stroke="currentColor" fill="none" aria-hidden="true">
+      {maximized ? <><rect x="2.5" y="1.5" width="6" height="6" /><rect x="1.5" y="2.5" width="6" height="6" /></> : <rect x="1.5" y="1.5" width="7" height="7" />}
+    </svg>
   );
 }
 
