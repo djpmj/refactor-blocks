@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-11 14:12 UTC PR #143 feat: score misplaced class responsibilities
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅(E2EはChromium未導入のため未実行。差分は目視確認、PR本文では186件成功の報告)
+- マージ: squash & delete-branch
+
 ## 2026-10-11 04:40 UTC PR #142 Wait for drag overlay before clicking in anemic model E2E
 
 - 判定: 合格(blocker無し)
@@ -210,11 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(1024件) / npm run lint ✅ / npm run typecheck ✅(E2EはChromium未導入で実行不可。PR本文では104件成功と報告)
-- マージ: squash & delete-branch
-
-## 2026-10-04 04:00 UTC PR #46 メソッドエディタのタブをタブバーにする (#34)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(995件) / npm run lint ✅ / npm run typecheck ✅(前回指摘のコンフリクト解消を確認。CSSと aria-hidden アイコンのみの変更でE2Eは未実行、PR本文では94件成功と報告)
 - マージ: squash & delete-branch
 
