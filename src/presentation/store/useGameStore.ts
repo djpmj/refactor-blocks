@@ -97,10 +97,10 @@ export type CritiqueState = {
 const EMPTY_CRITIQUE: CritiqueState = { text: null, loading: false, error: null };
 const EMPTY_RULE_PREVIEW = { previewRule: null, hoverPreviewRule: null, focusPreviewRule: null };
 
-/** 変更依頼を「手で直す」シミュレーション。fixedIds は「直した」印を付けたメソッドのID。 */
-type ManualFix = { readonly fixedIds: readonly string[]; readonly released: boolean };
+/** 変更依頼を「手で直す」シミュレーション。fixedIds は「直した」印、viewedMethodId は最後にクリックしたメソッド。 */
+type ManualFix = { readonly fixedIds: readonly string[]; readonly released: boolean; readonly viewedMethodId: string | null };
 
-const NEW_MANUAL_FIX: ManualFix = { fixedIds: [], released: false };
+const NEW_MANUAL_FIX: ManualFix = { fixedIds: [], released: false, viewedMethodId: null };
 
 type GameState = {
   stages: readonly Stage[];
@@ -407,11 +407,15 @@ function manualFixActions(
     },
     toggleFixed: (methodId) => {
       const { manualFix } = get();
-      if (manualFix === null || manualFix.released) return;
+      if (manualFix === null) return;
+      if (manualFix.released) {
+        set({ manualFix: { ...manualFix, viewedMethodId: methodId } });
+        return;
+      }
       const fixedIds = manualFix.fixedIds.includes(methodId)
         ? manualFix.fixedIds.filter((id) => id !== methodId)
         : [...manualFix.fixedIds, methodId];
-      set({ manualFix: { ...manualFix, fixedIds } });
+      set({ manualFix: { ...manualFix, fixedIds, viewedMethodId: methodId } });
     },
     releaseManualFix: () => {
       const { manualFix } = get();

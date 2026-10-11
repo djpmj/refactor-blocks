@@ -467,6 +467,9 @@ input.class-node__name { width: 14ch; }
 .sample-replay__fragment { display: flex; gap: 8px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; }
 .sample-replay__fragment .fragment-list__label { flex: 1; }
 .codebase-preview__panel .fragment-list__item label { cursor: default; }
+.manual-fix-method-viewer { display: flex; flex: 1; min-width: 0; overflow-y: auto; background: var(--surface); }
+.manual-fix-method-viewer .codebase-preview__panel { width: auto; flex: 1; min-width: 0; border-left: 0; }
+.manual-fix-method-viewer__empty { margin: auto; padding: 16px; color: var(--muted); text-align: center; }
 @media (max-width: 800px) {
   .codebase-preview__body { flex-direction: column; overflow-y: auto; }
   .codebase-preview__body > .codebase-preview__canvas { min-height: 300px; flex: none; }

@@ -106,3 +106,72 @@ describe('extract draft lifecycle', () => {
     expect(store.getState().history).toBe(history);
   });
 });
+
+describe('manual fix method viewer state', () => {
+  it('tracks the last clicked method without changing the editor selection', () => {
+    // Arrange
+    const store = createGameStore(stages, false);
+    store.getState().selectMethod('method-place-order');
+
+    // Act
+    store.getState().startManualFix();
+    store.getState().toggleFixed('method-confirm-order');
+
+    // Assert
+    expect(store.getState().manualFix?.viewedMethodId).toBe('method-confirm-order');
+    expect(store.getState().manualFix?.fixedIds).toContain('method-confirm-order');
+    expect(store.getState().selectedMethodId).toBe('method-place-order');
+  });
+
+  it('keeps the viewed method when its fixed mark is removed and changes it for another method', () => {
+    // Arrange
+    const store = createGameStore(stages, false);
+    store.getState().startManualFix();
+
+    // Act
+    store.getState().toggleFixed('method-a');
+    store.getState().toggleFixed('method-a');
+    store.getState().toggleFixed('method-b');
+
+    // Assert
+    expect(store.getState().manualFix?.fixedIds).toEqual(['method-b']);
+    expect(store.getState().manualFix?.viewedMethodId).toBe('method-b');
+  });
+
+  it('updates the viewed method after release without changing fixed marks', () => {
+    // Arrange
+    const store = createGameStore(stages, false);
+    store.getState().startManualFix();
+    store.getState().toggleFixed('method-a');
+    store.getState().releaseManualFix();
+
+    // Act
+    store.getState().toggleFixed('method-b');
+
+    // Assert
+    expect(store.getState().manualFix?.fixedIds).toEqual(['method-a']);
+    expect(store.getState().manualFix?.viewedMethodId).toBe('method-b');
+  });
+
+  it('clears the viewed method when restarted and does nothing when inactive', () => {
+    // Arrange
+    const store = createGameStore(stages, false);
+    store.getState().startManualFix();
+    store.getState().toggleFixed('method-a');
+
+    // Act
+    store.getState().restartManualFix();
+
+    // Assert
+    expect(store.getState().manualFix?.viewedMethodId).toBeNull();
+
+    // Act
+    store.getState().toggleFixed('method-b');
+
+    // Assert
+    expect(store.getState().manualFix?.viewedMethodId).toBe('method-b');
+    store.getState().endManualFix();
+    store.getState().toggleFixed('method-c');
+    expect(store.getState().manualFix).toBeNull();
+  });
+});

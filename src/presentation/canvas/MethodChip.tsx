@@ -81,7 +81,7 @@ export function MethodChip({ method, linePreview }: Readonly<{ method: Method; l
     const rule = state.focusedRule ?? (state.hintTarget === null ? state.previewRule : null);
     return rule !== null ? violationTargets(state.codebase, state.stage)[rule].methodIds.includes(method.id) : state.hintTarget?.methodIds.includes(method.id) ?? false;
   });
-  const selected = useGameStore((state) => state.selectedMethodId === method.id);
+  const selected = useGameStore((state) => state.manualFix === null && state.selectedMethodId === method.id);
   const inspectMethod = useGameStore((state) => state.inspectMethod);
   const inspected = useGameStore((state) => state.changeSession?.inspected === method.id);
   const renameMethod = useGameStore((state) => state.renameMethod);
