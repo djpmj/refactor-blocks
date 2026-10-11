@@ -68,7 +68,7 @@ test('「解答を再生」で模範解答を1手ずつ進め、図・説明・�
   await expect(maximize).toHaveAttribute('aria-label', '元のサイズに戻す');
   await expect(maximize).toHaveAttribute('title', '元のサイズに戻す');
   await expect(maximize.locator('svg rect')).toHaveCount(2);
-  await expect(dialog).toHaveClass(/sample-replay--maximized/);
+  await expect(dialog).toHaveClass(/codebase-preview--maximized/);
   const maximizedControlsBox = await controls.boundingBox();
   const maximizedMaximizeBox = await maximize.boundingBox();
   const maximizedCloseBox = await close.boundingBox();
