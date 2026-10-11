@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-11 01:40 UTC PR #140 Enable story mode by default
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(test 1610件/lint/typecheck) ✅。E2Eはレビュー環境にChromiumが無く未実行(PR本文は185件成功と報告)。Issue #132の受け入れ基準を差分で確認(ボタンのCSSセレクタが実DOMに一致)
+- マージ: squash & delete-branch
+
 ## 2026-10-11 01:25 UTC PR #139 解答の再生ダイアログのウィンドウコントロールをそろえる
 
 - 判定: 合格(blocker無し)
@@ -210,11 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(1020件) / npm run lint ✅ / npm run typecheck ✅(E2EはChromium未導入で実行不可。PR本文では102件成功と報告)
-- マージ: squash & delete-branch
-
-## 2026-10-04 03:10 UTC PR #53 ファイル名を画面に出さず自動追加する (#40)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(1018件) / npm run lint ✅ / npm run typecheck ✅(E2EはChromium未導入で実行不可。PR本文では101件成功と報告)
 - マージ: squash & delete-branch
 
