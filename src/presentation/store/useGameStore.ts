@@ -104,6 +104,7 @@ const NEW_MANUAL_FIX: ManualFix = { fixedIds: [], released: false };
 type GameState = {
   stages: readonly Stage[];
   stage: Stage;
+  layoutResetCount: number;
   codebase: Codebase;
   celebration: { readonly seq: number; readonly scoreBefore: number; readonly scoreAfter: number; readonly resolved: ViolationTarget } | null;
   ghost: GhostMove | null;
@@ -330,7 +331,7 @@ function resetActions(set: (partial: Partial<GameState>) => void, get: () => Gam
   return {
     resetStage: () => {
       if (get().changeSession !== null) return;
-      set({ ...commit(get(), get().stage.codebase, false), celebration: null, ghost: null, manualFix: null, extractDraft: null, focusedRule: null, hintTarget: null, hintTargetKey: null, previewRule: null, hoverPreviewRule: null, focusPreviewRule: null, selectedMethodId: null, selectedFieldId: null, message: null });
+      set({ ...commit(get(), get().stage.codebase, false), layoutResetCount: get().layoutResetCount + 1, celebration: null, ghost: null, manualFix: null, extractDraft: null, focusedRule: null, hintTarget: null, hintTargetKey: null, previewRule: null, hoverPreviewRule: null, focusPreviewRule: null, selectedMethodId: null, selectedFieldId: null, message: null });
     },
   };
 }
@@ -655,7 +656,7 @@ export function createGameStore(allStages: readonly Stage[], saveDraftsOn = true
     };
     return {
       stages: allStages,
-      stage: firstStage,
+      stage: firstStage, layoutResetCount: 0,
       codebase: restored ?? firstStage.codebase,
       celebration: null,
       restoredDraft: restored !== undefined,
@@ -694,7 +695,7 @@ export function createGameStore(allStages: readonly Stage[], saveDraftsOn = true
         const next = selectStageState(get().stages, stageId, holder.drafts);
         if (next !== null) {
           if (get().stage.id !== stageId) get().endTour();
-          set({ ...next, ghost: null });
+          set({ ...next, layoutResetCount: get().layoutResetCount + 1, ghost: null });
         }
       },
       ...progressActions(set, get),

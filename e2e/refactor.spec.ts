@@ -890,19 +890,19 @@ test('上級3で3クラスがDiscountStrategyを実装すると、終点が分�
     await page.keyboard.press('Escape');
   }
 
-  // Assert: 3本ともマーカーを持ち、描画パスの終点xが重ならない
+  // Assert: 3本ともマーカーを持ち、描画パスの終点が重ならない
   const edges = page.locator('[data-testid^="rf__edge-inherit-"][data-testid$="-class-discount-strategy"]');
   await expect(edges).toHaveCount(3);
-  const endXs: string[] = [];
+  const endpoints: string[] = [];
   for (const edge of await edges.all()) {
     const path = edge.locator('.react-flow__edge-path');
     await expect(path).toHaveAttribute('marker-end', "url('#implements-arrow')");
     const pathData = await path.getAttribute('d');
     const endpoint = pathData?.match(/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)$/);
     if (endpoint?.[1] === undefined) throw new Error('継承辺の終点を読み取れません');
-    endXs.push(endpoint[1]);
+    endpoints.push(`${endpoint[1]},${endpoint[2]}`);
   }
-  expect(new Set(endXs).size).toBe(3);
+  expect(new Set(endpoints).size).toBe(3);
   const markerPath = page.locator('#implements-arrow path');
   await expect(markerPath).toHaveCSS('fill', 'rgb(255, 255, 255)');
   await expect(markerPath).toHaveCSS('stroke', 'rgb(217, 115, 13)');

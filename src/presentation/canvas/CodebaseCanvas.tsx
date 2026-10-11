@@ -9,7 +9,7 @@ import {
   type DragStartEvent,
   type UniqueIdentifier,
 } from '@dnd-kit/core';
-import { Background, Controls, ReactFlow, useReactFlow, type EdgeTypes, type NodeChange, type NodeTypes, type ReactFlowInstance, type XYPosition } from '@xyflow/react';
+import { Background, Controls, Panel, ReactFlow, useReactFlow, type EdgeTypes, type NodeChange, type NodeTypes, type ReactFlowInstance, type XYPosition } from '@xyflow/react';
 import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
 import { DropTargetsContext, type DropTargetsState } from './DropTargetsContext';
 import { createPortal } from 'react-dom';
@@ -35,6 +35,7 @@ import { fileTopLeftAtDrop } from './dropPosition';
 import { GhostAnimation } from './GhostAnimation';
 import type { Edge } from '@xyflow/react';
 import { dropTargetIds, type Dragging } from './dropTargets';
+import { placeFiles } from './keepFilePositions';
 
 const nodeTypes: NodeTypes = { fileNode: FileNode, classNode: ClassNode };
 const edgeTypes: EdgeTypes = { topRoute: TopRouteEdge, offset: OffsetEdge, warning: WarningEdge };
@@ -85,11 +86,11 @@ function moveMethodToDropTarget(
 }
 
 /** ステージを切り替えたときやファイルが増えたとき、画面外に出ないよう全体が収まるように表示し直す。 */
-function FitViewOnLayoutChange({ stageId, fileCount }: Readonly<{ stageId: string; fileCount: number }>) {
+function FitViewOnLayoutChange({ stageId, fileCount, layoutResetCount, arrangeVersion }: Readonly<{ stageId: string; fileCount: number; layoutResetCount: number; arrangeVersion: number }>) {
   const { fitView } = useReactFlow<CodebaseFlowNode>();
   useEffect(() => {
     void fitView();
-  }, [stageId, fileCount, fitView]);
+  }, [stageId, fileCount, layoutResetCount, arrangeVersion, fitView]);
   return null;
 }
 
@@ -144,7 +145,7 @@ function FitViewForRule({ codebase, nodes }: Readonly<{ codebase: Codebase; node
 }
 
 type Measured = { width: number; height: number };
-type FlowOverrides = { stageId: string; positions: Record<string, XYPosition>; measured: Record<string, Measured>; dropPositionFileIds: readonly string[] };
+type FlowOverrides = { stageId: string; layoutResetCount: number; positions: Record<string, XYPosition>; measured: Record<string, Measured>; dropPositionFileIds: readonly string[] };
 
 function isMousePosition(event: Event): event is MouseEvent {
   return 'clientX' in event && typeof event.clientX === 'number'
@@ -174,6 +175,28 @@ function fitFileCount(codebase: Codebase, overrides: FlowOverrides): number {
   return codebase.files.length - manuallyPlacedFileCount;
 }
 
+function usePlacedCanvasNodes(codebase: Codebase, overrides: FlowOverrides, rememberPositions: (nodes: readonly CodebaseFlowNode[]) => void): CodebaseFlowNode[] {
+  const layoutNodes = useMemo(() => layoutCodebase(codebase), [codebase]);
+  const positionedNodes = useMemo(() => {
+    const currentNodes = arrangeNodes(layoutNodes, overrides);
+    const allRects = fileRectsFromNodes(currentNodes);
+    const existingRects = new Map([...allRects].filter(([id]) => Object.hasOwn(overrides.positions, id)));
+    const dropPositions = new Map(overrides.dropPositionFileIds.flatMap((id) => (
+      Object.hasOwn(overrides.positions, id) ? [[id, overrides.positions[id]] as const] : []
+    )));
+    return placeFiles(layoutNodes, new Map(Object.entries(overrides.positions)), existingRects, dropPositions);
+  }, [layoutNodes, overrides]);
+  const nodes = useMemo(() => arrangeNodes(positionedNodes, overrides), [positionedNodes, overrides]);
+  useEffect(() => rememberPositions(nodes), [nodes, rememberPositions]);
+  return nodes;
+}
+
+function useDismissContextMenuWhenInactive(active: boolean, close: () => void): void {
+  useEffect(() => {
+    if (!active) close();
+  }, [active, close]);
+}
+
 type CanvasFlowProps = {
   readonly nodes: CodebaseFlowNode[];
   readonly edges: Edge[];
@@ -186,18 +209,21 @@ type CanvasFlowProps = {
   readonly codebase: Codebase;
 };
 
-function CanvasFlow({ nodes, edges, onNodesChange, setFlow, contextMenu, selectMethod, stageId, visibleFileCount, codebase }: CanvasFlowProps) {
+function CanvasFlow({ nodes, edges, onNodesChange, setFlow, contextMenu, selectMethod, stageId, visibleFileCount, codebase, layoutResetCount, arrangeVersion, arrange }: CanvasFlowProps & { readonly layoutResetCount: number; readonly arrangeVersion: number; readonly arrange: () => void }) {
   return (
     <WarningEdgeStateProvider>
       <ReactFlow
         nodes={nodes} edges={edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes}
-        onNodesChange={onNodesChange} onInit={setFlow} nodesConnectable={false} fitView minZoom={0.3}
+        onNodesChange={onNodesChange} onInit={setFlow} nodesConnectable={false} minZoom={0.3}
         onNodeContextMenu={contextMenu.onNodeContextMenu} onPaneContextMenu={contextMenu.onPaneContextMenu}
         onPaneClick={() => selectMethod(null)}
       >
         <InheritanceMarker /><Background gap={24} /><Controls showInteractive={false} />
+        <Panel position="top-right">
+          <button type="button" className="nodrag nopan" data-testid="canvas-arrange" aria-label="依存の向きに沿って並べ直す" onClick={arrange}>整列</button>
+        </Panel>
         <GhostAnimation nodes={nodes} />
-        <FitViewOnLayoutChange stageId={stageId} fileCount={visibleFileCount} />
+        <FitViewOnLayoutChange stageId={stageId} fileCount={visibleFileCount} layoutResetCount={layoutResetCount} arrangeVersion={arrangeVersion} />
         <FitViewForRule codebase={codebase} nodes={nodes} />
       </ReactFlow>
     </WarningEdgeStateProvider>
@@ -208,11 +234,12 @@ function CanvasFlow({ nodes, edges, onNodesChange, setFlow, contextMenu, selectM
  * ファイルの箱はドラッグで動かせる(依存の矢印と重なるとき用)。動かした位置はステージごとに覚える。
  * ノードはstoreから毎回作り直すので、React Flowが計測した大きさもここで持つ(反映しないとノードが非表示のままになる)。
  */
-function useFlowOverrides(stageId: string) {
-  const [state, setState] = useState<FlowOverrides>({ stageId, positions: {}, measured: {}, dropPositionFileIds: [] });
-  const overrides = state.stageId === stageId ? state : { stageId, positions: {}, measured: state.measured, dropPositionFileIds: [] };
+function useFlowOverrides(stageId: string, layoutResetCount: number) {
+  const [state, setState] = useState<FlowOverrides>({ stageId, layoutResetCount, positions: {}, measured: {}, dropPositionFileIds: [] });
+  const overrides = state.stageId === stageId && state.layoutResetCount === layoutResetCount
+    ? state : { stageId, layoutResetCount, positions: {}, measured: state.measured, dropPositionFileIds: [] };
   const handleNodesChange = (changes: NodeChange[]) => {
-    const next = { stageId, positions: { ...overrides.positions }, measured: { ...overrides.measured }, dropPositionFileIds: overrides.dropPositionFileIds };
+    const next = { stageId, layoutResetCount, positions: { ...overrides.positions }, measured: { ...overrides.measured }, dropPositionFileIds: overrides.dropPositionFileIds };
     for (const change of changes) {
       if (change.type === 'position' && change.position !== undefined) next.positions[change.id] = change.position;
       if (change.type === 'dimensions' && change.dimensions !== undefined) next.measured[change.id] = change.dimensions;
@@ -223,11 +250,27 @@ function useFlowOverrides(stageId: string) {
     setState((current) => ({
       ...current,
       stageId,
+      layoutResetCount,
       positions: { ...overrides.positions, [fileId]: position },
       dropPositionFileIds: [...new Set([...overrides.dropPositionFileIds, fileId])],
     }));
   };
-  return { overrides, handleNodesChange, setPosition };
+  const rememberPositions = (nodes: readonly CodebaseFlowNode[]) => {
+    const additions = nodes.filter((node) => node.type === 'fileNode' && !Object.hasOwn(overrides.positions, node.id));
+    if (additions.length === 0) return;
+    setState((current) => ({
+      ...current,
+      stageId,
+      layoutResetCount,
+      positions: { ...current.positions, ...Object.fromEntries(additions.map((node) => [node.id, node.position])) },
+    }));
+  };
+  const [arrangeVersion, setArrangeVersion] = useState(0);
+  const arrange = () => {
+    setState({ stageId, layoutResetCount, positions: {}, measured: overrides.measured, dropPositionFileIds: [] });
+    setArrangeVersion((current) => current + 1);
+  };
+  return { overrides, handleNodesChange, setPosition, rememberPositions, arrange, arrangeVersion };
 }
 
 /** ドロップ先に応じた移動を行う。ファイルの枠外に落としたら、新しいファイル(メソッドなら新しいクラスも)を自動で作って置く。 */
@@ -270,9 +313,10 @@ export function CodebaseCanvas({ active }: Readonly<{ active: boolean }>) {
   const codebase = useGameStore((state) => state.codebase);
   const selectMethod = useGameStore((state) => state.selectMethod);
   const stageId = useGameStore((state) => state.stage.id);
+  const layoutResetCount = useGameStore((state) => state.layoutResetCount);
   const visibilityEnforced = useGameStore((state) => state.stage.visibilityEnforced);
-  const { overrides, handleNodesChange, setPosition } = useFlowOverrides(stageId);
-  const nodes = useMemo(() => arrangeNodes(layoutCodebase(codebase), overrides), [codebase, overrides]);
+  const { overrides, handleNodesChange, setPosition, rememberPositions, arrange, arrangeVersion } = useFlowOverrides(stageId, layoutResetCount);
+  const nodes = usePlacedCanvasNodes(codebase, overrides, rememberPositions);
   const visibleFileCount = fitFileCount(codebase, overrides);
   const edges = useCanvasEdges(codebase, nodes, visibilityEnforced);
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
@@ -291,11 +335,8 @@ export function CodebaseCanvas({ active }: Readonly<{ active: boolean }>) {
   const [flow, setFlow] = useState<ReactFlowInstance<CodebaseFlowNode> | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, POINTER_ACTIVATION), useSensor(KeyboardSensor));
   const contextMenu = useCanvasContextMenu();
-  const closeContextMenu = contextMenu.close;
   // メニューは document.body へのポータルなので、画面を隠しただけでは消えない(隠れたコードベースを操作できてしまう)
-  useEffect(() => {
-    if (!active) closeContextMenu();
-  }, [active, closeContextMenu]);
+  useDismissContextMenuWhenInactive(active, contextMenu.close);
 
 
   const handleDragEnd = useDropHandler(codebase, () => {
@@ -315,6 +356,7 @@ export function CodebaseCanvas({ active }: Readonly<{ active: boolean }>) {
         <CanvasFlow
           nodes={nodes} edges={edges} onNodesChange={handleNodesChange} setFlow={setFlow} contextMenu={contextMenu}
           selectMethod={selectMethod} stageId={stageId} visibleFileCount={visibleFileCount} codebase={codebase}
+          layoutResetCount={layoutResetCount} arrangeVersion={arrangeVersion} arrange={arrange}
         />
       </DropTargetsContext.Provider>
       <DraggingOverlay activeId={activeId} />

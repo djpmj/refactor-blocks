@@ -13,6 +13,7 @@ async function dragMethodToEmptyCanvas(page: Page, methodId: string) {
   await page.mouse.move(source.x + source.width / 2 + 20, source.y + source.height / 2, { steps: 5 });
   await page.mouse.move(pane.x + pane.width - 20, pane.y + pane.height - 20, { steps: 15 });
   await page.mouse.up();
+  await expect(page.locator('.drag-overlay')).toHaveCount(0);
 }
 
 /** メソッドを空きスペースへ落として新しいクラスに切り出す(コードが1手変わる)。 */
