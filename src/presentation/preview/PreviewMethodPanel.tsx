@@ -4,14 +4,14 @@ import { fragmentLines, methodLines } from '../../domain/codebase/lineCount';
 import { ClassCodePreview } from '../editor/ClassCodePreview';
 import { FragmentFieldRefs } from '../editor/MethodEditor';
 
-export function ReplayMethodPanel({ codebase, methodId }: Readonly<{ codebase: Codebase; methodId: string }>) {
+export function PreviewMethodPanel({ codebase, methodId }: Readonly<{ codebase: Codebase; methodId: string }>) {
   const method = findMethod(codebase, methodId);
   const owner = findClassOfMethod(codebase, methodId);
   const [activeTab, setActiveTab] = useState<'edit' | 'code'>('edit');
-  if (method === undefined || owner === undefined) return <aside className="sample-replay__panel">このメソッドはこの手の時点では存在しません</aside>;
+  if (method === undefined || owner === undefined) return <aside className="codebase-preview__panel">このメソッドはこの手の時点では存在しません</aside>;
 
   return (
-    <aside className="sample-replay__panel" aria-label="メソッドの内容">
+    <aside className="codebase-preview__panel" aria-label="メソッドの内容">
       <h2 className="method-editor__title">{owner.name}.{method.name}() <span className="line-badge">{methodLines(method, codebase)}行</span></h2>
       <p className="sample-replay__visibility">{method.visibility}</p>
       <div className="method-editor__tabs" role="tablist" aria-label="メソッド表示">
