@@ -5,6 +5,7 @@ export const RULE_LABEL: Record<ScoreRule, string> = {
   coupling: '結合度',
   cycle: '循環依存',
   responsibility: '責務の混在',
+  misplaced: '役割と違う処理が入ったクラス',
   visibility: 'アクセス制御',
   empty: '空のクラス・ファイル',
   unused: '未使用のprivateメソッド',

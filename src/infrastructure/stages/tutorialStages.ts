@@ -144,7 +144,7 @@ const orderServiceStage: Stage = {
       {
         id: 'file-tax-calculator',
         path: 'src/tax/TaxCalculator.ts',
-        classes: [{ id: 'class-tax-calculator', name: 'TaxCalculator', methods: [] }],
+        classes: [{ id: 'class-tax-calculator', name: 'TaxCalculator', roleResponsibilities: ['tax'], methods: [] }],
       },
     ],
   },

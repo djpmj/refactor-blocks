@@ -80,6 +80,7 @@ describe('scoreCodebase', () => {
         { rule: 'coupling', count: 0, points: 0 },
         { rule: 'cycle', count: 0, points: 0 },
         { rule: 'responsibility', count: 0, points: 0 },
+        { rule: 'misplaced', count: 0, points: 0 },
         { rule: 'visibility', count: 0, points: 0 },
         { rule: 'empty', count: 0, points: 0 },
         { rule: 'unused', count: 0, points: 0 },
@@ -95,6 +96,27 @@ describe('scoreCodebase', () => {
         { rule: 'layer', count: 0, points: 0 },
       ],
     });
+  });
+
+  it('役割の異なるクラスへ保存と通知を移すとクラス単位で減点する', () => {
+    // Arrange
+    const codebase: Codebase = { files: [{ id: 'file', path: 'src/order.ts', classes: [
+      { id: 'service', name: 'OrderService', methods: [{ id: 'place', name: 'placeOrder', visibility: 'public', fragments: [
+        { id: 'tax', label: '税を計算する', lines: 1, responsibility: 'tax' },
+        { id: 'save', label: '注文をDBに保存する', lines: 1, responsibility: 'persistence' },
+        { id: 'mail', label: '確認メールを送る', lines: 1, responsibility: 'notification' },
+      ] }] },
+      { id: 'calculator', name: 'TaxCalculator', roleResponsibilities: ['tax'], methods: [] },
+    ] }] };
+    const extracted = unwrap(extractMethod(codebase, { sourceMethodId: 'place', fragmentIds: ['save', 'mail'], newMethodId: 'save-and-mail', newMethodName: 'saveOrderAndSendMail' }));
+    const moved = unwrap(moveMethod(extracted, 'save-and-mail', 'calculator'));
+
+    // Act
+    const score = scoreCodebase(moved, { ...LOOSE, dependencyLimit: 100 });
+
+    // Assert
+    expect(score.total).toBeLessThan(100);
+    expect(score.deductions.find(({ rule }) => rule === 'misplaced')).toEqual({ rule: 'misplaced', count: 1, points: 10 });
   });
 
   it('横流しだけのクラス1つにつき10点減点する', () => {
@@ -179,7 +201,7 @@ describe('scoreCodebase', () => {
     const score = scoreCodebase(codebase, { ...LOOSE, dependencyLimit: 1 });
 
     // Assert
-    expect(score.deductions[4]).toEqual({ rule: 'visibility', count: 0, points: 0 });
+    expect(score.deductions[5]).toEqual({ rule: 'visibility', count: 0, points: 0 });
   });
 
   it('visibilityEnforced: true のとき、越境した private メソッド呼び出し1件につき10点減点する', () => {
@@ -191,7 +213,7 @@ describe('scoreCodebase', () => {
 
     // Assert
     expect(score.total).toBe(90);
-    expect(score.deductions[4]).toEqual({ rule: 'visibility', count: 1, points: 10 });
+    expect(score.deductions[5]).toEqual({ rule: 'visibility', count: 1, points: 10 });
   });
 
   it('Extract Method で作った private メソッドを Move Method で別クラスへ移すと、越境呼び出しとして検出される', () => {
@@ -231,7 +253,7 @@ describe('scoreCodebase', () => {
     const score = scoreCodebase(moved, { ...LOOSE, dependencyLimit: 1, visibilityEnforced: true });
 
     // Assert
-    expect(score.deductions[4]).toEqual({ rule: 'visibility', count: 1, points: 10 });
+    expect(score.deductions[5]).toEqual({ rule: 'visibility', count: 1, points: 10 });
   });
 
   it('メソッドのないクラス・クラスのないファイル1つにつき10点減点する', () => {
@@ -248,7 +270,7 @@ describe('scoreCodebase', () => {
 
     // Assert
     expect(score.total).toBe(80);
-    expect(score.deductions[5]).toEqual({ rule: 'empty', count: 2, points: 20 });
+    expect(score.deductions[6]).toEqual({ rule: 'empty', count: 2, points: 20 });
   });
 
   it('どこからも呼ばれていない private メソッド1つにつき10点減点する', () => {
@@ -277,7 +299,7 @@ describe('scoreCodebase', () => {
 
     // Assert
     expect(score.total).toBe(90);
-    expect(score.deductions[6]).toEqual({ rule: 'unused', count: 1, points: 10 });
+    expect(score.deductions[7]).toEqual({ rule: 'unused', count: 1, points: 10 });
   });
 
   it('extends の子が1つだけの基底クラス1つにつき10点減点する', () => {
@@ -290,7 +312,7 @@ describe('scoreCodebase', () => {
 
     // Assert
     expect(score.total).toBe(90);
-    expect(score.deductions[7]).toEqual({ rule: 'lone-superclass', count: 1, points: 10 });
+    expect(score.deductions[8]).toEqual({ rule: 'lone-superclass', count: 1, points: 10 });
   });
 
   it('空実装のメソッド1つにつき10点減点する', () => {
@@ -316,7 +338,7 @@ describe('scoreCodebase', () => {
 
     // Assert
     expect(score.total).toBe(90);
-    expect(score.deductions[8]).toEqual({ rule: 'stub', count: 1, points: 10 });
+    expect(score.deductions[9]).toEqual({ rule: 'stub', count: 1, points: 10 });
   });
 
   it('約束違反(実装漏れ)1件につき10点減点する', () => {
@@ -344,7 +366,7 @@ describe('scoreCodebase', () => {
 
     // Assert
     expect(score.total).toBe(90);
-    expect(score.deductions[9]).toEqual({ rule: 'contract', count: 1, points: 10 });
+    expect(score.deductions[10]).toEqual({ rule: 'contract', count: 1, points: 10 });
   });
 
   it('Feature Envy 1件につき10点減点する', () => {
@@ -386,7 +408,7 @@ describe('scoreCodebase', () => {
 
     // Assert
     expect(score.total).toBe(90);
-    expect(score.deductions[10]).toEqual({ rule: 'feature-envy', count: 1, points: 10 });
+    expect(score.deductions[11]).toEqual({ rule: 'feature-envy', count: 1, points: 10 });
   });
 
   it('外からのフィールド書き換え1件につき10点減点する', () => {
@@ -420,7 +442,7 @@ describe('scoreCodebase', () => {
 
     // Assert
     expect(score.total).toBe(90);
-    expect(score.deductions[11]).toEqual({ rule: 'encapsulation', count: 1, points: 10 });
+    expect(score.deductions[12]).toEqual({ rule: 'encapsulation', count: 1, points: 10 });
   });
 
   it('公開されたsetter1つにつき10点減点する(encapsulationに数える)', () => {
@@ -454,7 +476,7 @@ describe('scoreCodebase', () => {
 
     // Assert
     expect(score.total).toBe(90);
-    expect(score.deductions[11]).toEqual({ rule: 'encapsulation', count: 1, points: 10 });
+    expect(score.deductions[12]).toEqual({ rule: 'encapsulation', count: 1, points: 10 });
   });
 
   it('フィールドを共有しないメソッドの塊が同居するクラス1つにつき10点減点する(cohesion)', () => {

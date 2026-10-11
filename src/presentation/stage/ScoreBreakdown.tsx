@@ -3,6 +3,22 @@ import { useGameStore } from '../store/useGameStore';
 import { RULE_LABEL } from './describeScore';
 import { RULE_WHY } from './ruleWhy';
 import type { Score, ScoreRule } from '../../domain/scoring/score';
+import { findClass, type Codebase } from '../../domain/codebase/Codebase';
+import { findMisplacedResponsibilities } from '../../domain/scoring/misplacedResponsibilities';
+
+function MisplacedViolationDetails({ codebase }: Readonly<{ codebase: Codebase }>) {
+  const violations = findMisplacedResponsibilities(codebase);
+  if (violations.length === 0) return null;
+  return (
+    <ul className="score-breakdown__violation-details" data-testid="misplaced-violations">
+      {violations.map((violation) => {
+        const codeClass = findClass(codebase, violation.classId);
+        if (codeClass === undefined) return null;
+        return <li key={violation.classId}><strong>{codeClass.name}</strong>: {violation.fragments.map(({ label }) => label).join('、')}</li>;
+      })}
+    </ul>
+  );
+}
 
 function clearPreviewRules(previewRuleFor: (rule: ScoreRule | null, source: 'hover' | 'focus') => void): void {
   previewRuleFor(null, 'hover');
@@ -14,6 +30,7 @@ export function ScoreBreakdown({ score, disabled }: Readonly<{
   disabled: boolean;
 }>) {
   const [openRules, setOpenRules] = useState<ReadonlySet<ScoreRule>>(new Set());
+  const codebase = useGameStore((state) => state.codebase);
   const focusedRule = useGameStore((state) => state.focusedRule);
   const focusRule = useGameStore((state) => state.focusRule);
   const previewRuleFor = useGameStore((state) => state.previewRuleFor);
@@ -55,6 +72,7 @@ export function ScoreBreakdown({ score, disabled }: Readonly<{
                   なぜ?
                 </button>
               </div>
+              {rule === 'misplaced' ? <MisplacedViolationDetails codebase={codebase} /> : null}
               <div id={whyId} className="score-breakdown__why" hidden={!open}>
                 <p><strong>こう困ります:</strong>{RULE_WHY[rule].trouble}</p>
                 <p><strong>だから:</strong>{RULE_WHY[rule].because}</p>

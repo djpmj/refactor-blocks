@@ -1,5 +1,5 @@
 import { isCodebase } from '../codebase/isCodebase';
-import type { Codebase } from '../codebase/Codebase';
+import { findClass, mapClasses, type Codebase } from '../codebase/Codebase';
 import type { Stage } from '../stage/Stage';
 import { stageFingerprint } from './stageFingerprint';
 
@@ -17,5 +17,10 @@ export function putDraft(drafts: Drafts, stage: Stage, codebase: Codebase): Draf
 export function takeDraft(drafts: Drafts, stage: Stage): Codebase | undefined {
   const draft = drafts[stage.id];
   if (draft === undefined || draft.fingerprint !== stageFingerprint(stage)) return undefined;
-  return isCodebase(draft.codebase) ? draft.codebase : undefined;
+  if (!isCodebase(draft.codebase)) return undefined;
+  return mapClasses(draft.codebase, (codeClass) => {
+    const stageClass = findClass(stage.codebase, codeClass.id);
+    if (stageClass === undefined || stageClass.roleResponsibilities === undefined) return codeClass;
+    return { ...codeClass, roleResponsibilities: stageClass.roleResponsibilities };
+  });
 }

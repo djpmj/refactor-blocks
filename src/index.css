@@ -372,6 +372,7 @@ input.class-node__name { width: 14ch; }
 .score-breakdown__items { position: absolute; z-index: 20; top: calc(100% + 6px); right: 0; display: flex; flex-direction: column; gap: 4px; min-width: 210px; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); box-shadow: 0 4px 12px rgb(0 0 0 / 16%); }
 .score-breakdown__item { display: flex; flex-direction: column; gap: 4px; }
 .score-breakdown__row { display: flex; gap: 4px; }
+.score-breakdown__violation-details { margin: 0; padding-left: 24px; line-height: 1.5; }
 .score-breakdown__row > button:first-child { flex: 1; }
 .score-breakdown__why { padding: 6px 8px; border-left: 3px solid var(--border); }
 .score-breakdown__why[hidden] { display: none; }

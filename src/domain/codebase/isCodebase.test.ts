@@ -62,6 +62,7 @@ describe('isCodebase', () => {
     ['クラスの methods が無い', { codeClass: { methods: undefined } }],
     ['superclassId が文字列でない', { codeClass: { superclassId: 1 } }],
     ['interfaceIds が文字列の配列でない', { codeClass: { interfaceIds: [1] } }],
+    ['roleResponsibilities が文字列の配列でない', { codeClass: { roleResponsibilities: ['tax', 1] } }],
     ['フィールドの形が違う', { field: { name: undefined } }],
     ['メソッドの visibility が不正', { method: { visibility: 'internal' } }],
     ['lines が負', { fragment: { lines: -1 } }],

@@ -10,6 +10,7 @@ import { findLineLimitViolations } from './lineLimits';
 import { findLayerViolations } from './layers';
 import { findLoneSuperclasses } from './loneSuperclass';
 import { findResponsibilityViolations } from './responsibilities';
+import { findMisplacedResponsibilities } from './misplacedResponsibilities';
 import { findThinClasses, findTrivialMethods } from './overExtraction';
 import { findCouplingViolations, type ScoreRule } from './score';
 import { countedVisibilityViolations } from './visibility';
@@ -30,7 +31,7 @@ function emptyTarget(): MutableTarget {
 
 function emptyTargets(): TargetRecord {
   return {
-    'line-limit': emptyTarget(), coupling: emptyTarget(), cycle: emptyTarget(), responsibility: emptyTarget(),
+    'line-limit': emptyTarget(), coupling: emptyTarget(), cycle: emptyTarget(), responsibility: emptyTarget(), misplaced: emptyTarget(),
     visibility: emptyTarget(), empty: emptyTarget(), unused: emptyTarget(), 'lone-superclass': emptyTarget(),
     stub: emptyTarget(), contract: emptyTarget(), 'feature-envy': emptyTarget(), encapsulation: emptyTarget(),
     cohesion: emptyTarget(), 'trivial-method': emptyTarget(), 'thin-class': emptyTarget(), 'middle-man': emptyTarget(),
@@ -53,7 +54,7 @@ function freezeTarget(target: MutableTarget): ViolationTarget {
 function freezeTargets(targets: TargetRecord): Record<ScoreRule, ViolationTarget> {
   return {
     'line-limit': freezeTarget(targets['line-limit']), coupling: freezeTarget(targets.coupling),
-    cycle: freezeTarget(targets.cycle), responsibility: freezeTarget(targets.responsibility),
+    cycle: freezeTarget(targets.cycle), responsibility: freezeTarget(targets.responsibility), misplaced: freezeTarget(targets.misplaced),
     visibility: freezeTarget(targets.visibility), empty: freezeTarget(targets.empty), unused: freezeTarget(targets.unused),
     'lone-superclass': freezeTarget(targets['lone-superclass']), stub: freezeTarget(targets.stub),
     contract: freezeTarget(targets.contract), 'feature-envy': freezeTarget(targets['feature-envy']),
@@ -90,6 +91,7 @@ export function violationTargets(
   addClasses(targets.coupling, findCouplingViolations(dependencies, stage.dependencyLimit));
   addClasses(targets.cycle, dependencies.filter((dependency) => dependency.cyclic).map(({ from }) => from));
   addClasses(targets.responsibility, findResponsibilityViolations(codebase, stage.responsibilityLimit).map(({ classId }) => classId));
+  addClasses(targets.misplaced, findMisplacedResponsibilities(codebase).map(({ classId }) => classId));
   addMethods(targets.visibility, countedVisibilityViolations(codebase, stage.visibilityEnforced).map(({ methodId }) => methodId));
   addEmptyTargets(codebase, targets.empty);
   addMethods(targets.unused, findUnusedPrivateMethods(codebase));

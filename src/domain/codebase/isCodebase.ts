@@ -48,7 +48,7 @@ function isField(f: Obj): boolean {
 
 function isClass(c: Obj): boolean {
   const inheritanceOk = optional(c.superclassId, isStr) && optional(c.interfaceIds, isStrArray);
-  return isStr(c.id) && isStr(c.name) && allObjects(c.methods, isMethod) && inheritanceOk && optional(c.fields, (v) => allObjects(v, isField));
+  return isStr(c.id) && isStr(c.name) && allObjects(c.methods, isMethod) && inheritanceOk && optional(c.fields, (v) => allObjects(v, isField)) && optional(c.roleResponsibilities, isStrArray);
 }
 
 function isFile(f: Obj): boolean {
