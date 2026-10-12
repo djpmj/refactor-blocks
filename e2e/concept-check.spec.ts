@@ -1,5 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
-import { selectStage } from './selectStage.js';
+﻿import { expect, test, type Page } from '@playwright/test';
+import { selectStage, startChangeRequests } from './selectStage.js';
 
 async function dragMethodToClass(page: Page, methodId: string, classId: string) {
   const source = await page.getByTestId(methodId).boundingBox();
@@ -102,7 +102,7 @@ test('変更依頼の実装中は出ず、ステージを切り替えると消�
   await clearTutorial2(page);
   await expect(page.getByRole('region', { name: '理解度チェック' })).toBeVisible();
 
-  await page.getByTestId('change-request-start').click();
+  await startChangeRequests(page);
   await expect(page.getByTestId('change-panel')).toBeVisible();
   await expect(page.getByRole('region', { name: '理解度チェック' })).toBeHidden();
 });
@@ -114,3 +114,4 @@ test('ステージを切り替えると理解度チェックが消える', async
   await selectStage(page, 'チュートリアル1: 長いメソッドを分ける');
   await expect(page.getByRole('region', { name: '理解度チェック' })).toBeHidden();
 });
+

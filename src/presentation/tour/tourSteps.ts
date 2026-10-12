@@ -1,5 +1,6 @@
 export type TourAdvance =
   | { readonly kind: 'next' }
+  | { readonly kind: 'manual-fix-released' }
   | { readonly kind: 'select-method'; readonly methodName: string }
   | { readonly kind: 'click-inside' }
   | { readonly kind: 'extract' };
@@ -14,6 +15,7 @@ export const TOUR_STAGE_ID = 'tutorial-extract-method';
 
 export const TOUR_STEPS: readonly TourStep[] = [
   { target: '#stage-sidebar', text: 'ここに課題が出ます。まず課題の内容とクリア条件を確認しよう。', advance: { kind: 'next' } },
+  { target: '.change-pain', text: '組み替える前に、まずこのコードのまま変更を入れてみよう。「実際に直してみる」を押し、直す必要があるメソッドをクリックして印を付け、リリースしよう。', advance: { kind: 'manual-fix-released' } },
   { target: '[data-testid="method-printMonthlyReport"]', text: '長すぎるメソッド printMonthlyReport() をクリックしてみよう。', advance: { kind: 'select-method', methodName: 'printMonthlyReport' } },
   { target: '[data-tour="fragment-list"]', text: '処理がまとまりごとに並んでいます。一緒に切り出したいまとまりを選ぼう。', advance: { kind: 'click-inside' } },
   { target: '[data-tour="extract-button"]', text: '「選んだ処理をメソッドとして抽出」を押そう。', advance: { kind: 'extract' } },
@@ -22,17 +24,22 @@ export const TOUR_STEPS: readonly TourStep[] = [
 
 export type TourEvent =
   | { readonly kind: 'next' }
+  | { readonly kind: 'manual-fix-released' }
   | { readonly kind: 'method-selected'; readonly methodName: string }
   | { readonly kind: 'clicked-inside' }
   | { readonly kind: 'method-count'; readonly count: number; readonly countAtStepStart: number };
 
+function matchesAdvance(advance: TourAdvance, event: TourEvent): boolean {
+  if (event.kind === 'next') return true;
+  if (advance.kind === 'manual-fix-released') return event.kind === 'manual-fix-released';
+  if (advance.kind === 'select-method') return event.kind === 'method-selected' && event.methodName === advance.methodName;
+  if (advance.kind === 'click-inside') return event.kind === 'clicked-inside';
+  if (advance.kind === 'extract') return event.kind === 'method-count' && event.count > event.countAtStepStart;
+  return false;
+}
+
 export function nextTourStep(steps: readonly TourStep[], current: number, event: TourEvent): number | null {
   const step = steps[current];
-  const advance = step.advance;
-  const canAdvance = event.kind === 'next'
-    || (advance.kind === 'select-method' && event.kind === 'method-selected' && event.methodName === advance.methodName)
-    || (advance.kind === 'click-inside' && event.kind === 'clicked-inside')
-    || (advance.kind === 'extract' && event.kind === 'method-count' && event.count > event.countAtStepStart);
-  if (!canAdvance) return current;
+  if (!matchesAdvance(step.advance, event)) return current;
   return current + 1 >= steps.length ? null : current + 1;
 }

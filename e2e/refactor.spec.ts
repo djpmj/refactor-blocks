@@ -1,5 +1,5 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
-import { selectStage } from './selectStage.js';
+﻿import { expect, test, type Locator, type Page } from '@playwright/test';
+import { selectStage, startChangeRequests } from './selectStage.js';
 
 test('右サイドバーの幅をドラッグとキーボードで調整し、白紙設計でも使える', async ({ page }) => {
   // Arrange
@@ -1184,10 +1184,8 @@ async function finishRequest(page: Page) {
  */
 async function implementRequests(page: Page, parts: readonly string[], targets: readonly string[]) {
   // ドラッグ直後の1回目のクリックはdnd-kitに握りつぶされることがあるので、パネルが開くまで押し直す
-  await expect(async () => {
-    await page.getByTestId('change-request-start').click({ timeout: 1000 });
-    await expect(page.getByTestId('change-panel')).toBeVisible({ timeout: 1000 });
-  }).toPass();
+  await startChangeRequests(page);
+  await expect(page.getByTestId('change-panel')).toBeVisible();
   for (const [index, target] of targets.entries()) {
     const part = `method-${parts[index]}`;
     if (target === 'new') await dragToEmptyCanvas(page, part);
@@ -1230,7 +1228,7 @@ test('変更依頼に挑戦すると部品置き場に部品が出て、置く�
   await reachFullScoreOnOrderStage(page);
 
   // Act
-  await page.getByTestId('change-request-start').click();
+  await startChangeRequests(page);
 
   // Assert(部品は部品置き場にあり、置くまで終えられない)
   await expect(page.getByTestId('change-request-title')).toHaveText('軽減税率の対象を増やして');
@@ -1306,7 +1304,7 @@ test('変更依頼の実装中にメソッドへカーソルを合わせると�
   // Arrange
   await openOrderStage(page);
   await reachFullScoreOnOrderStage(page);
-  await page.getByTestId('change-request-start').click();
+  await startChangeRequests(page);
   const inspect = page.getByTestId('change-inspect');
   await expect(inspect).not.toContainText('消費税を計算する');
 
@@ -1358,7 +1356,7 @@ test('変更依頼の実装中は、前回の変更箇所の印を出さない(�
   await expect(page.getByTestId('change-site-badge').first()).toBeVisible();
 
   // Act
-  await page.getByTestId('change-request-start').click();
+  await startChangeRequests(page);
 
   // Assert
   await expect(page.getByTestId('change-site-badge')).toHaveCount(0);
@@ -1368,7 +1366,7 @@ test('実装中に Ctrl+Z で部品が部品置き場に戻る。挑戦をやめ
   // Arrange(挑戦前に100点まで直しておく)
   await openOrderStage(page);
   await reachFullScoreOnOrderStage(page);
-  await page.getByTestId('change-request-start').click();
+  await startChangeRequests(page);
   await dragMethodToClass(page, 'method-addReducedTaxItems', 'class-OrderService');
   await expect(page.getByTestId('change-part-status')).toContainText('OrderService に置きました');
 
@@ -1396,7 +1394,7 @@ test('実装中に Ctrl+Z で部品が部品置き場に戻る。挑戦をやめ
 test('上級2: PayPay の追加は、新しいクラスで PaymentGateway を実装すると100点になり、コストの行は出ない', async ({ page }) => {
   // Arrange
   await solvePaymentStage(page);
-  await page.getByTestId('change-request-start').click();
+  await startChangeRequests(page);
   await expect(page.getByTestId('change-request-kind')).toContainText('機能の追加');
 
   // Act(1件目: 余白へ出して PaymentGateway を実装する。charge という同名メソッドが他にもあるので部品置き場の中に絞る)
@@ -1429,7 +1427,7 @@ test('上級2: PayPay の追加は、新しいクラスで PaymentGateway を実
 test('依頼1で作った新しいクラスは、依頼2のキャンバスにも残っている(依頼は連続して改修する)', async ({ page }) => {
   // Arrange
   await solvePaymentStage(page);
-  await page.getByTestId('change-request-start').click();
+  await startChangeRequests(page);
 
   // Act(1件目: 余白へ出して新しいクラスを作り、終える。charge という同名メソッドが他にもあるので部品置き場の中に絞る)
   await dragToEmptyCanvas(page, page.getByTestId('class-部品置き場').getByTestId('method-charge'));
@@ -1438,6 +1436,27 @@ test('依頼1で作った新しいクラスは、依頼2のキャンバスにも
 
   // Assert(2件目のキャンバスに、1件目で作ったクラスとメソッドが残っている)
   await expect(page.getByTestId('change-request-title')).not.toHaveText('PayPayでも払えるようにして');
+  await expect(page.getByTestId('class-GatewayIntegrationHandler').getByTestId('method-charge')).toBeVisible();
+});
+
+test('新しいクラスは最後の変更依頼結果画面にも保持される', async ({ page }) => {
+  await solvePaymentStage(page);
+  await startChangeRequests(page);
+  await dragToEmptyCanvas(page, page.getByTestId('class-部品置き場').getByTestId('method-charge'));
+  await page.getByTestId('class-header-GatewayIntegrationHandler').click({ button: 'right' });
+  const menu = page.getByTestId('context-menu');
+  await menu.getByRole('menuitem', { name: '実装するインターフェースを設定' }).click();
+  await menu.getByRole('menuitemcheckbox', { name: 'PaymentGateway' }).click();
+  await page.keyboard.press('Escape');
+  await finishRequest(page);
+
+  await dragToEmptyCanvas(page, 'method-logRetryCount');
+  await finishRequest(page);
+  await page.getByRole('button', { name: 'Fit View' }).click();
+  await dragMethodToClass(page, 'method-applyGatewayTimeout', 'class-StripeGateway');
+  await finishRequest(page);
+
+  await expect(page.getByTestId('change-outcome-req-payment-logging')).toBeVisible();
   await expect(page.getByTestId('class-GatewayIntegrationHandler').getByTestId('method-charge')).toBeVisible();
 });
 
@@ -2233,3 +2252,4 @@ test('上級8: 呼び出しだけの importOrders を似た処理を持つメソ
   }
   await expect(page.getByTestId('score')).toContainText('100点');
 });
+

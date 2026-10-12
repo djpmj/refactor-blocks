@@ -1,5 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
-import { selectStage } from './selectStage.js';
+﻿import { expect, test, type Page } from '@playwright/test';
+import { releaseAllManualFixSites, selectStage, startChangeRequests } from './selectStage.js';
 
 async function dragMethodToClass(page: Page, methodId: string, classId: string) {
   const source = await page.getByTestId(methodId).boundingBox();
@@ -42,6 +42,7 @@ test('100点で理由を見せてサイドバーを一度だけ自動で開く',
   const openToggle = page.getByRole('button', { name: 'サイドバーを開く' });
   await expect(openToggle).toBeVisible();
   await expect(page.getByRole('region', { name: 'もし、この変更が来たら?' })).toBeHidden();
+  await openToggle.click();
 
   await extract(page, '消費税を計算する(軽減税率あり)', 'calculateTax');
   await dragMethodToClass(page, 'method-calculateTax', 'class-TaxCalculator');
@@ -52,6 +53,8 @@ test('100点で理由を見せてサイドバーを一度だけ自動で開く',
   const reason = page.getByRole('region', { name: 'なぜ分けるのか' });
   const toggle = page.locator('.sidebar-toggle');
   await expect(page.getByTestId('score')).toContainText('100');
+  await expect(page.getByRole('region', { name: 'もし、この変更が来たら?(もう一度)' })).toBeVisible();
+  await releaseAllManualFixSites(page);
   await expect(reason).toContainText('税率');
   await expect(reason).toContainText('読む量は');
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
@@ -64,7 +67,7 @@ test('100点で理由を見せてサイドバーを一度だけ自動で開く',
   await expect(page.getByTestId('score')).toContainText('100');
   await expect(page.getByRole('button', { name: 'サイドバーを開く' })).toHaveAttribute('aria-expanded', 'false');
 
-  await page.getByTestId('change-request-start').click();
+  await startChangeRequests(page);
   await expect(page.getByTestId('change-panel')).toBeVisible();
   await expect(page.locator('.change-pain')).toHaveCount(0);
 });
@@ -146,3 +149,4 @@ test('ランクのクラスにMemberRankを実装させると、新しいクラ�
   await expect(card).toContainText('最初は 1 クラスでした');
   await expect(page.getByTestId('score')).not.toContainText('100');
 });
+

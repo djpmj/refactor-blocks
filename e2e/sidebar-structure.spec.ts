@@ -86,5 +86,8 @@ test('操作でクリア条件が更新され、100点では全件達成にな�
 
   await expect(page.getByTestId('score')).toContainText('100点');
   await expect(conditions.locator('li[aria-label^="達成:"]')).toHaveCount(await conditions.locator('li').count());
-  await expect(page.getByRole('region', { name: 'なぜ分けるのか' }).locator('details')).toHaveAttribute('open', '');
+  const changePain = page.locator('.change-pain');
+  await expect(changePain.getByRole('heading', { name: /もう一度/ })).toBeVisible();
+  await expect(changePain.locator('details')).toHaveAttribute('open', '');
+  await expect(page.getByTestId('change-request-start')).toBeDisabled();
 });

@@ -1,5 +1,5 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
-import { selectStage } from './selectStage.js';
+﻿import { expect, test, type Locator, type Page } from '@playwright/test';
+import { selectStage, startChangeRequests } from './selectStage.js';
 
 const BLANK_PARTS = ['placeOrder', 'shipOrder', 'calculateOrderTax', 'saveOrder', 'updateShippingStatus', 'sendOrderConfirmMail', 'sendShippedMail'] as const;
 
@@ -54,7 +54,7 @@ async function openChangeRequestResult(page: Page) {
     await menu.getByRole('menuitemcheckbox', { name: 'PaymentGateway' }).click();
     await page.keyboard.press('Escape');
   }
-  await page.getByTestId('change-request-start').click();
+  await startChangeRequests(page);
   await dragPlayerMethodToEmptyCanvas(page, page.getByTestId('class-部品置き場').getByTestId('method-charge'));
   await page.getByTestId('class-header-GatewayIntegrationHandler').click({ button: 'right' });
   const menu = page.getByTestId('context-menu');
@@ -278,3 +278,4 @@ test('白紙設計の結果の解答例でもメソッドを選べて最大化�
   expect(dialogBox?.height).toBe(page.viewportSize()?.height);
   expect(await canvas.innerText()).toBe(canvasBefore);
 });
+

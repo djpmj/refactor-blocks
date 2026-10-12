@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { selectStage } from './selectStage.js';
+import { releaseAllManualFixSites, selectStage } from './selectStage.js';
 
 async function clearTourSeenOnce(page: import('@playwright/test').Page): Promise<void> {
   await page.addInitScript(() => {
@@ -18,21 +18,23 @@ test('first visit guides a player through Extract Method using the actual action
   // Act / Assert
   const tour = page.getByTestId('first-visit-tour');
   await expect(tour).toBeVisible();
-  await expect(tour).toContainText('1/5');
+  await expect(tour).toContainText('1/6');
   await expect(page.locator('#stage-sidebar')).toBeVisible();
   await expect(page.locator('.spotlight-tour__shade')).toHaveCount(4);
   await expect(page.locator('.spotlight-tour__hole')).toBeVisible();
   await tour.getByRole('button', { name: '次へ' }).click();
-  await expect(tour).toContainText('2/5');
+  await expect(tour).toContainText('2/6');
+  await releaseAllManualFixSites(page);
+  await expect(tour).toContainText('3/6');
 
   await page.getByTestId('method-printMonthlyReport').click();
-  await expect(tour).toContainText('3/5');
+  await expect(tour).toContainText('4/6');
   const fragments = page.locator('[data-tour="fragment-list"]');
   await expect(fragments).toBeVisible();
   await fragments.locator('input[type="checkbox"]').first().check();
-  await expect(tour).toContainText('4/5');
+  await expect(tour).toContainText('5/6');
   await page.locator('[data-tour="extract-button"]').click();
-  await expect(tour).toContainText('5/5');
+  await expect(tour).toContainText('6/6');
   await tour.getByRole('button', { name: '次へ' }).click();
   await expect(tour).toHaveCount(0);
 });
@@ -51,7 +53,7 @@ test('shade blocks clicks outside the spotlight while the tour can be exited wit
   await page.mouse.click(buttonBox.x + buttonBox.width / 2, buttonBox.y + buttonBox.height / 2);
 
   // Assert
-  await expect(tour).toContainText('1/5');
+  await expect(tour).toContainText('1/6');
   await expect(page.getByTestId('operation-guide')).not.toBeVisible();
   await page.keyboard.press('Escape');
   await expect(tour).toHaveCount(0);
@@ -66,7 +68,7 @@ test('Escape and the exit button work from interactive steps 2 through 4', async
   // Act / Assert: step 2
   let tour = page.getByTestId('first-visit-tour');
   await tour.getByRole('button', { name: '次へ' }).click();
-  await expect(tour).toContainText('2/5');
+  await expect(tour).toContainText('2/6');
   await page.keyboard.press('Escape');
   await expect(tour).toHaveCount(0);
 
@@ -75,8 +77,10 @@ test('Escape and the exit button work from interactive steps 2 through 4', async
   await page.getByTestId('repeat-first-visit-tour').click();
   tour = page.getByTestId('first-visit-tour');
   await tour.getByRole('button', { name: '次へ' }).click();
+  await releaseAllManualFixSites(page);
+  await expect(tour).toContainText('3/6');
   await page.getByTestId('method-printMonthlyReport').click();
-  await expect(tour).toContainText('3/5');
+  await expect(tour).toContainText('4/6');
   await page.keyboard.press('Escape');
   await expect(tour).toHaveCount(0);
 
@@ -85,9 +89,12 @@ test('Escape and the exit button work from interactive steps 2 through 4', async
   await page.getByTestId('repeat-first-visit-tour').click();
   tour = page.getByTestId('first-visit-tour');
   await tour.getByRole('button', { name: '次へ' }).click();
+  await releaseAllManualFixSites(page);
+  await expect(tour).toContainText('3/6');
   await page.getByTestId('method-printMonthlyReport').click();
+  await expect(tour).toContainText('4/6');
   await page.locator('[data-tour="fragment-list"] input[type="checkbox"]').first().check();
-  await expect(tour).toContainText('4/5');
+  await expect(tour).toContainText('5/6');
   await tour.getByRole('button', { name: 'ガイドを終了' }).click();
   await expect(tour).toHaveCount(0);
 });
@@ -118,6 +125,6 @@ test('does not auto-start elsewhere and can be replayed from the operation guide
   await page.getByTestId('repeat-first-visit-tour').click();
 
   // Assert
-  await expect(page.getByTestId('first-visit-tour')).toContainText('1/5');
+  await expect(page.getByTestId('first-visit-tour')).toContainText('1/6');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('チュートリアル1');
 });

@@ -28,6 +28,8 @@ import { useCountUp } from './useCountUp';
 import { useResizableSidebarWidth } from '../useResizableSidebarWidth';
 import { ClearConditionList } from './ClearConditionList';
 import { GhostHintButton } from './GhostHintButton';
+import { painRequestsOf } from '../../domain/change/changePain';
+import { stageStep } from '../../domain/change/stageStep';
 
 /** ステージ一覧のダイアログを開くボタン。 */
 function RoadmapButton() {
@@ -152,6 +154,10 @@ function ActionToolbar({ stage, isPerfect, active }: Readonly<{ stage: Stage; is
   const startTour = useGameStore((state) => state.startTour);
   const canUndo = useGameStore((state) => state.history.past.length > 0);
   const canRedo = useGameStore((state) => state.history.future.length > 0);
+  const openingDone = useGameStore((state) => Object.prototype.hasOwnProperty.call(state.openingFixes, stage.id));
+  const closingSolved = useGameStore((state) => state.closingFixSolved);
+  const step = stageStep({ score: isPerfect ? 100 : 0, hasModifyRequest: painRequestsOf(stage).modify !== undefined, openingDone, closingSolved });
+  const challengeTitle = step === 'closing-fix' ? '先に「もし、この変更が来たら?」をもう一度解いてください' : '点数が100点になると挑戦できます';
   useGuideShortcut(active, setGuideOpen);
   return (
     <div className="toolbar stage-panel__actions">
@@ -160,8 +166,8 @@ function ActionToolbar({ stage, isPerfect, active }: Readonly<{ stage: Stage; is
         className="toolbar__primary button--primary"
         data-testid="change-request-start"
         onClick={startChangeRequests}
-        disabled={investigating || !isPerfect}
-        title={isPerfect ? undefined : '点数が100点になると挑戦できます'}
+        disabled={investigating || step !== 'change-request'}
+        title={step === 'change-request' ? undefined : challengeTitle}
       >
         {challenged ? 'もう一度挑戦' : '変更依頼に挑戦'}
       </button>

@@ -11,6 +11,11 @@ export type ManualFixResult = {
   readonly sites: number;
 };
 
+/** 直し忘れも、関係のないメソッドへの印も無ければ正解。 */
+export function isManualFixSolved(result: ManualFixResult): boolean {
+  return result.missed.length === 0 && result.extra.length === 0;
+}
+
 /** プレイヤーが「直した」と印を付けたメソッドを、今のコードの変更箇所と照合する。存在しないIDは無視し、重複は1つとして扱う。 */
 export function checkManualFix(codebase: Codebase, request: ChangeRequest, fixedIds: readonly string[]): ManualFixResult {
   const sites = [...new Set(findChangeSites(codebase, request))];

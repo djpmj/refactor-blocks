@@ -4,6 +4,9 @@ import { evaluateImplementationUseCase, type ChangeOutcome } from '../../applica
 import { describeCritiqueError, requestCritiqueUseCase } from '../../application/CritiqueUseCases';
 import { withoutTray } from '../../domain/blank/tray';
 import { withChangePart } from '../../domain/change/changePart';
+import { checkManualFix, isManualFixSolved } from '../../domain/change/checkManualFix';
+import { painRequestsOf } from '../../domain/change/changePain';
+import { stageStep, type StageStep } from '../../domain/change/stageStep';
 import { findField, findMethod, type Codebase, type Visibility } from '../../domain/codebase/Codebase';
 import { autoNameClasses } from '../../domain/codebase/autoNameClasses';
 import { emptyHistory, recordChange, redoHistory, undoHistory, type History, type Travel } from '../../domain/codebase/history';
@@ -100,9 +103,10 @@ const EMPTY_CRITIQUE: CritiqueState = { text: null, loading: false, error: null 
 const EMPTY_RULE_PREVIEW = { previewRule: null, hoverPreviewRule: null, focusPreviewRule: null };
 
 /** 変更依頼を「手で直す」シミュレーション。fixedIds は「直した」印、viewedMethodId は最後にクリックしたメソッド。 */
-type ManualFix = { readonly fixedIds: readonly string[]; readonly released: boolean; readonly viewedMethodId: string | null };
+type ManualFix = { readonly fixedIds: readonly string[]; readonly released: boolean; readonly viewedMethodId: string | null; readonly step: StageStep };
+type OpeningFix = { readonly missed: number; readonly extra: number; readonly sites: number };
 
-const NEW_MANUAL_FIX: ManualFix = { fixedIds: [], released: false, viewedMethodId: null };
+const NEW_MANUAL_FIX: ManualFix = { fixedIds: [], released: false, viewedMethodId: null, step: 'refactor' };
 
 type GameState = {
   stages: readonly Stage[];
@@ -129,6 +133,9 @@ type GameState = {
   dismissMessage: () => void;
   changeSession: ChangeSession | null;
   manualFix: ManualFix | null;
+  openingFixes: Readonly<Partial<Record<string, OpeningFix | null>>>;
+  openingFixEnabled: boolean;
+  closingFixSolved: boolean;
   startManualFix: () => void;
   toggleFixed: (methodId: string) => void;
   releaseManualFix: () => void;
@@ -260,6 +267,8 @@ function commit(state: GameState, codebase: Codebase, celebrate = true): Partial
 
 /** 操作の結果を状態の更新にする。成功したらコードベースを差し替え、失敗したら理由を出す。 */
 function applyResult<E>(state: GameState, result: Result<Codebase, E>, describe: (error: E) => string): Partial<GameState> {
+  const blocked = blockDuringOpeningFix(state);
+  if (blocked !== null) return blocked;
   return result.ok ? { ...commit(state, result.value), message: null, notice: null } : { message: describe(result.error), notice: null };
 }
 
@@ -273,8 +282,25 @@ function travelTo(state: GameState, travel: Travel | undefined): Partial<GameSta
 }
 
 const UNPLACED_MESSAGE = '部品がまだ部品置き場にあります。置き場所へドラッグしてください';
+const OPENING_FIX_MESSAGE = 'まず「もし、この変更が来たら?」で、この変更を手で入れてみてください';
+
+function currentStep(state: GameState) {
+  const openingDone = Object.hasOwn(state.openingFixes, state.stage.id);
+  return stageStep({
+    score: scoreCodebase(state.codebase, state.stage).total,
+    hasModifyRequest: painRequestsOf(state.stage).modify !== undefined,
+    openingDone,
+    closingSolved: state.closingFixSolved,
+  });
+}
+
+function blockDuringOpeningFix(state: GameState): Partial<GameState> | null {
+  return state.openingFixEnabled && currentStep(state) === 'opening-fix' ? { message: OPENING_FIX_MESSAGE, notice: null } : null;
+}
 
 /** 今の依頼の実装を評価して結果に積み、次の依頼(部品を足した挑戦前のコード)へ進む。全件終えたら挑戦前のコードに戻す。 */
+const CHANGE_REQUEST_LOCK_MESSAGE = '変更依頼に進む前に、手直しと組み替えを完了してください';
+
 function finishImplementation(state: GameState): Partial<GameState> {
   const session = state.changeSession;
   const request = session === null ? undefined : state.stage.changeRequests[session.index];
@@ -285,7 +311,7 @@ function finishImplementation(state: GameState): Partial<GameState> {
   const carried = withoutTray(state.codebase);
   return {
     changeSession: { ...session, index: session.index + 1, inspected: null, outcomes: [...session.outcomes, result.value], carried },
-    codebase: next === undefined ? session.base : withChangePart(carried, next),
+    codebase: next === undefined ? carried : withChangePart(carried, next),
     history: emptyHistory(),
     selectedMethodId: null,
     selectedFieldId: null,
@@ -295,13 +321,30 @@ function finishImplementation(state: GameState): Partial<GameState> {
   };
 }
 
+function endChangeRequests(state: GameState): Partial<GameState> {
+  const session = state.changeSession;
+  if (session === null) return {};
+  return {
+    focusedRule: null, hintTarget: null, hintTargetKey: null, previewRule: null,
+    hoverPreviewRule: null, focusPreviewRule: null, ghost: null,
+    changeSession: null, codebase: session.base, history: session.baseHistory,
+    selectedMethodId: null, selectedFieldId: null, extractDraft: null,
+    message: null, notice: null,
+    lastChangeReport: session.outcomes.length > 0
+      ? { outcomes: session.outcomes, codebase: session.carried }
+      : state.lastChangeReport,
+  };
+}
+
 function historyActions(set: (partial: Partial<GameState>) => void, get: () => GameState): Pick<GameState, 'undo' | 'redo'> {
   return {
     undo: () => {
-      set(travelTo(get(), undoHistory(get().history, get().codebase)));
+      const state = get();
+      set(blockDuringOpeningFix(state) ?? travelTo(state, undoHistory(state.history, state.codebase)));
     },
     redo: () => {
-      set(travelTo(get(), redoHistory(get().history, get().codebase)));
+      const state = get();
+      set(blockDuringOpeningFix(state) ?? travelTo(state, redoHistory(state.history, state.codebase)));
     },
   };
 }
@@ -337,7 +380,7 @@ function resetActions(set: (partial: Partial<GameState>) => void, get: () => Gam
   return {
     resetStage: () => {
       if (get().changeSession !== null) return;
-      set({ ...commit(get(), get().stage.codebase, false), layoutResetCount: get().layoutResetCount + 1, celebration: null, ghost: null, manualFix: null, extractDraft: null, focusedRule: null, hintTarget: null, hintTargetKey: null, previewRule: null, hoverPreviewRule: null, focusPreviewRule: null, selectedMethodId: null, selectedFieldId: null, message: null, notice: null });
+      set({ ...commit(get(), get().stage.codebase, false), layoutResetCount: get().layoutResetCount + 1, celebration: null, ghost: null, manualFix: null, closingFixSolved: false, extractDraft: null, focusedRule: null, hintTarget: null, hintTargetKey: null, previewRule: null, hoverPreviewRule: null, focusPreviewRule: null, selectedMethodId: null, selectedFieldId: null, message: null, notice: null });
     },
   };
 }
@@ -348,7 +391,13 @@ function changeSessionActions(
 ): Pick<GameState, 'startChangeRequests' | 'inspectMethod' | 'finishImplementation' | 'endChangeRequests'> {
   return {
     startChangeRequests: () => {
-      const { codebase, history, stage } = get();
+      const state = get();
+      const { codebase, history, stage } = state;
+      const step = currentStep(state);
+      if (state.openingFixEnabled && step !== 'change-request') {
+        set({ message: step === 'opening-fix' ? OPENING_FIX_MESSAGE : CHANGE_REQUEST_LOCK_MESSAGE, notice: null });
+        return;
+      }
       const [first] = stage.changeRequests;
       set({
         focusedRule: null,
@@ -377,27 +426,7 @@ function changeSessionActions(
       set({ ...finishImplementation(get()), ghost: null });
     },
     endChangeRequests: () => {
-      const { changeSession, lastChangeReport } = get();
-      if (changeSession === null) return;
-      const { outcomes, base, carried, baseHistory } = changeSession;
-      set({
-        focusedRule: null,
-        hintTarget: null,
-        hintTargetKey: null,
-        previewRule: null,
-        hoverPreviewRule: null,
-        focusPreviewRule: null,
-        ghost: null,
-        changeSession: null,
-        codebase: base,
-        history: baseHistory,
-        selectedMethodId: null,
-        selectedFieldId: null,
-        extractDraft: null,
-        message: null,
-        notice: null,
-        lastChangeReport: outcomes.length > 0 ? { outcomes, codebase: carried } : lastChangeReport,
-      });
+      set(endChangeRequests(get()));
     },
   };
 }
@@ -409,7 +438,8 @@ function manualFixActions(
 ): Pick<GameState, 'startManualFix' | 'toggleFixed' | 'releaseManualFix' | 'restartManualFix' | 'endManualFix'> {
   return {
     startManualFix: () => {
-      if (get().changeSession === null) set({ manualFix: NEW_MANUAL_FIX, extractDraft: null });
+      const state = get();
+      if (state.changeSession === null) set({ manualFix: { ...NEW_MANUAL_FIX, step: currentStep(state) }, extractDraft: null });
     },
     toggleFixed: (methodId) => {
       const { manualFix } = get();
@@ -424,11 +454,30 @@ function manualFixActions(
       set({ manualFix: { ...manualFix, fixedIds, viewedMethodId: methodId } });
     },
     releaseManualFix: () => {
-      const { manualFix } = get();
-      if (manualFix !== null) set({ manualFix: { ...manualFix, released: true } });
+      const state = get();
+      const { manualFix, stage, codebase } = state;
+      if (manualFix === null) return;
+      const request = painRequestsOf(stage).modify;
+      if (request === undefined) return;
+      const result = checkManualFix(codebase, request, manualFix.fixedIds);
+      const step = currentStep(state);
+      const advancingOpeningTour = state.tourStep !== null && TOUR_STEPS[state.tourStep]?.advance.kind === 'manual-fix-released';
+      if (step === 'opening-fix') {
+        set({
+          manualFix: advancingOpeningTour ? null : { ...manualFix, released: true },
+          openingFixes: { ...state.openingFixes, [stage.id]: { missed: result.missed.length, extra: result.extra.length, sites: result.sites } },
+        });
+      } else if (step === 'closing-fix') {
+        const solved = isManualFixSolved(result);
+        set({ manualFix: { ...manualFix, released: true }, closingFixSolved: state.closingFixSolved || solved });
+      } else {
+        set({ manualFix: advancingOpeningTour ? null : { ...manualFix, released: true } });
+      }
+      if (advancingOpeningTour) get().advanceTour({ kind: 'manual-fix-released' });
     },
     restartManualFix: () => {
-      if (get().manualFix !== null) set({ manualFix: NEW_MANUAL_FIX, extractDraft: null });
+      const manualFix = get().manualFix;
+      if (manualFix !== null) set({ manualFix: { ...NEW_MANUAL_FIX, step: manualFix.step }, extractDraft: null });
     },
     endManualFix: () => {
       set({ manualFix: null });
@@ -465,6 +514,8 @@ function selectStageState(allStages: readonly Stage[], stageId: string, drafts: 
     codebase: draft ?? stage.codebase,
     celebration: null,
     restoredDraft: draft !== undefined,
+    ...(draft !== undefined && painRequestsOf(stage).modify !== undefined ? { openingFixes: { [stage.id]: null } } : {}),
+    closingFixSolved: false,
     history: emptyHistory(),
     selectedMethodId: null,
     selectedFieldId: null,
@@ -485,6 +536,19 @@ function selectStageState(allStages: readonly Stage[], stageId: string, drafts: 
 }
 
 type Apply = <E>(result: Result<Codebase, E>, describe: (error: E) => string) => boolean;
+
+function createApply(set: (partial: Partial<GameState>) => void, get: () => GameState): Apply {
+  return <E>(result: Result<Codebase, E>, describe: (error: E) => string): boolean => {
+    const state = get();
+    const blocked = blockDuringOpeningFix(state);
+    if (blocked !== null) {
+      set(blocked);
+      return false;
+    }
+    set(applyResult(state, result, describe));
+    return result.ok;
+  };
+}
 
 function extractActions(
   apply: Apply,
@@ -544,6 +608,11 @@ function moveActions(
       apply(moveClassUseCase(get().codebase, classId, targetFileId), describeMoveClassError);
     },
     moveClassToNewFile: (classId) => {
+      const blocked = blockDuringOpeningFix(get());
+      if (blocked !== null) {
+        set(blocked);
+        return null;
+      }
       const result = moveClassToNewFileUseCase(get().codebase, classId, newId);
       if (!result.ok) {
         apply(result, describeMoveOutError);
@@ -553,6 +622,11 @@ function moveActions(
       return result.value.fileId;
     },
     moveMethodToNewClass: (methodId) => {
+      const blocked = blockDuringOpeningFix(get());
+      if (blocked !== null) {
+        set(blocked);
+        return null;
+      }
       const result = moveMethodToNewClassUseCase(get().codebase, methodId, newId);
       if (!result.ok) {
         apply(result, describeMoveOutError);
@@ -570,6 +644,11 @@ function moveActions(
 /** クラス・ファイル・空実装メソッドを取り除く操作。 */
 function deleteActions(apply: Apply, set: (partial: Partial<GameState>) => void, get: () => GameState): Pick<GameState, 'deleteClass' | 'deleteFile' | 'deleteMethod'> {
   const remove = <E>(result: Result<DeleteResult, E>, describe: (error: E) => string): boolean => {
+    const blocked = blockDuringOpeningFix(get());
+    if (blocked !== null) {
+      set(blocked);
+      return false;
+    }
     if (!result.ok) {
       set({ message: describe(result.error), notice: null });
       return false;
@@ -599,6 +678,8 @@ function replaceMethodActions(
 ): Pick<GameState, 'mergeMethods' | 'inlineMethod'> {
   return {
     mergeMethods: (methodAId, methodBId, newMethodName) => {
+      const blocked = blockDuringOpeningFix(get());
+      if (blocked !== null) { set(blocked); return false; }
       const input: MergeMethodsInput = { methodAId, methodBId, newMethodName };
       const result = mergeMethodsUseCase(get().codebase, input, () => crypto.randomUUID());
       set(
@@ -609,6 +690,8 @@ function replaceMethodActions(
       return result.ok;
     },
     inlineMethod: (methodId) => {
+      const blocked = blockDuringOpeningFix(get());
+      if (blocked !== null) { set(blocked); return; }
       const result = inlineMethodUseCase(get().codebase, methodId);
       set(
         result.ok
@@ -661,26 +744,38 @@ function restoreFirstDraft(holder: { drafts: Drafts }, firstStage: Stage): Codeb
   return restored;
 }
 
+function basicClassActions(apply: Apply, get: () => GameState): Pick<GameState, 'addClass' | 'addFile'> {
+  return {
+    addClass: (fileId, className) => apply(addClassUseCase(get().codebase, fileId, className, () => crypto.randomUUID()), describeAddClassError),
+    addFile: () => { apply(addNewFileUseCase(get().codebase, () => crypto.randomUUID()), () => ''); },
+  };
+}
+
+function initialManualFixState(stage: Stage, restored: Codebase | undefined): Pick<GameState, 'openingFixes' | 'closingFixSolved'> {
+  return {
+    openingFixes: restored !== undefined && painRequestsOf(stage).modify !== undefined ? { [stage.id]: null } : {},
+    closingFixSolved: false,
+  };
+}
+
 /**
  * stages の先頭のステージから始まるストアを作る。selectStage もこの stages から探す。
  * saveDraftsOn が true のときだけ、編集中のコードを localStorage の下書きに保存・復元する。
  */
-export function createGameStore(allStages: readonly Stage[], saveDraftsOn = true): GameStore {
+export function createGameStore(allStages: readonly Stage[], saveDraftsOn = true, openingFixEnabled = true): GameStore {
   const [firstStage] = allStages;
   const holder = { drafts: saveDraftsOn ? loadDrafts() : {} };
   const restored = restoreFirstDraft(holder, firstStage);
   const store = createStore<GameState>((set, get) => {
-    /** 操作の結果を反映し、成功したかを返す。 */
-    const apply = <E>(result: Result<Codebase, E>, describe: (error: E) => string): boolean => {
-      set(applyResult(get(), result, describe));
-      return result.ok;
-    };
+    const apply = createApply(set, get);
     return {
       stages: allStages,
       stage: firstStage, layoutResetCount: 0,
       codebase: restored ?? firstStage.codebase,
       celebration: null,
       restoredDraft: restored !== undefined,
+      ...initialManualFixState(firstStage, restored),
+      openingFixEnabled,
       draftStageIds: Object.keys(holder.drafts),
       history: emptyHistory(),
       selectedMethodId: null,
@@ -700,12 +795,7 @@ export function createGameStore(allStages: readonly Stage[], saveDraftsOn = true
       ...focusActions(set, get),
       ...extractActions(apply, set, get),
       ...replaceMethodActions(set, get),
-      addClass: (fileId, className) => {
-        return apply(addClassUseCase(get().codebase, fileId, className, () => crypto.randomUUID()), describeAddClassError);
-      },
-      addFile: () => {
-        apply(addNewFileUseCase(get().codebase, () => crypto.randomUUID()), () => '');
-      },
+      ...basicClassActions(apply, get),
       ...renameActions(apply, get),
       ...deleteActions(apply, set, get),
       ...moveActions(apply, set, get),
@@ -716,7 +806,12 @@ export function createGameStore(allStages: readonly Stage[], saveDraftsOn = true
         const next = selectStageState(get().stages, stageId, holder.drafts);
         if (next !== null) {
           if (get().stage.id !== stageId) get().endTour();
-          set({ ...next, layoutResetCount: get().layoutResetCount + 1, ghost: null });
+          const existingOpeningFixes = get().openingFixes;
+          const existingOpeningFix = existingOpeningFixes[stageId];
+          set({ ...next, openingFixes: existingOpeningFixes, layoutResetCount: get().layoutResetCount + 1, ghost: null });
+          if (next.openingFixes !== undefined) {
+            set({ openingFixes: { ...existingOpeningFixes, ...next.openingFixes, [stageId]: existingOpeningFix ?? next.openingFixes[stageId] } });
+          }
         }
       },
       ...progressActions(set, get),

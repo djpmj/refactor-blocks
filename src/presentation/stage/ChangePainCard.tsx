@@ -2,6 +2,8 @@ import type { Codebase } from '../../domain/codebase/Codebase';
 import { measureExtendPain, measurePain, painRequestsOf, type ChangePain, type ExtendPain } from '../../domain/change/changePain';
 import type { Stage } from '../../domain/stage/Stage';
 import { useGameStore } from '../store/useGameStore';
+import { stageStep } from '../../domain/change/stageStep';
+import { TOUR_STEPS } from '../tour/tourSteps';
 import { describeClasses, describePain, summarizePain, type PainDescription } from './describePain';
 
 function LocationList({ description }: Readonly<{ description: PainDescription }>) {
@@ -63,13 +65,22 @@ function ExtendAfter({ pain }: Readonly<{ pain: ExtendPain }>) {
   return <p>既存の {pain.initialModified.length} クラスを書き換えていたのが、<strong>{pain.currentModified.length} クラス</strong>で済みます。</p>;
 }
 
-function cardHeading(perfect: boolean, hasModify: boolean): string {
-  if (perfect) return 'なぜ分けるのか';
+function cardHeading(step: ReturnType<typeof stageStep>, hasModify: boolean): string {
+  if (step === 'closing-fix') return 'もし、この変更が来たら?(もう一度)';
+  if (step === 'change-request') return 'なぜ分けるのか';
   return hasModify ? 'もし、この変更が来たら?' : EXTEND_HEADING;
 }
 
-function CardBody({ stage, codebase, perfect, pain, extendPain }: Readonly<{ stage: Stage; codebase: Codebase; perfect: boolean; pain?: ChangePain; extendPain?: ExtendPain }>) {
-  if (perfect) {
+function needsManualFix(step: ReturnType<typeof stageStep>, siteCount: number): boolean {
+  return step === 'opening-fix' || step === 'closing-fix' || (step === 'refactor' && siteCount >= 2);
+}
+
+function ManualFixButton({ onStart }: Readonly<{ onStart: () => void }>) {
+  return <button type="button" className="button--primary" onClick={onStart}>実際に直してみる</button>;
+}
+
+function CardBody({ stage, codebase, step, pain, extendPain }: Readonly<{ stage: Stage; codebase: Codebase; step: ReturnType<typeof stageStep>; pain?: ChangePain; extendPain?: ExtendPain }>) {
+  if (step === 'change-request') {
     return (
       <>
         <p>{stage.why}</p>
@@ -81,7 +92,11 @@ function CardBody({ stage, codebase, perfect, pain, extendPain }: Readonly<{ sta
   }
   return (
     <>
-      {pain !== undefined && <ModifyBefore pain={pain} codebase={codebase} />}
+      {pain !== undefined && (step === 'closing-fix'
+        ? <><p><strong>{pain.request.title}</strong></p><p>{pain.request.description}</p></>
+        : <ModifyBefore pain={pain} codebase={codebase} />)}
+      {step === 'opening-fix' && <p>組み替える前に、まずこのコードのままで変更を入れてみよう。直す必要があるメソッドに印を付けてリリースします。</p>}
+      {step === 'closing-fix' && <p>組み替えたあとのコードで、同じ変更をもう一度入れてみよう。</p>}
       {extendPain !== undefined && <ExtendBefore pain={extendPain} codebase={codebase} withHeading={pain !== undefined} />}
     </>
   );
@@ -93,20 +108,21 @@ export function ChangePainCard({ stage, codebase, score }: Readonly<{ stage: Sta
   const extendPain = extend === undefined ? undefined : measureExtendPain(stage, codebase, extend);
   const canFixByHand = useGameStore((state) => state.changeSession === null && state.manualFix === null);
   const startManualFix = useGameStore((state) => state.startManualFix);
+  const openingDone = useGameStore((state) => Object.prototype.hasOwnProperty.call(state.openingFixes, stage.id));
+  const closingSolved = useGameStore((state) => state.closingFixSolved);
+  const tourNeedsManualFix = useGameStore((state) => state.tourStep !== null && TOUR_STEPS[state.tourStep]?.advance.kind === 'manual-fix-released');
   if (pain === undefined && extendPain === undefined) return null;
-  const perfect = score >= 100;
+  const step = stageStep({ score, hasModifyRequest: pain !== undefined, openingDone, closingSolved });
   const titleId = `change-pain-title-${stage.id}`;
   return (
     <section className="change-pain" aria-labelledby={titleId}>
-      <details open={perfect}>
+      <details open={step === 'opening-fix' || step === 'closing-fix' || step === 'change-request'}>
         <summary>
-          <h3 id={titleId}>{cardHeading(perfect, pain !== undefined)}</h3>
-          <span>{summarizePain(pain?.current, extendPain)}</span>
+          <h3 id={titleId}>{cardHeading(step, pain !== undefined)}</h3>
+          <span>{step === 'closing-fix' ? '同じ変更をもう一度手で直す' : summarizePain(pain?.current, extendPain)}</span>
         </summary>
-        <CardBody stage={stage} codebase={codebase} perfect={perfect} pain={pain} extendPain={extendPain} />
-        {canFixByHand && pain !== undefined && pain.current.siteIds.length >= 2 && (
-          <button type="button" className="button--primary" onClick={startManualFix}>実際に直してみる</button>
-        )}
+        <CardBody stage={stage} codebase={codebase} step={step} pain={pain} extendPain={extendPain} />
+        {canFixByHand && pain !== undefined && (tourNeedsManualFix || needsManualFix(step, pain.current.siteIds.length)) && <ManualFixButton onStart={startManualFix} />}
       </details>
     </section>
   );
