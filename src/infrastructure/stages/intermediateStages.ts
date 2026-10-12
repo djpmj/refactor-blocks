@@ -59,7 +59,7 @@ const cyclicDependencyStage: Stage = {
   responsibilityLimit: 4,
   changeRequests: [
     { id: 'req-price-rule', title: '価格の計算ルールを変えて', description: 'セール期間中は、明細の小計に期間限定の値引きを反映したい。', responsibility: 'pricing', linesPerSite: 8, partName: 'applySaleDiscount' },
-    { id: 'req-member-discount', title: '会員割引の条件を変えて', description: '会員ランクごとの割引率を見直すことになった。', responsibility: 'discount', linesPerSite: 6, partName: 'reviseRankDiscountRate' },
+    { id: 'req-member-discount', title: '会員割引の条件を変えて', description: '会員ランクごとの割引率を見直すことになった。', responsibility: 'discount', linesPerSite: 6, partName: 'reviseRankDiscountRate', rumor: { from: '先輩の田中さん', text: '「割引の条件」を変えたいという話が、いつか出てくるかもしれないらしいです。' } },
   ],
   codebase: {
     files: [
@@ -205,7 +205,7 @@ const godFileStage: Stage = {
   responsibilityLimit: 2,
   changeRequests: [
     { id: 'req-shipping-rule', title: '送料のルールを変えて', description: '離島への配送に追加料金がかかるようになった。', responsibility: 'shipping', linesPerSite: 8, partName: 'addRemoteIslandFee' },
-    { id: 'req-points-rule', title: 'ポイントのルールを変えて', description: 'ポイントの有効期限を1年から2年に延ばし、付与も見直す。', responsibility: 'points', linesPerSite: 6, partName: 'extendPointExpiry' },
+    { id: 'req-points-rule', title: 'ポイントのルールを変えて', description: 'ポイントの有効期限を1年から2年に延ばし、付与も見直す。', responsibility: 'points', linesPerSite: 6, partName: 'extendPointExpiry', rumor: { from: 'PMの鈴木さん', text: '「ポイントの扱い」を変えたいという話が、いつか出てくるかもしれないらしいです。' } },
   ],
   codebase: {
     files: [
@@ -357,7 +357,7 @@ const misplacedPrivateStage: Stage = {
   visibilityEnforced: true,
   changeRequests: [
     { id: 'req-sms', title: '通知をSMSにも送れるようにして', description: '配送完了の通知を、メールだけでなくSMSでも送れるようにしたい。', responsibility: 'delivery', linesPerSite: 8, partName: 'sendSms' },
-    { id: 'req-log-format', title: '送信ログのフォーマットを見直して', description: '送信ログに記録する項目を増やし、書式を見直したい。', responsibility: 'logging', linesPerSite: 5, partName: 'formatDeliveryLog' },
+    { id: 'req-log-format', title: '送信ログのフォーマットを見直して', description: '送信ログに記録する項目を増やし、書式を見直したい。', responsibility: 'logging', linesPerSite: 5, partName: 'formatDeliveryLog', rumor: { from: 'QAの高橋さん', text: '「記録する内容」を変えたいという話が、いつか出てくるかもしれないらしいです。' } },
   ],
   codebase: {
     files: [
@@ -536,7 +536,7 @@ const volatileTaxStage: Stage = {
   ...salesReportRules,
   changeRequests: [
     { id: 'req-reduced-tax-items', title: '軽減税率の対象品目を増やして', description: '新しく扱い始めた定期購読の新聞を、軽減税率の対象として計算する。', responsibility: 'tax', linesPerSite: 14, partName: 'addNewspaperReducedTax' },
-    { id: 'req-tax-rounding', title: '税額の端数処理を変えて', description: '税額の端数を、明細ごとではなく請求単位でまとめて切り捨てる。', responsibility: 'tax', linesPerSite: 14, partName: 'roundTaxPerInvoice' },
+    { id: 'req-tax-rounding', title: '税額の端数処理を変えて', description: '税額の端数を、明細ごとではなく請求単位でまとめて切り捨てる。', responsibility: 'tax', linesPerSite: 14, partName: 'roundTaxPerInvoice', rumor: { from: '先輩の田中さん', text: '「税の扱い」を変えたいという話が、いつか出てくるかもしれないらしいです。' } },
   ],
   codebase: salesReportCodebase,
 };
@@ -590,7 +590,7 @@ const volatileFormatStage: Stage = {
   ...salesReportRules,
   changeRequests: [
     { id: 'req-column-order', title: '取引先向けに列の並びを変えて', description: '大口の取引先向けに、商品コードを先頭の列に移した帳票を出す。', responsibility: 'formatting', linesPerSite: 14, partName: 'reorderColumnsForKeyAccount' },
-    { id: 'req-pdf-output', title: 'PDFでも出せるようにして', description: 'これまでのCSVに加えて、PDFの帳票も出せるようにする。', responsibility: 'formatting', linesPerSite: 14, partName: 'renderPdfReport' },
+    { id: 'req-pdf-output', title: 'PDFでも出せるようにして', description: 'これまでのCSVに加えて、PDFの帳票も出せるようにする。', responsibility: 'formatting', linesPerSite: 14, partName: 'renderPdfReport', rumor: { from: '営業の佐藤さん', text: '「表の見せ方」を変えたいという話が、いつか出てくるかもしれないらしいです。' } },
   ],
   codebase: salesReportCodebase,
 };
@@ -653,7 +653,7 @@ const featureEnvyStage: Stage = {
   responsibilityLimit: 3,
   changeRequests: [
     { id: 'req-free-admin-seat', title: '管理者の席は無料にして', description: '契約の管理者1名分の席は請求しないようにしたい', responsibility: 'pricing', linesPerSite: 6, partName: 'excludeAdminSeat' },
-    { id: 'req-campaign-trial', title: 'キャンペーン契約はトライアルを30日にして', description: 'キャンペーン経由の契約だけ、トライアル期間を30日に延ばしたい', responsibility: 'trial', linesPerSite: 4, partName: 'applyCampaignTrial' },
+    { id: 'req-campaign-trial', title: 'キャンペーン契約はトライアルを30日にして', description: 'キャンペーン経由の契約だけ、トライアル期間を30日に延ばしたい', responsibility: 'trial', linesPerSite: 4, partName: 'applyCampaignTrial', rumor: { from: '先輩の田中さん', text: '「お試し期間」を変えたいという話が、いつか出てくるかもしれないらしいです。' } },
   ],
   codebase: {
     files: [
@@ -832,7 +832,7 @@ const anemicDomainModelStage: Stage = {
   cohesiveResponsibilities: [['account-status', 'withdrawal-limit', 'balance']],
   changeRequests: [
     { id: 'req-premium-daily-limit', title: 'プレミアム会員は1日の引き出し上限を上げて', description: 'プレミアム会員だけ、1日に引き出せる上限額を100万円にしたい', responsibility: 'withdrawal-limit', linesPerSite: 6, partName: 'raisePremiumDailyLimit' },
-    { id: 'req-deposit-while-frozen', title: '凍結中でも入金だけは受け付けて', description: '口座が凍結されていても、入金(給与の振込など)は受け付けるようにしたい', responsibility: 'account-status', linesPerSite: 4, partName: 'allowDepositWhileFrozen' },
+    { id: 'req-deposit-while-frozen', title: '凍結中でも入金だけは受け付けて', description: '口座が凍結されていても、入金(給与の振込など)は受け付けるようにしたい', responsibility: 'account-status', linesPerSite: 4, partName: 'allowDepositWhileFrozen', rumor: { from: 'QAの高橋さん', text: '「口座の状態ごとの扱い」を変えたいという話が、いつか出てくるかもしれないらしいです。' } },
   ],
   codebase: {
     files: [
@@ -1040,7 +1040,7 @@ const extractClassStage: Stage = {
   responsibilityLimit: 4,
   changeRequests: [
     { id: 'req-building-name', title: '住所に建物名・部屋番号の欄を足して', description: '源泉徴収票の郵送が届かないことがあるので、建物名と部屋番号も持てるようにしたい', responsibility: 'address', linesPerSite: 6, partName: 'addBuildingName' },
-    { id: 'req-late-night-overtime', title: '深夜残業の割増率を上げて', description: '22時以降の残業は、割増率を50%で計算したい', responsibility: 'payroll', linesPerSite: 8, partName: 'applyLateNightPremium' },
+    { id: 'req-late-night-overtime', title: '深夜残業の割増率を上げて', description: '22時以降の残業は、割増率を50%で計算したい', responsibility: 'payroll', linesPerSite: 8, partName: 'applyLateNightPremium', rumor: { from: 'PMの鈴木さん', text: '「勤務時間帯の計算」を変えたいという話が、いつか出てくるかもしれないらしいです。' } },
   ],
   codebase: {
     files: [
@@ -1193,7 +1193,7 @@ const copyPasteTaxStage: Stage = {
   responsibilityLimit: 1,
   changeRequests: [
     { id: 'req-reduced-tax-rate', title: '軽減税率8%に対応して', description: '飲食料品は消費税を8%で計算するようにしたい。', responsibility: 'tax', linesPerSite: 8, partName: 'applyReducedTaxRate' },
-    { id: 'req-order-stock-check', title: '在庫確認のルールを見直して', description: '注文確定のとき、予約在庫も数に入れて確かめたい。', responsibility: 'ordering', linesPerSite: 6, partName: 'countReservedStock' },
+    { id: 'req-order-stock-check', title: '在庫確認のルールを見直して', description: '注文確定のとき、予約在庫も数に入れて確かめたい。', responsibility: 'ordering', linesPerSite: 6, partName: 'countReservedStock', rumor: { from: 'QAの高橋さん', text: '在庫の数え方に、何か変化があるかもしれないと聞きました。' } },
   ],
   codebase: {
     files: [
@@ -1501,7 +1501,7 @@ const layeredOrderApiStage: Stage = {
   ],
   changeRequests: [
     { id: 'req-external-storage', title: '保存先をDBから外部APIに変えて', description: '注文の保存先を、自社DBから外部の注文管理APIに切り替えることになった。', responsibility: 'persistence', linesPerSite: 10, partName: 'switchToExternalApi' },
-    { id: 'req-free-shipping', title: '送料無料の条件を変えて', description: '送料無料になる条件を、合計5,000円以上から3,000円以上に下げたい。', responsibility: 'order-rule', linesPerSite: 6, partName: 'reviseFreeShippingRule' },
+    { id: 'req-free-shipping', title: '送料無料の条件を変えて', description: '送料無料になる条件を、合計5,000円以上から3,000円以上に下げたい。', responsibility: 'order-rule', linesPerSite: 6, partName: 'reviseFreeShippingRule', rumor: { from: 'PMの鈴木さん', text: '「注文の条件」を変えたいという話が、いつか出てくるかもしれないらしいです。' } },
   ],
   codebase: {
     files: [
@@ -1598,7 +1598,7 @@ const middleManStage: Stage = {
   responsibilityLimit: 2,
   changeRequests: [
     { id: 'req-stock-rule', title: '在庫確認のルールを変えて', description: '注文時に予約する在庫の条件を変更する。', responsibility: 'order-rule', linesPerSite: 4, partName: 'reviseStockRule' },
-    { id: 'req-response', title: 'レスポンスの形式を変えて', description: '注文APIが返すレスポンスの形式を変更する。', responsibility: 'http', linesPerSite: 3, partName: 'reviseResponse' },
+    { id: 'req-response', title: 'レスポンスの形式を変えて', description: '注文APIが返すレスポンスの形式を変更する。', responsibility: 'http', linesPerSite: 3, partName: 'reviseResponse', rumor: { from: '先輩の田中さん', text: 'APIから返す情報の形が、いずれ変わるかもしれないという話が出ているらしいです。' } },
   ],
   codebase: {
     files: [

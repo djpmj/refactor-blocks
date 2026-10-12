@@ -9,6 +9,8 @@ import { fragmentLines, methodLines } from '../../domain/codebase/lineCount';
 import { CodebasePreviewDialog } from '../preview/CodebasePreviewDialog';
 import { useGameStore } from '../store/useGameStore';
 import { describeDeductions, describePlacement, siteNames } from './describeChange';
+import { describeRumorPayoff } from './describeRumorPayoff';
+import { rumoredRequests } from '../../domain/change/rumors';
 
 const KIND_LABEL: Record<ChangeKind, string> = { modify: 'ルールの変更', extend: '機能の追加' };
 
@@ -48,9 +50,15 @@ function SampleAnswer({ sample }: Readonly<{ sample: SampleImplementation | unde
 function OutcomeCard({ outcome, codebase, previous }: Readonly<{ outcome: ChangeOutcome; codebase: Codebase; previous?: number }>) {
   const { current, initial, request, placement, sample } = outcome;
   const reasons = [...(current === null ? [] : describeDeductions(current, codebase)), ...describePlacement(outcome, codebase)];
+  const rumorPayoff = describeRumorPayoff(outcome, codebase);
   return (
     <li className="change-outcome" data-testid={`change-outcome-${request.id}`}>
       <h3 className="change-outcome__title">{request.title}</h3>
+      {rumorPayoff !== undefined && (
+        <p className={`rumor-payoff${placement.score.total === 100 ? ' rumor-payoff--ready' : ' rumor-payoff--unready'}`} data-testid="rumor-payoff">
+          {rumorPayoff}
+        </p>
+      )}
       {current === null || initial === null ? (
         <p className="change-outcome__facts">機能の追加なので、置き方だけで採点します</p>
       ) : (
@@ -162,6 +170,7 @@ export function ChangeRequestPanel() {
   const endChangeRequests = useGameStore((state) => state.endChangeRequests);
   if (session === null) return null;
   const request = stage.changeRequests.at(session.index);
+  const isRumored = request !== undefined && rumoredRequests(stage).some((candidate) => candidate.id === request.id);
   return (
     <aside className="method-editor change-panel" aria-label="変更依頼" data-testid="change-panel">
       {request === undefined ? (
@@ -172,6 +181,7 @@ export function ChangeRequestPanel() {
             依頼 {session.index + 1} / {stage.changeRequests.length}
             <span data-testid="change-request-kind"> {KIND_LABEL[changeKindOf(request)]}</span>
           </p>
+          {isRumored && request.rumor !== undefined && <p className="rumor-came-true" data-testid="rumor-came-true">うわさが本当になりました: 「{request.rumor.text}」</p>}
           <h2 className="method-editor__title" data-testid="change-request-title">
             {request.title}
           </h2>

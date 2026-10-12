@@ -63,7 +63,7 @@ const notifierHierarchyStage: Stage = {
   responsibilityLimit: 2,
   changeRequests: [
     { id: 'req-notification-format', title: '通知文の書式を見直して', description: '通知文に、問い合わせ番号を差し込めるようにしたい。', responsibility: 'formatting', linesPerSite: 8, partName: 'insertInquiryNumber' },
-    { id: 'req-notification-log', title: '送信ログの記録方法を見直して', description: '送信ログに、再送かどうかのフラグを追加したい。', responsibility: 'logging', linesPerSite: 6, partName: 'logResendFlag' },
+    { id: 'req-notification-log', title: '送信ログの記録方法を見直して', description: '送信ログに、再送かどうかのフラグを追加したい。', responsibility: 'logging', linesPerSite: 6, partName: 'logResendFlag', rumor: { from: '先輩の田中さん', text: '「記録する内容」を変えたいという話が、いつか出てくるかもしれないらしいです。' } },
   ],
   codebase: {
     files: [
@@ -199,7 +199,7 @@ const paymentGatewayInterfaceStage: Stage = {
       partName: 'charge',
     },
     { id: 'req-payment-logging', title: '決済ログの記録方法を見直して', description: '決済ログに、失敗時のリトライ回数を残したい。', responsibility: 'payment-logging', linesPerSite: 6, partName: 'logRetryCount' },
-    { id: 'req-gateway-integration', title: '決済APIの呼び出し方を見直して', description: '決済API呼び出しに、共通のタイムアウト設定を追加したい。', responsibility: 'gateway-integration', linesPerSite: 5, partName: 'applyGatewayTimeout' },
+    { id: 'req-gateway-integration', title: '決済APIの呼び出し方を見直して', description: '決済API呼び出しに、共通のタイムアウト設定を追加したい。', responsibility: 'gateway-integration', linesPerSite: 5, partName: 'applyGatewayTimeout', rumor: { from: 'PMの鈴木さん', text: '「外部決済とのやり取り」を変えたいという話が、いつか出てくるかもしれないらしいです。' } },
   ],
   codebase: {
     files: [
@@ -361,7 +361,7 @@ const discountStrategyStage: Stage = {
   responsibilityLimit: 2,
   changeRequests: [
     { id: 'req-premium-discount', title: 'プレミアム会員の割引率を変えて', description: 'プレミアム会員の割引率を12%に変えたい。', responsibility: 'discount-premium', linesPerSite: 5, partName: 'revisePremiumRate' },
-    { id: 'req-vip-discount', title: 'VIP会員の割引条件を変えて', description: 'VIP会員には送料無料に加えてポイント還元率も上げたい。', responsibility: 'discount-vip', linesPerSite: 6, partName: 'raiseVipPointRate' },
+    { id: 'req-vip-discount', title: 'VIP会員の割引条件を変えて', description: 'VIP会員には送料無料に加えてポイント還元率も上げたい。', responsibility: 'discount-vip', linesPerSite: 6, partName: 'raiseVipPointRate', rumor: { from: '営業の佐藤さん', text: '「会員特典」を変えたいという話が、いつか出てくるかもしれないらしいです。' } },
   ],
   codebase: {
     files: [
@@ -464,7 +464,7 @@ const reportFactoryStage: Stage = {
   responsibilityLimit: 2,
   changeRequests: [
     { id: 'req-report-building', title: '帳票のタイトルの付け方を見直して', description: '週次・月次のレポートのタイトルに、出力日時を含めたい。', responsibility: 'report-building', linesPerSite: 6, partName: 'addExportedAtToTitle' },
-    { id: 'req-report-delivery', title: 'レポートの送信方法を見直して', description: 'レポート送信に、失敗時の再送処理を追加したい。', responsibility: 'report-delivery', linesPerSite: 5, partName: 'retryReportDelivery' },
+    { id: 'req-report-delivery', title: 'レポートの送信方法を見直して', description: 'レポート送信に、失敗時の再送処理を追加したい。', responsibility: 'report-delivery', linesPerSite: 5, partName: 'retryReportDelivery', rumor: { from: '先輩の田中さん', text: '「帳票の届け方」を変えたいという話が、いつか出てくるかもしれないらしいです。' } },
   ],
   codebase: {
     files: [
@@ -580,7 +580,7 @@ const collapseHierarchyStage: Stage = {
   responsibilityLimit: 2,
   changeRequests: [
     { id: 'req-tab-delimiter', title: '区切り文字をタブにも切り替えられるようにして', description: 'Excelで開きやすいよう、タブ区切りのファイルも出せるようにする。', responsibility: 'csv-format', linesPerSite: 6, partName: 'switchToTabDelimiter' },
-    { id: 'req-fiscal-year', title: '集計期間を会計年度で指定できるようにして', description: '4月始まりの会計年度で、売上の集計期間を指定できるようにする。', responsibility: 'query', linesPerSite: 4, partName: 'filterByFiscalYear' },
+    { id: 'req-fiscal-year', title: '集計期間を会計年度で指定できるようにして', description: '4月始まりの会計年度で、売上の集計期間を指定できるようにする。', responsibility: 'query', linesPerSite: 4, partName: 'filterByFiscalYear', rumor: { from: 'QAの高橋さん', text: '「集計期間」を変えたいという話が、いつか出てくるかもしれないらしいです。' } },
   ],
   codebase: {
     files: [
@@ -751,6 +751,7 @@ const interfaceSegregationStage: Stage = {
       responsibility: 'chat-post',
       linesPerSite: 5,
       partName: 'replyInThread',
+      rumor: { from: 'QAの高橋さん', text: '障害の続報をどう共有するか、現場で見直したいという話が出ているらしいです。' },
     },
   ],
   codebase: {
@@ -1037,7 +1038,7 @@ const valueObjectStage: Stage = {
   responsibilityLimit: 3,
   changeRequests: [
     { id: 'req-accept-euro', title: 'ユーロ建ての経費も申請できるようにして', description: '海外出張が増えたので、対応通貨にユーロ(EUR)を足したい', responsibility: 'money-validation', linesPerSite: 4, partName: 'acceptEuro' },
-    { id: 'req-hide-yen-decimals', title: '円は小数点以下を表示しないで', description: '円の金額は「1,200円」のように小数点以下を出さずに表示したい', responsibility: 'money-format', linesPerSite: 6, partName: 'hideYenDecimals' },
+    { id: 'req-hide-yen-decimals', title: '円は小数点以下を表示しないで', description: '円の金額は「1,200円」のように小数点以下を出さずに表示したい', responsibility: 'money-format', linesPerSite: 6, partName: 'hideYenDecimals', rumor: { from: 'PMの鈴木さん', text: '「金額の表示方法」を変えたいという話が、いつか出てくるかもしれないらしいです。' } },
   ],
   codebase: {
     files: [
