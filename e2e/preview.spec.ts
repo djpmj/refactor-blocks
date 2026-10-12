@@ -1,5 +1,6 @@
-﻿import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { selectStage, startChangeRequests } from './selectStage.js';
+import { openReferenceItem } from './referenceMenuActions.js';
 
 const BLANK_PARTS = ['placeOrder', 'shipOrder', 'calculateOrderTax', 'saveOrder', 'updateShippingStatus', 'sendOrderConfirmMail', 'sendShippedMail'] as const;
 
@@ -105,7 +106,7 @@ test('「変更前の図を見る」を押すと、最初の状態のクラス�
   await page.goto('/');
 
   // Act
-  await page.getByRole('button', { name: '変更前の図を見る' }).click();
+  await openReferenceItem(page, 'reference-before');
 
   // Assert
   const dialog = page.getByTestId('codebase-preview');
@@ -141,7 +142,7 @@ test('「変更前の図を見る」を押すと、最初の状態のクラス�
 
   // Act: 閉じて開き直す
   await dialog.getByRole('button', { name: '閉じる' }).click();
-  await page.getByRole('button', { name: '変更前の図を見る' }).click();
+  await openReferenceItem(page, 'reference-before');
   const reopened = page.getByTestId('codebase-preview');
   await expect(reopened.getByTestId('codebase-preview-maximize')).toHaveAttribute('aria-pressed', 'false');
   await expect(reopened.getByRole('complementary')).toHaveCount(0);
@@ -158,7 +159,7 @@ test('「解答例の図を見る」を押すと、模範解答どおりに抽�
   await page.goto('/');
 
   // Act
-  await page.getByRole('button', { name: '解答例の図を見る' }).click();
+  await openReferenceItem(page, 'reference-sample');
 
   // Assert
   const dialog = page.getByTestId('codebase-preview');
@@ -174,7 +175,7 @@ test('「解答例の図を見る」を押すと、模範解答どおりに抽�
 
 test('プレビューのメソッドパネルはドラッグとキーボードで幅を変えられる', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: '解答例の図を見る' }).click();
+  await openReferenceItem(page, 'reference-sample');
   const dialog = page.getByTestId('codebase-preview');
   await expect(dialog.getByRole('separator', { name: 'メソッドパネルの幅を変更' })).toHaveCount(0);
   await dialog.getByRole('button', { name: /aggregateSales/ }).click();
@@ -213,7 +214,7 @@ test('プレビューのメソッドパネルはドラッグとキーボード�
 test('幅800px以下のプレビューでは仕切りを出さずパネルを下に表示する', async ({ page }) => {
   await page.setViewportSize({ width: 800, height: 720 });
   await page.goto('/');
-  await page.getByRole('button', { name: '解答例の図を見る' }).click();
+  await openReferenceItem(page, 'reference-sample');
   const dialog = page.getByTestId('codebase-preview');
   await dialog.getByRole('button', { name: /aggregateSales/ }).click();
   await expect(dialog.getByRole('separator', { name: 'メソッドパネルの幅を変更' })).toHaveCount(0);

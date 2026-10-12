@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import type { Codebase } from '../../domain/codebase/Codebase';
 import { scoreCodebase, type Score } from '../../domain/scoring/score';
-import { sampleAnswerCodebase, sampleAnswerSteps, type SolutionStep } from '../../domain/stage/sampleAnswer';
+import type { SolutionStep } from '../../domain/stage/sampleAnswer';
 import type { Stage } from '../../domain/stage/Stage';
 import { CritiqueButton, CritiqueResult } from '../critique/CritiquePanel';
-import { SampleAnswerReplayDialog } from './SampleAnswerReplayDialog';
-import { CodebasePreviewDialog } from '../preview/CodebasePreviewDialog';
+import { ReferenceMenu } from './ReferenceMenu';
 import { OperationGuideDialog } from '../guide/OperationGuideDialog';
 import { useGuideShortcut } from '../guide/useGuideShortcut';
 import { useGameStore } from '../store/useGameStore';
@@ -66,8 +65,6 @@ function StageNavigation() {
   );
 }
 
-type PreviewKind = 'before' | 'sample';
-
 function useStageSidebarWidth() {
   const { width, handleProps } = useResizableSidebarWidth({
     side: 'left', defaultWidth: 260, minWidth: 200, maxWidth: 480, ariaLabel: '課題とヒントの幅を変更',
@@ -79,34 +76,6 @@ function useStageSidebarWidth() {
 function StageSidebarToggle({ open, onToggle }: Readonly<{ open: boolean; onToggle: () => void }>) {
   const label = open ? 'サイドバーを閉じる' : 'サイドバーを開く';
   return <button type="button" className="sidebar-toggle" aria-expanded={open} aria-controls="stage-sidebar" aria-label={label} title={label} onClick={onToggle}>{open ? '«' : '»'}</button>;
-}
-
-/** 「変更前」「解答例」の図を読み取り専用で見せるボタン。呼び出し側で key={stage.id} を付け、ステージを切り替えたら閉じるようにする。 */
-function PreviewButtons({ stage, disabled }: Readonly<{ stage: Stage; disabled: boolean }>) {
-  const [preview, setPreview] = useState<PreviewKind | null>(null);
-  const [replaying, setReplaying] = useState(false);
-  const sampleSteps = sampleAnswerSteps[stage.id];
-  const hasSampleAnswer = sampleSteps !== undefined;
-  const codebase = useMemo(() => {
-    if (preview === 'before') return stage.codebase;
-    if (preview === 'sample' && hasSampleAnswer) return sampleAnswerCodebase(stage);
-    return null;
-  }, [preview, stage, hasSampleAnswer]);
-  return (
-    <>
-      <button type="button" onClick={() => setPreview('before')} disabled={disabled}>
-        変更前の図を見る
-      </button>
-      <button type="button" onClick={() => setPreview('sample')} disabled={disabled || !hasSampleAnswer} title={hasSampleAnswer ? undefined : 'このステージには解答例が未登録です'}>
-        解答例の図を見る
-      </button>
-      <button type="button" data-testid="sample-replay-open" onClick={() => setReplaying(true)} disabled={disabled || !hasSampleAnswer} title="模範解答の手順を1手ずつ見ます(答えが分かります)">
-        解答を再生
-      </button>
-      {replaying && sampleSteps !== undefined && <SampleAnswerReplayDialog stage={stage} steps={sampleSteps} onClose={() => setReplaying(false)} />}
-      <CodebasePreviewDialog title={preview === 'sample' ? '解答例の図' : '変更前の図'} codebase={codebase} methodLimit={stage.limits.method} onClose={() => setPreview(null)} />
-    </>
-  );
 }
 
 /** 点数を丸いゲージで見せる。詳細(減点の内訳)は隣のテキストに出す。 */
@@ -141,7 +110,7 @@ function ScoreArea({ stage, codebase, score, disabled }: Readonly<{ stage: Stage
 }
 
 /** ツールバー(キャンバスの上): 変更依頼・やり直し系・図の確認。 */
-function ActionToolbar({ stage, isPerfect, active }: Readonly<{ stage: Stage; isPerfect: boolean; active: boolean }>) {
+function ActionToolbar({ stage, isPerfect, active, revealedCount, onRevealHint, onOpenHints }: Readonly<{ stage: Stage; isPerfect: boolean; active: boolean; revealedCount: number; onRevealHint: () => void; onOpenHints: () => void }>) {
   const [guideOpen, setGuideOpen] = useState(false);
   const resetStage = useGameStore((state) => state.resetStage);
   const undo = useGameStore((state) => state.undo);
@@ -180,7 +149,7 @@ function ActionToolbar({ stage, isPerfect, active }: Readonly<{ stage: Stage; is
       <button type="button" className="stage-panel__reset" onClick={resetStage} disabled={investigating}>
         最初に戻す
       </button>
-      <PreviewButtons key={stage.id} stage={stage} disabled={investigating} />
+      <ReferenceMenu key={stage.id} stage={stage} disabled={investigating} revealedCount={revealedCount} onRevealHint={onRevealHint} onOpenHints={onOpenHints} />
       <button type="button" data-testid="operation-guide-open" title="操作ガイド(?)" onClick={() => setGuideOpen(true)}>
         操作ガイド
       </button>
@@ -247,6 +216,15 @@ function StageSidebar({ stage, codebase, score, initialScore, investigating, rev
   );
 }
 
+function useStagePanelEffects(stageId: string, score: number, actions: Readonly<{ recordProgress: (stageId: string, score: number) => void; startTour: () => void; setSidebarOpen: (open: boolean) => void }>, tourStep: number | null) {
+  const { recordProgress, startTour, setSidebarOpen } = actions;
+  useEffect(() => recordProgress(stageId, score), [stageId, score, recordProgress]);
+  useEffect(() => startTour(), [stageId, startTour]);
+  useEffect(() => {
+    if (tourStep === 0) setSidebarOpen(true);
+  }, [setSidebarOpen, tourStep]);
+}
+
 /** ステージの目標と、行数・結合度・循環依存・責務の混在から出した点数を表示する。責務の中身(responsibility の値)は見せない。 */
 function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage; children: ReactNode; active: boolean }>) {
   // 実装中は部品置き場入りのコードなので、点数と進捗は挑戦前のコードで数える
@@ -264,15 +242,8 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
   const { handleProps, style: sidebarStyle } = useStageSidebarWidth();
   const revealedCount = revealed.stageId === stage.id ? revealed.count : 0;
   const { hints, total } = useHints(stage, revealedCount);
-  useEffect(() => {
-    recordProgress(stage.id, score.total);
-  }, [stage.id, score.total, recordProgress]);
-  useEffect(() => {
-    startTour();
-  }, [stage.id, startTour]);
-  useEffect(() => {
-    if (tourStep === 0) setSidebarOpen(true);
-  }, [setSidebarOpen, tourStep]);
+  const stagePanelActions = useMemo(() => ({ recordProgress, startTour, setSidebarOpen }), [recordProgress, startTour, setSidebarOpen]);
+  useStagePanelEffects(stage.id, score.total, stagePanelActions, tourStep);
   return (
     <>
       <SpotlightTour />
@@ -300,7 +271,14 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
         {sidebarOpen && <div className="sidebar-resizable__handle sidebar-resizable__handle--left" {...handleProps} />}
         <StageSidebarToggle open={sidebarOpen} onToggle={toggleSidebar} />
         <div className="workspace">
-          <ActionToolbar stage={stage} isPerfect={score.total >= 100} active={active} />
+          <ActionToolbar
+            stage={stage}
+            isPerfect={score.total >= 100}
+            active={active}
+            revealedCount={revealedCount}
+            onRevealHint={() => setRevealed({ stageId: stage.id, count: revealedCount + 1 })}
+            onOpenHints={() => setSidebarOpen(true)}
+          />
           <DraftRestoredNotice />
           <div className="workspace__main">{children}</div>
         </div>
