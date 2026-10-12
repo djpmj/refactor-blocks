@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-12 00:35 UTC PR #155 feat: resize preview method panels
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check ✅(1641件のtest / lint / typecheck) / E2E: 環境にchromiumが無く未実行(PR本文は195/195 PASS)。Issue #148・docs/specs/preview-panel-resizable.mdの振る舞い、既存フック再利用、DDD層境界を確認
+- マージ: squash & delete-branch
+
 ## 2026-10-12 00:30 UTC PR #154 feat: shorten suggested names for extracted methods
 
 - 判定: 合格(blocker無し)
@@ -210,17 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(1385件) / npm run lint ✅ / npm run typecheck ✅ / E2E: レビュー環境にChromiumが無く実行不可(PR本文では147件通過)
-- マージ: squash & delete-branch
-
-## 2026-10-04 13:20 UTC PR #78 実装: why-split-change-pain
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(1059件) / npm run lint ✅ / npm run typecheck ✅ / E2E: レビュー環境にChromiumが無く実行不可(PR本文では116件通過)
-- マージ: squash & delete-branch
-
-## 2026-10-04 12:30 UTC PR #77 操作ガイドを追加
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(lint ✅ / typecheck ✅ / test 1032件 ✅)。E2Eは環境で実行できず未検証(PR記載では114件成功)。差分は仕様どおりでDDD層境界にも問題なし
 - マージ: squash & delete-branch
 
