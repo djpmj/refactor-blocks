@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-12 04:46 UTC PR #163 正解・不正解の色分けとアニメーション演出
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(1674件) / npm run lint ✅ / npm run typecheck ✅。E2Eはレビュー環境で実行不可(ブラウザ未導入。PR本文では203件通過)。Issue #159・docs/specs/answer-feedback-animation.mdのAnswerVerdict共通化、reduced-motion対応、ライト/ダークの文字色トークンを確認
+- マージ: squash & delete-branch
+
 ## 2026-10-12 01:30 UTC PR #158 feat: explain inlined methods when deleting classes
 
 - 判定: 合格(blocker無し)
@@ -210,11 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(1501件) / npm run lint ✅ / npm run typecheck ✅ / stage-report再生成で差分なし ✅。E2Eはブラウザ未導入のため再実行できず、PR本文の報告(148件pass)を参照
-- マージ: squash & delete-branch
-
-## 2026-10-05 14:15 UTC PR #105 Add replay maximize and read-only method panel
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(lint ✅ / typecheck ✅ / test ✅ 1392件)。E2Eはブラウザ未導入のため再実行できず、PR本文の報告(148件pass)を参照
 - マージ: squash & delete-branch
 

@@ -86,3 +86,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [mixed-responsibility-method](mixed-responsibility-method.md) | 抽出で作ったメソッドに別々の責務の処理が混ざっていたら減点する |
 | [warning-edge-popover-front](warning-edge-popover-front.md) | 警告の矢印の説明が、隣の「循環」バッジの下に隠れないよう前面に出す |
 | [delete-inline-notice](delete-inline-notice.md) | クラス・ファイル削除時に、呼び出し元へ戻した処理をキャンバスに案内する |
+| [answer-feedback-animation](answer-feedback-animation.md) | 理解度チェックと設計くらべの正誤を色分けし、正解・不正解のアニメーションを出す |
