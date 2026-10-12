@@ -64,3 +64,52 @@ test('中級1の循環矢印に説明バッジを表示する', async ({ page })
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect(edge.first().locator('.react-flow__edge-path')).toHaveCSS('animation-name', 'none');
 });
+
+test('中級1の循環説明はどちらを開いても隣のバッジより前に表示され、閉じると重なり順が戻る', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await page.goto('/');
+  await selectStage(page, '中級1: 循環依存を断ち切る');
+
+  const badges = page.getByRole('button', { name: 'この矢印の問題を見る' });
+  await expect(badges).toHaveCount(2);
+  const first = badges.nth(0);
+  const second = badges.nth(1);
+  const firstWrapper = first.locator('..');
+  const secondWrapper = second.locator('..');
+  const popover = page.getByRole('dialog', { name: '矢印の問題の説明' });
+
+  const expectPopoverAtBadgeCenter = async (badge: typeof first) => {
+    const box = await badge.boundingBox();
+    if (box === null) throw new Error('循環バッジの位置を取得できません');
+    const topmost = await page.locator('body').evaluate((body, { x, y }) => body.ownerDocument.elementFromPoint(x, y)?.closest('.warning-edge__popover') !== null, {
+      x: box.x + box.width / 2,
+      y: box.y + box.height / 2,
+    });
+    expect(topmost).toBe(true);
+  };
+
+  await first.click();
+  await expect(popover).toBeVisible();
+  await expect(popover).toContainText('2つのクラスが互いに呼び合っています');
+  await expect(popover).toContainText('依存を一方通行にすると、片方だけを安心して変えられます。');
+  await expect(firstWrapper).toHaveCSS('z-index', '30');
+  await expect(secondWrapper).toHaveCSS('z-index', '10');
+  await expectPopoverAtBadgeCenter(second);
+  await page.keyboard.press('Escape');
+  await expect(popover).toHaveCount(0);
+  await expect(firstWrapper).toHaveCSS('z-index', '10');
+  await expect(secondWrapper).toHaveCSS('z-index', '10');
+  await expect(first).toBeVisible();
+  await expect(second).toBeVisible();
+
+  await second.click();
+  await expect(popover).toBeVisible();
+  await expect(popover).toContainText('2つのクラスが互いに呼び合っています');
+  await expect(popover).toContainText('依存を一方通行にすると、片方だけを安心して変えられます。');
+  await expect(secondWrapper).toHaveCSS('z-index', '30');
+  await expect(firstWrapper).toHaveCSS('z-index', '10');
+  await expect(secondWrapper.getByRole('dialog', { name: '矢印の問題の説明' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(popover).toHaveCount(0);
+  await expect(secondWrapper).toHaveCSS('z-index', '10');
+});

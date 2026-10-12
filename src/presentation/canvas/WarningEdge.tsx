@@ -91,7 +91,7 @@ export function WarningEdge(props: Readonly<EdgeProps>) {
     <>
       <BaseEdge path={route.path} markerEnd={markerEnd} style={style} />
       <EdgeLabelRenderer>
-        <div className="warning-edge" style={{ transform: `translate(-50%, -50%) translate(${route.labelX}px,${labelY}px)` }}>
+        <div className={`warning-edge${open ? ' warning-edge--open' : ''}`} style={{ transform: `translate(-50%, -50%) translate(${route.labelX}px,${labelY}px)` }}>
           <button
             className="warning-edge__button nodrag nopan"
             type="button"
