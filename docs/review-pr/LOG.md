@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-12 08:10 UTC PR #168 feat: clarify clear condition status (#162)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint/typecheck/test 1674件) ✅ / E2E 205件 ✅。Issue #162・docs/specs/clear-condition-badges.mdの、goal/current分離、達成数表示、達成瞬間の演出と初期化・リセット・undo/redo時の抑止、reduced-motionを確認。domain/application変更なし
+- マージ: squash & delete-branch
+
 ## 2026-10-12 07:11 UTC PR #167 ファイルの減点理由をアイコンから表示
 
 - 判定: 合格(blocker無し。suggestion: FileNodeでfileDeductionReasonsを毎レンダー計算しているのでselector化を検討)
