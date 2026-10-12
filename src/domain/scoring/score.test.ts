@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+﻿import { describe, expect, it } from 'vitest';
 import { allClasses, type CodeClass, type Codebase } from '../codebase/Codebase';
 import { extractMethod } from '../codebase/extractMethod';
 import { moveMethod } from '../codebase/moveMethod';
@@ -44,7 +44,7 @@ function unwrap<T, E>(result: Result<T, E>): T {
   return result.value;
 }
 
-const LOOSE = { limits: { method: 100, class: 100, file: 100 }, responsibilityLimit: 100 };
+const LOOSE = { codebase: { files: [] }, limits: { method: 100, class: 100, file: 100 }, responsibilityLimit: 100, dependencyLimit: 100 };
 
 /** 各クラスに「uses だけを持つ1行の処理」を1つ置いたコードベース。 */
 function codebaseOf(classes: Record<string, readonly string[]>): Codebase {
@@ -70,7 +70,7 @@ describe('scoreCodebase', () => {
     const codebase = codebaseOf({ A: ['method-B'], B: [] });
 
     // Act
-    const score = scoreCodebase(codebase, { ...LOOSE, dependencyLimit: 1 });
+    const score = scoreCodebase(codebase, { ...LOOSE, codebase, dependencyLimit: 1 });
 
     // Assert
     expect(score).toEqual({
@@ -94,8 +94,28 @@ describe('scoreCodebase', () => {
         { rule: 'thin-class', count: 0, points: 0 },
         { rule: 'middle-man', count: 0, points: 0 },
         { rule: 'layer', count: 0, points: 0 },
+        { rule: 'mixed-method', count: 0, points: 0 },
       ],
     });
+  });
+
+  it('新しく抽出した複数責務のメソッドを1件・10点減点する', () => {
+    // Arrange
+    const initial: Codebase = { files: [] };
+    const codebase: Codebase = { files: [{ id: 'file', path: 'src/order.ts', classes: [{
+      id: 'class-order', name: 'Order',
+      methods: [{ id: 'extracted-method', name: 'orderTotalAndPay', visibility: 'public', fragments: [
+        { id: 'pricing', label: '価格', lines: 4, responsibility: 'pricing' },
+        { id: 'payment', label: '決済', lines: 4, responsibility: 'payment' },
+      ] }],
+    }] }] };
+
+    // Act
+    const score = scoreCodebase(codebase, { ...LOOSE, codebase: initial });
+
+    // Assert
+    expect(score.total).toBe(90);
+    expect(score.deductions.find(({ rule }) => rule === 'mixed-method')).toEqual({ rule: 'mixed-method', count: 1, points: 10 });
   });
 
   it('役割の異なるクラスへ保存と通知を移すとクラス単位で減点する', () => {
@@ -127,7 +147,7 @@ describe('scoreCodebase', () => {
     ] }] };
 
     // Act
-    const score = scoreCodebase(codebase, { ...LOOSE, dependencyLimit: 10 });
+    const score = scoreCodebase(codebase, { ...LOOSE, codebase, dependencyLimit: 10 });
 
     // Assert
     expect(score.total).toBe(90);
@@ -139,7 +159,7 @@ describe('scoreCodebase', () => {
     const codebase = sampleCodebase();
 
     // Act
-    const score = scoreCodebase(codebase, { ...LOOSE, limits: { method: 20, class: 100, file: 27 }, dependencyLimit: 1 });
+    const score = scoreCodebase(codebase, { ...LOOSE, codebase, limits: { method: 20, class: 100, file: 27 }, dependencyLimit: 1 });
 
     // Assert(空の TaxCalculator の10点も引かれる)
     expect(score.total).toBe(70);
@@ -151,7 +171,7 @@ describe('scoreCodebase', () => {
     const codebase = codebaseOf({ A: ['method-B', 'method-C'], B: [], C: [] });
 
     // Act
-    const score = scoreCodebase(codebase, { ...LOOSE, dependencyLimit: 1 });
+    const score = scoreCodebase(codebase, { ...LOOSE, codebase, dependencyLimit: 1 });
 
     // Assert
     expect(score.total).toBe(90);
@@ -163,7 +183,7 @@ describe('scoreCodebase', () => {
     const codebase = codebaseOf({ A: ['method-B'], B: [] });
 
     // Act
-    const score = scoreCodebase(codebase, { ...LOOSE, dependencyLimit: 1 });
+    const score = scoreCodebase(codebase, { ...LOOSE, codebase, dependencyLimit: 1 });
 
     // Assert
     expect(score.deductions[1]).toEqual({ rule: 'coupling', count: 0, points: 0 });
@@ -174,7 +194,7 @@ describe('scoreCodebase', () => {
     const codebase = codebaseOf({ A: ['method-B'], B: ['method-A'] });
 
     // Act
-    const score = scoreCodebase(codebase, { ...LOOSE, dependencyLimit: 1 });
+    const score = scoreCodebase(codebase, { ...LOOSE, codebase, dependencyLimit: 1 });
 
     // Assert
     expect(score.total).toBe(80);
@@ -186,7 +206,7 @@ describe('scoreCodebase', () => {
     const codebase = sampleCodebase();
 
     // Act
-    const score = scoreCodebase(codebase, { ...LOOSE, dependencyLimit: 1, responsibilityLimit: 2 });
+    const score = scoreCodebase(codebase, { ...LOOSE, codebase, dependencyLimit: 1, responsibilityLimit: 2 });
 
     // Assert(空の TaxCalculator の10点も引かれる)
     expect(score.total).toBe(80);
@@ -198,7 +218,7 @@ describe('scoreCodebase', () => {
     const codebase = codebaseWithPrivateCallAcrossClasses();
 
     // Act
-    const score = scoreCodebase(codebase, { ...LOOSE, dependencyLimit: 1 });
+    const score = scoreCodebase(codebase, { ...LOOSE, codebase, dependencyLimit: 1 });
 
     // Assert
     expect(score.deductions[5]).toEqual({ rule: 'visibility', count: 0, points: 0 });
@@ -209,7 +229,7 @@ describe('scoreCodebase', () => {
     const codebase = codebaseWithPrivateCallAcrossClasses();
 
     // Act
-    const score = scoreCodebase(codebase, { ...LOOSE, dependencyLimit: 1, visibilityEnforced: true });
+    const score = scoreCodebase(codebase, { ...LOOSE, codebase, dependencyLimit: 1, visibilityEnforced: true });
 
     // Assert
     expect(score.total).toBe(90);
@@ -266,7 +286,7 @@ describe('scoreCodebase', () => {
     };
 
     // Act
-    const score = scoreCodebase(codebase, { ...LOOSE, dependencyLimit: 1 });
+    const score = scoreCodebase(codebase, { ...LOOSE, codebase, dependencyLimit: 1 });
 
     // Assert
     expect(score.total).toBe(80);
@@ -295,7 +315,7 @@ describe('scoreCodebase', () => {
     };
 
     // Act
-    const score = scoreCodebase(codebase, { ...LOOSE, dependencyLimit: 1 });
+    const score = scoreCodebase(codebase, { ...LOOSE, codebase, dependencyLimit: 1 });
 
     // Assert
     expect(score.total).toBe(90);
@@ -308,7 +328,7 @@ describe('scoreCodebase', () => {
     const codebase: Codebase = { files: [{ id: 'file', path: 'src/all.ts', classes: [base, { ...child, superclassId: base.id }] }] };
 
     // Act
-    const score = scoreCodebase(codebase, { ...LOOSE, dependencyLimit: 1 });
+    const score = scoreCodebase(codebase, { ...LOOSE, codebase, dependencyLimit: 1 });
 
     // Assert
     expect(score.total).toBe(90);
@@ -334,7 +354,7 @@ describe('scoreCodebase', () => {
     };
 
     // Act
-    const score = scoreCodebase(codebase, { ...LOOSE, dependencyLimit: 1 });
+    const score = scoreCodebase(codebase, { ...LOOSE, codebase, dependencyLimit: 1 });
 
     // Assert
     expect(score.total).toBe(90);
@@ -362,7 +382,7 @@ describe('scoreCodebase', () => {
     };
 
     // Act
-    const score = scoreCodebase(codebase, { ...LOOSE, dependencyLimit: 1 });
+    const score = scoreCodebase(codebase, { ...LOOSE, codebase, dependencyLimit: 1 });
 
     // Assert
     expect(score.total).toBe(90);
@@ -404,7 +424,7 @@ describe('scoreCodebase', () => {
     };
 
     // Act
-    const score = scoreCodebase(codebase, { ...LOOSE, dependencyLimit: 1 });
+    const score = scoreCodebase(codebase, { ...LOOSE, codebase, dependencyLimit: 1 });
 
     // Assert
     expect(score.total).toBe(90);
@@ -438,7 +458,7 @@ describe('scoreCodebase', () => {
     };
 
     // Act
-    const score = scoreCodebase(codebase, { ...LOOSE, dependencyLimit: 1 });
+    const score = scoreCodebase(codebase, { ...LOOSE, codebase, dependencyLimit: 1 });
 
     // Assert
     expect(score.total).toBe(90);
@@ -472,7 +492,7 @@ describe('scoreCodebase', () => {
     };
 
     // Act
-    const score = scoreCodebase(codebase, { ...LOOSE, dependencyLimit: 1 });
+    const score = scoreCodebase(codebase, { ...LOOSE, codebase, dependencyLimit: 1 });
 
     // Assert
     expect(score.total).toBe(90);
@@ -505,7 +525,7 @@ describe('scoreCodebase', () => {
     };
 
     // Act
-    const score = scoreCodebase(codebase, { ...LOOSE, dependencyLimit: 1 });
+    const score = scoreCodebase(codebase, { ...LOOSE, codebase, dependencyLimit: 1 });
 
     // Assert
     expect(score.total).toBe(90);
@@ -517,7 +537,7 @@ describe('scoreCodebase', () => {
     const codebase = codebaseOf({ A: ['method-B'], B: ['method-C'], C: ['method-A'] });
 
     // Act
-    const score = scoreCodebase(codebase, { limits: { method: 0, class: 0, file: 0 }, dependencyLimit: 0, responsibilityLimit: 0 });
+    const score = scoreCodebase(codebase, { ...LOOSE, codebase, limits: { method: 0, class: 0, file: 0 }, dependencyLimit: 0, responsibilityLimit: 0 });
 
     // Assert
     expect(score.total).toBe(0);
@@ -535,7 +555,7 @@ describe('scoreCodebase', () => {
     };
 
     // Act
-    const score = scoreCodebase(codebase, { ...LOOSE, dependencyLimit: 1 });
+    const score = scoreCodebase(codebase, { ...LOOSE, codebase, dependencyLimit: 1 });
 
     // Assert
     expect(score.total).toBe(80);
@@ -562,11 +582,11 @@ describe('scoreCodebase', () => {
     ];
 
     // Act
-    const withLayers = scoreCodebase(codebase, { ...LOOSE, dependencyLimit: 5, layers });
-    const withoutLayers = scoreCodebase(codebase, { ...LOOSE, dependencyLimit: 5 });
+    const withLayers = scoreCodebase(codebase, { ...LOOSE, codebase, dependencyLimit: 5, layers });
+    const withoutLayers = scoreCodebase(codebase, { ...LOOSE, codebase, dependencyLimit: 5 });
 
     // Assert
-    expect(withLayers.deductions.at(-1)).toEqual({ rule: 'layer', count: 1, points: 10 });
+    expect(withLayers.deductions.find(({ rule }) => rule === 'layer')).toEqual({ rule: 'layer', count: 1, points: 10 });
     expect(withLayers.total).toBe(withoutLayers.total - 10);
   });
 });

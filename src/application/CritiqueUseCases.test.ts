@@ -4,6 +4,7 @@ import { scoreCodebase } from '../domain/scoring/score';
 import { describeCritiqueError, requestCritiqueUseCase } from './CritiqueUseCases';
 
 const STAGE = {
+  codebase: sampleCodebase(),
   goal: 'メソッドの責務を分ける',
   limits: { method: 100, class: 100, file: 100 },
   responsibilityLimit: 100,

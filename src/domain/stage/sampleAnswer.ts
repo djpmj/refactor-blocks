@@ -245,7 +245,7 @@ export const sampleAnswerSteps: Partial<Record<string, readonly SolutionStep[]>>
   'intermediate-cyclic-dependency': [
     { move: { method: 'calculateOrderTotal', toClass: 'Order' } },
     { move: { method: 'countOrdersOf', toClass: 'Customer' } },
-    { extract: { from: 'checkout', fragmentIds: ['frag-reserve-stock', 'frag-order-total'], name: 'prepareOrder' } },
+    { extract: { from: 'checkout', fragmentIds: ['frag-pay'], name: 'pay' } },
   ],
   'intermediate-god-file': [
     { move: { method: 'calculateShippingFee', toClass: 'ShippingService' } },

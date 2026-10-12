@@ -46,6 +46,8 @@ export type Stage = {
   readonly dependencyLimit: number;
   /** 1クラスに混ぜてよい責務(Fragment の responsibility)の種類数の上限。 */
   readonly responsibilityLimit: number;
+  /** 1つのメソッドに一緒に入っていても減点しない責務の組。 */
+  readonly cohesiveResponsibilities?: readonly (readonly string[])[];
   readonly codebase: Codebase;
   /** 責務(Fragment.responsibility)ごとの自動命名先。 */
   readonly classNames: Readonly<Record<string, string>>;

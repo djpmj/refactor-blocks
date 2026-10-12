@@ -671,6 +671,45 @@ test('循環依存を断ち切ると、循環依存の減点とクラスの印�
   await expect(page.getByTestId('class-Customer').getByTestId('cyclic-mark')).toHaveCount(0);
 });
 
+test('新しく抽出した複数責務のメソッドが減点され、違反箇所として強調される', async ({ page }) => {
+  // Arrange: 中級1の循環を解消して checkout を選ぶ
+  await openCyclicStage(page);
+  await dragMethodToClass(page, 'method-countOrdersOf', 'class-Customer');
+  await dragMethodToClass(page, 'method-calculateOrderTotal', 'class-Order');
+  await page.getByTestId('method-checkout').click();
+
+  // Act: 合計金額と決済を1つのメソッドへ抽出する
+  await page.getByLabel('合計金額を求める').check();
+  await page.getByLabel('決済する').check();
+  await page.getByLabel('新しいメソッド名').fill('orderTotalAndPay');
+  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+
+  // Assert: 新しいルールの10点減点が内訳に出る
+  const score = page.getByTestId('score');
+  await expect(score).toContainText('責務の混ざったメソッド -10');
+  const breakdown = page.locator('.score-breakdown');
+  await breakdown.locator('summary').click();
+  const rule = breakdown.locator('.score-breakdown__items button[aria-pressed]').filter({ hasText: '責務の混ざったメソッド ×1' });
+  await rule.click();
+  await expect(page.getByTestId('method-orderTotalAndPay').locator('.method-chip--flagged')).toBeVisible();
+});
+
+test('決済だけを抽出したメソッドは責務の混在で減点されない', async ({ page }) => {
+  // Arrange: 中級1の循環を解消して checkout を選ぶ
+  await openCyclicStage(page);
+  await dragMethodToClass(page, 'method-countOrdersOf', 'class-Customer');
+  await dragMethodToClass(page, 'method-calculateOrderTotal', 'class-Order');
+  await page.getByTestId('method-checkout').click();
+
+  // Act: 決済だけを抽出する
+  await page.getByLabel('決済する').check();
+  await page.getByLabel('新しいメソッド名').fill('pay');
+  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+
+  // Assert
+  await expect(page.getByTestId('score')).not.toContainText('責務の混ざったメソッド');
+});
+
 test('メソッドを右クリックしてメニューから、そのクラスのファイルにクラスを追加できる', async ({ page }) => {
   // Arrange
   await openOrderStage(page);

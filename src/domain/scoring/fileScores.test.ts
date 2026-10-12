@@ -5,6 +5,7 @@ import { DANGER_POINTS, fileDeductions, fileSeverity } from "./fileScores";
 import { scoreCodebase } from "./score";
 
 const LOOSE = {
+  codebase: { files: [] },
   limits: { method: 100, class: 100, file: 100 },
   responsibilityLimit: 100,
   dependencyLimit: 100,
@@ -272,6 +273,7 @@ describe("fileDeductions", () => {
     // Arrange
     const codebase = sampleCodebase();
     const stage = {
+      codebase,
       limits: { method: 20, class: 20, file: 20 },
       responsibilityLimit: 2,
       dependencyLimit: 0,

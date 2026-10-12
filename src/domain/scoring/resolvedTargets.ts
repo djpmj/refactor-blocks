@@ -2,7 +2,7 @@ import { findClass, findMethod, type Codebase } from '../codebase/Codebase';
 import type { Stage } from '../stage/Stage';
 import { violationTargets, type ViolationTarget } from './violationTargets';
 
-type ScoringStage = Pick<Stage, 'limits' | 'dependencyLimit' | 'responsibilityLimit' | 'visibilityEnforced' | 'layers'>;
+type ScoringStage = Pick<Stage, 'limits' | 'dependencyLimit' | 'responsibilityLimit' | 'visibilityEnforced' | 'layers' | 'codebase' | 'cohesiveResponsibilities'>;
 
 function combineTargets(targets: Record<string, ViolationTarget>): ViolationTarget {
   const combined = { fileIds: new Set<string>(), classIds: new Set<string>(), methodIds: new Set<string>() };

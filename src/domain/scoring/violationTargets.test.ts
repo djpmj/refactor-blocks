@@ -5,9 +5,9 @@ import { violationTargets } from './violationTargets';
 
 const RULES: readonly ScoreRule[] = [
   'line-limit', 'coupling', 'cycle', 'responsibility', 'misplaced', 'visibility', 'empty', 'unused',
-  'lone-superclass', 'stub', 'contract', 'feature-envy', 'encapsulation', 'cohesion', 'trivial-method', 'thin-class', 'middle-man', 'layer',
+  'lone-superclass', 'stub', 'contract', 'feature-envy', 'encapsulation', 'cohesion', 'trivial-method', 'thin-class', 'middle-man', 'layer', 'mixed-method',
 ];
-const EMPTY = { limits: { method: 100, class: 100, file: 100 }, dependencyLimit: 100, responsibilityLimit: 100 };
+const EMPTY = { codebase: { files: [] }, limits: { method: 100, class: 100, file: 100 }, dependencyLimit: 100, responsibilityLimit: 100 };
 
 describe('violationTargets', () => {
   it('違反がないコードベースではすべて空の対象を返す', () => {
@@ -22,6 +22,26 @@ describe('violationTargets', () => {
 
     // Assert
     for (const rule of RULES) expect(targets[rule]).toEqual({ fileIds: [], classIds: [], methodIds: [] });
+  });
+
+  it('新しく抽出した責務の混ざったメソッドを強調対象にする', () => {
+    // Arrange
+    const initial = { files: [{ id: 'initial-file', path: 'src/order.ts', classes: [{
+      id: 'order', name: 'Order', methods: [{ id: 'checkout', name: 'checkout', visibility: 'public' as const, fragments: [] }],
+    }] }] };
+    const codebase = { files: [{ id: 'file', path: 'src/order.ts', classes: [{
+      id: 'order', name: 'Order', fields: [{ id: 'order-id', name: 'id', visibility: 'private' as const }],
+      methods: [{ id: 'extracted', name: 'orderTotalAndPay', visibility: 'public' as const, fragments: [
+        { id: 'price', label: 'price', lines: 4, responsibility: 'pricing' },
+        { id: 'pay', label: 'pay', lines: 4, responsibility: 'payment' },
+      ] }],
+    }] }] };
+
+    // Act
+    const targets = violationTargets(codebase, { ...EMPTY, codebase: initial });
+
+    // Assert
+    expect(targets['mixed-method'].methodIds).toEqual(['extracted']);
   });
 
   it('各ステージの開始状態で採点対象の有無と対象IDが一致する', () => {

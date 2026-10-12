@@ -10,6 +10,7 @@ import { suggestMethodName } from '../../domain/codebase/suggestMethodName';
 import { autoNameClasses } from '../../domain/codebase/autoNameClasses';
 import { scoreCodebase } from '../../domain/scoring/score';
 import { findMisplacedResponsibilities } from '../../domain/scoring/misplacedResponsibilities';
+import { findMixedMethods } from '../../domain/scoring/mixedMethods';
 import { behaviorTests, runBehaviorTests } from '../../domain/testing/behaviorTests';
 import type { Result } from '../../domain/shared/Result';
 import { applySolutionSteps, sampleAnswerSteps, solutionSnapshots, type SolutionStep } from '../../domain/stage/sampleAnswer';
@@ -124,6 +125,82 @@ describe('初期違反の種類', () => {
 
     // Assert
     expect(new Set(actualRules)).toEqual(new Set(expectedRules));
+  });
+});
+
+describe('責務の混ざったメソッド', () => {
+  it('中級1の模範解答は混在抽出をせず、最後に100点になる', () => {
+    // Arrange
+    const stage = stages.find((candidate) => candidate.id === 'intermediate-cyclic-dependency');
+    if (stage === undefined) throw new Error('中級1のステージがありません');
+    const steps = sampleAnswerSteps[stage.id] ?? [];
+
+    // Act
+    const solved = applySolutionSteps(stage.codebase, steps);
+    const extractedNames = steps.flatMap((step) => 'extract' in step ? [step.extract.name] : []);
+    const checkout = solved.files.flatMap((file) => file.classes).flatMap((codeClass) => codeClass.methods).find((method) => method.id === 'method-checkout');
+    const checkoutLineCount = checkout === undefined ? 0 : methodLines(checkout);
+
+    // Assert
+    expect(extractedNames).not.toContain('prepareOrder');
+    expect(extractedNames).toEqual(['pay']);
+    expect(checkout).toBeDefined();
+    expect(checkoutLineCount).toBe(19);
+    expect(checkoutLineCount).toBeLessThanOrEqual(stage.limits.method);
+    expect(findMixedMethods(solved, stage.codebase, stage.cohesiveResponsibilities)).toEqual([]);
+    expect(scoreCodebase(solved, stage).total).toBe(100);
+  });
+
+  it('全ステージと白紙設計の模範解答に違反がない', () => {
+    // Arrange / Act / Assert
+    for (const stage of stages) {
+      const solved = applySolutionSteps(stage.codebase, sampleAnswerSteps[stage.id] ?? []);
+      expect(findMixedMethods(solved, stage.codebase, stage.cohesiveResponsibilities), stage.id).toEqual([]);
+    }
+    for (const problem of blankDesignProblems) {
+      const solved = applySolutionSteps(problem.codebase, problem.modelAnswer);
+      expect(findMixedMethods(solved, problem.codebase, problem.cohesiveResponsibilities), problem.id).toEqual([]);
+    }
+  });
+
+  it('中級1で合計金額と決済をまとめて抽出すると1件減点し、決済だけなら違反しない', () => {
+    // Arrange
+    const stage = stages.find((candidate) => candidate.id === 'intermediate-cyclic-dependency');
+    if (stage === undefined) throw new Error('中級1のステージがありません');
+    const moves: SolutionStep[] = [
+      { move: { method: 'calculateOrderTotal', toClass: 'Order' } },
+      { move: { method: 'countOrdersOf', toClass: 'Customer' } },
+    ];
+    const mixedSteps: SolutionStep[] = [...moves, {
+      extract: { from: 'checkout', fragmentIds: ['frag-order-total', 'frag-pay'], name: 'orderTotalAndPay' },
+    }];
+    const paymentSteps: SolutionStep[] = [...moves, {
+      extract: { from: 'checkout', fragmentIds: ['frag-pay'], name: 'pay' },
+    }];
+
+    // Act
+    const mixed = applySolutionSteps(stage.codebase, mixedSteps);
+    const paymentOnly = applySolutionSteps(stage.codebase, paymentSteps);
+    const mixedScore = scoreCodebase(mixed, stage);
+
+    // Assert
+    expect(mixedScore.deductions.find(({ rule }) => rule === 'mixed-method')).toEqual({ rule: 'mixed-method', count: 1, points: 10 });
+    expect(findMixedMethods(paymentOnly, stage.codebase, stage.cohesiveResponsibilities)).toEqual([]);
+  });
+
+  it('貧血症ステージの模範解答にある debit と credit は違反しない', () => {
+    // Arrange
+    const stage = stages.find((candidate) => candidate.id === 'intermediate-anemic-domain-model');
+    if (stage === undefined) throw new Error('貧血症ステージがありません');
+    const solved = applySolutionSteps(stage.codebase, sampleAnswerSteps[stage.id] ?? []);
+
+    // Act
+    const violations = findMixedMethods(solved, stage.codebase, stage.cohesiveResponsibilities);
+
+    // Assert
+    expect(violations).not.toContain('debit');
+    expect(violations).not.toContain('credit');
+    expect(violations).toEqual([]);
   });
 });
 
