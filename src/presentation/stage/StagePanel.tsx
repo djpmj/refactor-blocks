@@ -26,6 +26,7 @@ import { useStageSidebar } from './useStageSidebar';
 import { useCountUp } from './useCountUp';
 import { useResizableSidebarWidth } from '../useResizableSidebarWidth';
 import { ClearConditionList } from './ClearConditionList';
+import { RumorList } from './RumorList';
 import { GhostHintButton } from './GhostHintButton';
 import { painRequestsOf } from '../../domain/change/changePain';
 import { stageStep } from '../../domain/change/stageStep';
@@ -199,6 +200,7 @@ function StageSidebar({ stage, codebase, score, initialScore, investigating, rev
         <p>{stage.problem}</p>
       </section>
       <ClearConditionList stage={stage} codebase={codebase} initial={initialScore} current={score} />
+      {!investigating && <RumorList stage={stage} />}
       <section className="stage-panel__hints" aria-labelledby="stage-hints-title">
         <h3 id="stage-hints-title">ヒント</h3>
         <HintButton revealed={revealedCount} total={total} disabled={investigating} onReveal={onReveal} />

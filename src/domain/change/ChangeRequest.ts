@@ -1,6 +1,12 @@
 /** 'modify' = 既存のルールの変更(その責務を持つ既存クラスを1つ直すのが正解)。'extend' = 機能の追加(既存クラスを直さずに足せるのが理想)。 */
 export type ChangeKind = 'modify' | 'extend';
 
+/** 依頼が届く前に流れてくる、変更の軸だけを示す曖昧なうわさ。 */
+export type ChangeRumor = {
+  readonly from: string;
+  readonly text: string;
+};
+
 /** 実務の「〇〇に対応して」という要望。1つの責務(Fragment の responsibility)に対する変更として表す。 */
 export type ChangeRequest = {
   readonly id: string;
@@ -14,6 +20,8 @@ export type ChangeRequest = {
   readonly kind?: ChangeKind;
   /** 実装で出す新規部品のメソッド名。省略時は 'addedLogic'。リファクタリングのステージでは必ず書く(stageCatalog.test.ts で確認)。 */
   readonly partName?: string;
+  /** 変更依頼の前に見せるうわさ。 */
+  readonly rumor?: ChangeRumor;
 };
 
 /** 変更依頼の責務を持つメソッドが1つもない。 */

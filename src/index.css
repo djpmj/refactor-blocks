@@ -592,6 +592,16 @@ input.class-node__name { width: 14ch; }
 .story-card p { margin: 6px 0; }
 .story-card__speaker { color: var(--muted, inherit); font-weight: bold; }
 .story-card button { margin-right: 6px; }
+.rumor-list { margin: 12px 0; padding: 10px; border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 8px; background: var(--surface); font-size: 13px; line-height: 1.5; }
+.rumor-list h3 { margin: 0 0 4px; font-size: 14px; }
+.rumor-list__hint { margin: 4px 0 8px; color: var(--muted, inherit); font-size: 12px; }
+.rumor-list ul { margin: 0; padding-left: 18px; }
+.rumor-list li + li { margin-top: 8px; }
+.rumor-list li p { margin: 0; }
+.rumor-list li small { color: var(--muted, inherit); }
+.rumor-came-true { margin: 0; padding: 8px; border-left: 3px solid var(--accent); background: var(--surface); }
+.rumor-payoff { margin: 4px 0 8px; padding: 6px 8px; border-left: 3px solid var(--success); background: var(--surface); font-size: 13px; }
+.rumor-payoff--unready { border-color: var(--danger); }
 .story-card__reopen { display: block; width: 100%; margin: 8px 0; padding: 6px; border: 0; background: transparent; color: var(--accent); text-align: left; cursor: pointer; }
 .spotlight-tour__shade {
   position: fixed;

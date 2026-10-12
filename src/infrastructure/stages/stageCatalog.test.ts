@@ -3,6 +3,7 @@ import { changeKindOf, type ChangeRequest } from '../../domain/change/ChangeRequ
 import { findChangeSites } from '../../domain/change/findChangeSites';
 import { measureChange } from '../../domain/change/measureChange';
 import { measureExtendPain, measurePain, painRequestsOf } from '../../domain/change/changePain';
+import { rumoredRequests } from '../../domain/change/rumors';
 import { averageScore, scoreChange } from '../../domain/change/scoreChange';
 import { allClasses, fieldsOf, isAbstractLike, isInterfaceLike, mapClasses, touchedFieldIds, type Codebase } from '../../domain/codebase/Codebase';
 import { methodLines } from '../../domain/codebase/lineCount';
@@ -19,6 +20,30 @@ import { methodNamingOf } from '../../domain/stage/methodNaming';
 import { blankDesignProblems } from '../blankDesigns/blankDesignProblems';
 import { validateCheck } from '../../domain/stage/conceptCheck';
 import { stages } from './stageCatalog';
+import { storyChapters } from '../story/storyChapters';
+
+function rumorViolations(stage: Stage, speakers: ReadonlySet<string>): string[] {
+  const rumored = new Set(rumoredRequests(stage).map((request) => request.id));
+  const missingOrLeaking = rumoredRequests(stage)
+    .filter((request) => {
+      const rumor = request.rumor;
+      if (rumor === undefined) return true;
+      const implementationNames = [...Object.values(stage.classNames), ...Object.values(stage.methodNames ?? {})];
+      const sentenceCount = (rumor.text.match(/[。！？]/g) ?? []).length;
+      return rumor.text.includes(request.title)
+        || (request.partName !== undefined && rumor.text.includes(request.partName))
+        || implementationNames.some((name) => rumor.text.includes(name))
+        || !speakers.has(rumor.from)
+        || sentenceCount < 1
+        || sentenceCount > 2
+        || !/(らしい|かもしれない|そうだ|とのこと)/.test(rumor.text);
+    })
+    .map((request) => `${stage.id}:${request.id}`);
+  const unexpected = stage.changeRequests
+    .filter((request) => rumored.has(request.id) !== (request.rumor !== undefined))
+    .map((request) => `${stage.id}:${request.id}:対象外に噂`);
+  return [...missingOrLeaking, ...unexpected];
+}
 
 function stageResponsibilities(stage: Stage): Set<string> {
   const responsibilities = new Set<string>();
@@ -1044,5 +1069,14 @@ describe('stageCatalog', () => {
     // Assert
     // 入口が0になるのは、全メソッドが他から呼ばれる輪になっているなど特殊な題材だけ
     expect(withTests.length).toBeGreaterThan(stages.length / 2);
+  });
+
+  it('リファクタリングステージは噂対象に全て噂があり、全文表示済みの依頼には噂がない', () => {
+    // Arrange
+    const speakers = new Set(storyChapters.map((chapter) => chapter.speaker));
+    const violations = stages.flatMap((stage) => rumorViolations(stage, speakers));
+
+    // Assert
+    expect(violations).toEqual([]);
   });
 });
