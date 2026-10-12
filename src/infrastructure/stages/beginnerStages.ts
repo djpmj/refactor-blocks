@@ -2,6 +2,7 @@
 
 /** 初級1: 保存とメール送信まで抱えた UserController から、用意されたクラスへ処理を移す。 */
 const userControllerStage: Stage = {
+  methodNames: { http: 'handleRequest', persistence: 'saveUser', notification: 'sendNotification' },
   classNames: {
     "http": "HttpHandler",
     "persistence": "PersistenceHandler",
@@ -98,6 +99,7 @@ const userControllerStage: Stage = {
 
 /** 初級2: 移動先のクラスが用意されていない。責務ごとのクラスを自分で作ってから移す。 */
 const invoiceServiceStage: Stage = {
+  methodNames: { pricing: 'calculateInvoiceTotal', rendering: 'renderInvoice', storage: 'storeInvoice', notification: 'sendInvoice' },
   classNames: {
     "pricing": "InvoicePricing",
     "rendering": "InvoicePdfRenderer",

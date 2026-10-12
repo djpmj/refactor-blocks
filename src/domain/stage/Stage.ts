@@ -49,6 +49,8 @@ export type Stage = {
   readonly codebase: Codebase;
   /** 責務(Fragment.responsibility)ごとの自動命名先。 */
   readonly classNames: Readonly<Record<string, string>>;
+  /** 責務(Fragment.responsibility)ごとの自動メソッド名。 */
+  readonly methodNames?: Readonly<Record<string, string>>;
   /** リファクタリング後に出す変更依頼。責務は初期のコードベースに存在するものを選ぶ。 */
   readonly changeRequests: readonly ChangeRequest[];
   /** private / protected のメソッドが届かないクラスから呼ばれていないかを採点するかどうか(protectedは持ち主と子孫クラスから呼べる)。省略時は false。

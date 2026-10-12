@@ -6,6 +6,7 @@ import { measureExtendPain, measurePain, painRequestsOf } from '../../domain/cha
 import { averageScore, scoreChange } from '../../domain/change/scoreChange';
 import { allClasses, fieldsOf, isAbstractLike, isInterfaceLike, mapClasses, touchedFieldIds, type Codebase } from '../../domain/codebase/Codebase';
 import { methodLines } from '../../domain/codebase/lineCount';
+import { suggestMethodName } from '../../domain/codebase/suggestMethodName';
 import { autoNameClasses } from '../../domain/codebase/autoNameClasses';
 import { scoreCodebase } from '../../domain/scoring/score';
 import { findMisplacedResponsibilities } from '../../domain/scoring/misplacedResponsibilities';
@@ -13,6 +14,7 @@ import { behaviorTests, runBehaviorTests } from '../../domain/testing/behaviorTe
 import type { Result } from '../../domain/shared/Result';
 import { applySolutionSteps, sampleAnswerSteps, solutionSnapshots, type SolutionStep } from '../../domain/stage/sampleAnswer';
 import type { Stage } from '../../domain/stage/Stage';
+import { methodNamingOf } from '../../domain/stage/methodNaming';
 import { blankDesignProblems } from '../blankDesigns/blankDesignProblems';
 import { validateCheck } from '../../domain/stage/conceptCheck';
 import { stages } from './stageCatalog';
@@ -27,6 +29,24 @@ function stageResponsibilities(stage: Stage): Set<string> {
     }
   }
   return responsibilities;
+}
+
+function methodNamingFailures(stage: Stage): string[] {
+  const names = stage.methodNames ?? {};
+  const failures: string[] = [];
+  for (const responsibility of stageResponsibilities(stage)) {
+    if (!Object.hasOwn(names, responsibility)) failures.push(`${stage.id}: missing ${responsibility}`);
+  }
+  for (const [responsibility, name] of Object.entries(names)) {
+    if (!/^[a-z][a-zA-Z0-9]*$/.test(name)) failures.push(`${stage.id}: invalid ${responsibility}`);
+  }
+  return failures;
+}
+
+function fragmentsByIds(stage: Stage, ids: readonly string[]): Codebase['files'][number]['classes'][number]['methods'][number]['fragments'] {
+  const wanted = new Set(ids);
+  const fragments = allClasses(stage.codebase).flatMap((codeClass) => codeClass.methods.flatMap((method) => method.fragments));
+  return fragments.filter((fragment) => wanted.has(fragment.id));
 }
 
 function classNameFailures(stage: Stage): string[] {
@@ -597,6 +617,27 @@ function danglingFieldRefs(stage: Stage): string[] {
 }
 
 describe('stageCatalog', () => {
+  it('全ステージで責務名が定義され、責務を漏らさずlowerCamelCaseになっている', () => {
+    // Arrange
+    const invalid = stages.flatMap(methodNamingFailures);
+
+    // Act / Assert
+    expect(invalid).toEqual([]);
+  });
+
+  it('チュートリアル1でヘッダー・行・出力を選ぶとprintReportを提案する', () => {
+    // Arrange
+    const stage = stages.find((candidate) => candidate.id === 'tutorial-extract-method');
+    if (stage === undefined) throw new Error('チュートリアル1がありません');
+    const fragments = fragmentsByIds(stage, ['frag-table-header', 'frag-table-rows', 'frag-print']);
+
+    // Act
+    const name = suggestMethodName(fragments, [], methodNamingOf(stage));
+
+    // Assert
+    expect(name).toBe('printReport');
+  });
+
   it('全ステージの自動命名表がコード上の全責務を覆い、初期クラス名と重ならない', () => {
     // Arrange / Act
     const failures = stages.flatMap(classNameFailures);
