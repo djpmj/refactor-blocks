@@ -64,6 +64,8 @@ import { loadProgress, saveProgress } from '../../infrastructure/progress/progre
 import { loadStoryEnabled, saveStoryEnabled } from '../../infrastructure/story/storyPreference';
 import { loadTourSeen, saveTourSeen } from '../../infrastructure/tour/tourPreference';
 import { nextTourStep, TOUR_STEPS, TOUR_STAGE_ID, type TourEvent } from '../tour/tourSteps';
+import { describeInlinedBeforeDelete } from '../canvas/describeInlinedBeforeDelete';
+import type { DeleteResult } from '../../domain/codebase/deleteClass';
 
 /** 変更依頼に挑戦中の状態。依頼ごとに部品を足したコードで実装し、依頼を1件ずつ片付ける。 */
 export type ChangeSession = {
@@ -123,6 +125,7 @@ type GameState = {
   hoverPreviewRule: ScoreRule | null;
   focusPreviewRule: ScoreRule | null;
   message: string | null;
+  notice: string | null;
   dismissMessage: () => void;
   changeSession: ChangeSession | null;
   manualFix: ManualFix | null;
@@ -221,11 +224,11 @@ function tourActions(set: (partial: Partial<GameState>) => void, get: () => Game
 function methodSelectionActions(set: (partial: Partial<GameState>) => void, get: () => GameState): Pick<GameState, 'selectMethod' | 'selectField'> {
   return {
     selectMethod: (methodId) => {
-      set({ selectedMethodId: methodId, selectedFieldId: null, extractDraft: null, message: null });
+      set({ selectedMethodId: methodId, selectedFieldId: null, extractDraft: null, message: null, notice: null });
       const method = methodId === null ? undefined : findMethod(get().codebase, methodId);
       if (method !== undefined && get().tourStep !== null) get().advanceTour({ kind: 'method-selected', methodName: method.name });
     },
-    selectField: (fieldId) => set({ selectedFieldId: fieldId, selectedMethodId: null, extractDraft: null, message: null }),
+    selectField: (fieldId) => set({ selectedFieldId: fieldId, selectedMethodId: null, extractDraft: null, message: null, notice: null }),
   };
 }
 
@@ -257,7 +260,7 @@ function commit(state: GameState, codebase: Codebase, celebrate = true): Partial
 
 /** 操作の結果を状態の更新にする。成功したらコードベースを差し替え、失敗したら理由を出す。 */
 function applyResult<E>(state: GameState, result: Result<Codebase, E>, describe: (error: E) => string): Partial<GameState> {
-  return result.ok ? { ...commit(state, result.value), message: null } : { message: describe(result.error) };
+  return result.ok ? { ...commit(state, result.value), message: null, notice: null } : { message: describe(result.error), notice: null };
 }
 
 /** 取り消し・やり直しの結果を状態にする。選択中のメソッドがなくなっていたら選択を外す。 */
@@ -266,7 +269,7 @@ function travelTo(state: GameState, travel: Travel | undefined): Partial<GameSta
   const { codebase, history } = travel;
   const stillThere = state.selectedMethodId !== null && findMethod(codebase, state.selectedMethodId) !== undefined;
   const fieldStillThere = state.selectedFieldId !== null && findField(codebase, state.selectedFieldId) !== undefined;
-  return { codebase, history, celebration: null, ghost: null, selectedMethodId: stillThere ? state.selectedMethodId : null, selectedFieldId: fieldStillThere ? state.selectedFieldId : null, extractDraft: null, message: null };
+  return { codebase, history, celebration: null, ghost: null, selectedMethodId: stillThere ? state.selectedMethodId : null, selectedFieldId: fieldStillThere ? state.selectedFieldId : null, extractDraft: null, message: null, notice: null };
 }
 
 const UNPLACED_MESSAGE = '部品がまだ部品置き場にあります。置き場所へドラッグしてください';
@@ -277,7 +280,7 @@ function finishImplementation(state: GameState): Partial<GameState> {
   const request = session === null ? undefined : state.stage.changeRequests[session.index];
   if (session === null || request === undefined) return {};
   const result = evaluateImplementationUseCase(state.stage, session.carried, state.codebase, request);
-  if (!result.ok) return { message: result.error === 'unplaced-part' ? UNPLACED_MESSAGE : 'この依頼で変更が必要な場所が見つかりません' };
+  if (!result.ok) return { message: result.error === 'unplaced-part' ? UNPLACED_MESSAGE : 'この依頼で変更が必要な場所が見つかりません', notice: null };
   const next = state.stage.changeRequests.at(session.index + 1);
   const carried = withoutTray(state.codebase);
   return {
@@ -288,6 +291,7 @@ function finishImplementation(state: GameState): Partial<GameState> {
     selectedFieldId: null,
     extractDraft: null,
     message: null,
+    notice: null,
   };
 }
 
@@ -305,7 +309,7 @@ function historyActions(set: (partial: Partial<GameState>) => void, get: () => G
 function messageActions(set: (partial: Partial<GameState>) => void): Pick<GameState, 'dismissMessage'> {
   return {
     dismissMessage: () => {
-      set({ message: null });
+      set({ message: null, notice: null });
     },
   };
 }
@@ -333,7 +337,7 @@ function resetActions(set: (partial: Partial<GameState>) => void, get: () => Gam
   return {
     resetStage: () => {
       if (get().changeSession !== null) return;
-      set({ ...commit(get(), get().stage.codebase, false), layoutResetCount: get().layoutResetCount + 1, celebration: null, ghost: null, manualFix: null, extractDraft: null, focusedRule: null, hintTarget: null, hintTargetKey: null, previewRule: null, hoverPreviewRule: null, focusPreviewRule: null, selectedMethodId: null, selectedFieldId: null, message: null });
+      set({ ...commit(get(), get().stage.codebase, false), layoutResetCount: get().layoutResetCount + 1, celebration: null, ghost: null, manualFix: null, extractDraft: null, focusedRule: null, hintTarget: null, hintTargetKey: null, previewRule: null, hoverPreviewRule: null, focusPreviewRule: null, selectedMethodId: null, selectedFieldId: null, message: null, notice: null });
     },
   };
 }
@@ -362,6 +366,7 @@ function changeSessionActions(
         selectedFieldId: null,
         extractDraft: null,
         message: null,
+        notice: null,
       });
     },
     inspectMethod: (methodId) => {
@@ -390,6 +395,7 @@ function changeSessionActions(
         selectedFieldId: null,
         extractDraft: null,
         message: null,
+        notice: null,
         lastChangeReport: outcomes.length > 0 ? { outcomes, codebase: carried } : lastChangeReport,
       });
     },
@@ -470,6 +476,7 @@ function selectStageState(allStages: readonly Stage[], stageId: string, drafts: 
     hoverPreviewRule: null,
     focusPreviewRule: null,
     message: null,
+    notice: null,
     changeSession: null,
     manualFix: null,
     lastChangeReport: null,
@@ -562,12 +569,20 @@ function moveActions(
 
 /** クラス・ファイル・空実装メソッドを取り除く操作。 */
 function deleteActions(apply: Apply, set: (partial: Partial<GameState>) => void, get: () => GameState): Pick<GameState, 'deleteClass' | 'deleteFile' | 'deleteMethod'> {
+  const remove = <E>(result: Result<DeleteResult, E>, describe: (error: E) => string): boolean => {
+    if (!result.ok) {
+      set({ message: describe(result.error), notice: null });
+      return false;
+    }
+    set({ ...commit(get(), result.value.codebase), message: null, notice: describeInlinedBeforeDelete(result.value.inlined) });
+    return true;
+  };
   return {
     deleteClass: (classId) => {
-      return apply(deleteClassUseCase(get().codebase, classId), describeDeleteClassError);
+      return remove(deleteClassUseCase(get().codebase, classId), describeDeleteClassError);
     },
     deleteFile: (fileId) => {
-      return apply(deleteFileUseCase(get().codebase, fileId), describeDeleteFileError);
+      return remove(deleteFileUseCase(get().codebase, fileId), describeDeleteFileError);
     },
     deleteMethod: (methodId) => {
       const succeeded = apply(deleteMethodUseCase(get().codebase, methodId), describeDeleteMethodError);
@@ -588,8 +603,8 @@ function replaceMethodActions(
       const result = mergeMethodsUseCase(get().codebase, input, () => crypto.randomUUID());
       set(
         result.ok
-          ? { ...commit(get(), result.value.codebase), selectedMethodId: result.value.newMethodId, message: null }
-          : { message: describeMergeError(result.error) },
+          ? { ...commit(get(), result.value.codebase), selectedMethodId: result.value.newMethodId, message: null, notice: null }
+          : { message: describeMergeError(result.error), notice: null },
       );
       return result.ok;
     },
@@ -597,8 +612,8 @@ function replaceMethodActions(
       const result = inlineMethodUseCase(get().codebase, methodId);
       set(
         result.ok
-          ? { ...commit(get(), result.value.codebase), selectedMethodId: result.value.callerId, message: null }
-          : { message: describeInlineError(result.error) },
+          ? { ...commit(get(), result.value.codebase), selectedMethodId: result.value.callerId, message: null, notice: null }
+          : { message: describeInlineError(result.error), notice: null },
       );
     },
   };
@@ -674,7 +689,7 @@ export function createGameStore(allStages: readonly Stage[], saveDraftsOn = true
       hintTarget: null,
       hintTargetKey: null,
       ...EMPTY_RULE_PREVIEW,
-      message: null,
+      message: null, notice: null,
       ...messageActions(set), ...ghostActions(set),
       changeSession: null,
       manualFix: null, ...manualFixActions(set, get),

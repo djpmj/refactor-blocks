@@ -5,8 +5,84 @@ import { moveMethod } from '../../domain/codebase/moveMethod';
 import { sampleImplementation } from '../../domain/change/sampleImplementation';
 import { stages } from '../../infrastructure/stages/stageCatalog';
 import { createGameStore } from './useGameStore';
+import { scoreCodebase } from '../../domain/scoring/score';
 
 const ghost = { kind: 'method' as const, methodId: 'method-example', toClassId: 'class-example' };
+
+describe('delete inline notice', () => {
+  const stage = stages.find((candidate) => candidate.title === '中級12: 横流しするだけの OrderManager');
+
+  it('ファイル削除で呼び出し元へ戻した処理を案内し、dismissとundoで消す', () => {
+    // Arrange
+    if (stage === undefined) throw new Error('中級12のステージが必要です');
+    const store = createGameStore([stage], false);
+
+    // Act
+    expect(store.getState().deleteFile('file-order-manager')).toBe(true);
+
+    // Assert
+    expect(store.getState().notice).toBe('削除する前に、処理を呼び出し元へ戻しました: OrderManager.placeOrder() → OrderController.placeOrder()、OrderManager.cancelOrder() → OrderController.cancelOrder()');
+    expect(store.getState().message).toBeNull();
+    expect(scoreCodebase(store.getState().codebase, stage).total).toBe(100);
+    store.getState().dismissMessage();
+    expect(store.getState().notice).toBeNull();
+
+    // Act: a fresh deletion followed by undo clears the notice
+    store.getState().deleteFile('file-order-manager');
+    store.getState().undo();
+
+    // Assert
+    expect(store.getState().notice).toBeNull();
+  });
+
+  it('失敗はnoticeを消してエラーだけを残す', () => {
+    // Arrange
+    if (stage === undefined) throw new Error('中級12のステージが必要です');
+    const store = createGameStore([stage], false);
+    store.setState({ notice: '以前のお知らせ' });
+
+    // Act
+    expect(store.getState().deleteClass('class-order-controller')).toBe(false);
+
+    // Assert
+    expect(store.getState().message).toBe('処理が残っているクラスは削除できません。先にメソッドを別のクラスへ移してください');
+    expect(store.getState().notice).toBeNull();
+  });
+
+  it('変更依頼の実装に失敗したときも、noticeではなくエラーだけを残す', () => {
+    // Arrange
+    const store = createGameStore(stages, false);
+    store.getState().startChangeRequests();
+    store.setState({ notice: '以前のお知らせ' });
+
+    // Act
+    store.getState().finishImplementation();
+
+    // Assert
+    expect(store.getState().message).toBe('部品がまだ部品置き場にあります。置き場所へドラッグしてください');
+    expect(store.getState().notice).toBeNull();
+  });
+
+  it('メソッド・フィールド選択、ステージ切替、最初に戻す操作でnoticeを消す', () => {
+    // Arrange
+    if (stage === undefined) throw new Error('中級12のステージが必要です');
+    const store = createGameStore([stage, stages[0]], false);
+    store.setState({ notice: '案内' });
+
+    // Act / Assert
+    store.getState().selectMethod('method-place-order');
+    expect(store.getState().notice).toBeNull();
+    store.setState({ notice: '案内' });
+    store.getState().selectField('field-order-status');
+    expect(store.getState().notice).toBeNull();
+    store.setState({ notice: '案内' });
+    store.getState().selectStage(stages[0].id);
+    expect(store.getState().notice).toBeNull();
+    store.setState({ notice: '案内' });
+    store.getState().resetStage();
+    expect(store.getState().notice).toBeNull();
+  });
+});
 
 describe('change-request lifecycle and ghost state', () => {
   it('clears the active ghost when a change request starts', () => {

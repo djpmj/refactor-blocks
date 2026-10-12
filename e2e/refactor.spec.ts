@@ -291,6 +291,38 @@ test('中級12: 横流しメソッドを呼び出し元へ戻してOrderManager�
   await expect(score).not.toContainText('横流しするだけのクラス');
 });
 
+test('中級12: OrderManagerファイル削除で処理を戻した案内を出し、閉じる・undoで消す', async ({ page }) => {
+  // Arrange
+  await page.setViewportSize({ width: 1920, height: 1200 });
+  await page.goto('/');
+  await selectStage(page, '中級12: 横流しするだけの OrderManager');
+
+  // Act
+  await clickExposedTarget(page, page.getByTestId('file-src/order/OrderManager.ts'), 'right');
+  await page.getByTestId('context-menu').getByRole('menuitem', { name: 'ファイルを削除' }).click();
+
+  // Assert
+  const notice = page.locator('.error-toast[role="status"]');
+  await expect(notice).toContainText('削除する前に、処理を呼び出し元へ戻しました: OrderManager.placeOrder() → OrderController.placeOrder()、OrderManager.cancelOrder() → OrderController.cancelOrder()');
+  await expect(notice).toContainText('ℹ');
+  await expect(notice).toHaveClass(/error-toast--info/);
+  await expect(page.getByTestId('score')).toContainText('100点');
+  await page.getByRole('button', { name: 'メッセージを閉じる' }).click();
+  await expect(page.locator('.error-toast[role="status"]')).toHaveCount(0);
+  await page.keyboard.press('Control+z');
+  await expect(page.getByTestId('file-src/order/OrderManager.ts')).toBeVisible();
+
+  // Act: deleting again and undoing also clears the notice
+  await clickExposedTarget(page, page.getByTestId('file-src/order/OrderManager.ts'), 'right');
+  await page.getByTestId('context-menu').getByRole('menuitem', { name: 'ファイルを削除' }).click();
+  await expect(page.locator('.error-toast[role="status"]')).toBeVisible();
+  await page.keyboard.press('Control+z');
+
+  // Assert
+  await expect(page.locator('.error-toast[role="status"]')).toHaveCount(0);
+  await expect(page.getByTestId('file-src/order/OrderManager.ts')).toBeVisible();
+});
+
 test('横流し先のないメソッドには「呼び出し元へ戻す」を表示しない', async ({ page }) => {
   // Arrange
   await page.setViewportSize({ width: 1920, height: 1200 });

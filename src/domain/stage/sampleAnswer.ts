@@ -123,7 +123,7 @@ type StructuralStep = Exclude<
 /** ファイル・クラス・継承/実装関係の組み替え(処理の中身を伴わない手)を適用する。 */
 function applyStructuralStep(codebase: Codebase, step: StructuralStep, newId: string): Codebase {
   if ('addFile' in step) return unwrap(addFile(codebase, step.addFile, newId));
-  if ('deleteFile' in step) return unwrap(deleteFile(codebase, fileIdByPath(codebase, step.deleteFile)));
+  if ('deleteFile' in step) return unwrap(deleteFile(codebase, fileIdByPath(codebase, step.deleteFile))).codebase;
   if ('addClass' in step) {
     return unwrap(addClass(codebase, fileIdByPath(codebase, step.addClass.file), step.addClass.name, newId));
   }

@@ -2,7 +2,7 @@ import { addClass, type AddClassError } from '../domain/codebase/addClass';
 import { addNewFile } from '../domain/codebase/addNewFile';
 import { findMethod, type Codebase, type CodeClass, type Visibility } from '../domain/codebase/Codebase';
 import { changeVisibility, type ChangeVisibilityError } from '../domain/codebase/changeVisibility';
-import { deleteClass, type DeleteClassError } from '../domain/codebase/deleteClass';
+import { deleteClass, type DeleteClassError, type DeleteResult } from '../domain/codebase/deleteClass';
 import { deleteFile, type DeleteFileError } from '../domain/codebase/deleteFile';
 import { deleteMethod, type DeleteMethodError } from '../domain/codebase/deleteMethod';
 import { extractMethod, type ExtractMethodError } from '../domain/codebase/extractMethod';
@@ -234,12 +234,12 @@ export function removeInterfaceUseCase(codebase: Codebase, classId: string, inte
 }
 
 /** プレイヤーの「クラスを削除」操作。 */
-export function deleteClassUseCase(codebase: Codebase, classId: string): Result<Codebase, DeleteClassError> {
+export function deleteClassUseCase(codebase: Codebase, classId: string): Result<DeleteResult, DeleteClassError> {
   return deleteClass(codebase, classId);
 }
 
 /** プレイヤーの「ファイルを削除」操作。 */
-export function deleteFileUseCase(codebase: Codebase, fileId: string): Result<Codebase, DeleteFileError> {
+export function deleteFileUseCase(codebase: Codebase, fileId: string): Result<DeleteResult, DeleteFileError> {
   return deleteFile(codebase, fileId);
 }
 

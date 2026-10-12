@@ -3,6 +3,7 @@ import { findMethod, type Codebase } from './Codebase';
 import { deleteFile } from './deleteFile';
 import { extractMethod } from './extractMethod';
 import { sampleCodebase } from './testFixtures';
+import { stages } from '../../infrastructure/stages/stageCatalog';
 
 describe('deleteFile', () => {
   it('ファイルを削除すると、そのファイルだけが消える', () => {
@@ -14,7 +15,7 @@ describe('deleteFile', () => {
 
     // Assert
     if (!result.ok) throw new Error(result.error);
-    expect(result.value.files.map((file) => file.id)).toEqual(['file-order']);
+    expect(result.value.codebase.files.map((file) => file.id)).toEqual(['file-order']);
   });
 
   it('元のCodebaseは変更しない', () => {
@@ -58,8 +59,8 @@ describe('deleteFile', () => {
     // Assert
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error(result.error);
-    expect(result.value.files).toHaveLength(1);
-    expect(findMethod(result.value, 'method-place')?.fragments.map(({ id }) => id)).toEqual(['f-validate', 'f-tax', 'f-save']);
+    expect(result.value.codebase.files).toHaveLength(1);
+    expect(findMethod(result.value.codebase, 'method-place')?.fragments.map(({ id }) => id)).toEqual(['f-validate', 'f-tax', 'f-save']);
     expect(codebase).toEqual(snapshot);
   });
 
@@ -71,6 +72,7 @@ describe('deleteFile', () => {
     const result = deleteFile(codebase, 'file-tax');
     // Assert
     expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.inlined).toEqual([]);
   });
 
   it('ファイル内の2つ目のクラスに処理があれば削除できない', () => {
@@ -107,8 +109,8 @@ describe('deleteFile', () => {
 
     // Assert
     if (!result.ok) throw new Error(result.error);
-    expect(result.value.files.map((file) => file.id)).toEqual(['file-order']);
-    expect(findMethod(result.value, 'method-place')?.fragments.map((fragment) => fragment.id)).toEqual([
+    expect(result.value.codebase.files.map((file) => file.id)).toEqual(['file-order']);
+    expect(findMethod(result.value.codebase, 'method-place')?.fragments.map((fragment) => fragment.id)).toEqual([
       'f-validate',
       'f-tax',
       'f-save',
@@ -128,8 +130,26 @@ describe('deleteFile', () => {
 
     // Assert
     if (!result.ok) throw new Error(result.error);
-    expect(result.value.files.map(({ id }) => id)).toEqual(['controller-file', 'service-file']);
-    expect(findMethod(result.value, 'caller')?.fragments.map(({ id }) => id)).toEqual(['service-call']);
+    expect(result.value.codebase.files.map(({ id }) => id)).toEqual(['controller-file', 'service-file']);
+    expect(findMethod(result.value.codebase, 'caller')?.fragments.map(({ id }) => id)).toEqual(['service-call']);
+    expect(result.value.inlined).toEqual([{ className: 'Manager', methodName: 'place', callerClassName: 'Controller', callerMethodName: 'place' }]);
+  });
+
+  it('中級12のOrderManagerファイル削除でplaceOrderとcancelOrderを呼び出し元へ戻した名前を返す', () => {
+    // Arrange
+    const stage = stages.find((candidate) => candidate.title === '中級12: 横流しするだけの OrderManager');
+    if (stage === undefined) throw new Error('中級12のステージが必要です');
+
+    // Act
+    const result = deleteFile(stage.codebase, 'file-order-manager');
+
+    // Assert
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error(result.error);
+    expect(result.value.inlined).toEqual([
+      { className: 'OrderManager', methodName: 'placeOrder', callerClassName: 'OrderController', callerMethodName: 'placeOrder' },
+      { className: 'OrderManager', methodName: 'cancelOrder', callerClassName: 'OrderController', callerMethodName: 'cancelOrder' },
+    ]);
   });
 
   it('存在しないファイルを指定するとエラーになる', () => {

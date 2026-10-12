@@ -249,6 +249,8 @@ input.class-node__name { width: 14ch; }
   pointer-events: none;
 }
 .error-toast__icon { color: var(--danger); font-weight: 700; }
+.error-toast--info { border-left-color: var(--accent); }
+.error-toast--info .error-toast__icon { color: var(--accent); }
 .error-toast__message { overflow-wrap: anywhere; }
 .error-toast__close { flex: none; padding: 0 4px; border: 0; background: transparent; color: var(--text); font-size: 20px; line-height: 1; cursor: pointer; pointer-events: auto; }
 .error-toast__close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
