@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-12 01:30 UTC PR #158 feat: explain inlined methods when deleting classes
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(1674件) / npm run lint ✅ / npm run typecheck ✅。E2Eはレビュー環境で実行できず未確認(PR本文では201件通過)。Issue #151・docs/specs/delete-inline-notice.mdの、deleteClass/deleteFileが{codebase, inlined}を返すこと、noticeとmessageの排他、ErrorToastの情報表示(role=status)を確認
+- マージ: squash & delete-branch
+
 ## 2026-10-12 01:05 UTC PR #157 feat: score mixed responsibilities in extracted methods
 
 - 判定: 合格(blocker無し)
@@ -210,11 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm run check(lint ✅ / typecheck ✅ / test ✅ 1392件)。E2Eはブラウザ未導入のため再実行できず、PR本文の報告(148件pass)を参照
-- マージ: squash & delete-branch
-
-## 2026-10-05 13:57 UTC PR #104 Align displayed line counts with C# source
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅ / E2E: レビュー環境で実行不可(chromium未導入。PR本文では147件通過、e2e差分は読解で確認)
 - マージ: squash & delete-branch
 

@@ -85,3 +85,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [short-method-names](short-method-names.md) | 複数処理を抽出するときの自動メソッド名を、模範解答・責務表から短く付ける |
 | [mixed-responsibility-method](mixed-responsibility-method.md) | 抽出で作ったメソッドに別々の責務の処理が混ざっていたら減点する |
 | [warning-edge-popover-front](warning-edge-popover-front.md) | 警告の矢印の説明が、隣の「循環」バッジの下に隠れないよう前面に出す |
+| [delete-inline-notice](delete-inline-notice.md) | クラス・ファイル削除時に、呼び出し元へ戻した処理をキャンバスに案内する |
