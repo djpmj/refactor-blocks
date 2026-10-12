@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { fragment, sampleCodebase } from '../codebase/testFixtures';
 import type { Codebase } from '../codebase/Codebase';
 import type { ChangeRequest } from './ChangeRequest';
-import { checkManualFix } from './checkManualFix';
+import { checkManualFix, isManualFixSolved } from './checkManualFix';
 
 const taxRequest: ChangeRequest = { id: 'req-tax', title: '軽減税率', description: '', responsibility: 'tax', linesPerSite: 8 };
 
@@ -114,5 +114,53 @@ describe('checkManualFix', () => {
 
     // Assert
     expect(result).toEqual({ missed: [], extra: [], sites: 1 });
+  });
+});
+
+describe('isManualFixSolved', () => {
+  it('missed と extra が空なら正解', () => {
+    // Arrange
+    const result = checkManualFix(taxCodebase(), taxRequest, ['method-a', 'method-b', 'method-c']);
+
+    // Act
+    const solved = isManualFixSolved(result);
+
+    // Assert
+    expect(solved).toBe(true);
+  });
+
+  it('直し忘れがある場合は不正解', () => {
+    // Arrange
+    const result = checkManualFix(taxCodebase(), taxRequest, ['method-a']);
+
+    // Act
+    const solved = isManualFixSolved(result);
+
+    // Assert
+    expect(solved).toBe(false);
+  });
+
+  it('関係のないメソッドに印がある場合は不正解', () => {
+    // Arrange
+    const result = checkManualFix(taxCodebase(), taxRequest, ['method-a', 'method-b', 'method-c', 'method-other']);
+
+    // Act
+    const solved = isManualFixSolved(result);
+
+    // Assert
+    expect(solved).toBe(false);
+  });
+
+  it('変更箇所が1か所なら、その1か所だけの印で正解', () => {
+    // Arrange
+    const [file] = taxCodebase().files;
+    const [codeClass] = file.classes;
+    const codebase: Codebase = { files: [{ ...file, classes: [{ ...codeClass, methods: [codeClass.methods[0]] }] }] };
+
+    // Act
+    const solved = isManualFixSolved(checkManualFix(codebase, taxRequest, ['method-a']));
+
+    // Assert
+    expect(solved).toBe(true);
   });
 });

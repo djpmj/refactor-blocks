@@ -230,12 +230,12 @@ test('再生中のメソッドパネル幅を変えても手順移動後に幅�
   await expect(handle).toHaveAttribute('aria-valuenow', '376');
   await expect(dialog.getByTestId('sample-replay-position')).toHaveText(positionBeforeResize);
 
-  await page.getByRole('button', { name: /次へ/ }).click();
+  await dialog.getByRole('button', { name: /次へ/ }).click();
   await expect(dialog.getByTestId('sample-replay-position')).toContainText(/^1 \/ \d+ 手$/);
   await expect(handle).toHaveAttribute('aria-valuenow', '376');
   await expect(panel.getByRole('heading', { name: /OrderController\.placeOrder\(\)/ })).toBeVisible();
 
-  await page.getByRole('button', { name: '閉じる' }).focus();
+  await dialog.getByRole('button', { name: '閉じる' }).focus();
   await page.keyboard.press('ArrowLeft');
   await expect(dialog.getByTestId('sample-replay-position')).toContainText(/^0 \/ \d+ 手$/);
 });

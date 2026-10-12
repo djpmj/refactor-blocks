@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { completeOpeningFix } from './selectStage.js';
 import { OPERATION_GUIDE } from '../src/presentation/guide/operationGuide.js';
 
 test('操作ガイドはボタンと ? キーで開閉し、Esc・閉じるボタンでフォーカスを戻す', async ({ page }) => {
@@ -37,6 +38,7 @@ test('操作ガイドはボタンと ? キーで開閉し、Esc・閉じるボ�
 
 test('? は編集入力中は文字として入力でき、編集外でガイドを開く', async ({ page }) => {
   await page.goto('/');
+  await completeOpeningFix(page);
   const dialog = page.getByTestId('operation-guide');
   const method = page.getByTestId('method-printMonthlyReport');
   await method.dblclick();
@@ -83,6 +85,7 @@ test('幅600pxでも操作ガイドが画面内に収まり、内容をダイア
 
 test('ガイドの表示中もUndo・Redoの既存ショートカットが使える', async ({ page }) => {
   await page.goto('/');
+  await completeOpeningFix(page);
   const method = page.getByTestId('method-printMonthlyReport');
   await method.dblclick();
   const methodInput = method.getByLabel('メソッド名');

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { selectStage } from './selectStage.js';
+import { releaseAllManualFixSites, selectStage } from './selectStage.js';
 
 async function clearTourSeenOnce(page: import('@playwright/test').Page): Promise<void> {
   await page.addInitScript(() => {
@@ -18,23 +18,67 @@ test('first visit guides a player through Extract Method using the actual action
   // Act / Assert
   const tour = page.getByTestId('first-visit-tour');
   await expect(tour).toBeVisible();
-  await expect(tour).toContainText('1/5');
+  await expect(tour).toContainText('1/6');
   await expect(page.locator('#stage-sidebar')).toBeVisible();
   await expect(page.locator('.spotlight-tour__shade')).toHaveCount(4);
   await expect(page.locator('.spotlight-tour__hole')).toBeVisible();
   await tour.getByRole('button', { name: '次へ' }).click();
-  await expect(tour).toContainText('2/5');
+  await expect(tour).toContainText('2/6');
+  await page.getByRole('button', { name: '\u5b9f\u969b\u306b\u76f4\u3057\u3066\u307f\u308b' }).click();
+  const markedMethod = page.getByTestId('method-printMonthlyReport');
+  await markedMethod.click();
+  await expect(markedMethod).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: '\u30ea\u30ea\u30fc\u30b9\u3059\u308b' }).click();
+  await expect(page.locator('.manual-fix [role=\"status\"]')).toContainText('\u76f4\u3057\u5fd8\u308c');
+  await expect(page.getByRole('button', { name: '\u7d44\u307f\u66ff\u3048\u3092\u59cb\u3081\u308b' })).toBeVisible();
+  await page.getByRole('button', { name: '\u7d44\u307f\u66ff\u3048\u3092\u59cb\u3081\u308b' }).click();
+  await expect(tour).toContainText('3/6');
 
   await page.getByTestId('method-printMonthlyReport').click();
-  await expect(tour).toContainText('3/5');
+  await expect(tour).toContainText('4/6');
   const fragments = page.locator('[data-tour="fragment-list"]');
   await expect(fragments).toBeVisible();
   await fragments.locator('input[type="checkbox"]').first().check();
-  await expect(tour).toContainText('4/5');
+  await expect(tour).toContainText('5/6');
   await page.locator('[data-tour="extract-button"]').click();
-  await expect(tour).toContainText('5/5');
+  await expect(tour).toContainText('6/6');
   await tour.getByRole('button', { name: '次へ' }).click();
   await expect(tour).toHaveCount(0);
+});
+
+test('step 2 spotlight includes the manual-fix release action', async ({ page }) => {
+  // Arrange
+  await clearTourSeenOnce(page);
+  await page.goto('/');
+  const tour = page.getByTestId('first-visit-tour');
+  await tour.getByRole('button', { name: '\u6b21\u3078' }).click();
+  await expect(tour).toContainText('2/6');
+
+  // Assert: the workspace spotlight contains both the sidebar and canvas actions.
+  const target = page.locator('.app__body--sidebar-open');
+  const release = page.getByRole('button', { name: '\u5b9f\u969b\u306b\u76f4\u3057\u3066\u307f\u308b' });
+  await expect(target).toBeVisible();
+  await expect.poll(async () => target.evaluate((element) => {
+    const targetRect = element.getBoundingClientRect();
+    const button = element.querySelector('button');
+    if (button === null) return false;
+    const buttonRect = button.getBoundingClientRect();
+    return targetRect.left <= buttonRect.left && targetRect.right >= buttonRect.right
+      && targetRect.top <= buttonRect.top && targetRect.bottom >= buttonRect.bottom;
+  })).toBe(true);
+
+  // Act: marking a canvas method and releasing works under the shade.
+  await release.click();
+  const method = page.getByTestId('method-printMonthlyReport');
+  await method.click();
+  await expect(method).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: '\u30ea\u30ea\u30fc\u30b9\u3059\u308b' }).click();
+
+  // Assert: the opening result remains visible until its CTA advances the tour.
+  await expect(page.locator('.manual-fix [role="status"]')).toContainText('\u76f4\u3057\u5fd8\u308c');
+  await expect(page.getByRole('button', { name: '\u7d44\u307f\u66ff\u3048\u3092\u59cb\u3081\u308b' })).toBeVisible();
+  await page.getByRole('button', { name: '\u7d44\u307f\u66ff\u3048\u3092\u59cb\u3081\u308b' }).click();
+  await expect(tour).toContainText('3/6');
 });
 
 test('shade blocks clicks outside the spotlight while the tour can be exited with Escape', async ({ page }) => {
@@ -51,7 +95,7 @@ test('shade blocks clicks outside the spotlight while the tour can be exited wit
   await page.mouse.click(buttonBox.x + buttonBox.width / 2, buttonBox.y + buttonBox.height / 2);
 
   // Assert
-  await expect(tour).toContainText('1/5');
+  await expect(tour).toContainText('1/6');
   await expect(page.getByTestId('operation-guide')).not.toBeVisible();
   await page.keyboard.press('Escape');
   await expect(tour).toHaveCount(0);
@@ -66,7 +110,7 @@ test('Escape and the exit button work from interactive steps 2 through 4', async
   // Act / Assert: step 2
   let tour = page.getByTestId('first-visit-tour');
   await tour.getByRole('button', { name: '次へ' }).click();
-  await expect(tour).toContainText('2/5');
+  await expect(tour).toContainText('2/6');
   await page.keyboard.press('Escape');
   await expect(tour).toHaveCount(0);
 
@@ -75,8 +119,10 @@ test('Escape and the exit button work from interactive steps 2 through 4', async
   await page.getByTestId('repeat-first-visit-tour').click();
   tour = page.getByTestId('first-visit-tour');
   await tour.getByRole('button', { name: '次へ' }).click();
+  await releaseAllManualFixSites(page);
+  await expect(tour).toContainText('3/6');
   await page.getByTestId('method-printMonthlyReport').click();
-  await expect(tour).toContainText('3/5');
+  await expect(tour).toContainText('4/6');
   await page.keyboard.press('Escape');
   await expect(tour).toHaveCount(0);
 
@@ -85,9 +131,12 @@ test('Escape and the exit button work from interactive steps 2 through 4', async
   await page.getByTestId('repeat-first-visit-tour').click();
   tour = page.getByTestId('first-visit-tour');
   await tour.getByRole('button', { name: '次へ' }).click();
+  await releaseAllManualFixSites(page);
+  await expect(tour).toContainText('3/6');
   await page.getByTestId('method-printMonthlyReport').click();
+  await expect(tour).toContainText('4/6');
   await page.locator('[data-tour="fragment-list"] input[type="checkbox"]').first().check();
-  await expect(tour).toContainText('4/5');
+  await expect(tour).toContainText('5/6');
   await tour.getByRole('button', { name: 'ガイドを終了' }).click();
   await expect(tour).toHaveCount(0);
 });
@@ -118,6 +167,6 @@ test('does not auto-start elsewhere and can be replayed from the operation guide
   await page.getByTestId('repeat-first-visit-tour').click();
 
   // Assert
-  await expect(page.getByTestId('first-visit-tour')).toContainText('1/5');
+  await expect(page.getByTestId('first-visit-tour')).toContainText('1/6');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('チュートリアル1');
 });

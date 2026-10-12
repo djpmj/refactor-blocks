@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { selectStage } from './selectStage.js';
+import { releaseAllManualFixSites, selectStage } from './selectStage.js';
 
 async function extract(page: Page, fragmentLabel: string, name?: string) {
   await page.getByTestId('method-placeOrder').click();
@@ -107,6 +107,11 @@ test('操作でクリア条件が更新され、100点では全件達成にな�
 
   await expect(page.getByTestId('score')).toContainText('100点');
   await expect(conditions.locator('li[aria-label^="達成:"]')).toHaveCount(await conditions.locator('li').count());
+  const changePain = page.locator('.change-pain');
+  await expect(changePain.getByRole('heading', { name: /\u3082\u3046\u4e00\u5ea6/ })).toBeVisible();
+  await expect(changePain.locator('details')).toHaveAttribute('open', '');
+  await expect(page.getByTestId('change-request-start')).toBeDisabled();
+  await releaseAllManualFixSites(page);
   await expect(page.getByRole('region', { name: 'なぜ分けるのか' }).locator('details')).toHaveAttribute('open', '');
   await page.getByRole('button', { name: '最初に戻す' }).click();
   await expect(page.getByTestId('clear-conditions-progress')).toHaveText('1/4 達成');

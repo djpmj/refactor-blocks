@@ -131,7 +131,7 @@ function SpotlightOverlay({
   step: TourStep;
   spotlight: Spotlight | null;
   callout: Callout;
-  onAdvance: (event: { readonly kind: 'next' }) => void;
+  onAdvance: (event: { readonly kind: 'next' } | { readonly kind: 'manual-fix-released' }) => void;
   onEnd: () => void;
 }>) {
   const missingTarget = spotlight === null;
@@ -152,7 +152,7 @@ function SpotlightOverlay({
         </>
       )}
       <section className="spotlight-tour__callout" role="dialog" aria-label="初回ガイド" aria-live="polite" data-testid="first-visit-tour" style={{ left: callout.left, top: callout.top }}>
-        <p className="spotlight-tour__step">{stepNumber}/5</p>
+        <p className="spotlight-tour__step">{stepNumber}/6</p>
         <p>{step.text}</p>
         <div className="spotlight-tour__actions">
           {advanceButtonVisible ? <button type="button" onClick={() => onAdvance({ kind: 'next' })}>次へ</button> : null}

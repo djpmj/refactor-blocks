@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+﻿import { expect, test, type Page } from '@playwright/test';
 import { selectStage } from './selectStage.js';
 
 async function openCopyPasteTax(page: Page) {
@@ -95,10 +95,7 @@ test('クリックしたメソッドの処理を読み取り専用で表示し�
   await expect(viewer).toContainText('InvoiceService.issue()');
   await expect(page.getByTestId('fixed-mark')).toHaveCount(fixedCount);
 
-  await simulation.getByRole('button', { name: 'もう一度やる' }).click();
-  await expect(viewer).toContainText('メソッドをクリックすると、ここにそのメソッドの処理の一覧が出ます');
-  await page.getByTestId('method-confirm').click();
-  await simulation.getByRole('button', { name: 'やめる' }).click();
+  await simulation.getByRole('button', { name: '閉じる' }).click();
   await expect(page.locator('.method-editor')).toContainText('InvoiceService.issue()');
   await expect(page.getByTestId('method-issue').locator('.method-chip--selected')).toHaveCount(1);
 
