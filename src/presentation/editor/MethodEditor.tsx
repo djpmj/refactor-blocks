@@ -18,6 +18,8 @@ import { findCallerOf } from '../../domain/codebase/inlineMethod';
 import { findMergeCandidates, type MergeCandidate } from '../../domain/codebase/mergeMethods';
 import { fragmentLines, methodLines } from '../../domain/codebase/lineCount';
 import { suggestMethodName } from '../../domain/codebase/suggestMethodName';
+import { methodNamingOf } from '../../domain/stage/methodNaming';
+import type { Stage } from '../../domain/stage/Stage';
 import { showsVisibilityControl } from '../../domain/stage/showsVisibilityControl';
 import { ChangeMemo } from '../change/ChangeMemo';
 import { ClassCodePreview } from './ClassCodePreview';
@@ -269,7 +271,7 @@ function MethodActions({ method, showVisibility }: Readonly<{ method: Method; sh
 }
 
 /** 選択中のメソッドの中身を表示し、処理のまとまりを選んで Extract Method する。 */
-function MethodEditorBody({ method, showVisibility }: Readonly<{ method: Method; showVisibility: boolean }>) {
+function MethodEditorBody({ method, showVisibility, stage }: Readonly<{ method: Method; showVisibility: boolean; stage: Stage }>) {
   const codebase = useGameStore((state) => state.codebase);
   const owner = findClassOfMethod(codebase, method.id);
   // codebaseが変わらない限り同じ配列参照を保つ(毎レンダー新しい配列を作るとZustandの購読が無限ループする)
@@ -279,11 +281,13 @@ function MethodEditorBody({ method, showVisibility }: Readonly<{ method: Method;
   const [activeTab, setActiveTab] = useState<'edit' | 'code'>('edit');
   // null のあいだは選んだ処理から名前を自動で考え、プレイヤーが入力したらその名前を優先する
   const [customName, setCustomName] = useState<string | null>(null);
+  const methodNaming = useMemo(() => methodNamingOf(stage), [stage]);
   const newName =
     customName ??
     suggestMethodName(
       method.fragments.filter((fragment) => selected.has(fragment.id)),
       owner?.methods.map((ownerMethod) => ownerMethod.name) ?? [],
+      methodNaming,
     );
   const disabledReason = extractDisabledReason(selected.size, newName);
 
@@ -343,7 +347,7 @@ export function MethodEditor({ alwaysShowVisibility = false }: Readonly<{ always
       </div>
     );
   }
-  else content = <MethodEditorBody key={method.id} method={method} showVisibility={alwaysShowVisibility || showsVisibilityControl(stage)} />;
+  else content = <MethodEditorBody key={method.id} method={method} stage={stage} showVisibility={alwaysShowVisibility || showsVisibilityControl(stage)} />;
   return (
     <aside className="method-editor" aria-label="メソッドエディタ">
       {content}

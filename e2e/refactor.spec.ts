@@ -231,10 +231,11 @@ test('処理を選ぶと、選んだ処理に合わせてメソッド名が自�
   await page.getByLabel('商品が空でないか検証する').check();
   await expect(nameInput).toHaveValue('validateItems');
   await page.getByLabel('在庫があるか検証する').check();
+  await expect(nameInput).toHaveValue('validateOrder');
   await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
 
   // Assert
-  await expect(page.getByTestId('class-OrderService').getByTestId('method-validateItemsAndStock')).toBeVisible();
+  await expect(page.getByTestId('class-OrderService').getByTestId('method-validateOrder')).toBeVisible();
 });
 
 test('抽出したメソッドを「呼び出し元へ戻す」と、処理が元のメソッドに戻りメソッドが消える', async ({ page }) => {

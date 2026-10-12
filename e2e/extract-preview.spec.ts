@@ -39,7 +39,7 @@ test('抽出の選択中に結果をプレビューし、抽出・Undo・ステ�
   // Act: 抽出する処理を増やし、新しい名前を入力する
   await checks.nth(1).check();
   await expect(sourceLines).toHaveText('39行 → 25行');
-  await expect(previewMethod).toHaveAttribute('aria-label', '抽出後のプレビュー: aggregateSalesAndCompareWithLastMonth() 19行');
+  await expect(previewMethod).toHaveAttribute('aria-label', '抽出後のプレビュー: aggregateSales() 19行');
   const name = page.getByLabel('新しいメソッド名');
   await name.fill('summarizeSales');
   await expect(previewMethod).toHaveAttribute('aria-label', '抽出後のプレビュー: summarizeSales() 19行');
@@ -97,4 +97,22 @@ test('抽出の選択中に結果をプレビューし、抽出・Undo・ステ�
 
   // Assert
   await expect(previewMethod).toHaveCount(0);
+});
+
+test('チュートリアル1で表のヘッダー・行・出力を抽出すると、責務に沿った短い名前になる', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await selectStage(page, 'チュートリアル1: 長いメソッドを分ける');
+  await page.getByTestId('method-printMonthlyReport').click();
+  const name = page.getByLabel('新しいメソッド名');
+
+  // Act: formattingの2処理とoutputの処理を選択する
+  await page.getByLabel('表のヘッダーを組み立てる').check();
+  await page.getByLabel('表の行を組み立てる').check();
+  await page.getByLabel('画面に出力する').check();
+
+  // Assert: 自動名を確認して抽出する
+  await expect(name).toHaveValue('printReport');
+  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+  await expect(page.getByTestId('method-printReport')).toBeVisible();
 });
