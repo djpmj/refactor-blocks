@@ -44,6 +44,20 @@ function methodNamingFailures(stage: Stage): string[] {
   return failures;
 }
 
+function problemIdentifierFailures(stage: Stage): string[] {
+  const identifierPattern = /\b[a-z]+[A-Z][A-Za-z0-9]*\b|\b[A-Z][a-z]+[A-Z][A-Za-z0-9]*\b/g;
+  const codeIdentifiers = new Set<string>();
+  for (const codeClass of allClasses(stage.codebase)) {
+    codeIdentifiers.add(codeClass.name);
+    for (const method of codeClass.methods) codeIdentifiers.add(method.name);
+  }
+  const failures: string[] = [];
+  for (const identifier of stage.problem.match(identifierPattern) ?? []) {
+    if (!codeIdentifiers.has(identifier)) failures.push(`${stage.id}: ${identifier}`);
+  }
+  return failures;
+}
+
 function fragmentsByIds(stage: Stage, ids: readonly string[]): Codebase['files'][number]['classes'][number]['methods'][number]['fragments'] {
   const wanted = new Set(ids);
   const fragments = allClasses(stage.codebase).flatMap((codeClass) => codeClass.methods.flatMap((method) => method.fragments));
@@ -694,6 +708,15 @@ function danglingFieldRefs(stage: Stage): string[] {
 }
 
 describe('stageCatalog', () => {
+  it('問題文にあるコード識別子は、そのステージのクラス名かメソッド名である', () => {
+    // Arrange
+    // Act
+    const failures = stages.flatMap(problemIdentifierFailures);
+
+    // Assert
+    expect(failures).toEqual([]);
+  });
+
   it('全ステージで責務名が定義され、責務を漏らさずlowerCamelCaseになっている', () => {
     // Arrange
     const invalid = stages.flatMap(methodNamingFailures);

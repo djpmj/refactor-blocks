@@ -9,7 +9,7 @@ const extractMethodStage: Stage = {
     "output": "OutputHandler",
   },
   id: 'tutorial-extract-method',
-  problem: 'placeOrderに検証と保存がまとまっている',
+  problem: 'printMonthlyReportに集計・計算・表の組み立て・出力がまとまっている',
   level: 'tutorial',
   title: 'チュートリアル1: 長いメソッドを分ける',
   learns: ['Extract Method'],

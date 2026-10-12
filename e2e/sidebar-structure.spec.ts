@@ -24,7 +24,7 @@ test('困りごと・クリア条件・ヒントが上に並び、ヒントは�
   await page.getByTestId('story-toggle').click();
   const sidebar = page.getByRole('complementary', { name: '課題とヒント' });
   await expect(sidebar.getByRole('heading', { name: '困っていること' })).toBeVisible();
-  await expect(sidebar.getByText('placeOrderに検証と保存がまとまっている')).toBeVisible();
+  await expect(sidebar.getByText('printMonthlyReportに集計・計算・表の組み立て・出力がまとまっている')).toBeVisible();
   await expect(sidebar.getByRole('heading', { name: 'クリア条件' })).toBeVisible();
   await expect(sidebar.getByRole('heading', { name: 'ヒント', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: /ヒントを見る/ })).toBeVisible();

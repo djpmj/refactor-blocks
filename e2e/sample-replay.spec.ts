@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { selectStage } from './selectStage.js';
+import { openReferenceItem } from './referenceMenuActions.js';
 
 test('「解答を再生」で模範解答を1手ずつ進め、図・説明・点数が変わる。閉じてもキャンバスは変わらない', async ({ page }) => {
   // Arrange
@@ -8,7 +9,7 @@ test('「解答を再生」で模範解答を1手ずつ進め、図・説明・�
   const canvasBefore = await page.locator('.react-flow').first().innerText();
 
   // Act: 開く
-  await page.getByTestId('sample-replay-open').click();
+  await openReferenceItem(page, 'reference-replay');
 
   // Assert: 0手目
   const dialog = page.getByTestId('sample-replay');
@@ -126,7 +127,7 @@ test('「解答を再生」で模範解答を1手ずつ進め、図・説明・�
   expect(await page.locator('.react-flow').first().innerText()).toBe(canvasBefore);
 
   // Act: 開き直すと0手目から
-  await page.getByTestId('sample-replay-open').click();
+  await openReferenceItem(page, 'reference-replay');
 
   // Assert
   await expect(page.getByTestId('sample-replay-position')).toHaveText('0 / 1 手');
@@ -137,7 +138,7 @@ test('「解答を再生」で模範解答を1手ずつ進め、図・説明・�
   await expect(dialog).toBeHidden();
 
   // Act: 解答例の図を開く
-  await page.getByRole('button', { name: '解答例の図を見る' }).click();
+  await openReferenceItem(page, 'reference-sample');
   const preview = page.getByTestId('codebase-preview');
   const previewClose = preview.getByRole('button', { name: '閉じる' });
   await expect(preview.locator('.window-controls')).toContainText('✕');
@@ -158,7 +159,7 @@ test('中級1の模範解答は混在メソッドを作らず、再生・図の�
   // Arrange
   await page.goto('/');
   await selectStage(page, '中級1: 循環依存を断ち切る');
-  await page.getByTestId('sample-replay-open').click();
+  await openReferenceItem(page, 'reference-replay');
   const replay = page.getByTestId('sample-replay');
 
   // Act: 模範解答の最後まで再生する
@@ -171,7 +172,7 @@ test('中級1の模範解答は混在メソッドを作らず、再生・図の�
   await page.keyboard.press('Escape');
 
   // Act: 模範解答の図を開く
-  await page.getByRole('button', { name: '解答例の図を見る' }).click();
+  await openReferenceItem(page, 'reference-sample');
 
   // Assert
   const preview = page.getByTestId('codebase-preview');
@@ -187,7 +188,7 @@ test('再生中のメソッドパネルは手順に追従し、プレイヤー�
   const playerCanvas = page.locator('.app__canvas .react-flow');
   await expect(playerCanvas).toContainText('OrderController');
   await expect(playerCanvas).toContainText('cancelOrder');
-  await page.getByTestId('sample-replay-open').click();
+  await openReferenceItem(page, 'reference-replay');
   const dialog = page.getByTestId('sample-replay');
 
   // Act: placeOrder を選択する
@@ -217,7 +218,7 @@ test('再生中のメソッドパネルは手順に追従し、プレイヤー�
 test('再生中のメソッドパネル幅を変えても手順移動後に幅を保つ', async ({ page }) => {
   await page.goto('/');
   await selectStage(page, '中級11: Controller に全部書いてある注文API');
-  await page.getByTestId('sample-replay-open').click();
+  await openReferenceItem(page, 'reference-replay');
   const dialog = page.getByTestId('sample-replay');
   await dialog.getByTestId('preview-method-method-place-order').click();
 
