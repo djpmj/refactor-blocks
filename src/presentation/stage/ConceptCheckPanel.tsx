@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { judgeCheck } from '../../domain/stage/conceptCheck';
 import type { ConceptCheck } from '../../domain/stage/Stage';
+import { AnswerVerdict } from '../feedback/AnswerVerdict';
 
 type CheckItemProps = Readonly<{
   check: ConceptCheck;
@@ -15,7 +16,7 @@ function CheckResult({ check, chosen }: Readonly<{ check: ConceptCheck; chosen: 
   const chosenChoice = check.choices.at(chosen);
   return (
     <div className="concept-check__result" aria-live="polite" data-testid="check-result">
-      <p className="concept-check__verdict">{judgement.correct ? '✓ 正解' : `✗ 不正解(正解: ${correctChoice?.text ?? ''})`}</p>
+      <AnswerVerdict correct={judgement.correct} label={judgement.correct ? '✓ 正解' : `✗ 不正解(正解: ${correctChoice?.text ?? ''})`} />
       {chosenChoice !== undefined && <p>{chosenChoice.explanation}</p>}
       {!judgement.correct && correctChoice !== undefined && <p>{correctChoice.explanation}</p>}
     </div>
@@ -71,8 +72,9 @@ export function ConceptCheckPanel({ checks }: Readonly<{ checks: readonly Concep
       ))}
       {allAnswered && (
         <div aria-live="polite">
-          <p data-testid="check-summary">
-            {checks.length}問中{correctCount}問正解
+          <p className={correctCount === checks.length ? 'concept-check__summary concept-check__summary--perfect' : 'concept-check__summary'} data-testid="check-summary">
+            {correctCount === checks.length ? `全問正解!(${checks.length}問中${correctCount}問正解)` : `${checks.length}問中${correctCount}問正解`}
+            {correctCount === checks.length && <span className="concept-check__perfect-confetti" aria-hidden="true">{Array.from({ length: 20 }, (_, index) => <span key={index} />)}</span>}
           </p>
           <button
             type="button"

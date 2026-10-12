@@ -4,6 +4,7 @@ import { judgeComparison, type ComparisonVerdict } from '../../domain/quiz/judge
 import { comparisonQuizzes } from '../../infrastructure/quizzes/comparisonQuizzes';
 import { describeDeductions, siteNames } from '../change/describeChange';
 import { CodebasePreviewCanvas } from '../preview/CodebasePreviewCanvas';
+import { AnswerVerdict } from '../feedback/AnswerVerdict';
 
 const CHOICES: readonly DesignChoice[] = ['a', 'b'];
 const CHOICE_LABEL: Record<DesignChoice, string> = { a: 'A', b: 'B' };
@@ -58,8 +59,8 @@ function Verdict({ quiz, verdict }: Readonly<{ quiz: ComparisonQuiz; verdict: Co
     ref.current?.focus();
   }, []);
   return (
-    <div ref={ref} className="quiz__verdict" data-testid="quiz-verdict" tabIndex={-1}>
-      <p className="quiz__verdict-title">{verdict.correct ? '⭕ 正解!' : '❌ 不正解'}(楽なのは設計{CHOICE_LABEL[verdict.answer]})</p>
+    <div ref={ref} className={`quiz__verdict quiz__verdict--${verdict.correct ? 'correct' : 'incorrect'}`} data-testid="quiz-verdict" tabIndex={-1}>
+      <AnswerVerdict correct={verdict.correct} label={`${verdict.correct ? '⭕ 正解!' : '❌ 不正解'}(楽なのは設計${CHOICE_LABEL[verdict.answer]})`} />
       <p>{quiz.explanation}</p>
     </div>
   );

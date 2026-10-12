@@ -47,6 +47,9 @@ test('100点未満では出ず、100点で出る。キーボードで答える�
   await answerButtons.first().click();
   const first = panel.getByRole('group').first();
   await expect(first).toContainText('✗ 不正解(正解: 税率の変更が来ても');
+  await expect(first.locator('.answer-verdict')).toHaveClass(/answer-verdict--incorrect/);
+  await expect(first.locator('.answer-verdict')).toHaveCSS('color', 'rgb(166, 31, 31)');
+  await expect(first.locator('.answer-verdict__confetti')).toHaveCount(0);
   await expect(first).toContainText('正解です。軽減税率のような変更');
   await expect(first.getByRole('radio').first()).toBeDisabled();
 
@@ -58,10 +61,41 @@ test('100点未満では出ず、100点で出る。キーボードで答える�
   await page.keyboard.press('Enter');
   await expect(second).toContainText('✓ 正解');
   await expect(panel.getByTestId('check-summary')).toHaveText('2問中1問正解');
+  await expect(panel.getByTestId('check-summary')).not.toHaveClass(/concept-check__summary--perfect/);
 
   await panel.getByRole('button', { name: 'もう一度' }).click();
   await expect(panel.getByTestId('check-summary')).toBeHidden();
   await expect(panel.getByRole('button', { name: '答える' })).toHaveCount(2);
+
+  // 再回答ですべて正解すると、全問正解の演出が表示される
+  const groups = panel.getByRole('group');
+  for (const [index, group] of (await groups.all()).entries()) {
+    await group.getByRole('radio').nth(index === 0 ? 2 : 0).check();
+    await group.getByRole('button', { name: '答える' }).click();
+  }
+  await expect(panel.getByTestId('check-summary')).toHaveText('全問正解!(2問中2問正解)');
+  await expect(panel.getByTestId('check-summary')).toHaveClass(/concept-check__summary--perfect/);
+  await expect(panel.locator('.answer-verdict--correct')).toHaveCount(2);
+  await expect(panel.locator('.answer-verdict--correct').first()).toHaveCSS('color', 'rgb(23, 107, 68)');
+  await expect(panel.locator('.concept-check__perfect-confetti span')).toHaveCount(20);
+  expect(await panel.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+});
+
+test('reduced motionでは判定・完全正解の動きを止め、紙吹雪を隠す', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await clearTutorial2(page);
+  const panel = page.getByRole('region', { name: '理解度チェック' });
+  const groups = panel.getByRole('group');
+  for (const [index, group] of (await groups.all()).entries()) {
+    await group.getByRole('radio').nth(index === 0 ? 2 : 0).check();
+    await group.getByRole('button', { name: '答える' }).click();
+    const verdict = group.locator('.answer-verdict');
+    await expect(verdict).toHaveCSS('animation-name', 'none');
+    await expect(verdict.locator('.answer-verdict__confetti')).toHaveCSS('display', 'none');
+  }
+  await expect(panel.getByTestId('check-summary')).toHaveClass(/concept-check__summary--perfect/);
+  await expect(panel.getByTestId('check-summary')).toHaveCSS('animation-name', 'none');
+  await expect(panel.locator('.concept-check__perfect-confetti')).toHaveCSS('display', 'none');
 });
 
 test('変更依頼の実装中は出ず、ステージを切り替えると消える', async ({ page }) => {

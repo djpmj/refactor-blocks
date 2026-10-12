@@ -27,6 +27,10 @@ test('変更が楽な設計を選ぶと正解になり、それぞれの設計�
   // Assert
   const verdict = page.getByTestId('quiz-verdict');
   await expect(verdict).toContainText('正解');
+  await expect(verdict).toHaveClass(/quiz__verdict--correct/);
+  await expect(verdict.locator('.answer-verdict')).toHaveCSS('color', 'rgb(23, 107, 68)');
+  await expect(verdict.locator('.answer-verdict__label')).toHaveCSS('font-weight', '700');
+  await expect(verdict.locator('.answer-verdict__confetti .answer-verdict__piece')).toHaveCount(8);
   await expect(verdict).not.toContainText('不正解');
   await expect(page.getByTestId('quiz-result-a')).toContainText('点');
   await expect(page.getByTestId('quiz-result-b')).toContainText('巻き込み');
@@ -43,6 +47,23 @@ test('変更が大変な設計を選ぶと不正解になる', async ({ page }) 
 
   // Assert
   await expect(page.getByTestId('quiz-verdict')).toContainText('不正解');
+  await expect(page.getByTestId('quiz-verdict')).toHaveClass(/quiz__verdict--incorrect/);
+  await expect(page.getByTestId('quiz-verdict').locator('.answer-verdict')).toHaveCSS('color', 'rgb(166, 31, 31)');
+  await expect(page.getByTestId('quiz-verdict').locator('.answer-verdict__confetti')).toHaveCount(0);
+});
+
+test('ダークテーマでも正誤の文字色に十分なコントラストがあり、判定文が太字になる', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.goto('/');
+  await page.getByTestId('mode-quiz').click();
+  await page.getByTestId('quiz-choose-a').click();
+  const correctLabel = page.getByTestId('quiz-verdict').locator('.answer-verdict__label');
+  await expect(correctLabel).toHaveCSS('color', 'rgb(117, 227, 176)');
+  await expect(correctLabel).toHaveCSS('font-weight', '700');
+
+  await page.getByTestId('quiz-next').click();
+  await page.getByTestId('quiz-choose-a').click();
+  await expect(page.getByTestId('quiz-verdict').locator('.answer-verdict')).toHaveCSS('color', 'rgb(255, 138, 138)');
 });
 
 test('「次のクイズへ」で2問目に進み、回答がリセットされる', async ({ page }) => {
