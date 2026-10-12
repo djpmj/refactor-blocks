@@ -3,9 +3,10 @@ import { scoreCodebase } from '../../domain/scoring/score';
 import { solutionSnapshots, type SolutionStep } from '../../domain/stage/sampleAnswer';
 import type { Stage } from '../../domain/stage/Stage';
 import { CodebasePreviewCanvas } from '../preview/CodebasePreviewCanvas';
-import { PreviewMethodPanel } from '../preview/PreviewMethodPanel';
+import { ResizablePreviewMethodPanel } from '../preview/ResizablePreviewMethodPanel';
 import { WindowControls } from '../preview/WindowControls';
 import { describeSolutionStep } from './describeSolutionStep';
+import { useResizableSidebarWidth } from '../useResizableSidebarWidth';
 
 const TITLE_ID = 'sample-replay-title';
 const INITIAL_DESCRIPTION = '最初の状態です。『次へ』で1手ずつ進めます';
@@ -22,6 +23,7 @@ export function SampleAnswerReplayDialog({ stage, steps, onClose }: SampleAnswer
   const [position, setPosition] = useState(0);
   const [maximized, setMaximized] = useState(false);
   const [selectedMethodId, setSelectedMethodId] = useState<string | null>(null);
+  const { width, handleProps } = useResizableSidebarWidth({ side: 'right', defaultWidth: 360, minWidth: 280, maxWidth: 640, ariaLabel: 'メソッドパネルの幅を変更' });
   const snapshots = useMemo(() => solutionSnapshots(stage.codebase, steps), [stage, steps]);
   const totals = useMemo(() => snapshots.map((snapshot) => scoreCodebase(snapshot, stage).total), [snapshots, stage]);
   useEffect(() => {
@@ -33,6 +35,7 @@ export function SampleAnswerReplayDialog({ stage, steps, onClose }: SampleAnswer
   // ボタンが disabled になるとフォーカスが body へ戻りダイアログの keydown に届かないので、window で受ける(モーダルなので他の操作とは競合しない)
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      if (event.target instanceof Element && event.target.closest('[role="separator"]') !== null) return;
       if (event.key === 'ArrowLeft') setPosition((current) => Math.max(0, current - 1));
       if (event.key === 'ArrowRight') setPosition((current) => Math.min(steps.length, current + 1));
     };
@@ -64,7 +67,7 @@ export function SampleAnswerReplayDialog({ stage, steps, onClose }: SampleAnswer
         <div className="codebase-preview__canvas">
           <CodebasePreviewCanvas codebase={snapshots[position]} methodLimit={stage.limits.method} selectedMethodId={selectedMethodId} onSelectMethod={setSelectedMethodId} />
         </div>
-        {selectedMethodId === null ? null : <PreviewMethodPanel key={selectedMethodId} codebase={snapshots[position]} methodId={selectedMethodId} />}
+        {selectedMethodId === null ? null : <ResizablePreviewMethodPanel key={selectedMethodId} codebase={snapshots[position]} methodId={selectedMethodId} width={width} handleProps={handleProps} />}
       </div>
       <ReplayControls position={position} last={last} goTo={goTo} />
     </dialog>

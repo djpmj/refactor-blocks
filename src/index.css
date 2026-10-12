@@ -462,6 +462,8 @@ input.class-node__name { width: 14ch; }
 .sample-replay__controls { display: flex; justify-content: center; gap: 8px; padding: 8px 16px; border-top: 1px solid var(--border); }
 .sample-replay__controls button { padding: 4px 12px; }
 .codebase-preview__panel { width: 360px; flex: none; overflow-y: auto; border-left: 1px solid var(--border); padding: 12px; }
+.preview-method-panel-resizable { display: flex; flex: none; min-width: 0; max-width: calc(100% - 240px); }
+.preview-method-panel-resizable .codebase-preview__panel { width: auto; flex: 1; min-width: 0; }
 .codebase-preview__panel .method-editor__title { margin: 0 0 8px; font-size: 16px; }
 .sample-replay__visibility { margin: 0 0 8px; color: var(--muted); }
 .sample-replay__fragment { display: flex; gap: 8px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; }
@@ -474,6 +476,9 @@ input.class-node__name { width: 14ch; }
   .codebase-preview__body { flex-direction: column; overflow-y: auto; }
   .codebase-preview__body > .codebase-preview__canvas { min-height: 300px; flex: none; }
   .codebase-preview__panel { width: auto; flex: none; border-left: 0; border-top: 1px solid var(--border); }
+  .preview-method-panel-resizable { width: 100% !important; max-width: none !important; flex-direction: column; }
+  .preview-method-panel-resizable > .sidebar-resizable__handle { display: none; }
+  .preview-method-panel-resizable .codebase-preview__panel { width: auto; flex: none; border-left: 0; border-top: 1px solid var(--border); }
 }
 .test-status { position: relative; font-size: 12px; }
 .test-status > summary { cursor: pointer; color: var(--muted); white-space: nowrap; }
