@@ -14,12 +14,12 @@ describe('describeCondition', () => {
     const condition: ClearCondition = { rule: 'line-limit', count: 0 };
 
     // Act
-    const text = describeCondition(condition, stage, {});
+    const description = describeCondition(condition, stage, {});
 
     // Assert
-    expect(text).toBe('行数: メソッド50行・クラス120行・ファイル300行以内');
-    expect(describeCondition({ rule: 'coupling', count: 0 }, stage, {})).toBe('結合度: 依存先は0クラスまで');
-    expect(describeCondition({ rule: 'responsibility', count: 0 }, stage, {})).toBe('責務の混在: 1クラス2種類まで');
+    expect(description).toEqual({ goal: '行数: メソッド50行・クラス120行・ファイル300行以内', current: null });
+    expect(describeCondition({ rule: 'coupling', count: 0 }, stage, {})).toEqual({ goal: '結合度: 依存先は0クラスまで', current: null });
+    expect(describeCondition({ rule: 'responsibility', count: 0 }, stage, {})).toEqual({ goal: '責務の混在: 1クラス2種類まで', current: null });
   });
 
   it('違反中は実測値または件数を追加する', () => {
@@ -27,12 +27,21 @@ describe('describeCondition', () => {
     const condition: ClearCondition = { rule: 'line-limit', count: 2 };
 
     // Act
-    const text = describeCondition(condition, stage, { method: 84, class: 200 });
+    const description = describeCondition(condition, stage, { method: 84, class: 200 });
 
     // Assert
-    expect(text).toBe('行数: メソッド50行・クラス120行・ファイル300行以内 (今: メソッド最大84行・クラス最大200行)');
-    expect(describeCondition({ rule: 'coupling', count: 1 }, stage, { dependencies: 3 })).toBe('結合度: 依存先は0クラスまで (今: 最大3クラス)');
-    expect(describeCondition({ rule: 'responsibility', count: 1 }, stage, { responsibilities: 4 })).toBe('責務の混在: 1クラス2種類まで (今: 最大4種類)');
-    expect(describeCondition({ rule: 'visibility', count: 2 }, stage, {})).toBe('アクセス制御: 0件にする (今2件)');
+    expect(description).toEqual({
+      goal: '行数: メソッド50行・クラス120行・ファイル300行以内',
+      current: '今: メソッド最大84行・クラス最大200行',
+    });
+    expect(describeCondition({ rule: 'coupling', count: 1 }, stage, { dependencies: 3 })).toEqual({
+      goal: '結合度: 依存先は0クラスまで', current: '今: 最大3クラス',
+    });
+    expect(describeCondition({ rule: 'responsibility', count: 1 }, stage, { responsibilities: 4 })).toEqual({
+      goal: '責務の混在: 1クラス2種類まで', current: '今: 最大4種類',
+    });
+    expect(describeCondition({ rule: 'visibility', count: 2 }, stage, {})).toEqual({
+      goal: 'アクセス制御: 0件にする', current: '今: 2件',
+    });
   });
 });

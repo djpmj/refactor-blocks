@@ -2,6 +2,11 @@ import type { ClearCondition, WorstMeasures } from '../../domain/stage/clearCond
 import type { Stage } from '../../domain/stage/Stage';
 import { RULE_LABEL } from './describeScore';
 
+export type ConditionDescription = {
+  readonly goal: string;
+  readonly current: string | null;
+};
+
 function describeRule(condition: ClearCondition, stage: Pick<Stage, 'limits' | 'dependencyLimit' | 'responsibilityLimit'>): string {
   if (condition.rule === 'line-limit') {
     const { method, class: codeClass, file } = stage.limits;
@@ -12,25 +17,28 @@ function describeRule(condition: ClearCondition, stage: Pick<Stage, 'limits' | '
   return `${RULE_LABEL[condition.rule]}: 0件にする`;
 }
 
-function describeStatus(condition: ClearCondition, measures: WorstMeasures): string {
-  if (condition.count === 0) return '';
+function describeStatus(condition: ClearCondition, measures: WorstMeasures): string | null {
+  if (condition.count === 0) return null;
   if (condition.rule === 'line-limit') {
     const values = [
       measures.method === undefined ? undefined : `メソッド最大${measures.method}行`,
       measures.class === undefined ? undefined : `クラス最大${measures.class}行`,
       measures.file === undefined ? undefined : `ファイル最大${measures.file}行`,
     ].filter((value): value is string => value !== undefined);
-    return ` (今: ${values.join('・')})`;
+    return `今: ${values.join('・')}`;
   }
-  if (condition.rule === 'coupling' && measures.dependencies !== undefined) return ` (今: 最大${measures.dependencies}クラス)`;
-  if (condition.rule === 'responsibility' && measures.responsibilities !== undefined) return ` (今: 最大${measures.responsibilities}種類)`;
-  return ` (今${condition.count}件)`;
+  if (condition.rule === 'coupling' && measures.dependencies !== undefined) return `今: 最大${measures.dependencies}クラス`;
+  if (condition.rule === 'responsibility' && measures.responsibilities !== undefined) return `今: 最大${measures.responsibilities}種類`;
+  return `今: ${condition.count}件`;
 }
 
 export function describeCondition(
   condition: ClearCondition,
   stage: Pick<Stage, 'limits' | 'dependencyLimit' | 'responsibilityLimit'>,
   measures: WorstMeasures,
-): string {
-  return `${describeRule(condition, stage)}${describeStatus(condition, measures)}`;
+): ConditionDescription {
+  return {
+    goal: describeRule(condition, stage),
+    current: describeStatus(condition, measures),
+  };
 }
