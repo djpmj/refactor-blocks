@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-12 13:25 UTC PR #190 feat: add toolbar answer menu
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint/typecheck/test 1693件) ✅。docs/specs/toolbar-answer-menu.mdの受け入れ基準をReferenceMenu.tsx・StagePanel.tsx・stageCatalog.testの差分で確認(ヒント総数はuseHintsのtotalと一致)。E2Eはブラウザ未導入のため未実行(CIのe2eジョブ成功を参照)
+- マージ: squash & delete-branch
+
 ## 2026-10-12 12:50 UTC PR #166 手直しと変更依頼を段階的に進める
 
 - 判定: 合格(blocker無し)
@@ -210,17 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm run check(lint ✅ / typecheck ✅ / test ✅ 1550件)。E2Eはこの環境で実行許可が得られず未実行、PR本文の報告(inline/削除E2E 4/4、全体154/155でfield keyboard moveはmasterでも再現)を参照
-- マージ: squash & delete-branch
-
-## 2026-10-10 03:15 UTC PR #118 Remove redundant stage select
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(lint ✅ / typecheck ✅ / test ✅ 1508件)。E2Eはブラウザ未導入のためローカル実行できず、差分を静的に確認(getByLabel('ステージ')の残りなし、selectStageヘルパーで集約)
-- マージ: squash & delete-branch
-
-## 2026-10-10 02:40 UTC PR #117 Verify sidebar toggle avoids scrollbar overlap
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅ 1508件 / npm run lint ✅ / npm run typecheck ✅。E2Eはブラウザ未導入のためローカル実行できず、CIのe2eジョブ成功を参照
 - マージ: squash & delete-branch
 
