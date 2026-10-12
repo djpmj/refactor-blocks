@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-12 00:45 UTC PR #156 fix: bring open warning popovers to front
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(1651件) / npm run lint ✅ / npm run typecheck ✅ / E2E(visibility-violation-edge.spec.ts 3件) ✅。Issue #149・docs/specs/warning-edge-popover-front.mdの原因と振る舞い、最小変更(開いた時だけz-index 30)を確認
+- マージ: squash & delete-branch
+
 ## 2026-10-12 00:35 UTC PR #155 feat: resize preview method panels
 
 - 判定: 合格(blocker無し)
@@ -210,11 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅ / E2E: レビュー環境で実行不可(PR本文では147件通過)
-- マージ: squash & delete-branch
-
-## 2026-10-04 15:45 UTC PR #96 コードプレビューを幅に合わせて折り返す
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(1385件) / npm run lint ✅ / npm run typecheck ✅ / E2E: レビュー環境にChromiumが無く実行不可(PR本文では147件通過)
 - マージ: squash & delete-branch
 

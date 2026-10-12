@@ -83,3 +83,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [manual-fix-method-viewer](manual-fix-method-viewer.md) | 手で直す最中、クリックしたメソッドの処理一覧を右サイドバーに読み取り専用で出す |
 | [preview-panel-resizable](preview-panel-resizable.md) | 図のプレビュー・解答の再生で、右のメソッドパネルの幅を変えられるようにする |
 | [short-method-names](short-method-names.md) | 複数処理を抽出するときの自動メソッド名を、模範解答・責務表から短く付ける |
+| [warning-edge-popover-front](warning-edge-popover-front.md) | 警告の矢印の説明が、隣の「循環」バッジの下に隠れないよう前面に出す |
