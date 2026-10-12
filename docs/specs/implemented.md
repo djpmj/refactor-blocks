@@ -91,3 +91,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [clear-condition-badges](clear-condition-badges.md) | クリア条件を丸バッジと行の色で見せ、達成数と達成した瞬間の演出を出す |
 | [post-perfect-flow](post-perfect-flow.md) | 手直し・リファクタリング・仕上げ・変更依頼を段階的に進める |
 | [toolbar-answer-menu](toolbar-answer-menu.md) | ツールバーの参考・答えをメニューにまとめ、答えの前にヒントを勧める |
+| [change-rumors](change-rumors.md) | 後から届く変更依頼を「うわさ」として先に見せ、変更依頼の結果で回収する |

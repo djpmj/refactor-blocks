@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-12 19:41 UTC PR #169 feat: surface change request rumors
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test(1702件) ✅ / npm run lint ✅ / npm run typecheck ✅。docs/specs/change-rumors.mdの変更対象ファイル一覧とrumoredRequests・describeRumorPayoff・RumorListの差分を確認。E2Eはこの環境で実行できず未実行(PR本文の219件成功を参照)
+- マージ: squash & delete-branch
+
 ## 2026-10-12 13:25 UTC PR #190 feat: add toolbar answer menu
 
 - 判定: 合格(blocker無し)
@@ -211,10 +217,3 @@
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅ 1561件 / npm run lint ✅ / npm run typecheck ✅。E2Eはレビュー環境にChromiumが無く起動できず未確認(PR本文は159件成功と報告)
 - マージ: squash & delete-branch
-
-## 2026-10-10 05:10 UTC PR #119 feat: implement inline middle man refactoring
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(lint ✅ / typecheck ✅ / test ✅ 1550件)。E2Eはこの環境で実行許可が得られず未実行、PR本文の報告(inline/削除E2E 4/4、全体154/155でfield keyboard moveはmasterでも再現)を参照
-- マージ: squash & delete-branch
-
