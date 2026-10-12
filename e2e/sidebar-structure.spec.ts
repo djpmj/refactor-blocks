@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { selectStage } from './selectStage.js';
+import { releaseAllManualFixSites, selectStage } from './selectStage.js';
 
 async function extract(page: Page, fragmentLabel: string, name?: string) {
   await page.getByTestId('method-placeOrder').click();
@@ -77,9 +77,30 @@ test('操作でクリア条件が更新され、100点では全件達成にな�
   await selectStage(page, 'チュートリアル2: 太った placeOrder');
   const conditions = page.locator('.clear-conditions');
   await expect(conditions.locator('li[aria-label^="未達成:"]')).toHaveCount(3);
+  await expect(page.getByTestId('clear-conditions-progress')).toHaveText('1/4 達成');
+  await expect(conditions.locator('li.clear-condition--unmet')).toHaveCount(3);
+  await expect(conditions.locator('li.clear-condition--met')).toHaveCount(1);
+  await expect(conditions.locator('li.clear-condition--just-met')).toHaveCount(0);
+  const firstUnmet = conditions.locator('li.clear-condition--unmet').first();
+  await expect(firstUnmet.locator('.clear-condition__badge')).toHaveText('✗');
+  await expect(firstUnmet.locator('.clear-condition__goal')).toBeVisible();
+  await expect(firstUnmet.locator('.clear-condition__current')).toContainText('今: ');
+  const initiallyMet = conditions.locator('li.clear-condition--met').first();
+  await expect(initiallyMet.locator('.clear-condition__badge')).toHaveText('✓');
+  await expect(initiallyMet.locator('.clear-condition__current')).toHaveCount(0);
+  await expect(initiallyMet).not.toHaveClass(/clear-condition--just-met/);
 
   await extract(page, '消費税を計算する(軽減税率あり)', 'calculateTax');
   await move(page, 'method-calculateTax', 'class-TaxCalculator');
+  const justMet = conditions.locator('li.clear-condition--just-met');
+  await expect.poll(() => justMet.count()).toBeGreaterThan(0);
+  await expect(justMet.first().locator('.clear-condition__badge')).toHaveCSS('animation-name', 'clear-condition-bounce');
+  await expect(page.getByTestId('clear-conditions-progress')).not.toHaveText('1/4 達成');
+  await expect(justMet).toHaveCount(0, { timeout: 1000 });
+  await page.getByRole('button', { name: '元に戻す' }).click();
+  await page.getByRole('button', { name: 'やり直し' }).click();
+  await expect(page.getByTestId('clear-conditions-progress')).not.toHaveText('1/4 達成');
+  await expect(justMet).toHaveCount(0);
   await extract(page, '注文をDBに保存する', 'saveOrder');
   await extract(page, '確認メールを送る', 'sendConfirmationMail');
   await extract(page, '在庫があるか検証する', 'validateStock');
@@ -87,7 +108,48 @@ test('操作でクリア条件が更新され、100点では全件達成にな�
   await expect(page.getByTestId('score')).toContainText('100点');
   await expect(conditions.locator('li[aria-label^="達成:"]')).toHaveCount(await conditions.locator('li').count());
   const changePain = page.locator('.change-pain');
-  await expect(changePain.getByRole('heading', { name: /もう一度/ })).toBeVisible();
+  await expect(changePain.getByRole('heading', { name: /\u3082\u3046\u4e00\u5ea6/ })).toBeVisible();
   await expect(changePain.locator('details')).toHaveAttribute('open', '');
   await expect(page.getByTestId('change-request-start')).toBeDisabled();
+  await releaseAllManualFixSites(page);
+  await expect(page.getByRole('region', { name: 'なぜ分けるのか' }).locator('details')).toHaveAttribute('open', '');
+  await page.getByRole('button', { name: '最初に戻す' }).click();
+  await expect(page.getByTestId('clear-conditions-progress')).toHaveText('1/4 達成');
+  await expect(conditions.locator('li.clear-condition--just-met')).toHaveCount(0);
+});
+
+test('達成済みの条件を一度未達に戻してから通常操作で再達成するともう一度演出する', async ({ page }) => {
+  await page.setViewportSize({ width: 1800, height: 1400 });
+  await page.goto('/');
+  await selectStage(page, 'チュートリアル2: 太った placeOrder');
+  const conditions = page.locator('.clear-conditions');
+  const responsibility = conditions.locator('li[aria-label*="責務の混在:"]');
+  await extract(page, '消費税を計算する(軽減税率あり)', 'calculateTax');
+  await move(page, 'method-calculateTax', 'class-TaxCalculator');
+  await expect(responsibility).toHaveClass(/clear-condition--met/);
+  await expect(responsibility).not.toHaveClass(/clear-condition--just-met/, { timeout: 1000 });
+
+  await page.getByRole('button', { name: '元に戻す' }).click();
+  await expect(responsibility).toHaveClass(/clear-condition--unmet/);
+  await expect(responsibility).not.toHaveClass(/clear-condition--just-met/);
+  await responsibility.evaluate((element) => {
+    element.addEventListener('animationstart', () => element.setAttribute('data-animation-started', 'true'), { once: true });
+  });
+  await move(page, 'method-calculateTax', 'class-TaxCalculator');
+  await expect(responsibility).toHaveClass(/clear-condition--met/);
+  await expect(responsibility).toHaveAttribute('data-animation-started', 'true');
+});
+
+test('reduced motionでは達成バッジを弾ませない', async ({ page }) => {
+  await page.setViewportSize({ width: 1800, height: 1400 });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/');
+  await selectStage(page, 'チュートリアル2: 太った placeOrder');
+  const conditions = page.locator('.clear-conditions');
+  await extract(page, '消費税を計算する(軽減税率あり)', 'calculateTax');
+  await move(page, 'method-calculateTax', 'class-TaxCalculator');
+  const justMet = conditions.locator('li.clear-condition--just-met');
+  await expect.poll(() => justMet.count()).toBeGreaterThan(0);
+  await expect(justMet.first().locator('.clear-condition__badge')).toHaveCSS('animation-name', 'none');
+  await expect(justMet.first()).toHaveCSS('animation-name', 'clear-condition-feedback');
 });

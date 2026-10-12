@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { CodeClass, Codebase, Fragment } from "../codebase/Codebase";
 import { sampleCodebase } from "../codebase/testFixtures";
-import { DANGER_POINTS, fileDeductions, fileSeverity } from "./fileScores";
+import { DANGER_POINTS, fileDeductionReasons, fileDeductions, fileSeverity } from "./fileScores";
+import { POINTS_PER_VIOLATION } from "./score";
 import { scoreCodebase } from "./score";
 
 const LOOSE = {
@@ -409,5 +410,50 @@ describe("fileSeverity", () => {
 
     // Assert
     expect(severities).toEqual(["ok", "error", "danger"]);
+  });
+});
+
+describe("fileDeductionReasons", () => {
+  function sumReasonPoints(items: readonly { readonly points: number }[]): number {
+    return items.reduce((sum, item) => sum + item.points, 0);
+  }
+  it("返す内訳をルール順に並べ、減点のないファイルには空配列を返す", () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [
+        { id: "file-a", path: "a", classes: [
+          { id: "class-empty", name: "Empty", methods: [] },
+          { id: "class-long", name: "Long", methods: [
+            { id: "method-one", name: "one", visibility: "public", fragments: [{ id: "f-one", label: "one", lines: 21, responsibility: "x" }] },
+            { id: "method-two", name: "two", visibility: "public", fragments: [{ id: "f-two", label: "two", lines: 21, responsibility: "x" }] },
+          ] },
+        ] },
+        { id: "file-clean", path: "clean", classes: [classOf("Clean", [])] },
+      ],
+    };
+
+    // Act
+    const reasons = fileDeductionReasons(codebase, { ...LOOSE, limits: { method: 20, class: 100, file: 100 } });
+
+    // Assert
+    expect(reasons.get("file-a")).toEqual([
+      { rule: "line-limit", targetId: "method-one", points: POINTS_PER_VIOLATION },
+      { rule: "line-limit", targetId: "method-two", points: POINTS_PER_VIOLATION },
+      { rule: "empty", targetId: "class-empty", points: POINTS_PER_VIOLATION },
+    ]);
+    expect(reasons.get("file-clean")).toEqual([]);
+  });
+
+  it("理由の点数合計は既存のファイル減点と一致する", () => {
+    // Arrange
+    const codebase = sampleCodebase();
+    const stage = { ...LOOSE, limits: { method: 20, class: 20, file: 20 }, responsibilityLimit: 2, dependencyLimit: 0 };
+
+    // Act
+    const reasons = fileDeductionReasons(codebase, stage);
+    const deductions = fileDeductions(codebase, stage);
+
+    // Assert
+    expect([...reasons].map(([fileId, items]) => [fileId, sumReasonPoints(items)])).toEqual([...deductions]);
   });
 });

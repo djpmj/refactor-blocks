@@ -136,5 +136,3 @@ test('変更箇所が1か所のコードではボタンが出ず、ステージ�
   await expect(page.getByRole('region', { name: 'もし、この変更が来たら?' })).toBeVisible();
   await expect(page.getByRole('button', { name: '実際に直してみる' })).toBeHidden();
 });
-
-

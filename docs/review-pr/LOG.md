@@ -38,6 +38,18 @@
 
 ## ログ一覧
 
+## 2026-10-12 08:10 UTC PR #168 feat: clarify clear condition status (#162)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint/typecheck/test 1674件) ✅ / E2E 205件 ✅。Issue #162・docs/specs/clear-condition-badges.mdの、goal/current分離、達成数表示、達成瞬間の演出と初期化・リセット・undo/redo時の抑止、reduced-motionを確認。domain/application変更なし
+- マージ: squash & delete-branch
+
+## 2026-10-12 07:11 UTC PR #167 ファイルの減点理由をアイコンから表示
+
+- 判定: 合格(blocker無し。suggestion: FileNodeでfileDeductionReasonsを毎レンダー計算しているのでselector化を検討)
+- 確認した内容: npm run check(lint/typecheck/test 1676件) ✅。E2Eはレビュー環境で実行許可が得られず未実行(PR本文では204件通過)。Issue #161・docs/specs/file-mark-reasons.mdのfileDeductionsがfileDeductionReasonsの合計から導出されること、AC1の-5点と既存定数10点の矛盾は既存採点との整合を優先した判断として妥当と確認
+- マージ: squash & delete-branch
+
 ## 2026-10-12 04:46 UTC PR #163 正解・不正解の色分けとアニメーション演出
 
 - 判定: 合格(blocker無し)
@@ -210,11 +222,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm run check(lint ✅ / typecheck ✅ / test ✅ 1508件)。E2Eはブラウザ未導入のため再実行できず、PR本文の報告(151件pass)を参照
-- マージ: squash & delete-branch
-
-## 2026-10-10 02:00 UTC PR #115 Implement issue 95 code fragments
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(1501件) / npm run lint ✅ / npm run typecheck ✅ / stage-report再生成で差分なし ✅。E2Eはブラウザ未導入のため再実行できず、PR本文の報告(148件pass)を参照
 - マージ: squash & delete-branch
 

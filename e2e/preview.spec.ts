@@ -278,4 +278,3 @@ test('白紙設計の結果の解答例でもメソッドを選べて最大化�
   expect(dialogBox?.height).toBe(page.viewportSize()?.height);
   expect(await canvas.innerText()).toBe(canvasBefore);
 });
-

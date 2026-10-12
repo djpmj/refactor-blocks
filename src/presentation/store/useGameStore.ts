@@ -461,26 +461,29 @@ function manualFixActions(
       if (request === undefined) return;
       const result = checkManualFix(codebase, request, manualFix.fixedIds);
       const step = currentStep(state);
-      const advancingOpeningTour = state.tourStep !== null && TOUR_STEPS[state.tourStep]?.advance.kind === 'manual-fix-released';
       if (step === 'opening-fix') {
         set({
-          manualFix: advancingOpeningTour ? null : { ...manualFix, released: true },
+          manualFix: { ...manualFix, released: true },
           openingFixes: { ...state.openingFixes, [stage.id]: { missed: result.missed.length, extra: result.extra.length, sites: result.sites } },
         });
       } else if (step === 'closing-fix') {
         const solved = isManualFixSolved(result);
         set({ manualFix: { ...manualFix, released: true }, closingFixSolved: state.closingFixSolved || solved });
       } else {
-        set({ manualFix: advancingOpeningTour ? null : { ...manualFix, released: true } });
+        set({ manualFix: { ...manualFix, released: true } });
       }
-      if (advancingOpeningTour) get().advanceTour({ kind: 'manual-fix-released' });
     },
     restartManualFix: () => {
       const manualFix = get().manualFix;
       if (manualFix !== null) set({ manualFix: { ...NEW_MANUAL_FIX, step: manualFix.step }, extractDraft: null });
     },
     endManualFix: () => {
+      const state = get();
+      const advancingManualFixTour = state.manualFix?.released === true
+        && state.tourStep !== null
+        && TOUR_STEPS[state.tourStep]?.advance.kind === 'manual-fix-released';
       set({ manualFix: null });
+      if (advancingManualFixTour) get().advanceTour({ kind: 'manual-fix-released' });
     },
   };
 }

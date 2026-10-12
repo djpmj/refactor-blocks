@@ -15,7 +15,7 @@ export const TOUR_STAGE_ID = 'tutorial-extract-method';
 
 export const TOUR_STEPS: readonly TourStep[] = [
   { target: '#stage-sidebar', text: 'ここに課題が出ます。まず課題の内容とクリア条件を確認しよう。', advance: { kind: 'next' } },
-  { target: '.change-pain', text: '組み替える前に、まずこのコードのまま変更を入れてみよう。「実際に直してみる」を押し、直す必要があるメソッドをクリックして印を付け、リリースしよう。', advance: { kind: 'manual-fix-released' } },
+  { target: '.app__body', text: '組み替える前に、まずこのコードのまま変更を入れてみよう。「実際に直してみる」を押し、直す必要があるメソッドをクリックして印を付け、リリースしよう。', advance: { kind: 'manual-fix-released' } },
   { target: '[data-testid="method-printMonthlyReport"]', text: '長すぎるメソッド printMonthlyReport() をクリックしてみよう。', advance: { kind: 'select-method', methodName: 'printMonthlyReport' } },
   { target: '[data-tour="fragment-list"]', text: '処理がまとまりごとに並んでいます。一緒に切り出したいまとまりを選ぼう。', advance: { kind: 'click-inside' } },
   { target: '[data-tour="extract-button"]', text: '「選んだ処理をメソッドとして抽出」を押そう。', advance: { kind: 'extract' } },

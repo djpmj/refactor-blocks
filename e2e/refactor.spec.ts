@@ -2252,4 +2252,3 @@ test('上級8: 呼び出しだけの importOrders を似た処理を持つメソ
   }
   await expect(page.getByTestId('score')).toContainText('100点');
 });
-

@@ -149,4 +149,3 @@ test('ランクのクラスにMemberRankを実装させると、新しいクラ�
   await expect(card).toContainText('最初は 1 クラスでした');
   await expect(page.getByTestId('score')).not.toContainText('100');
 });
-

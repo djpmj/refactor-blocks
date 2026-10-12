@@ -114,4 +114,3 @@ test('ステージを切り替えると理解度チェックが消える', async
   await selectStage(page, 'チュートリアル1: 長いメソッドを分ける');
   await expect(page.getByRole('region', { name: '理解度チェック' })).toBeHidden();
 });
-

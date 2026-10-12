@@ -26,11 +26,22 @@ export async function releaseAllManualFixSites(page: Page, options: { readonly r
     const match = item.match(/([\w$]+)\.([\w$]+)(?:\(|$)/);
     return match === null ? [] : [[match[2], match[1]] as const];
   }))];
-  for (const [name, className] of tourActive ? [] : methodLocations) {
+  for (const [name, className] of methodLocations) {
     const method = page.getByTestId(`class-${className}`).getByTestId(`method-${name}`);
-    if (await method.count() > 0) await method.click();
+    if (await method.count() > 0) {
+      await method.click();
+      if (tourActive) await expect(method).toHaveAttribute('aria-pressed', 'true');
+    }
   }
   await panel.getByRole('button', { name: 'リリースする' }).click();
+  if (tourActive) {
+    const begin = panel.getByRole('button', { name: '\u7d44\u307f\u66ff\u3048\u3092\u59cb\u3081\u308b' });
+    const close = panel.getByRole('button', { name: '\u9589\u3058\u308b' });
+    const resultAction = await begin.count() > 0 ? begin : close;
+    await expect(resultAction).toBeVisible();
+    await resultAction.click();
+    await expect(tour).toContainText('3/6');
+  }
   const restart = panel.getByRole('button', { name: 'もう一度やる' });
   if (await restart.count() > 0) {
     const missed = await panel.locator('[role="status"] li').allTextContents();

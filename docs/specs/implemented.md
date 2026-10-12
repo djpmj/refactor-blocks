@@ -87,3 +87,5 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [warning-edge-popover-front](warning-edge-popover-front.md) | 警告の矢印の説明が、隣の「循環」バッジの下に隠れないよう前面に出す |
 | [delete-inline-notice](delete-inline-notice.md) | クラス・ファイル削除時に、呼び出し元へ戻した処理をキャンバスに案内する |
 | [answer-feedback-animation](answer-feedback-animation.md) | 理解度チェックと設計くらべの正誤を色分けし、正解・不正解のアニメーションを出す |
+| [file-mark-reasons](file-mark-reasons.md) | ファイルの警告・危険アイコンにマウスを乗せる/フォーカスすると減点の理由を出す |
+| [clear-condition-badges](clear-condition-badges.md) | クリア条件を丸バッジと行の色で見せ、達成数と達成した瞬間の演出を出す |
