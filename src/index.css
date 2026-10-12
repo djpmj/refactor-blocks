@@ -216,6 +216,12 @@ input.class-node__name { width: 14ch; }
 .line-badge { font-size: 12px; font-weight: 400; color: var(--muted); }
 .line-badge--over { color: var(--danger); font-weight: 700; }
 .file-mark { font-size: 14px; margin-right: 6px; }
+.file-mark { cursor: help; }
+.file-mark:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+.file-mark-popover { position: fixed; z-index: 10000; width: min(320px, calc(100vw - 16px)); box-sizing: border-box; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); box-shadow: 0 6px 20px rgb(0 0 0 / 22%); font: 13px/1.45 system-ui, sans-serif; pointer-events: none; }
+.file-mark-popover ul { margin: 6px 0; padding-left: 18px; }
+.file-mark-popover li { overflow-wrap: anywhere; }
+.file-mark-popover__why { margin: 6px 0 0; color: var(--muted); font-size: 11px; }
 
 .sidebar-resizable { display: flex; flex: none; min-width: 0; }
 .sidebar-resizable__handle { width: 6px; flex: none; cursor: col-resize; touch-action: none; background: transparent; }
