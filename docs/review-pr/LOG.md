@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-12 12:50 UTC PR #166 手直しと変更依頼を段階的に進める
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint/typecheck/test 1692件) ✅。前回承認(5e6b525)以降はmasterのマージコミットのみ。docs/specs/post-perfect-flow.mdの段階制御・編集ロック・結果画面でのコード保持を確認。E2Eはブラウザ未導入のため未実行(PR本文の207件成功を参照)
+- マージ: squash & delete-branch
+
 ## 2026-10-12 08:10 UTC PR #168 feat: clarify clear condition status (#162)
 
 - 判定: 合格(blocker無し)
@@ -216,11 +222,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅ 1508件 / npm run lint ✅ / npm run typecheck ✅。E2Eはブラウザ未導入のためローカル実行できず、CIのe2eジョブ成功を参照
-- マージ: squash & delete-branch
-
-## 2026-10-10 02:20 UTC PR #116 Add resizable left sidebar
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(lint ✅ / typecheck ✅ / test ✅ 1508件)。E2Eはブラウザ未導入のため再実行できず、PR本文の報告(151件pass)を参照
 - マージ: squash & delete-branch
 
