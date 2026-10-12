@@ -187,3 +187,29 @@ test('再生中のメソッドパネルは手順に追従し、プレイヤー�
   await expect(playerCanvas).not.toContainText('processOrder');
   await expect(page.getByTestId('method-editor-empty')).toContainText('中央の図から、直したいメソッドをクリックしてみよう');
 });
+
+test('再生中のメソッドパネル幅を変えても手順移動後に幅を保つ', async ({ page }) => {
+  await page.goto('/');
+  await selectStage(page, '中級11: Controller に全部書いてある注文API');
+  await page.getByTestId('sample-replay-open').click();
+  const dialog = page.getByTestId('sample-replay');
+  await dialog.getByTestId('preview-method-method-place-order').click();
+
+  const handle = dialog.getByRole('separator', { name: 'メソッドパネルの幅を変更' });
+  const panel = dialog.getByRole('complementary', { name: 'メソッドの内容' });
+  await expect(handle).toHaveAttribute('aria-valuenow', '360');
+  await handle.focus();
+  const positionBeforeResize = await dialog.getByTestId('sample-replay-position').innerText();
+  await page.keyboard.press('ArrowLeft');
+  await expect(handle).toHaveAttribute('aria-valuenow', '376');
+  await expect(dialog.getByTestId('sample-replay-position')).toHaveText(positionBeforeResize);
+
+  await page.getByRole('button', { name: /次へ/ }).click();
+  await expect(dialog.getByTestId('sample-replay-position')).toContainText(/^1 \/ \d+ 手$/);
+  await expect(handle).toHaveAttribute('aria-valuenow', '376');
+  await expect(panel.getByRole('heading', { name: /OrderController\.placeOrder\(\)/ })).toBeVisible();
+
+  await page.getByRole('button', { name: '閉じる' }).focus();
+  await page.keyboard.press('ArrowLeft');
+  await expect(dialog.getByTestId('sample-replay-position')).toContainText(/^0 \/ \d+ 手$/);
+});

@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import type { Codebase } from '../../domain/codebase/Codebase';
 import { CodebasePreviewCanvas } from './CodebasePreviewCanvas';
 import { WindowControls } from './WindowControls';
-import { PreviewMethodPanel } from './PreviewMethodPanel';
+import { ResizablePreviewMethodPanel } from './ResizablePreviewMethodPanel';
+import { useResizableSidebarWidth } from '../useResizableSidebarWidth';
 
 const TITLE_ID = 'codebase-preview-title';
 
@@ -18,6 +19,7 @@ export function CodebasePreviewDialog({ title, codebase, methodLimit, onClose }:
   const ref = useRef<HTMLDialogElement>(null);
   const [maximized, setMaximized] = useState(false);
   const [selectedMethodId, setSelectedMethodId] = useState<string | null>(null);
+  const { width, handleProps } = useResizableSidebarWidth({ side: 'right', defaultWidth: 360, minWidth: 280, maxWidth: 640, ariaLabel: 'メソッドパネルの幅を変更' });
   useEffect(() => {
     const dialog = ref.current;
     if (codebase !== null && dialog !== null && !dialog.open) dialog.showModal();
@@ -40,7 +42,7 @@ export function CodebasePreviewDialog({ title, codebase, methodLimit, onClose }:
         <div className="codebase-preview__canvas">
           <CodebasePreviewCanvas codebase={codebase} methodLimit={methodLimit} selectedMethodId={selectedMethodId} onSelectMethod={setSelectedMethodId} />
         </div>
-        {selectedMethodId === null ? null : <PreviewMethodPanel key={selectedMethodId} codebase={codebase} methodId={selectedMethodId} />}
+        {selectedMethodId === null ? null : <ResizablePreviewMethodPanel key={selectedMethodId} codebase={codebase} methodId={selectedMethodId} width={width} handleProps={handleProps} />}
       </div>
     </dialog>
   );

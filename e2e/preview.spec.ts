@@ -172,6 +172,59 @@ test('「解答例の図を見る」を押すと、模範解答どおりに抽�
   await expect(panel.locator('.code-preview')).toBeVisible();
 });
 
+test('プレビューのメソッドパネルはドラッグとキーボードで幅を変えられる', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: '解答例の図を見る' }).click();
+  const dialog = page.getByTestId('codebase-preview');
+  await expect(dialog.getByRole('separator', { name: 'メソッドパネルの幅を変更' })).toHaveCount(0);
+  await dialog.getByRole('button', { name: /aggregateSales/ }).click();
+
+  const handle = dialog.getByRole('separator', { name: 'メソッドパネルの幅を変更' });
+  const panel = dialog.getByRole('complementary', { name: 'メソッドの内容' });
+  await expect(handle).toHaveAttribute('aria-valuenow', '360');
+  const initialPanelWidth = (await panel.boundingBox())?.width ?? 0;
+  const handleBox = await handle.boundingBox();
+  expect(handleBox).not.toBeNull();
+  await page.mouse.move((handleBox?.x ?? 0) + 2, (handleBox?.y ?? 0) + 10);
+  await page.mouse.down();
+  await page.mouse.move((handleBox?.x ?? 0) - 78, (handleBox?.y ?? 0) + 10);
+  await page.mouse.up();
+  await expect(handle).toHaveAttribute('aria-valuenow', '440');
+  await expect.poll(async () => (await panel.boundingBox())?.width).toBeGreaterThan(initialPanelWidth);
+
+  const dragHandle = async (deltaX: number) => {
+    const box = await handle.boundingBox();
+    expect(box).not.toBeNull();
+    await page.mouse.move((box?.x ?? 0) + 2, (box?.y ?? 0) + 10);
+    await page.mouse.down();
+    await page.mouse.move((box?.x ?? 0) + deltaX, (box?.y ?? 0) + 10);
+    await page.mouse.up();
+  };
+  await dragHandle(-1000);
+  await expect(handle).toHaveAttribute('aria-valuenow', '640');
+  await dragHandle(1000);
+  await expect(handle).toHaveAttribute('aria-valuenow', '280');
+
+  await handle.focus();
+  await page.keyboard.press('ArrowLeft');
+  await expect(handle).toHaveAttribute('aria-valuenow', '296');
+});
+
+test('幅800px以下のプレビューでは仕切りを出さずパネルを下に表示する', async ({ page }) => {
+  await page.setViewportSize({ width: 800, height: 720 });
+  await page.goto('/');
+  await page.getByRole('button', { name: '解答例の図を見る' }).click();
+  const dialog = page.getByTestId('codebase-preview');
+  await dialog.getByRole('button', { name: /aggregateSales/ }).click();
+  await expect(dialog.getByRole('separator', { name: 'メソッドパネルの幅を変更' })).toHaveCount(0);
+  const canvas = dialog.locator('.codebase-preview__canvas');
+  const panel = dialog.getByRole('complementary', { name: 'メソッドの内容' });
+  const canvasBox = await canvas.boundingBox();
+  const panelBox = await panel.boundingBox();
+  expect(canvasBox?.y).toBeLessThan(panelBox?.y ?? 0);
+  expect(panelBox?.width).toBeGreaterThan(500);
+});
+
 test('変更依頼の解答例でもメソッドを切り替えて最大化でき、プレイヤーのキャンバスを変えない', async ({ page }) => {
   // Arrange: 変更依頼を終え、解答例を開く
   await openChangeRequestResult(page);
