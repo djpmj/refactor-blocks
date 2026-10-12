@@ -1,6 +1,7 @@
 import type { Codebase } from "../codebase/Codebase";
 import { classDependencies } from "../codebase/dependencies";
 import type { Stage } from "../stage/Stage";
+import type { ScoreRule } from './score';
 import { findLowCohesionClasses } from "./cohesion";
 import { findMiddleManClasses } from "./middleMan";
 import { findEncapsulationViolations, findFeatureEnvy, findOpenSetters } from "./fieldAccess";
@@ -34,42 +35,53 @@ export function fileDeductions(
   codebase: Codebase,
   stage: Pick<Stage, "limits" | "dependencyLimit" | "responsibilityLimit" | "visibilityEnforced">,
 ): Map<string, number> {
+  const reasons = fileDeductionReasons(codebase, stage);
+  return new Map([...reasons].map(([fileId, items]) => [fileId, items.reduce((sum, item) => sum + item.points, 0)]));
+}
+
+export type FileDeductionReason = {
+  readonly rule: ScoreRule;
+  readonly targetId: string;
+  readonly points: number;
+};
+
+export function fileDeductionReasons(
+  codebase: Codebase,
+  stage: Pick<Stage, "limits" | "dependencyLimit" | "responsibilityLimit" | "visibilityEnforced">,
+): Map<string, readonly FileDeductionReason[]> {
   const dependencies = classDependencies(codebase);
-  const violatingTargetIds = [
-    ...findLineLimitViolations(codebase, stage.limits).map(
-      (violation) => violation.targetId,
-    ),
-    ...findResponsibilityViolations(codebase, stage.responsibilityLimit).map(
-      (violation) => violation.classId,
-    ),
-    ...findCouplingViolations(dependencies, stage.dependencyLimit),
-    ...dependencies
-      .filter((dependency) => dependency.cyclic)
-      .map((dependency) => dependency.from),
-    ...findEmptyContainers(codebase),
-    ...findUnusedPrivateMethods(codebase),
-    ...findLoneSuperclasses(codebase),
-    ...findStubMethods(codebase),
-    ...findContractViolations(codebase),
-    ...findFeatureEnvy(codebase).map((violation) => violation.methodId),
-    ...findEncapsulationViolations(codebase).map((violation) => violation.accessorClassId),
-    ...findOpenSetters(codebase),
-    ...countedVisibilityViolations(codebase, stage.visibilityEnforced).map((violation) => violation.callerClassId),
-    ...findLowCohesionClasses(codebase).map((violation) => violation.classId),
-    ...findTrivialMethods(codebase),
-    ...findThinClasses(codebase),
-    ...findMiddleManClasses(codebase),
+  const violations: readonly (readonly [ScoreRule, readonly string[]])[] = [
+    ['line-limit', findLineLimitViolations(codebase, stage.limits).map((violation) => violation.targetId)],
+    ['responsibility', findResponsibilityViolations(codebase, stage.responsibilityLimit).map((violation) => violation.classId)],
+    ['coupling', findCouplingViolations(dependencies, stage.dependencyLimit)],
+    ['cycle', dependencies.filter((dependency) => dependency.cyclic).map((dependency) => dependency.from)],
+    ['empty', findEmptyContainers(codebase)],
+    ['unused', findUnusedPrivateMethods(codebase)],
+    ['lone-superclass', findLoneSuperclasses(codebase)],
+    ['stub', findStubMethods(codebase)],
+    ['contract', findContractViolations(codebase)],
+    ['feature-envy', findFeatureEnvy(codebase).map((violation) => violation.methodId)],
+    ['encapsulation', [
+      ...findEncapsulationViolations(codebase).map((violation) => violation.accessorClassId),
+      ...findOpenSetters(codebase),
+    ]],
+    ['visibility', countedVisibilityViolations(codebase, stage.visibilityEnforced).map((violation) => violation.callerClassId)],
+    ['cohesion', findLowCohesionClasses(codebase).map((violation) => violation.classId)],
+    ['trivial-method', findTrivialMethods(codebase)],
+    ['thin-class', findThinClasses(codebase)],
+    ['middle-man', findMiddleManClasses(codebase)],
   ];
   const owners = fileIdByTargetId(codebase);
-  const points = new Map(
-    codebase.files.map((file): [string, number] => [file.id, 0]),
+  const reasons = new Map(
+    codebase.files.map((file): [string, FileDeductionReason[]] => [file.id, []]),
   );
-  for (const targetId of violatingTargetIds) {
-    const fileId = owners.get(targetId);
-    if (fileId !== undefined)
-      points.set(fileId, (points.get(fileId) ?? 0) + POINTS_PER_VIOLATION);
+  for (const [rule, targetIds] of violations) {
+    for (const targetId of targetIds) {
+      const fileId = owners.get(targetId);
+      if (fileId !== undefined) reasons.get(fileId)?.push({ rule, targetId, points: POINTS_PER_VIOLATION });
+    }
   }
-  return points;
+  return reasons;
 }
 
 /** ファイルの減点がこの点数以上なら、エラーではなく危険として目立たせる。 */
