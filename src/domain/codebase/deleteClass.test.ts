@@ -40,7 +40,7 @@ describe('deleteClass', () => {
 
     // Assert
     if (!result.ok) throw new Error(result.error);
-    expect(result.value.files[1].classes).toEqual([]);
+    expect(result.value.codebase.files[1].classes).toEqual([]);
   });
 
   it('元のCodebaseは変更しない', () => {
@@ -62,6 +62,7 @@ describe('deleteClass', () => {
     const result = deleteClass(codebase, 'class-tax');
     // Assert
     expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.inlined).toEqual([]);
   });
 
   it('本物の処理が残るクラスは削除できない', () => {
@@ -83,7 +84,7 @@ describe('deleteClass', () => {
     // Assert
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error(result.error);
-    expect(findMethod(result.value, 'method-place')?.fragments.map((fragment) => fragment.id)).toEqual(['f-validate', 'f-tax', 'f-save']);
+    expect(findMethod(result.value.codebase, 'method-place')?.fragments.map((fragment) => fragment.id)).toEqual(['f-validate', 'f-tax', 'f-save']);
     expect(codebase).toEqual(snapshot);
   });
 
@@ -116,13 +117,14 @@ describe('deleteClass', () => {
 
     // Assert
     if (!result.ok) throw new Error(result.error);
-    expect(findMethod(result.value, 'method-tax')).toBeUndefined();
-    expect(findMethod(result.value, 'method-place')?.fragments.map((fragment) => fragment.id)).toEqual([
+    expect(findMethod(result.value.codebase, 'method-tax')).toBeUndefined();
+    expect(findMethod(result.value.codebase, 'method-place')?.fragments.map((fragment) => fragment.id)).toEqual([
       'f-validate',
       'f-tax',
       'f-save',
     ]);
-    expect(result.value.files[1].classes.some((codeClass) => codeClass.id === 'class-tax-logic')).toBe(false);
+    expect(result.value.codebase.files[1].classes.some((codeClass) => codeClass.id === 'class-tax-logic')).toBe(false);
+    expect(result.value.inlined).toEqual([{ className: 'TaxLogic', methodName: 'calculateTax', callerClassName: 'OrderService', callerMethodName: 'placeOrder' }]);
   });
 
   it('publicな横流しメソッドを持つクラスを削除すると、呼び出し行が呼び先へ付け替わる', () => {
@@ -138,8 +140,31 @@ describe('deleteClass', () => {
 
     // Assert
     if (!result.ok) throw new Error(result.error);
-    expect(result.value.files[0].classes.map(({ id }) => id)).not.toContain('manager');
-    expect(findMethod(result.value, 'caller')?.fragments.map(({ id }) => id)).toEqual(['service-call']);
+    expect(result.value.codebase.files[0].classes.map(({ id }) => id)).not.toContain('manager');
+    expect(findMethod(result.value.codebase, 'caller')?.fragments.map(({ id }) => id)).toEqual(['service-call']);
+    expect(result.value.inlined).toEqual([{ className: 'Manager', methodName: 'place', callerClassName: 'Controller', callerMethodName: 'place' }]);
+  });
+
+  it('複数のメソッドを戻した名前を戻した順で記録し、連鎖する呼び出し元も更新後のクラス名で記録する', () => {
+    // Arrange
+    const codebase: Codebase = { files: [{ id: 'file', path: 'src/a.ts', classes: [
+      { id: 'controller', name: 'Controller', methods: [{ id: 'caller', name: 'place', visibility: 'public', fragments: [{ id: 'manager-call', label: 'Managerへ委譲', lines: 1, responsibility: 'call', uses: ['manager-a'] }] }] },
+      { id: 'manager', name: 'Manager', methods: [
+        { id: 'manager-a', name: 'a', visibility: 'public', fragments: [{ id: 'b-call', label: 'bへ委譲', lines: 1, responsibility: 'call', uses: ['manager-b'] }] },
+        { id: 'manager-b', name: 'b', visibility: 'public', fragments: [{ id: 'work', label: '処理', lines: 2, responsibility: 'business' }] },
+      ] },
+    ] }] };
+
+    // Act
+    const result = deleteClass(codebase, 'manager');
+
+    // Assert
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error(result.error);
+    expect(result.value.inlined).toEqual([
+      { className: 'Manager', methodName: 'a', callerClassName: 'Controller', callerMethodName: 'place' },
+      { className: 'Manager', methodName: 'b', callerClassName: 'Controller', callerMethodName: 'place' },
+    ]);
   });
 
   it('呼び出し元も削除対象の同じクラスにある場合は処理が残るため削除できない', () => {

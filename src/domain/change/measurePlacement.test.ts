@@ -158,7 +158,7 @@ describe('measurePlacement: ルールの変更(sampleCodebase)', () => {
     // Arrange
     const base = sampleCodebase();
     const withParent = unwrap(setSuperclass(toNewClass(base, taxRequest), 'class-tax', 'OrderService'));
-    const withoutTax = unwrap(deleteClass(toNewClass(base, taxRequest), 'class-tax'));
+    const withoutTax = unwrap(deleteClass(toNewClass(base, taxRequest), 'class-tax')).codebase;
 
     // Act
     const changed = placement(base, withParent, taxRequest);
