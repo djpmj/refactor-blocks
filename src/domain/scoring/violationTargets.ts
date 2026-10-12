@@ -14,6 +14,7 @@ import { findMisplacedResponsibilities } from './misplacedResponsibilities';
 import { findThinClasses, findTrivialMethods } from './overExtraction';
 import { findCouplingViolations, type ScoreRule } from './score';
 import { countedVisibilityViolations } from './visibility';
+import { findMixedMethods } from './mixedMethods';
 
 /** 同一ブロックに複数の違反があっても、強調対象IDは一度だけ返す。 */
 export type ViolationTarget = {
@@ -35,7 +36,7 @@ function emptyTargets(): TargetRecord {
     visibility: emptyTarget(), empty: emptyTarget(), unused: emptyTarget(), 'lone-superclass': emptyTarget(),
     stub: emptyTarget(), contract: emptyTarget(), 'feature-envy': emptyTarget(), encapsulation: emptyTarget(),
     cohesion: emptyTarget(), 'trivial-method': emptyTarget(), 'thin-class': emptyTarget(), 'middle-man': emptyTarget(),
-    layer: emptyTarget(),
+    layer: emptyTarget(), 'mixed-method': emptyTarget(),
   };
 }
 
@@ -61,7 +62,7 @@ function freezeTargets(targets: TargetRecord): Record<ScoreRule, ViolationTarget
     encapsulation: freezeTarget(targets.encapsulation), cohesion: freezeTarget(targets.cohesion),
     'trivial-method': freezeTarget(targets['trivial-method']), 'thin-class': freezeTarget(targets['thin-class']),
     'middle-man': freezeTarget(targets['middle-man']),
-    layer: freezeTarget(targets.layer),
+    layer: freezeTarget(targets.layer), 'mixed-method': freezeTarget(targets['mixed-method']),
   };
 }
 
@@ -83,7 +84,7 @@ function addEmptyTargets(codebase: Codebase, target: MutableTarget): void {
 
 export function violationTargets(
   codebase: Codebase,
-  stage: Pick<Stage, 'limits' | 'dependencyLimit' | 'responsibilityLimit' | 'visibilityEnforced' | 'layers'>,
+  stage: Pick<Stage, 'limits' | 'dependencyLimit' | 'responsibilityLimit' | 'visibilityEnforced' | 'layers' | 'codebase' | 'cohesiveResponsibilities'>,
 ): Record<ScoreRule, ViolationTarget> {
   const targets = emptyTargets();
   const dependencies = classDependencies(codebase);
@@ -112,5 +113,6 @@ export function violationTargets(
   addClasses(targets['thin-class'], findThinClasses(codebase));
   addClasses(targets['middle-man'], findMiddleManClasses(codebase));
   addClasses(targets.layer, findLayerViolations(codebase, stage.layers).map(({ fromClassId }) => fromClassId));
+  addMethods(targets['mixed-method'], findMixedMethods(codebase, stage.codebase, stage.cohesiveResponsibilities));
   return freezeTargets(targets);
 }

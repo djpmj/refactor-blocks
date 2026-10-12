@@ -53,8 +53,8 @@ const cyclicDependencyStage: Stage = {
   why: '価格ルールを変えるとき、注文・顧客・在庫が互いに呼び合う経路まで確かめる必要があります。各データの扱いをそれぞれの役割に寄せると、変更の影響を追いやすくなります。',
   description:
     '注文(Order)と顧客(Customer)のクラス。注文の合計金額を求めるメソッドが Customer に、顧客の過去の注文数を数えるメソッドが Order に置かれているせいで、2つのクラスがお互いを呼び合っている。',
-  goal: '赤い矢印(循環依存)をなくそう。メソッドが本来いるべきクラスはどこ? メソッドは16行以内、クラスは48行・ファイルは49行以内、1クラスの責務は4種類まで',
-  limits: { method: 16, class: 48, file: 49 },
+  goal: '赤い矢印(循環依存)をなくそう。メソッドが本来いるべきクラスはどこ? メソッドは20行以内、クラスは48行・ファイルは49行以内、1クラスの責務は4種類まで',
+  limits: { method: 20, class: 48, file: 49 },
   dependencyLimit: 2,
   responsibilityLimit: 4,
   changeRequests: [
@@ -829,6 +829,7 @@ const anemicDomainModelStage: Stage = {
   dependencyLimit: 1,
   responsibilityLimit: 5,
   visibilityEnforced: true,
+  cohesiveResponsibilities: [['account-status', 'withdrawal-limit', 'balance']],
   changeRequests: [
     { id: 'req-premium-daily-limit', title: 'プレミアム会員は1日の引き出し上限を上げて', description: 'プレミアム会員だけ、1日に引き出せる上限額を100万円にしたい', responsibility: 'withdrawal-limit', linesPerSite: 6, partName: 'raisePremiumDailyLimit' },
     { id: 'req-deposit-while-frozen', title: '凍結中でも入金だけは受け付けて', description: '口座が凍結されていても、入金(給与の振込など)は受け付けるようにしたい', responsibility: 'account-status', linesPerSite: 4, partName: 'allowDepositWhileFrozen' },

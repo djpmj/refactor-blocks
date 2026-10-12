@@ -5,8 +5,8 @@ import { violationTargets } from './violationTargets';
 describe('resolvedTargets', () => {
   it('違反がなくなったメソッドを返し、残る違反のクラスは返さない', () => {
     // Arrange
-    const stage = { limits: { method: 8, class: 100, file: 100 }, dependencyLimit: 100, responsibilityLimit: 100, visibilityEnforced: false, layers: [] };
     const before = { files: [{ id: 'file', path: 'sample.ts', classes: [{ id: 'class', name: 'Sample', methods: [{ id: 'method', name: 'run', visibility: 'public' as const, fragments: [{ id: 'fragment-1', label: 'validate input', lines: 4, responsibility: 'validation' }, { id: 'fragment-2', label: 'write output', lines: 4, responsibility: 'io' }] }] }] }] };
+    const stage = { codebase: before, limits: { method: 8, class: 100, file: 100 }, dependencyLimit: 100, responsibilityLimit: 100, visibilityEnforced: false, layers: [] };
     const [file] = before.files;
     const [codeClass] = file.classes;
     const [method] = codeClass.methods;
@@ -25,7 +25,7 @@ describe('resolvedTargets', () => {
 
   it('削除された対象や新しく違反になった対象を含めず、変化がなければ空を返す', () => {
     // Arrange
-    const stage = { limits: { method: 7, class: 100, file: 100 }, dependencyLimit: 100, responsibilityLimit: 100, visibilityEnforced: false, layers: [] };
+    const stage = { codebase: { files: [] }, limits: { method: 7, class: 100, file: 100 }, dependencyLimit: 100, responsibilityLimit: 100, visibilityEnforced: false, layers: [] };
     const codebase = { files: [{ id: 'file', path: 'sample.ts', classes: [{ id: 'class', name: 'Sample', methods: [{ id: 'method', name: 'run', visibility: 'public' as const, fragments: [{ id: 'fragment', label: 'work', lines: 8, responsibility: 'work' }] }] }] }] };
     const removed = { ...codebase, files: codebase.files.slice(1) };
 
@@ -42,7 +42,7 @@ describe('resolvedTargets', () => {
 
   it('同じメソッドが別ルールの違反対象に残る場合は解決済みにしない', () => {
     // Arrange
-    const stage = { limits: { method: 7, class: 100, file: 100 }, dependencyLimit: 100, responsibilityLimit: 100, visibilityEnforced: false, layers: [] };
+    const stage = { codebase: { files: [] }, limits: { method: 7, class: 100, file: 100 }, dependencyLimit: 100, responsibilityLimit: 100, visibilityEnforced: false, layers: [] };
     const method = { id: 'method', name: 'run', visibility: 'private' as const, fragments: [
       { id: 'fragment-1', label: 'validate input', lines: 4, responsibility: 'validation' },
       { id: 'fragment-2', label: 'write output', lines: 4, responsibility: 'io' },
@@ -59,7 +59,7 @@ describe('resolvedTargets', () => {
 
   it('循環依存が解消すると対象だったクラスを返す', () => {
     // Arrange
-    const stage = { limits: { method: 100, class: 100, file: 100 }, dependencyLimit: 0, responsibilityLimit: 100, visibilityEnforced: false, layers: [] };
+    const stage = { codebase: { files: [] }, limits: { method: 100, class: 100, file: 100 }, dependencyLimit: 0, responsibilityLimit: 100, visibilityEnforced: false, layers: [] };
     const before = { files: [{ id: 'file', path: 'sample.ts', classes: [
       { id: 'class-a', name: 'A', methods: [{ id: 'method-a', name: 'run', visibility: 'public' as const, fragments: [{ id: 'fragment-a', label: 'call B', lines: 1, responsibility: 'call', uses: ['method-b'] }] }] },
       { id: 'class-b', name: 'B', methods: [{ id: 'method-b', name: 'run', visibility: 'public' as const, fragments: [{ id: 'fragment-b', label: 'call A', lines: 1, responsibility: 'call', uses: ['method-a'] }] }] },
@@ -85,7 +85,7 @@ describe('resolvedTargets', () => {
 
   it('越境メソッドを呼び出し元へ移すと可視性違反だったメソッドを返す', () => {
     // Arrange
-    const stage = { limits: { method: 100, class: 100, file: 100 }, dependencyLimit: 100, responsibilityLimit: 100, visibilityEnforced: true, layers: [] };
+const stage = { codebase: { files: [] }, limits: { method: 100, class: 100, file: 100 }, dependencyLimit: 100, responsibilityLimit: 100, visibilityEnforced: true, layers: [] };
     const caller = { id: 'method-caller', name: 'run', visibility: 'public' as const, fragments: [{ id: 'fragment-call', label: 'call target', lines: 1, responsibility: 'call', uses: ['method-target'] }] };
     const target = { id: 'method-target', name: 'hidden', visibility: 'private' as const, fragments: [{ id: 'fragment-work', label: 'work', lines: 4, responsibility: 'work' }] };
     const before = { files: [{ id: 'file', path: 'sample.ts', classes: [

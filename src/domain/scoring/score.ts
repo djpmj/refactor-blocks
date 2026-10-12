@@ -13,6 +13,7 @@ import { findResponsibilityViolations } from './responsibilities';
 import { findMisplacedResponsibilities } from './misplacedResponsibilities';
 import { findThinClasses, findTrivialMethods } from './overExtraction';
 import { countedVisibilityViolations } from './visibility';
+import { findMixedMethods } from './mixedMethods';
 
 export type ScoreRule =
   | 'line-limit'
@@ -32,7 +33,8 @@ export type ScoreRule =
   | 'trivial-method'
   | 'thin-class'
   | 'middle-man'
-  | 'layer';
+  | 'layer'
+  | 'mixed-method';
 
 export type ScoreDeduction = {
   readonly rule: ScoreRule;
@@ -61,7 +63,7 @@ export function findCouplingViolations(dependencies: readonly ClassDependency[],
  */
 export function scoreCodebase(
   codebase: Codebase,
-  stage: Pick<Stage, 'limits' | 'dependencyLimit' | 'responsibilityLimit' | 'visibilityEnforced' | 'layers'>,
+  stage: Pick<Stage, 'limits' | 'dependencyLimit' | 'responsibilityLimit' | 'visibilityEnforced' | 'layers' | 'codebase' | 'cohesiveResponsibilities'>,
 ): Score {
   const dependencies = classDependencies(codebase);
   const counts: Record<ScoreRule, number> = {
@@ -83,6 +85,7 @@ export function scoreCodebase(
     'thin-class': findThinClasses(codebase).length,
     'middle-man': findMiddleManClasses(codebase).length,
     layer: findLayerViolations(codebase, stage.layers).length,
+    'mixed-method': findMixedMethods(codebase, stage.codebase, stage.cohesiveResponsibilities).length,
   };
   const deductions = (
     [
@@ -104,6 +107,7 @@ export function scoreCodebase(
       'thin-class',
       'middle-man',
       'layer',
+      'mixed-method',
     ] as const
   ).map((rule): ScoreDeduction => ({ rule, count: counts[rule], points: counts[rule] * POINTS_PER_VIOLATION }));
   const deducted = deductions.reduce((sum, deduction) => sum + deduction.points, 0);
