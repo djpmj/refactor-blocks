@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-12 01:05 UTC PR #157 feat: score mixed responsibilities in extracted methods
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(1665件) / npm run lint ✅ / npm run typecheck ✅。E2Eはレビュー環境で実行不可(ブラウザ未導入。PR本文では199件通過)。Issue #150・docs/specs/mixed-responsibility-method.mdの`mixed-method`ルール(初期にないメソッド・call除外・cohesiveResponsibilities)の実装とdomain層の純粋関数であることを確認
+- マージ: squash & delete-branch
+
 ## 2026-10-12 00:45 UTC PR #156 fix: bring open warning popovers to front
 
 - 判定: 合格(blocker無し)
@@ -210,11 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅ / E2E: レビュー環境で実行不可(chromium未導入。PR本文では147件通過、e2e差分は読解で確認)
-- マージ: squash & delete-branch
-
-## 2026-10-04 15:52 UTC PR #101 変更の痛みカードの長い名前を折り返す
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅ / E2E: レビュー環境で実行不可(PR本文では147件通過)
 - マージ: squash & delete-branch
 
