@@ -4,6 +4,7 @@ import { selectStage, startChangeRequests } from './selectStage.js';
 test('右サイドバーの幅をドラッグとキーボードで調整し、白紙設計でも使える', async ({ page }) => {
   // Arrange
   await page.goto('/');
+  await page.getByTestId('editor-rail').click();
   const sidebar = page.locator('.sidebar-resizable').first();
   const handle = page.getByRole('separator', { name: 'サイドバーの幅を変更' }).first();
   await expect(sidebar).toHaveCSS('width', '360px');
@@ -36,6 +37,7 @@ test('右サイドバーの幅をドラッグとキーボードで調整し、�
   // Assert
   await expect(handle).toHaveAttribute('aria-valuenow', '640');
   await page.reload();
+  await page.getByTestId('editor-rail').click();
   await expect(page.getByRole('separator', { name: 'サイドバーの幅を変更' })).toHaveAttribute('aria-valuenow', '360');
 
   // Act: 白紙設計画面の右パネルもキーボードで広げる
@@ -56,6 +58,7 @@ test('左サイドバーの幅を変えても右サイドバーの幅は独立�
   // Arrange
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/');
+  await page.getByTestId('editor-rail').click();
   const leftHandle = page.getByRole('separator', { name: '課題とヒントの幅を変更' });
   const rightSidebar = page.locator('.sidebar-resizable').first();
   await expect(rightSidebar).toHaveCSS('width', '360px');
@@ -72,6 +75,7 @@ test('左サイドバーの幅を変えても右サイドバーの幅は独立�
 /** 既存のテストは OrderService を分解するチュートリアル2を前提にしている。 */
 async function openOrderStage(page: Page) {
   await page.goto('/');
+  await page.getByTestId('editor-rail').click();
   await selectStage(page, 'チュートリアル2: 太った placeOrder');
 }
 
@@ -1699,6 +1703,7 @@ test('上級8: upload を private にした後、ステージ開始時の public
 test('中身のないメソッドには可視性の選択が出ない', async ({ page }) => {
   // Arrange
   await page.goto('/');
+  await page.getByTestId('editor-rail').click();
   await selectStage(page, '上級6: 太ったインターフェースを役割ごとに分ける');
   const postMessage = page.getByTestId('class-CollaborationTool').getByTestId('method-postMessage');
   await expect(async () => {
@@ -1827,7 +1832,9 @@ test('上級6: 空実装を削除するとまだ要求しているインター�
   // Act: BacklogClientの実装の宣言を外す(宣言漏れになる)
   await page.getByTestId('class-header-BacklogClient').click({ button: 'right' });
   const menu = page.getByTestId('context-menu');
-  await menu.getByRole('menuitem', { name: '実装するインターフェースを設定' }).click();
+  const interfacesMenu = menu.getByRole('menuitem', { name: '実装するインターフェースを設定' });
+  await interfacesMenu.focus();
+  await page.keyboard.press('Enter');
   await expect(menu.getByRole('menuitemcheckbox', { name: 'CollaborationTool' })).toHaveAttribute('aria-checked', 'true');
   await menu.getByRole('menuitemcheckbox', { name: 'CollaborationTool' }).click();
 

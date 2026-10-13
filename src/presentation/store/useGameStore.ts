@@ -38,6 +38,7 @@ import {
   describeRenameClassError,
   describeRenameMethodError,
   extractMethodUseCase,
+  previewExtractMethod,
   inlineMethodUseCase,
   mergeMethodsUseCase,
   describeMoveOutError,
@@ -121,6 +122,7 @@ type GameState = {
   selectedMethodId: string | null;
   selectedFieldId: string | null;
   extractDraft: ExtractMethodInput | null;
+  extractOverheadExplained: boolean;
   setExtractDraft: (draft: ExtractMethodInput | null) => void;
   focusedRule: ScoreRule | null;
   hintTarget: ViolationTarget | null;
@@ -563,10 +565,19 @@ function extractActions(
   apply: Apply,
   set: (partial: Partial<GameState>) => void,
   get: () => GameState,
-): Pick<GameState, 'extractMethod' | 'extractDraft' | 'setExtractDraft'> {
+): Pick<GameState, 'extractMethod' | 'extractDraft' | 'setExtractDraft' | 'extractOverheadExplained'> {
   return {
-    extractMethod: (input) => apply(extractMethodUseCase(get().codebase, input, () => crypto.randomUUID()), describeExtractError),
+    extractMethod: (input) => {
+      const state = get();
+      const preview = previewExtractMethod(state.codebase, input);
+      const succeeded = apply(extractMethodUseCase(state.codebase, input, () => crypto.randomUUID()), describeExtractError);
+      if (succeeded && preview !== undefined && !state.extractOverheadExplained && preview.fileLinesAfter > preview.fileLinesBefore) {
+        set({ extractOverheadExplained: true, notice: '抽出すると、新しいメソッドの宣言と呼び出しの分だけ合計の行数は少し増えます。1つのメソッドが短くなり、読む範囲が絞れることが大事です' });
+      }
+      return succeeded;
+    },
     extractDraft: null,
+    extractOverheadExplained: false,
     setExtractDraft: (draft) => set({ extractDraft: draft }),
   };
 }

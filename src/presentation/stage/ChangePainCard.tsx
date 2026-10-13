@@ -4,7 +4,7 @@ import type { Stage } from '../../domain/stage/Stage';
 import { useGameStore } from '../store/useGameStore';
 import { stageStep } from '../../domain/change/stageStep';
 import { TOUR_STEPS } from '../tour/tourSteps';
-import { describeClasses, describePain, summarizePain, type PainDescription } from './describePain';
+import { describeClasses, describePain, describePainTrend, summarizePain, type PainDescription } from './describePain';
 import { explainChangeImpact } from '../../domain/change/changeImpact';
 
 function LocationList({ description }: Readonly<{ description: PainDescription }>) {
@@ -27,6 +27,7 @@ function ModifyBefore({ pain, codebase }: Readonly<{ pain: ChangePain; codebase:
       <p aria-live="polite">その場所を直すために、目を通す行数は今 <strong>{pain.current.readLines} 行</strong>
         {pain.current.readLines < pain.initial.readLines && <>（最初は {pain.initial.readLines} 行でした）</>}
       </p>
+      {describePainTrend(pain) !== undefined && <p data-testid="pain-trend">{describePainTrend(pain)}</p>}
       <LocationList description={describePain(codebase, pain.current)} />
     </>
   );
