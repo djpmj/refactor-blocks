@@ -14,6 +14,7 @@ import {
 } from '../../domain/codebase/Codebase';
 import { changeVisibilityUseCase } from '../../application/RefactorUseCases';
 import { previewExtractMethod } from '../../application/RefactorUseCases';
+import { describeExtractPreview } from './describeExtractPreview';
 import { findCallerOf } from '../../domain/codebase/inlineMethod';
 import { findMergeCandidates, type MergeCandidate } from '../../domain/codebase/mergeMethods';
 import { fragmentLines, methodLines } from '../../domain/codebase/lineCount';
@@ -193,9 +194,7 @@ function useExtractPreviewSummary(method: Method, selected: ReadonlySet<string>,
   useEffect(() => {
     setExtractDraft(selected.size === 0 ? null : { sourceMethodId: method.id, fragmentIds: [...selected], newMethodName: newName });
   }, [method.id, newName, selected, setExtractDraft]);
-  return preview === undefined
-    ? undefined
-    : `抽出すると: ${method.name} ${preview.sourceLinesBefore}行 → ${preview.sourceLinesAfter}行 / 新しい ${preview.newMethodName} ${preview.newMethodLines}行`;
+  return preview === undefined ? undefined : describeExtractPreview(method.name, preview);
 }
 
 /** 可視性(public / protected / private)を選ぶ欄。選んでも前提条件を満たさない値は disabled にする。 */

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { BlankDesignView } from './blank/BlankDesignView';
 import { CodebaseCanvas } from './canvas/CodebaseCanvas';
 import { ErrorToast } from './canvas/ErrorToast';
@@ -6,7 +6,7 @@ import { ChangeRequestPanel } from './change/ChangeRequestPanel';
 import { MethodEditor } from './editor/MethodEditor';
 import { ComparisonQuizView } from './quiz/ComparisonQuizView';
 import { StagePanel } from './stage/StagePanel';
-import { useGameStore } from './store/useGameStore';
+import { useGameStore, useGameStoreApi } from './store/useGameStore';
 import { useUndoRedoShortcut } from './useUndoRedoShortcut';
 import { useResizableSidebarWidth } from './useResizableSidebarWidth';
 import { ManualFixMethodViewer } from './stage/ManualFixMethodViewer';
@@ -24,8 +24,46 @@ function RightSidebarContent() {
   return <MethodEditor />;
 }
 
+function canCollapseEditor(hasChangeSession: boolean, hasManualFix: boolean, hasSelection: boolean, hasChangeReport: boolean): boolean {
+  return !hasChangeSession && !hasManualFix && !hasSelection && !hasChangeReport;
+}
+
 function RefactorView({ active }: Readonly<{ active: boolean }>) {
   const { width, handleProps } = useResizableSidebarWidth({ side: 'right', defaultWidth: 360, minWidth: 280, maxWidth: 640 });
+  const store = useGameStoreApi();
+  const [emptyEditorOpen, setEmptyEditorOpen] = useState(false);
+  const changeSession = useGameStore((state) => state.changeSession);
+  const manualFix = useGameStore((state) => state.manualFix);
+  const selectedMethodId = useGameStore((state) => state.selectedMethodId);
+  const selectedFieldId = useGameStore((state) => state.selectedFieldId);
+  const lastChangeReport = useGameStore((state) => state.lastChangeReport);
+  const shouldRail = canCollapseEditor(
+    changeSession !== null,
+    manualFix !== null,
+    selectedMethodId !== null || selectedFieldId !== null,
+    lastChangeReport !== null,
+  );
+  const rail = shouldRail && !emptyEditorOpen;
+  useEffect(() => {
+    const previous = store.getState();
+    let previousStageId = previous.stage.id;
+    let hadChangeSession = previous.changeSession !== null;
+    let hadManualFix = previous.manualFix !== null;
+    let hadChangeReport = previous.lastChangeReport !== null;
+    return store.subscribe((state) => {
+      const stageChanged = state.stage.id !== previousStageId;
+      const changeSessionChanged = (state.changeSession !== null) !== hadChangeSession;
+      const manualFixChanged = (state.manualFix !== null) !== hadManualFix;
+      const changeReportChanged = (state.lastChangeReport !== null) !== hadChangeReport;
+      if (state.selectedMethodId !== null || state.selectedFieldId !== null || stageChanged || changeSessionChanged || manualFixChanged || changeReportChanged) {
+        setEmptyEditorOpen(false);
+      }
+      previousStageId = state.stage.id;
+      hadChangeSession = state.changeSession !== null;
+      hadManualFix = state.manualFix !== null;
+      hadChangeReport = state.lastChangeReport !== null;
+    });
+  }, [store]);
   useUndoRedoShortcut(active);
   return (
     <StagePanel active={active}>
@@ -34,9 +72,14 @@ function RefactorView({ active }: Readonly<{ active: boolean }>) {
           <CodebaseCanvas active={active} />
           <ErrorToast />
         </section>
-        <div className="sidebar-resizable" style={{ width }}>
-          <div className="sidebar-resizable__handle" {...handleProps} />
+        <div className={`sidebar-resizable${rail ? ' sidebar-resizable--rail' : ''}${shouldRail && emptyEditorOpen ? ' sidebar-resizable--empty-open' : ''}`} style={{ width: rail ? 48 : width }}>
+          {rail ? (
+            <button type="button" className="editor-rail" data-testid="editor-rail" aria-label="メソッドエディタの案内を開く" onClick={() => setEmptyEditorOpen(true)}>
+              <span aria-hidden="true">👈</span><span className="editor-rail__label">メソッドをクリック</span>
+            </button>
+          ) : <div className="sidebar-resizable__handle" {...handleProps} />}
           <RightSidebarContent />
+          {!rail && shouldRail && emptyEditorOpen && <button type="button" className="editor-empty-close" aria-label="案内を閉じる" onClick={() => setEmptyEditorOpen(false)}>»</button>}
         </div>
       </main>
     </StagePanel>

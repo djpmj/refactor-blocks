@@ -5,6 +5,7 @@ test('メソッドエディタが次の操作を示し、抽出できる状態�
   // Arrange
   await page.goto('/');
   await selectStage(page, 'チュートリアル1: 長いメソッドを分ける');
+  await page.getByTestId('editor-rail').click();
   const emptyState = page.getByTestId('method-editor-empty');
   await expect(emptyState).toBeVisible();
   await expect(emptyState).toContainText('👈');
@@ -55,7 +56,7 @@ test('ブロックのホバー説明と空状態の案内を出し、手動修�
   await method.click();
   await expect(page.getByTestId('method-editor-empty')).toHaveCount(0);
   await page.locator('.react-flow__pane').click({ position: { x: 10, y: 100 } });
-  await expect(page.getByTestId('method-editor-empty')).toBeVisible();
+  await expect(page.getByTestId('editor-rail')).toBeVisible();
 
   // Act: 手動修正シミュレーションを始める
   await selectStage(page, '中級9: コピペされた消費税計算を1か所にまとめる');

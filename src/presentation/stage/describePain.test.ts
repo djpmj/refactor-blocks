@@ -1,5 +1,42 @@
 import { describe, expect, it } from 'vitest';
-import { summarizePain } from './describePain';
+import { describePainTrend, summarizePain } from './describePain';
+import type { ChangePain } from '../../domain/change/changePain';
+
+describe('describePainTrend', () => {
+  it('直す場所が増えたら途中の状態を説明する', () => {
+    // Arrange
+    const pain: Pick<ChangePain, 'initial' | 'current'> = { initial: { siteIds: ['a'], readLines: 39, classes: 1, files: 1 }, current: { siteIds: ['a', 'b'], readLines: 44, classes: 1, files: 1 } };
+
+    // Act
+    const trend = describePainTrend(pain);
+
+    // Assert
+    expect(trend).toContain('今は 2 か所に分かれています');
+  });
+
+  it('場所が同じでも読む量が増えたら説明する', () => {
+    // Arrange
+    const pain: Pick<ChangePain, 'initial' | 'current'> = { initial: { siteIds: ['a'], readLines: 39, classes: 1, files: 1 }, current: { siteIds: ['a'], readLines: 42, classes: 1, files: 1 } };
+
+    // Act
+    const trend = describePainTrend(pain);
+
+    // Assert
+    expect(trend).toContain('読む量が少し増えています');
+  });
+
+  it('改善後や変化がないときは説明しない', () => {
+    // Arrange
+    const pain: Pick<ChangePain, 'initial' | 'current'> = { initial: { siteIds: ['a', 'b'], readLines: 80, classes: 1, files: 1 }, current: { siteIds: ['a'], readLines: 20, classes: 1, files: 1 } };
+
+    // Act
+    const trend = describePainTrend(pain);
+
+    // Assert
+    expect(trend).toBeUndefined();
+    expect(describePainTrend({ ...pain, current: pain.initial })).toBeUndefined();
+  });
+});
 
 describe('summarizePain', () => {
   it('修正箇所と読む行数を要約する', () => {

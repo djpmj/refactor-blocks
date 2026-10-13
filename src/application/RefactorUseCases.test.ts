@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { findClassOfMethod, findFileOfClass, findMethod, type Codebase } from '../domain/codebase/Codebase';
-import { methodLines } from '../domain/codebase/lineCount';
+import { METHOD_OVERHEAD_LINES, methodLines } from '../domain/codebase/lineCount';
 import { sampleCodebase } from '../domain/codebase/testFixtures';
 import {
   addClassUseCase,
@@ -111,8 +111,11 @@ describe('previewExtractMethod', () => {
       sourceLinesAfter: 67,
       newMethodName: 'aggregateSales',
       newMethodLines: 27,
+      fileLinesBefore: 92,
+      fileLinesAfter: 98,
     });
     expect(codebase).toEqual(before);
+    expect((preview?.fileLinesAfter ?? 0) - (preview?.fileLinesBefore ?? 0)).toBeGreaterThanOrEqual(METHOD_OVERHEAD_LINES + 1);
   });
 
   it('複数の処理を抽出した結果を返す', () => {
