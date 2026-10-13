@@ -94,3 +94,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [change-rumors](change-rumors.md) | 後から届く変更依頼を「うわさ」として先に見せ、変更依頼の結果で回収する |
 | [change-impact-review](change-impact-review.md) | 組み替える前と今を並べ、どの組み替えが効いたかを結びつける答え合わせ画面 |
 | [extract-lines-and-editor-rail](extract-lines-and-editor-rail.md) | 抽出で行数が増える理由を伝え、何も選んでいないときの右パネルを細い帯に畳む |
+| [cycle-count-display](cycle-count-display.md) | 循環依存を矢印の本数ではなく輪の組(クラス名と向き)で表示する |
