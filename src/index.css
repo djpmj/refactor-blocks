@@ -11,6 +11,14 @@
   --private: #8a8fa3;
   --protected: #c9861c;
   --danger: #d64545;
+  --resp-0: #4d3da8;
+  --resp-1: #006b86;
+  --resp-2: #8a4d00;
+  --resp-3: #8b3f72;
+  --resp-4: #345f9c;
+  --resp-5: #665600;
+  --resp-6: #76502b;
+  --resp-7: #006b68;
   --warning: #d49b00;
   --success: #2e9e6a;
   --answer-success-text: #176b44;
@@ -41,6 +49,14 @@
     --edge-extends: #7c93ff;
     --edge-implements: #f0a050;
     --warning: #f0c34e;
+    --resp-0: #6858c6;
+    --resp-1: #087d9b;
+    --resp-2: #a86600;
+    --resp-3: #a34f86;
+    --resp-4: #4778b5;
+    --resp-5: #806c00;
+    --resp-6: #8e6838;
+    --resp-7: #007d79;
     --success: #55d69a;
     --answer-success-text: #75e3b0;
     --answer-danger-text: #ff8a8a;
@@ -254,6 +270,10 @@ input.class-node__name { width: 14ch; }
 
 .line-badge { font-size: 12px; font-weight: 400; color: var(--muted); }
 .line-badge--over { color: var(--danger); font-weight: 700; }
+.responsibility-mark { display: inline-grid; place-items: center; width: 16px; height: 16px; flex: none; border-radius: 50%; background: var(--responsibility-color); color: #fff; font-size: 10px; font-weight: 800; line-height: 1; }
+.responsibility-count { flex: none; color: var(--muted); font-size: 11px; font-weight: 500; }
+.responsibility-count--over { color: var(--danger); font-weight: 700; }
+.fragment-list__item label { display: flex; align-items: center; gap: 7px; }
 .file-mark { font-size: 14px; margin-right: 6px; }
 .file-mark { cursor: help; }
 .file-mark:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
