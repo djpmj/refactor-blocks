@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-13 14:40 UTC PR #193 refactor: compute pain trend once
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅ 1715件 / npm run lint ✅ / npm run typecheck ✅。ChangePainCard.tsxの1ファイルで describePainTrend を1回だけ計算する変更を差分で確認(表示ロジック不変のためE2Eは未実行)
+- マージ: squash & delete-branch
+
 ## 2026-10-13 14:30 UTC PR #192 抽出行数の説明とエディタレール
 
 - 判定: 合格(blocker無し)
@@ -210,10 +216,4 @@
 
 - 判定: 合格(blocker無し。suggestion: methodCountがuseGameStore.tsとSpotlightTour.tsxで重複)
 - 確認した内容: npm test ✅ 1571件 / npm run lint ✅ / npm run typecheck ✅。E2Eはレビュー環境にChromiumが無く起動できず未確認(PR本文は168件成功と報告)
-- マージ: squash & delete-branch
-
-## 2026-10-10 06:30 UTC PR #122 feat: highlight hint targets on canvas
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅ 1566件 / npm run lint ✅ / npm run typecheck ✅。E2Eはレビュー環境にChromiumが無く起動できず未確認(PR本文は163件成功と報告)。stepTargetsのdomain実装とテスト、focusRuleとの相互排他、対象消失時の解除を差分で確認
 - マージ: squash & delete-branch
