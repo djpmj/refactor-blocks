@@ -10,7 +10,7 @@ import { useCodebasePreview } from './CodebasePreviewContext';
 
 /** ClassNode の読み取り専用版。dnd-kitのドラッグ・ドロップ先を持たず、メソッド・フィールドの並びだけを見せる。 */
 export function PreviewClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
-  const { codebase, methodLimit, selectedMethodId, onSelectMethod } = useCodebasePreview();
+  const { codebase, methodLimit, selectedMethodId, onSelectMethod, highlights } = useCodebasePreview();
   const codeClass = findClass(codebase, data.classId);
   const superclass = findSuperclass(codebase, data.classId);
   const interfaceNames = findInterfaces(codebase, data.classId).map((interfaceClass) => interfaceClass.name);
@@ -39,9 +39,12 @@ export function PreviewClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
         ) : (
           codeClass.methods.map((method) => {
             const chip = <MethodChipView method={method} overLimit={methodLines(method, codebase) > methodLimit} selected={selectedMethodId === method.id} />;
-            return onSelectMethod === undefined ? <div key={method.id}>{chip}</div> : (
-              <button key={method.id} type="button" data-testid={`preview-method-${method.id}`} className="method-chip-button nodrag nopan" onClick={() => onSelectMethod(method.id)} aria-pressed={selectedMethodId === method.id}>
-                {chip}
+            const highlight = highlights?.get(method.id);
+            const content = <>{chip}{highlight !== undefined && <span className="impact-highlight__label">{highlight === 'missed' ? '直し忘れ' : '直す'}</span>}</>;
+            const className = highlight === undefined ? '' : `impact-highlight impact-highlight--${highlight}`;
+            return onSelectMethod === undefined ? <div key={method.id} data-testid={`preview-method-${method.id}`} className={className} data-impact-highlight={highlight}>{content}</div> : (
+              <button key={method.id} type="button" data-testid={`preview-method-${method.id}`} className={`method-chip-button nodrag nopan ${className}`} onClick={() => onSelectMethod(method.id)} aria-pressed={selectedMethodId === method.id} data-impact-highlight={highlight}>
+                {content}
               </button>
             );
           })

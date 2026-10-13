@@ -5,6 +5,7 @@ import { useGameStore } from '../store/useGameStore';
 import { stageStep } from '../../domain/change/stageStep';
 import { TOUR_STEPS } from '../tour/tourSteps';
 import { describeClasses, describePain, summarizePain, type PainDescription } from './describePain';
+import { explainChangeImpact } from '../../domain/change/changeImpact';
 
 function LocationList({ description }: Readonly<{ description: PainDescription }>) {
   return (
@@ -86,6 +87,7 @@ function CardBody({ stage, codebase, step, pain, extendPain }: Readonly<{ stage:
         <p>{stage.why}</p>
         {pain !== undefined && <ModifyAfter pain={pain} />}
         {extendPain?.improved === true && <ExtendAfter pain={extendPain} />}
+        {pain !== undefined && explainChangeImpact(stage.codebase, codebase, pain.request) !== undefined && <ImpactReviewButton />}
         <p>「変更依頼に挑戦」で、実際に確かめてみましょう</p>
       </>
     );
@@ -100,6 +102,11 @@ function CardBody({ stage, codebase, step, pain, extendPain }: Readonly<{ stage:
       {extendPain !== undefined && <ExtendBefore pain={extendPain} codebase={codebase} withHeading={pain !== undefined} />}
     </>
   );
+}
+
+function ImpactReviewButton() {
+  const openImpactReview = useGameStore((state) => state.openImpactReview);
+  return <button type="button" data-testid="impact-review-open" onClick={openImpactReview}>答え合わせを見る</button>;
 }
 
 export function ChangePainCard({ stage, codebase, score }: Readonly<{ stage: Stage; codebase: Codebase; score: number }>) {
