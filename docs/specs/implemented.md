@@ -93,3 +93,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [toolbar-answer-menu](toolbar-answer-menu.md) | ツールバーの参考・答えをメニューにまとめ、答えの前にヒントを勧める |
 | [change-rumors](change-rumors.md) | 後から届く変更依頼を「うわさ」として先に見せ、変更依頼の結果で回収する |
 | [change-impact-review](change-impact-review.md) | 組み替える前と今を並べ、どの組み替えが効いたかを結びつける答え合わせ画面 |
+| [extract-lines-and-editor-rail](extract-lines-and-editor-rail.md) | 抽出で行数が増える理由を伝え、何も選んでいないときの右パネルを細い帯に畳む |

@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-13 14:30 UTC PR #192 抽出行数の説明とエディタレール
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(1715件) / npm run lint ✅ / npm run typecheck ✅。Issue #172の受け入れ基準1〜7をdiffで確認。E2Eはこの環境でブラウザを入れられず実行できなかった(PR本文の225件成功を参照)。suggestion: ChangePainCardでdescribePainTrendを2回呼んでいる
+- マージ: squash & delete-branch
+
 ## 2026-10-13 11:45 UTC PR #191 Add change impact review dialog
 
 - 判定: 合格(blocker無し)
@@ -210,16 +216,4 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅ 1566件 / npm run lint ✅ / npm run typecheck ✅。E2Eはレビュー環境にChromiumが無く起動できず未確認(PR本文は163件成功と報告)。stepTargetsのdomain実装とテスト、focusRuleとの相互排他、対象消失時の解除を差分で確認
-- マージ: squash & delete-branch
-
-## 2026-10-10 05:58 UTC PR #121 feat: clarify action affordances
-
-- 判定: 合格(blocker無し。suggestion: button--primaryの!importantは詳細度で解決したい)
-- 確認した内容: npm test ✅ 1561件 / npm run lint ✅ / npm run typecheck ✅。E2Eはレビュー環境にChromiumが無く起動できず未確認(PR本文は161件成功と報告)、E2E specは静的に確認
-- マージ: squash & delete-branch
-
-## 2026-10-10 05:31 UTC PR #120 feat: restructure stage problem sidebar
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅ 1561件 / npm run lint ✅ / npm run typecheck ✅。E2Eはレビュー環境にChromiumが無く起動できず未確認(PR本文は159件成功と報告)
 - マージ: squash & delete-branch
