@@ -80,7 +80,7 @@ function StageSidebarToggle({ open, onToggle }: Readonly<{ open: boolean; onTogg
 }
 
 /** 点数を丸いゲージで見せる。詳細(減点の内訳)は隣のテキストに出す。 */
-function ScoreBadge({ score }: Readonly<{ score: Score }>) {
+function ScoreBadge({ score, codebase }: Readonly<{ score: Score; codebase: Codebase }>) {
   const celebration = useGameStore((state) => state.celebration);
   const rising = celebration !== null && celebration.scoreAfter === score.total && celebration.scoreAfter > celebration.scoreBefore;
   const animation = useCountUp(score.total, rising ? celebration.seq : null, rising ? celebration.scoreBefore : score.total, rising);
@@ -93,7 +93,7 @@ function ScoreBadge({ score }: Readonly<{ score: Score }>) {
       </div>
       <span className="sr-only" aria-live="polite" data-testid="score-announcement">{score.total}点</span>
       <span className="score-badge__detail" data-testid="score">
-        {describeScore(score)}
+        {describeScore(score, codebase)}
       </span>
     </div>
   );
@@ -103,7 +103,7 @@ function ScoreBadge({ score }: Readonly<{ score: Score }>) {
 function ScoreArea({ stage, codebase, score, disabled }: Readonly<{ stage: Stage; codebase: Codebase; score: Score; disabled: boolean }>) {
   return (
     <>
-      <ScoreBadge score={score} />
+      <ScoreBadge score={score} codebase={codebase} />
       <TestStatus stage={stage} codebase={codebase} />
       <ScoreBreakdown score={score} disabled={disabled} />
     </>

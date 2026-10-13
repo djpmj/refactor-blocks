@@ -99,7 +99,7 @@ test('処理のあるファイルは削除できず、循環依存の減点が�
   await expect(page.getByRole('alert')).toHaveCount(1);
   await expect(file).toBeVisible();
   await expect(page.getByTestId('class-Order')).toBeVisible();
-  await expect(page.getByTestId('score')).toContainText('循環依存 -20');
+  await expect(page.getByTestId('score')).toContainText('循環依存 1組 -20');
   const sidebarToggle = page.getByRole('button', { name: /サイドバーを(開く|閉じる)/ });
   await sidebarToggle.click();
   await expect(sidebarToggle).toHaveAttribute('aria-expanded', 'true');

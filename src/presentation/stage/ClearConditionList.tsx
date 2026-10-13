@@ -116,7 +116,7 @@ export function ClearConditionList({ stage, codebase, initial, current }: Readon
       <ul aria-live="polite">
         {conditions.map((condition) => {
           const achieved = condition.count === 0;
-          const description = describeCondition(condition, stage, measures);
+          const description = describeCondition(condition, stage, measures, codebase);
           const recentlyAchieved = justMet.rules.has(condition.rule);
           const label = conditionLabel(achieved, description.goal, description.current);
           return (

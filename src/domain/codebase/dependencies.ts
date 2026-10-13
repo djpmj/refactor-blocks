@@ -8,6 +8,69 @@ export type ClassDependency = {
   readonly cyclic: boolean;
 };
 
+/** 循環する強連結成分をクラスの出現順で返す。 */
+export function findCycles(dependencies: readonly ClassDependency[]): readonly (readonly string[])[] {
+  const nodes = [...new Set(dependencies.flatMap(({ from, to }) => [from, to]))];
+  const graph = new Map(nodes.map((node) => [node, dependencies.filter(({ from }) => from === node).map(({ to }) => to)]));
+  let nextIndex = 0;
+  const indexes = new Map<string, number>();
+  const lowLinks = new Map<string, number>();
+  const stack: string[] = [];
+  const onStack = new Set<string>();
+  const components: string[][] = [];
+  const visit = (node: string): void => {
+    indexes.set(node, nextIndex);
+    lowLinks.set(node, nextIndex);
+    nextIndex += 1;
+    stack.push(node);
+    onStack.add(node);
+    const targets = graph.get(node) ?? [];
+    targets.forEach((target) => {
+      if (!indexes.has(target)) {
+        visit(target);
+        lowLinks.set(node, Math.min(lowLinks.get(node) ?? 0, lowLinks.get(target) ?? 0));
+      } else if (onStack.has(target)) {
+        lowLinks.set(node, Math.min(lowLinks.get(node) ?? 0, indexes.get(target) ?? 0));
+      }
+    });
+    if (lowLinks.get(node) !== indexes.get(node)) return;
+    const component: string[] = [];
+    for (let member = stack.pop(); member !== undefined; member = stack.pop()) {
+      onStack.delete(member);
+      component.push(member);
+      if (member === node) break;
+    }
+    if (component.length > 1) components.push(component);
+  };
+  nodes.forEach((node) => { if (!indexes.has(node)) visit(node); });
+  const order = new Map(nodes.map((node, index) => [node, index]));
+  return components
+    .map((component) => component.toSorted((left, right) => (order.get(left) ?? 0) - (order.get(right) ?? 0)))
+    .sort((left, right) => (order.get(left[0] ?? '') ?? 0) - (order.get(right[0] ?? '') ?? 0));
+}
+
+/** SCC内を依存方向に一周する順序。全クラスを一周できない場合は undefined。 */
+export function cyclePath(dependencies: readonly ClassDependency[], cycle: readonly string[]): readonly string[] | undefined {
+  const start = cycle[0];
+  const members = new Set(cycle);
+  const graph = new Map<string, string[]>();
+  dependencies.forEach(({ from, to }) => {
+    if (members.has(from) && members.has(to)) graph.set(from, [...(graph.get(from) ?? []), to]);
+  });
+  const search = (current: string, path: readonly string[]): readonly string[] | undefined => {
+    const targets = graph.get(current) ?? [];
+    for (const target of targets) {
+      if (target === start && path.length === cycle.length) return path;
+      if (!path.includes(target)) {
+        const result = search(target, [...path, target]);
+        if (result !== undefined) return result;
+      }
+    }
+    return undefined;
+  };
+  return search(start, [start]);
+}
+
 /** 各メソッドIDから、それを持つクラスのIDを引けるMapを作る。 */
 export function methodOwnerMap(codebase: Codebase): ReadonlyMap<string, string> {
   return new Map(

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { CodeClass, Codebase, Fragment } from './Codebase';
-import { classDependencies, cyclicClassIds, fieldOwnerMap, methodOwnerMap } from './dependencies';
+import { classDependencies, cyclicClassIds, fieldOwnerMap, findCycles, methodOwnerMap } from './dependencies';
 
 function callFragment(id: string, uses: readonly string[]): Fragment {
   return { id, label: id, lines: 1, responsibility: 'call', uses };
@@ -396,5 +396,40 @@ describe('cyclicClassIds', () => {
 
     // Assert
     expect(ids).toEqual(new Set());
+  });
+});
+
+describe('findCycles', () => {
+  it('循環する強連結成分をクラス出現順で返し、循環の外の依存先を含めない', () => {
+    // Arrange
+    const dependencies = classDependencies(codebaseOf({ A: ['method-B'], B: ['method-A', 'method-C'], C: ['method-D'], D: ['method-C'] }));
+
+    // Act
+    const cycles = findCycles(dependencies);
+
+    // Assert
+    expect(cycles).toEqual([['class-A', 'class-B'], ['class-C', 'class-D']]);
+  });
+
+  it('一方向の依存と空の依存には輪がない', () => {
+    // Arrange
+    const dependencies = classDependencies(codebaseOf({ A: ['method-B'], B: [] }));
+
+    // Act
+    const cycles = findCycles(dependencies);
+
+    // Assert
+    expect(cycles).toEqual([]);
+  });
+
+  it('3クラスの循環を一つの輪として返す', () => {
+    // Arrange
+    const dependencies = classDependencies(codebaseOf({ A: ['method-B'], B: ['method-C'], C: ['method-A'] }));
+
+    // Act
+    const cycles = findCycles(dependencies);
+
+    // Assert
+    expect(cycles).toEqual([['class-A', 'class-B', 'class-C']]);
   });
 });
