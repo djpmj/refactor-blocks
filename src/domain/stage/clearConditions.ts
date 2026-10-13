@@ -1,5 +1,5 @@
 import type { Codebase } from '../codebase/Codebase';
-import { classDependencies } from '../codebase/dependencies';
+import { classDependencies, findCycles } from '../codebase/dependencies';
 import { findLineLimitViolations } from '../scoring/lineLimits';
 import { findResponsibilityViolations } from '../scoring/responsibilities';
 import type { Score, ScoreRule } from '../scoring/score';
@@ -15,6 +15,7 @@ export type WorstMeasures = {
   readonly file?: number;
   readonly dependencies?: number;
   readonly responsibilities?: number;
+  readonly cycles?: readonly (readonly string[])[];
 };
 
 export function clearConditions(initial: Score, current: Score): ClearCondition[] {
@@ -34,7 +35,8 @@ export function worstMeasures(
 ): WorstMeasures {
   const lineViolations = findLineLimitViolations(codebase, stage.limits);
   const dependenciesByClass = new Map<string, number>();
-  for (const dependency of classDependencies(codebase)) {
+  const graphDependencies = classDependencies(codebase);
+  for (const dependency of graphDependencies) {
     dependenciesByClass.set(dependency.from, (dependenciesByClass.get(dependency.from) ?? 0) + 1);
   }
   const dependencies = [...dependenciesByClass.values()].filter((count) => count > stage.dependencyLimit);
@@ -44,11 +46,13 @@ export function worstMeasures(
   const file = maximum(lineViolations.filter((item) => item.kind === 'file').map((item) => item.lines));
   const dependencyCount = maximum(dependencies);
   const responsibilityCount = maximum(responsibilities);
+  const cycles = findCycles(graphDependencies);
   return {
     ...(method === undefined ? {} : { method }),
     ...(codeClass === undefined ? {} : { class: codeClass }),
     ...(file === undefined ? {} : { file }),
     ...(dependencyCount === undefined ? {} : { dependencies: dependencyCount }),
     ...(responsibilityCount === undefined ? {} : { responsibilities: responsibilityCount }),
+    ...(cycles.length === 0 ? {} : { cycles }),
   };
 }

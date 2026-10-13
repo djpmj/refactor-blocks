@@ -5,6 +5,7 @@ import { RULE_WHY } from './ruleWhy';
 import type { Score, ScoreRule } from '../../domain/scoring/score';
 import { findClass, type Codebase } from '../../domain/codebase/Codebase';
 import { findMisplacedResponsibilities } from '../../domain/scoring/misplacedResponsibilities';
+import { classDependencies, findCycles } from '../../domain/codebase/dependencies';
 
 function MisplacedViolationDetails({ codebase }: Readonly<{ codebase: Codebase }>) {
   const violations = findMisplacedResponsibilities(codebase);
@@ -23,6 +24,11 @@ function MisplacedViolationDetails({ codebase }: Readonly<{ codebase: Codebase }
 function clearPreviewRules(previewRuleFor: (rule: ScoreRule | null, source: 'hover' | 'focus') => void): void {
   previewRuleFor(null, 'hover');
   previewRuleFor(null, 'focus');
+}
+
+function deductionLabel(rule: ScoreRule, count: number, codebase: Codebase): string {
+  if (rule !== 'cycle') return `${RULE_LABEL[rule]} ×${count}`;
+  return `${RULE_LABEL[rule]} ${findCycles(classDependencies(codebase)).length}組(矢印${count}本)`;
 }
 
 export function ScoreBreakdown({ score, disabled }: Readonly<{
@@ -59,7 +65,7 @@ export function ScoreBreakdown({ score, disabled }: Readonly<{
                   onMouseEnter={() => { if (!disabled) previewRuleFor(rule, 'hover'); }} onMouseLeave={() => previewRuleFor(null, 'hover')}
                   onFocus={() => { if (!disabled) previewRuleFor(rule, 'focus'); }} onBlur={() => previewRuleFor(null, 'focus')}
                 >
-                  {RULE_LABEL[rule]} ×{count}
+                  {deductionLabel(rule, count, codebase)}
                 </button>
                 <button
                   type="button"

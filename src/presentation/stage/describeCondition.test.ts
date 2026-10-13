@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ClearCondition } from '../../domain/stage/clearConditions';
 import { describeCondition } from './describeCondition';
+import type { Codebase } from '../../domain/codebase/Codebase';
 
 const stage = {
   limits: { method: 50, class: 120, file: 300 },
@@ -9,6 +10,22 @@ const stage = {
 };
 
 describe('describeCondition', () => {
+  it('循環依存の目標と現在の輪をクラス名・依存方向で表示する', () => {
+    // Arrange
+    const codebase: Codebase = { files: [{ id: 'file', path: 'cycle.ts', classes: [
+      { id: 'a', name: 'A', methods: [{ id: 'method-a', name: 'run', visibility: 'public', fragments: [{ id: 'a-call', label: 'call', lines: 1, responsibility: 'call', uses: ['method-b'] }] }] },
+      { id: 'b', name: 'B', methods: [{ id: 'method-b', name: 'run', visibility: 'public', fragments: [{ id: 'b-call', label: 'call', lines: 1, responsibility: 'call', uses: ['method-c'] }] }] },
+      { id: 'c', name: 'C', methods: [{ id: 'method-c', name: 'run', visibility: 'public', fragments: [{ id: 'c-call', label: 'call', lines: 1, responsibility: 'call', uses: ['method-a'] }] }] },
+    ] }] };
+
+    // Act
+    const description = describeCondition({ rule: 'cycle', count: 3 }, stage, { cycles: [['a', 'b', 'c']] }, codebase);
+
+    // Assert
+    expect(description).toEqual({ goal: '循環依存: 輪を0組にする', current: '今: 1組(A → B → C → A)' });
+    expect(describeCondition({ rule: 'cycle', count: 0 }, stage, {}, codebase)).toEqual({ goal: '循環依存: 輪を0組にする', current: null });
+  });
+
   it('各条件にステージの上限を表示する', () => {
     // Arrange
     const condition: ClearCondition = { rule: 'line-limit', count: 0 };

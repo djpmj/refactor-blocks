@@ -682,7 +682,13 @@ test('ステージを選ぶと、そのステージのコードベースと目�
   await expect(page.getByTestId('stage-description')).toContainText('注文(Order)と顧客(Customer)');
   await expect(page.getByTestId('class-ReportService')).toHaveCount(0);
   await expect(page.getByTestId('class-Customer')).toBeVisible();
-  await expect(page.getByTestId('score')).toContainText('循環依存 -20');
+  await expect(page.getByTestId('score')).toContainText('60点');
+  await expect(page.getByTestId('score')).toContainText('循環依存 1組 -20');
+  await page.getByRole('button', { name: 'サイドバーを開く' }).click();
+  await expect(page.locator('.clear-condition__goal', { hasText: '循環依存: 輪を0組にする' })).toBeVisible();
+  await expect(page.locator('.clear-condition__current', { hasText: '今: 1組(Order ⇄ Customer)' })).toBeVisible();
+  await page.locator('.score-breakdown summary').click();
+  await expect(page.getByRole('button', { name: '循環依存 1組(矢印2本)' })).toBeVisible();
   await expect(page.getByTestId('class-Order').getByTestId('cyclic-mark')).toBeVisible();
   await expect(page.getByTestId('class-Customer').getByTestId('cyclic-mark')).toBeVisible();
   await expect(page.getByTestId('class-Inventory').getByTestId('cyclic-mark')).toHaveCount(0);
@@ -691,7 +697,7 @@ test('ステージを選ぶと、そのステージのコードベースと目�
 test('循環依存を断ち切ると、循環依存の減点とクラスの印が消える', async ({ page }) => {
   // Arrange
   await openCyclicStage(page);
-  await expect(page.getByTestId('score')).toContainText('循環依存 -20');
+  await expect(page.getByTestId('score')).toContainText('循環依存 1組 -20');
   await expect(page.getByTestId('class-Order').getByTestId('cyclic-mark')).toBeVisible();
   await expect(page.getByTestId('class-Customer').getByTestId('cyclic-mark')).toBeVisible();
 
@@ -703,6 +709,10 @@ test('循環依存を断ち切ると、循環依存の減点とクラスの印�
 
   // Assert
   await expect(page.getByTestId('score')).not.toContainText('循環依存');
+  await expect(page.getByRole('button', { name: /循環依存/ })).toHaveCount(0);
+  await page.getByRole('button', { name: 'サイドバーを開く' }).click();
+  const cycleCondition = page.locator('li.clear-condition--met', { has: page.locator('.clear-condition__goal', { hasText: '循環依存: 輪を0組にする' }) });
+  await expect(cycleCondition).toBeVisible();
   await expect(page.getByTestId('class-Order').getByTestId('cyclic-mark')).toHaveCount(0);
   await expect(page.getByTestId('class-Customer').getByTestId('cyclic-mark')).toHaveCount(0);
 });

@@ -1,4 +1,6 @@
 import type { Score, ScoreRule } from '../../domain/scoring/score';
+import { classDependencies, findCycles } from '../../domain/codebase/dependencies';
+import type { Codebase } from '../../domain/codebase/Codebase';
 
 export const RULE_LABEL: Record<ScoreRule, string> = {
   'line-limit': '行数',
@@ -22,9 +24,14 @@ export const RULE_LABEL: Record<ScoreRule, string> = {
   layer: '層の依存の向き',
 };
 
-export function describeScore(score: Score): string {
+export function describeScore(score: Score, codebase?: Codebase): string {
   const details = score.deductions
     .filter((deduction) => deduction.points > 0)
-    .map((deduction) => `${RULE_LABEL[deduction.rule]} -${deduction.points}`);
+    .map((deduction) => {
+      const cycleCount = deduction.rule === 'cycle' && codebase !== undefined
+        ? ` ${findCycles(classDependencies(codebase)).length}組`
+        : '';
+      return `${RULE_LABEL[deduction.rule]}${cycleCount} -${deduction.points}`;
+    });
   return details.length === 0 ? `✅ ${score.total}点` : `${score.total}点(${details.join(' / ')})`;
 }

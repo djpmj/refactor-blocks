@@ -45,6 +45,25 @@ describe('clearConditions', () => {
 });
 
 describe('worstMeasures', () => {
+  it('循環があれば輪のクラスIDを返し、循環がなければcyclesを省略する', () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [{ id: 'file', path: 'cycle.ts', classes: [
+        { id: 'order', name: 'Order', methods: [{ id: 'order-method', name: 'run', visibility: 'public', fragments: [{ id: 'order-call', label: 'call', lines: 1, responsibility: 'call', uses: ['customer-method'] }] }] },
+        { id: 'customer', name: 'Customer', methods: [{ id: 'customer-method', name: 'run', visibility: 'public', fragments: [{ id: 'customer-call', label: 'call', lines: 1, responsibility: 'call', uses: ['order-method'] }] }] },
+      ] }],
+    };
+    const stage = { limits: { method: 100, class: 200, file: 300 }, dependencyLimit: 10, responsibilityLimit: 10 };
+
+    // Act
+    const measures = worstMeasures(codebase, stage);
+    const cleanMeasures = worstMeasures(sampleCodebase(), stage);
+
+    // Assert
+    expect(measures.cycles).toEqual([['order', 'customer']]);
+    expect(cleanMeasures.cycles).toBeUndefined();
+  });
+
   it('上限を超えたメソッドとファイルの最大値を返す', () => {
     // Arrange
     const codebase = sampleCodebase();
