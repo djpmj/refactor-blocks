@@ -17,6 +17,7 @@ function LocationList({ description }: Readonly<{ description: PainDescription }
 }
 
 function ModifyBefore({ pain, codebase }: Readonly<{ pain: ChangePain; codebase: Codebase }>) {
+  const trend = describePainTrend(pain);
   return (
     <>
       <p className="change-pain__request"><strong>{pain.request.title}</strong></p>
@@ -27,7 +28,7 @@ function ModifyBefore({ pain, codebase }: Readonly<{ pain: ChangePain; codebase:
       <p aria-live="polite">その場所を直すために、目を通す行数は今 <strong>{pain.current.readLines} 行</strong>
         {pain.current.readLines < pain.initial.readLines && <>（最初は {pain.initial.readLines} 行でした）</>}
       </p>
-      {describePainTrend(pain) !== undefined && <p data-testid="pain-trend">{describePainTrend(pain)}</p>}
+      {trend !== undefined && <p data-testid="pain-trend">{trend}</p>}
       <LocationList description={describePain(codebase, pain.current)} />
     </>
   );
