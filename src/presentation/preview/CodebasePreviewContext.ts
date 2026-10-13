@@ -6,7 +6,10 @@ export type CodebasePreviewValue = {
   readonly methodLimit: number;
   readonly selectedMethodId?: string | null;
   readonly onSelectMethod?: (methodId: string) => void;
+  readonly highlights?: ReadonlyMap<string, MethodHighlight>;
 };
+
+export type MethodHighlight = 'site' | 'missed';
 
 /** プレビュー用のノードは store ではなくここから Codebase・行数上限を読む。 */
 const CodebasePreviewContext = createContext<CodebasePreviewValue | null>(null);

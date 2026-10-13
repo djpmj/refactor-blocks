@@ -54,6 +54,9 @@ export async function releaseAllManualFixSites(page: Page, options: { readonly r
       await panel.getByRole('button', { name: 'リリースする' }).click();
     }
   }
+  const impactReview = page.getByTestId('impact-review');
+  await impactReview.waitFor({ state: 'visible', timeout: 1000 }).catch(() => undefined);
+  if (await impactReview.isVisible()) await impactReview.getByRole('button', { name: '閉じる' }).click();
   if (wasCollapsed && options.restoreSidebar !== false) await page.getByRole('button', { name: 'サイドバーを閉じる' }).click();
 }
 
@@ -62,6 +65,11 @@ export async function completeManualFix(page: Page): Promise<void> {
   const panel = page.getByRole('region', { name: '手で直すシミュレーション' });
   if (await panel.getByRole('button', { name: '組み替えを始める' }).count() > 0) {
     await panel.getByRole('button', { name: '組み替えを始める' }).click();
+  }
+  const impactReview = page.getByTestId('impact-review');
+  await impactReview.waitFor({ state: 'visible', timeout: 1000 }).catch(() => undefined);
+  if (await impactReview.isVisible()) {
+    await impactReview.getByRole('button', { name: '閉じる' }).click();
   }
 }
 

@@ -104,7 +104,7 @@ const EMPTY_RULE_PREVIEW = { previewRule: null, hoverPreviewRule: null, focusPre
 
 /** 変更依頼を「手で直す」シミュレーション。fixedIds は「直した」印、viewedMethodId は最後にクリックしたメソッド。 */
 type ManualFix = { readonly fixedIds: readonly string[]; readonly released: boolean; readonly viewedMethodId: string | null; readonly step: StageStep };
-type OpeningFix = { readonly missed: number; readonly extra: number; readonly sites: number };
+type OpeningFix = { readonly missed: number; readonly extra: number; readonly sites: number; readonly fixedIds: readonly string[] };
 
 const NEW_MANUAL_FIX: ManualFix = { fixedIds: [], released: false, viewedMethodId: null, step: 'refactor' };
 
@@ -136,6 +136,9 @@ type GameState = {
   openingFixes: Readonly<Partial<Record<string, OpeningFix | null>>>;
   openingFixEnabled: boolean;
   closingFixSolved: boolean;
+  impactReviewOpen: boolean;
+  openImpactReview: () => void;
+  closeImpactReview: () => void;
   startManualFix: () => void;
   toggleFixed: (methodId: string) => void;
   releaseManualFix: () => void;
@@ -380,7 +383,7 @@ function resetActions(set: (partial: Partial<GameState>) => void, get: () => Gam
   return {
     resetStage: () => {
       if (get().changeSession !== null) return;
-      set({ ...commit(get(), get().stage.codebase, false), layoutResetCount: get().layoutResetCount + 1, celebration: null, ghost: null, manualFix: null, closingFixSolved: false, extractDraft: null, focusedRule: null, hintTarget: null, hintTargetKey: null, previewRule: null, hoverPreviewRule: null, focusPreviewRule: null, selectedMethodId: null, selectedFieldId: null, message: null, notice: null });
+      set({ ...commit(get(), get().stage.codebase, false), layoutResetCount: get().layoutResetCount + 1, celebration: null, ghost: null, manualFix: null, closingFixSolved: false, impactReviewOpen: false, extractDraft: null, focusedRule: null, hintTarget: null, hintTargetKey: null, previewRule: null, hoverPreviewRule: null, focusPreviewRule: null, selectedMethodId: null, selectedFieldId: null, message: null, notice: null });
     },
   };
 }
@@ -435,7 +438,7 @@ function changeSessionActions(
 function manualFixActions(
   set: (partial: Partial<GameState>) => void,
   get: () => GameState,
-): Pick<GameState, 'startManualFix' | 'toggleFixed' | 'releaseManualFix' | 'restartManualFix' | 'endManualFix'> {
+): Pick<GameState, 'startManualFix' | 'toggleFixed' | 'releaseManualFix' | 'restartManualFix' | 'endManualFix' | 'openImpactReview' | 'closeImpactReview'> {
   return {
     startManualFix: () => {
       const state = get();
@@ -464,7 +467,7 @@ function manualFixActions(
       if (step === 'opening-fix') {
         set({
           manualFix: { ...manualFix, released: true },
-          openingFixes: { ...state.openingFixes, [stage.id]: { missed: result.missed.length, extra: result.extra.length, sites: result.sites } },
+          openingFixes: { ...state.openingFixes, [stage.id]: { missed: result.missed.length, extra: result.extra.length, sites: result.sites, fixedIds: manualFix.fixedIds } },
         });
       } else if (step === 'closing-fix') {
         const solved = isManualFixSolved(result);
@@ -485,6 +488,8 @@ function manualFixActions(
       set({ manualFix: null });
       if (advancingManualFixTour) get().advanceTour({ kind: 'manual-fix-released' });
     },
+    openImpactReview: () => set({ impactReviewOpen: true }),
+    closeImpactReview: () => set({ impactReviewOpen: false }),
   };
 }
 
@@ -519,6 +524,7 @@ function selectStageState(allStages: readonly Stage[], stageId: string, drafts: 
     restoredDraft: draft !== undefined,
     ...(draft !== undefined && painRequestsOf(stage).modify !== undefined ? { openingFixes: { [stage.id]: null } } : {}),
     closingFixSolved: false,
+    impactReviewOpen: false,
     history: emptyHistory(),
     selectedMethodId: null,
     selectedFieldId: null,
@@ -779,6 +785,7 @@ export function createGameStore(allStages: readonly Stage[], saveDraftsOn = true
       restoredDraft: restored !== undefined,
       ...initialManualFixState(firstStage, restored),
       openingFixEnabled,
+      impactReviewOpen: false,
       draftStageIds: Object.keys(holder.drafts),
       history: emptyHistory(),
       selectedMethodId: null,

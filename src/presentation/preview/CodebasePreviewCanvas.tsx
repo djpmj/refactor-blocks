@@ -7,7 +7,7 @@ import { OffsetEdge } from '../canvas/OffsetEdge';
 import { TopRouteEdge } from '../canvas/TopRouteEdge';
 import { WarningEdge } from '../canvas/WarningEdge';
 import { WarningEdgeStateProvider } from '../canvas/WarningEdgeState';
-import { CodebasePreviewProvider } from './CodebasePreviewContext';
+import { CodebasePreviewProvider, type MethodHighlight } from './CodebasePreviewContext';
 import { PreviewClassNode } from './PreviewClassNode';
 import { PreviewFileNode } from './PreviewFileNode';
 
@@ -21,17 +21,18 @@ type CodebasePreviewCanvasProps = {
   readonly wheelZoom?: boolean;
   readonly selectedMethodId?: string | null;
   readonly onSelectMethod?: (methodId: string) => void;
+  readonly highlights?: ReadonlyMap<string, MethodHighlight>;
 };
 
 /** コードベースを読み取り専用で描くキャンバス。「解答例の図」と設計くらべで使う。 */
-export function CodebasePreviewCanvas({ codebase, methodLimit, wheelZoom = true, selectedMethodId, onSelectMethod }: CodebasePreviewCanvasProps) {
+export function CodebasePreviewCanvas({ codebase, methodLimit, wheelZoom = true, selectedMethodId, onSelectMethod, highlights }: CodebasePreviewCanvasProps) {
   const nodes = useMemo(() => layoutCodebase(codebase), [codebase]);
   const edges = useMemo(() => {
     const fileRects = fileRectsFromNodes(nodes);
     return [...dependencyEdges(codebase, fileRects), ...inheritanceEdges(codebase, fileRects)];
   }, [codebase, nodes]);
   return (
-    <CodebasePreviewProvider value={{ codebase, methodLimit, selectedMethodId, onSelectMethod }}>
+    <CodebasePreviewProvider value={{ codebase, methodLimit, selectedMethodId, onSelectMethod, highlights }}>
       <WarningEdgeStateProvider>
         <ReactFlow
           nodes={nodes}

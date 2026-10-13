@@ -173,14 +173,14 @@ describe('opening and closing manual-fix flow', () => {
 
     store.getState().startManualFix();
     store.getState().releaseManualFix();
-    expect(store.getState().openingFixes[stage.id]).toEqual({ missed: 3, extra: 0, sites: 3 });
+    expect(store.getState().openingFixes[stage.id]).toEqual({ missed: 3, extra: 0, sites: 3, fixedIds: [] });
     expect(store.getState().extractMethod({ sourceMethodId: 'method-confirm-order', fragmentIds: ['frag-order-tax'], newMethodName: 'tax' })).toBe(true);
   });
 
   it('仕上げは正解でのみ解除し、resetは冒頭結果を残して仕上げを再設定する', () => {
     if (stage === undefined) throw new Error('tax stage is required');
     const store = createGameStore([stage], false);
-    store.setState({ openingFixes: { [stage.id]: { missed: 2, extra: 0, sites: 3 } }, codebase: sampleAnswerCodebase(stage) });
+    store.setState({ openingFixes: { [stage.id]: { missed: 2, extra: 0, sites: 3, fixedIds: [] } }, codebase: sampleAnswerCodebase(stage) });
     store.getState().startManualFix();
     store.getState().releaseManualFix();
     expect(store.getState().closingFixSolved).toBe(false);
@@ -193,8 +193,24 @@ describe('opening and closing manual-fix flow', () => {
     expect(store.getState().closingFixSolved).toBe(true);
 
     store.getState().resetStage();
-    expect(store.getState().openingFixes[stage.id]).toEqual({ missed: 2, extra: 0, sites: 3 });
+    expect(store.getState().openingFixes[stage.id]).toEqual({ missed: 2, extra: 0, sites: 3, fixedIds: [] });
     expect(store.getState().closingFixSolved).toBe(false);
+  });
+});
+
+describe('impact review dialog state', () => {
+  it('open/close actions change the state and selecting another stage closes it', () => {
+    const first = stages[0];
+    const second = stages[1];
+    const store = createGameStore([first, second], false);
+
+    store.getState().openImpactReview();
+    expect(store.getState().impactReviewOpen).toBe(true);
+    store.getState().closeImpactReview();
+    expect(store.getState().impactReviewOpen).toBe(false);
+    store.getState().openImpactReview();
+    store.getState().selectStage(second.id);
+    expect(store.getState().impactReviewOpen).toBe(false);
   });
 });
 
@@ -227,7 +243,7 @@ describe('opening-fix lock regressions', () => {
     expect(store.getState().changeSession).toBeNull();
     expect(store.getState().message).toContain('もし、この変更が来たら?');
 
-    store.setState({ openingFixes: { [stage.id]: { missed: 1, extra: 0, sites: 3 } } });
+    store.setState({ openingFixes: { [stage.id]: { missed: 1, extra: 0, sites: 3, fixedIds: [] } } });
     store.getState().startChangeRequests();
     expect(store.getState().changeSession).toBeNull();
     expect(store.getState().message).toContain('手直しと組み替え');
@@ -246,7 +262,7 @@ describe('opening-fix lock regressions', () => {
       localStorage.clear();
       saveDrafts(putDraft({}, stage, sampleAnswerCodebase(stage)));
       const store = createGameStore([stage, otherStage]);
-      const openingResult = { missed: 2, extra: 0, sites: 3 } as const;
+      const openingResult = { missed: 2, extra: 0, sites: 3, fixedIds: [] } as const;
       store.setState({ openingFixes: { [stage.id]: openingResult } });
 
       store.getState().selectStage(otherStage.id);
