@@ -6,7 +6,8 @@ test('ヒントの対象を表示し、切り替え・解除・リセット・�
   await page.setViewportSize({ width: 1800, height: 1400 });
   await page.goto('/');
   await selectStage(page, 'チュートリアル1: 長いメソッドを分ける');
-  await page.getByRole('button', { name: /ヒントを見る/ }).click();
+  await page.getByTestId('hint-problem').click();
+  await page.getByRole('button', { name: /次の一手/ }).click();
   const hint = page.getByRole('button', { name: 'ヒント1の場所をキャンバスで見る' });
 
   // Act
@@ -54,7 +55,8 @@ test('まだ存在しない対象のヒントは、前の操作で作られる�
   await page.setViewportSize({ width: 1800, height: 1400 });
   await page.goto('/');
   await selectStage(page, 'チュートリアル2: 太った placeOrder');
-  const reveal = page.getByRole('button', { name: /ヒントを見る/ });
+  await page.getByTestId('hint-problem').click();
+  const reveal = page.getByRole('button', { name: /次の一手/ });
   await reveal.click();
   await reveal.click();
   await reveal.click();

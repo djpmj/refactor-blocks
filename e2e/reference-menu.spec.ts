@@ -21,20 +21,37 @@ test('参考メニューは6個のツールバー操作にまとまり、変更�
   await expect(page.getByTestId('codebase-preview')).toBeVisible();
 });
 
-test('答えの前にヒントを開け、同じステージでは次から確認せず、ステージ変更後は再確認する', async ({ page }) => {
+test('答えの前に問題ヒント、次の一手の順に開き、同じステージでは次から確認せず、ステージ変更後は再確認する', async ({ page }) => {
   await page.goto('/');
+  await selectStage(page, '中級1: 循環依存を断ち切る', { completeOpeningFix: false });
   await page.getByTestId('reference-menu-button').click();
   await page.getByTestId('reference-sample').click();
   const confirmation = page.getByTestId('answer-confirm');
   await expect(confirmation).toBeVisible();
   await expect(confirmation.getByRole('heading', { name: '答えを見ますか?' })).toBeVisible();
-  await expect(confirmation).toContainText('ヒントはあと 1 個あります');
+  await expect(confirmation).toContainText('ヒントはあと 3 個あります');
   await expect(confirmation.getByRole('button').first()).toBeFocused();
   await confirmation.getByRole('button', { name: 'ヒントを見る' }).click();
   await expect(confirmation).not.toBeVisible();
   await expect(page.getByTestId('codebase-preview')).not.toBeVisible();
-  await expect(page.locator('.stage-panel__hint-list li')).toHaveCount(1);
+  const problemText = page.getByTestId('hint-problem-text');
+  await expect(problemText).toContainText('いちばん大きい減点: 循環依存(-20点)');
+  await expect(problemText).toContainText('AがBを、BがAを呼んでいると、片方を直すともう片方も直すことになり、どちらも単独でテスト・再利用できません。');
+  await expect(problemText).not.toContainText('Move Method');
+  await expect(page.getByTestId('class-Order')).toHaveClass(/class-node--flagged/);
+  await expect(page.getByTestId('class-Customer')).toHaveClass(/class-node--flagged/);
+  await expect(page.locator('.react-flow__edge.edge--cyclic')).toHaveCount(2);
+  await expect(page.locator('.stage-panel__hint-list li')).toHaveCount(0);
   await expect(page.locator('#stage-sidebar')).toBeVisible();
+
+  await page.getByTestId('reference-menu-button').click();
+  await page.getByTestId('reference-sample').click();
+  await expect(confirmation).toBeVisible();
+  await confirmation.getByRole('button', { name: 'ヒントを見る' }).click();
+  await expect(confirmation).not.toBeVisible();
+  const nextStep = page.locator('.stage-panel__hint-list li');
+  await expect(nextStep).toHaveCount(1);
+  await expect(nextStep.first()).toContainText('calculateOrderTotal をMove Methodで Order へ移そう');
 
   await page.getByTestId('reference-menu-button').click();
   await page.getByTestId('reference-sample').click();
