@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import type { Codebase } from '../../domain/codebase/Codebase';
 import { scoreCodebase, type Score } from '../../domain/scoring/score';
+import { biggestProblem } from '../../domain/scoring/biggestProblem';
 import type { SolutionStep } from '../../domain/stage/sampleAnswer';
 import type { Stage } from '../../domain/stage/Stage';
 import { CritiqueButton, CritiqueResult } from '../critique/CritiquePanel';
@@ -28,6 +29,7 @@ import { useResizableSidebarWidth } from '../useResizableSidebarWidth';
 import { ClearConditionList } from './ClearConditionList';
 import { RumorList } from './RumorList';
 import { GhostHintButton } from './GhostHintButton';
+import { ProblemHint } from './ProblemHint';
 import { painRequestsOf } from '../../domain/change/changePain';
 import { stageStep } from '../../domain/change/stageStep';
 
@@ -179,7 +181,7 @@ function DraftRestoredNotice() {
   );
 }
 
-function StageSidebar({ stage, codebase, score, initialScore, investigating, revealedCount, hints, total, onReveal, hidden }: Readonly<{
+function StageSidebar({ stage, codebase, score, initialScore, investigating, revealedCount, hints, total, problemRevealed, onRevealProblem, onReveal, hidden }: Readonly<{
   stage: Stage;
   codebase: Codebase;
   score: Score;
@@ -188,6 +190,8 @@ function StageSidebar({ stage, codebase, score, initialScore, investigating, rev
   revealedCount: number;
   hints: readonly { text: string; step: SolutionStep }[];
   total: number;
+  problemRevealed: boolean;
+  onRevealProblem: () => void;
   onReveal: () => void;
   hidden: boolean;
 }>) {
@@ -203,8 +207,14 @@ function StageSidebar({ stage, codebase, score, initialScore, investigating, rev
       {!investigating && <RumorList stage={stage} />}
       <section className="stage-panel__hints" aria-labelledby="stage-hints-title">
         <h3 id="stage-hints-title">ヒント</h3>
-        <HintButton revealed={revealedCount} total={total} disabled={investigating} onReveal={onReveal} />
-        <GhostHintButton stage={stage} score={score.total} investigating={investigating} />
+        <div className="stage-panel__hint-steps">
+          <ProblemHint score={score} stageId={stage.id} revealed={problemRevealed} disabled={investigating} onReveal={onRevealProblem} />
+          <HintButton revealed={revealedCount} total={total} disabled={investigating || !problemRevealed} onReveal={onReveal} />
+          <div className="stage-panel__hint-step">
+            <span className="stage-panel__hint-number" aria-hidden="true">3</span>
+            <GhostHintButton stage={stage} score={score.total} investigating={investigating} unlocked={problemRevealed} />
+          </div>
+        </div>
         <HintList hints={hints} codebase={codebase} disabled={investigating} />
       </section>
       {!investigating && <><ChangePainCard stage={stage} codebase={codebase} score={score.total} /><ManualFixPanel stage={stage} codebase={codebase} /></>}
@@ -227,6 +237,24 @@ function useStagePanelEffects(stageId: string, score: number, actions: Readonly<
   }, [setSidebarOpen, tourStep]);
 }
 
+function useStageHintState(stageId: string, score: Score) {
+  const focusRule = useGameStore((state) => state.focusRule);
+  const [state, setState] = useState({ stageId, count: 0, problemRevealed: false });
+  if (state.stageId !== stageId) setState({ stageId, count: 0, problemRevealed: false });
+  const rule = biggestProblem(score);
+  return {
+    count: state.count,
+    problemRevealed: state.problemRevealed,
+    revealProblem: () => {
+      if (rule !== undefined) {
+        focusRule(rule);
+        setState({ ...state, problemRevealed: true });
+      }
+    },
+    revealStep: () => setState({ ...state, count: state.count + 1 }),
+  };
+}
+
 /** ステージの目標と、行数・結合度・循環依存・責務の混在から出した点数を表示する。責務の中身(responsibility の値)は見せない。 */
 function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage; children: ReactNode; active: boolean }>) {
   // 実装中は部品置き場入りのコードなので、点数と進捗は挑戦前のコードで数える
@@ -235,14 +263,14 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
   const recordProgress = useGameStore((state) => state.recordProgress);
   const startTour = useGameStore((state) => state.startTour);
   const tourStep = useGameStore((state) => state.tourStep);
-  // ステージを切り替えたらヒントを閉じ直す。keyで作り直すとキャンバスまで作り直してしまうので、開いた数にステージIDを添える
-  const [revealed, setRevealed] = useState({ stageId: stage.id, count: 0 });
   const score = useMemo(() => scoreCodebase(codebase, stage), [codebase, stage]);
+  const stageHints = useStageHintState(stage.id, score);
   const initialScore = useMemo(() => scoreCodebase(stage.codebase, stage), [stage]);
   // 狭い画面ではキャンバスを優先して、最初は閉じておく(描画は残し、hiddenで隠すだけ)
   const [sidebarOpen, toggleSidebar, setSidebarOpen] = useStageSidebar(stage.id, score.total >= 100);
   const { handleProps, style: sidebarStyle } = useStageSidebarWidth();
-  const revealedCount = revealed.stageId === stage.id ? revealed.count : 0;
+  const revealedCount = stageHints.count;
+  const problemRevealed = stageHints.problemRevealed;
   const { hints, total } = useHints(stage, revealedCount);
   const stagePanelActions = useMemo(() => ({ recordProgress, startTour, setSidebarOpen }), [recordProgress, startTour, setSidebarOpen]);
   useStagePanelEffects(stage.id, score.total, stagePanelActions, tourStep);
@@ -265,9 +293,11 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
           initialScore={initialScore}
           investigating={investigating}
           revealedCount={revealedCount}
+          problemRevealed={problemRevealed}
+          onRevealProblem={stageHints.revealProblem}
           hints={hints}
           total={total}
-          onReveal={() => setRevealed({ stageId: stage.id, count: revealedCount + 1 })}
+          onReveal={stageHints.revealStep}
           hidden={!sidebarOpen}
         />
         {sidebarOpen && <div className="sidebar-resizable__handle sidebar-resizable__handle--left" {...handleProps} />}
@@ -278,7 +308,7 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
             isPerfect={score.total >= 100}
             active={active}
             revealedCount={revealedCount}
-            onRevealHint={() => setRevealed({ stageId: stage.id, count: revealedCount + 1 })}
+            onRevealHint={problemRevealed ? stageHints.revealStep : stageHints.revealProblem}
             onOpenHints={() => setSidebarOpen(true)}
           />
           <DraftRestoredNotice />

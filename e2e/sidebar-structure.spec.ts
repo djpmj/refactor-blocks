@@ -27,7 +27,7 @@ test('困りごと・クリア条件・ヒントが上に並び、ヒントは�
   await expect(sidebar.getByText('printMonthlyReportに集計・計算・表の組み立て・出力がまとまっている')).toBeVisible();
   await expect(sidebar.getByRole('heading', { name: 'クリア条件' })).toBeVisible();
   await expect(sidebar.getByRole('heading', { name: 'ヒント', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: /ヒントを見る/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /次の一手/ })).toBeVisible();
   await expect(page.getByTestId('stage-description')).toBeHidden();
   await expect(sidebar).not.toContainText('メソッドは20行以内');
 
@@ -40,7 +40,8 @@ test('困りごと・クリア条件・ヒントが上に並び、ヒントは�
   });
   expect(order.slice(1)).toEqual([...order.slice(1)].sort((left, right) => left - right));
 
-  await page.getByRole('button', { name: /ヒントを見る/ }).click();
+  await page.getByTestId('hint-problem').click();
+  await page.getByRole('button', { name: /次の一手/ }).click();
   await expect(sidebar.locator('.stage-panel__hint-list li')).toHaveCount(1);
 });
 

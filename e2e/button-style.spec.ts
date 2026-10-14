@@ -24,8 +24,8 @@ test('tutorial buttons use shared default and primary styles without changing Re
   await page.goto('/');
   await selectStage(page, 'チュートリアル1: 長いメソッドを分ける');
 
-  const hintButton = page.getByRole('button', { name: 'ヒントを見る' });
-  const ghostHintButton = page.getByRole('button', { name: '少しだけヒント' });
+  const hintButton = page.getByRole('button', { name: /次の一手/ });
+  const ghostHintButton = page.getByRole('button', { name: '動きで見る' });
   for (const button of [hintButton, ghostHintButton]) {
     await expect(button).toHaveCSS('border-top-style', 'solid');
     await expect(button).toHaveCSS('border-radius', '6px');

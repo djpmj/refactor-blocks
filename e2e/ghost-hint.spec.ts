@@ -38,8 +38,9 @@ test('plays a visual-only ghost, leaves hint count and undo history alone, then 
   // Arrange
   await openStage(page);
   const button = page.getByTestId('ghost-hint');
-  const hintButton = page.getByRole('button', { name: 'ヒントを見る' });
+  const hintButton = page.getByRole('button', { name: /次の一手/ });
   const score = await page.getByTestId('score').innerText();
+  await page.getByTestId('hint-problem').click();
   await expect(button).toBeEnabled();
   await expect(page.getByRole('button', { name: '元に戻す' })).toBeDisabled();
 
@@ -51,13 +52,13 @@ test('plays a visual-only ghost, leaves hint count and undo history alone, then 
   await expect(page.getByText('renderTemplate を NotificationService へ動かすと良さそうです')).toBeAttached();
   await expect(page.getByTestId('score')).toHaveText(score);
   await expect(page.getByRole('button', { name: '元に戻す' })).toBeDisabled();
-  await expect(hintButton).toHaveText('ヒントを見る');
+  await expect(hintButton).toHaveText('次の一手');
   await expect(button).toBeDisabled();
   await expect(page.locator('.ghost-hint-animation')).toHaveCount(0, { timeout: 5000 });
   await expect(button).toBeEnabled();
   await button.click();
   await expect(page.getByTestId('ghost-hint-live')).toContainText('renderTemplate');
-  await expect(hintButton).toHaveText('ヒントを見る');
+  await expect(hintButton).toHaveText('次の一手');
   await expect(page.locator('.ghost-hint-animation')).toHaveCount(0, { timeout: 5000 });
 
   // Act: perform the suggested drag.
@@ -72,7 +73,7 @@ test('shows the idle affordance without playing a ghost and clears it on interac
   // Arrange
   await page.clock.install();
   await openStage(page);
-  const button = page.getByTestId('ghost-hint');
+  const button = page.getByTestId('hint-problem');
 
   // Act
   await page.clock.fastForward(30_000);
@@ -94,6 +95,7 @@ test('switches the ghost target after moving the first of multiple sample-answer
   await page.goto('/');
   await selectStage(page, MULTI_MOVE_STAGE);
   const button = page.getByTestId('ghost-hint');
+  await page.getByTestId('hint-problem').click();
 
   // Act / Assert: first step and its destination coordinates.
   await button.click();
@@ -112,6 +114,7 @@ test('uses a source and destination highlight when reduced motion is requested',
   // Arrange
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await openStage(page);
+  await page.getByTestId('hint-problem').click();
 
   // Act
   await page.getByTestId('ghost-hint').click();

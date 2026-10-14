@@ -105,6 +105,11 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .stage-panel__spacer { flex: 1; }
 .stage-panel__problem, .clear-conditions, .stage-panel__hints { margin: 12px 0; font-size: 13px; line-height: 1.6; }
 .stage-panel__problem h3, .clear-conditions h3, .stage-panel__hints h3 { margin: 0 0 4px; font-size: 14px; }
+.stage-panel__hint-steps { display: flex; align-items: flex-start; gap: 6px; flex-wrap: wrap; }
+.stage-panel__hint-step { display: flex; align-items: flex-start; gap: 4px; flex-wrap: wrap; }
+.stage-panel__hint-number { color: var(--muted); font-size: 11px; line-height: 2.2; }
+.problem-hint-text { flex-basis: 100%; }
+.problem-hint-text p { margin: 4px 0; }
 .stage-panel__problem p { margin: 0; }
 .clear-conditions__heading { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
 .clear-conditions__heading h3 { margin: 0; }
