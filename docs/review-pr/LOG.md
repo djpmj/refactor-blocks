@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-14 14:40 UTC PR #198 Improve change request sample fairness
+
+- 判定: 合格(blocker無し。suggestion: stacked base の配置点と store での厳密な100点確認のテスト追加)
+- 確認した内容: npm run check(lint/typecheck/vitest 1725件)✅。Issue #176 の原因1・2(変更コストの比較条件、解答例ステップ追加)を差分で確認。E2Eはレビュー環境にChromiumが無く未実行(PR本文の227件成功を参照)
+- マージ: squash & delete-branch
+
 ## 2026-10-14 14:20 UTC PR #197 feat: ヒントを3段階に分ける
 
 - 判定: 合格(blocker無し)
@@ -212,26 +218,3 @@
 - 確認した内容: npm test 1607件 ✅ / npm run lint ✅ / npm run typecheck ✅ / E2Eはローカルにブラウザが無く未実行、PRのCI(e2e)pass
 - マージ: squash & delete-branch
 
-## 2026-10-10 09:10 UTC PR #127 抽出前に結果をプレビュー
-
-- 判定: 合格(blocker無し。suggestion: ClassNodeの仮メソッド行数の `-3` は METHOD_OVERHEAD_LINES を使う)
-- 確認した内容: npm run check(test 1602件/lint/typecheck) ✅。E2Eはレビュー環境にChromiumが無く起動できず未確認(PR本文は177件成功と報告)
-- マージ: squash & delete-branch
-
-## 2026-10-10 08:40 UTC PR #126 ドラッグ中に移動可能な場所を強調
-
-- 判定: 合格(blocker無し。suggestion: 仕様は既存E2E無変更だがrefactor.spec.tsのキーボードfieldテストを更新)
-- 確認した内容: npm run check(test 1592件/lint/typecheck) ✅。E2Eはレビュー環境にChromiumが無く起動できず未確認(PR本文は176件成功と報告)
-- マージ: squash & delete-branch
-
-## 2026-10-10 08:20 UTC PR #125 feat: add subtle ghost movement hints
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅ 1586件 / npm run lint ✅ / npm run typecheck ✅。E2Eはレビュー環境にChromiumが無く起動できず未確認(PR本文は174件成功と報告)
-- マージ: squash & delete-branch
-
-## 2026-10-10 06:52 UTC PR #123 feat: 初回スポットライトガイドを追加
-
-- 判定: 合格(blocker無し。suggestion: methodCountがuseGameStore.tsとSpotlightTour.tsxで重複)
-- 確認した内容: npm test ✅ 1571件 / npm run lint ✅ / npm run typecheck ✅。E2Eはレビュー環境にChromiumが無く起動できず未確認(PR本文は168件成功と報告)
-- マージ: squash & delete-branch
