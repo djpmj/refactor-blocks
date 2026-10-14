@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-14 14:20 UTC PR #197 feat: ヒントを3段階に分ける
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅ 1722件 / npm run lint ✅ / npm run typecheck ✅。E2Eはこの環境にChromiumが無く実行できなかったため、PR本文の報告(227件PASS)に依拠
+- マージ: squash & delete-branch
+
 ## 2026-10-14 09:15 UTC PR #195 chore(deps): bump the production-dependencies group with 2 updates
 
 - 判定: 合格(blocker無し)
