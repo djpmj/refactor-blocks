@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-14 15:00 UTC PR #196 chore(deps): bump the development-dependencies group across 1 directory with 8 updates
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm ci ✅ / npm test ✅ 1720件 / npm run lint ✅ / npm run typecheck ✅。package.json・lockの開発依存更新のみ。E2Eはこの環境にChromiumが無く未実行、CIのe2e/check/knip/jscpdのpassで代替
+- マージ: squash & delete-branch
+
 ## 2026-10-14 14:40 UTC PR #198 Improve change request sample fairness
 
 - 判定: 合格(blocker無し。suggestion: stacked base の配置点と store での厳密な100点確認のテスト追加)
@@ -211,10 +217,3 @@
 - 判定: 合格(blocker無し)
 - 確認した内容: npm run check(test 1607件/lint/typecheck) ✅。E2Eはレビュー環境にChromiumが無く未実行(PR本文は184件成功と報告)。Issue #114の受け入れ基準を差分で確認
 - マージ: squash & delete-branch
-
-## 2026-10-10 09:55 UTC PR #128 正しい操作の成功演出
-
-- 判定: 合格(blocker無し。suggestion: commit のJSDocが celebrationFor に付いている)
-- 確認した内容: npm test 1607件 ✅ / npm run lint ✅ / npm run typecheck ✅ / E2Eはローカルにブラウザが無く未実行、PRのCI(e2e)pass
-- マージ: squash & delete-branch
-
