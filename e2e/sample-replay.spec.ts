@@ -87,7 +87,7 @@ test('「解答を再生」で模範解答を1手ずつ進め、図・説明・�
   await expect(maximize.locator('svg rect')).toHaveCount(1);
   const restoredBox = await dialog.boundingBox();
   expect(restoredBox?.width).toBeLessThanOrEqual(1100);
-  await expect(dialog.getByTestId('sample-replay-position')).toHaveText('0 / 1 手');
+  await expect(dialog.getByTestId('sample-replay-position')).toHaveText('0 / 12 手');
   await expect(dialog.getByTestId('sample-replay-description')).toContainText('最初の状態です');
   await expect(dialog.getByTestId('preview-class-ReportService')).not.toContainText('aggregateSales');
   await expect(dialog.getByRole('button', { name: '最初へ' })).toBeDisabled();
@@ -98,25 +98,32 @@ test('「解答を再生」で模範解答を1手ずつ進め、図・説明・�
   await dialog.getByRole('button', { name: /次へ/ }).click();
 
   // Assert: 最後の手
-  await expect(dialog.getByTestId('sample-replay-position')).toHaveText('1 / 1 手');
+  await expect(dialog.getByTestId('sample-replay-position')).toHaveText('1 / 12 手');
+  await expect(dialog.getByTestId('sample-replay-score')).toContainText('100点');
+
+  // Act: 残りの手順を最後まで進める
+  await dialog.getByRole('button', { name: '最後へ' }).click();
+
+  // Assert: 最終形は100点
+  await expect(dialog.getByTestId('sample-replay-position')).toHaveText('12 / 12 手');
   await expect(dialog.getByTestId('sample-replay-score')).toContainText('100点');
   await expect(dialog.getByTestId('sample-replay-score')).toContainText('(+');
   await expect(dialog.getByText('ここまでで100点です')).toBeVisible();
-  await expect(dialog.getByTestId('preview-class-ReportService')).toContainText('aggregateSales');
+  await expect(dialog.getByTestId('preview-class-SalesAggregator')).toContainText('aggregateSales');
   await expect(dialog.getByRole('button', { name: /次へ/ })).toBeDisabled();
   await expect(dialog.getByRole('button', { name: '最後へ' })).toBeDisabled();
 
   // Act: キーボードで戻る・進む
   await page.keyboard.press('ArrowLeft');
-  await expect(dialog.getByTestId('sample-replay-position')).toHaveText('0 / 1 手');
+  await expect(dialog.getByTestId('sample-replay-position')).toHaveText('11 / 12 手');
   await page.keyboard.press('ArrowRight');
-  await expect(dialog.getByTestId('sample-replay-position')).toHaveText('1 / 1 手');
+  await expect(dialog.getByTestId('sample-replay-position')).toHaveText('12 / 12 手');
 
   // Act: 最初へ・最後へ
   await dialog.getByRole('button', { name: '最初へ' }).click();
-  await expect(dialog.getByTestId('sample-replay-position')).toHaveText('0 / 1 手');
+  await expect(dialog.getByTestId('sample-replay-position')).toHaveText('0 / 12 手');
   await dialog.getByRole('button', { name: '最後へ' }).click();
-  await expect(dialog.getByTestId('sample-replay-position')).toHaveText('1 / 1 手');
+  await expect(dialog.getByTestId('sample-replay-position')).toHaveText('12 / 12 手');
 
   // Act: Escで閉じる
   await page.keyboard.press('Escape');
@@ -130,7 +137,7 @@ test('「解答を再生」で模範解答を1手ずつ進め、図・説明・�
   await openReferenceItem(page, 'reference-replay');
 
   // Assert
-  await expect(page.getByTestId('sample-replay-position')).toHaveText('0 / 1 手');
+  await expect(page.getByTestId('sample-replay-position')).toHaveText('0 / 12 手');
   await expect(page.getByTestId('sample-replay-maximize')).toHaveAttribute('aria-pressed', 'false');
   await page.keyboard.press('Tab');
   await expect(dialog.getByRole('button', { name: '閉じる' })).toBeFocused();

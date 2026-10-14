@@ -163,12 +163,12 @@ test('「解答例の図を見る」を押すと、模範解答どおりに抽�
 
   // Assert
   const dialog = page.getByTestId('codebase-preview');
-  await expect(dialog.getByTestId('preview-class-ReportService')).toContainText('aggregateSales');
+  await expect(dialog.getByTestId('preview-class-SalesAggregator')).toContainText('aggregateSales');
   await expect(dialog.locator('.file-node__path')).toHaveCount(0);
   await expect(dialog).not.toContainText('.ts');
   await dialog.getByRole('button', { name: /aggregateSales/ }).click();
   const panel = dialog.getByRole('complementary', { name: 'メソッドの内容' });
-  await expect(panel.getByRole('heading', { name: /ReportService\.aggregateSales\(\)/ })).toBeVisible();
+  await expect(panel.getByRole('heading', { name: /SalesAggregator\.aggregateSales\(\)/ })).toBeVisible();
   await panel.getByRole('tab', { name: 'コード' }).click();
   await expect(panel.locator('.code-preview')).toBeVisible();
 });

@@ -139,7 +139,7 @@ const invoiceServiceStage: Stage = {
     '請求書を作って送る InvoiceService。金額の計算・PDFの描画・ストレージへの保存・メール送信・送信履歴の記録を1クラスで抱えている。今回は受け皿のクラスが用意されていない。',
   goal: 'メソッドは16行、クラスは31行・ファイルは65行以内、1クラスの責務は2種類まで。「クラスを追加」で受け皿を作ろう',
   limits: { method: 16, class: 31, file: 65 },
-  dependencyLimit: 3,
+  dependencyLimit: 4,
   responsibilityLimit: 2,
   changeRequests: [
     { id: 'req-pdf-layout', title: '請求書PDFのレイアウトを変えて', description: 'ロゴの位置と明細表の列幅を変更したい。', responsibility: 'rendering', linesPerSite: 10, partName: 'adjustPdfLayout' },

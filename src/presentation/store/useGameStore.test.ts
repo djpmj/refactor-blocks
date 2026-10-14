@@ -92,6 +92,36 @@ describe('delete inline notice', () => {
 });
 
 describe('change-request lifecycle and ghost state', () => {
+  it('チュートリアル2で部品を積み重ねても3件目の変更コストは挑戦前の設計で測る', () => {
+    // Arrange
+    const stage = stages.find((candidate) => candidate.id === 'tutorial-order-service');
+    if (stage === undefined) throw new Error('チュートリアル2が必要です');
+    const design = sampleAnswerCodebase(stage);
+    const store = createGameStore([stage], false, false);
+    store.setState({ codebase: design });
+    store.getState().startChangeRequests();
+
+    // Act
+    for (const request of stage.changeRequests.slice(0, 2)) {
+      const part = changePart(request);
+      const withPart = withChangePart(store.getState().codebase, request);
+      const placed = moveMethod(withPart, part.id, 'class-order-service');
+      if (!placed.ok) throw new Error('OrderServiceへ配置できるはず');
+      store.setState({ codebase: placed.value });
+      store.getState().finishImplementation();
+    }
+    const thirdRequest = stage.changeRequests[2];
+    const thirdWithPart = withChangePart(store.getState().codebase, thirdRequest);
+    const thirdPart = moveMethod(thirdWithPart, changePart(thirdRequest).id, 'class-order-service');
+    if (!thirdPart.ok) throw new Error('OrderServiceへ配置できるはず');
+    store.setState({ codebase: thirdPart.value });
+    store.getState().finishImplementation();
+
+    // Assert
+    const outcome = store.getState().changeSession?.outcomes.at(-1);
+    expect(outcome?.current?.score.total).toBeGreaterThanOrEqual(outcome?.initial?.score.total ?? 0);
+  });
+
   it('clears the active ghost when a change request starts', () => {
     // Arrange
     const store = createGameStore(stages, false, false);

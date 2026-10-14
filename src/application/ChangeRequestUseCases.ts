@@ -24,11 +24,11 @@ export type ImplementationError = ChangeError | PlacementError;
 
 function measureCosts(
   stage: Pick<Stage, 'limits' | 'codebase'>,
-  base: Codebase,
+  design: Codebase,
   request: ChangeRequest,
 ): Result<Pick<ChangeOutcome, 'current' | 'initial'>, ChangeError> {
   if (changeKindOf(request) === 'extend') return ok({ current: null, initial: null });
-  const current = measureChange(base, request, stage.limits);
+  const current = measureChange(design, request, stage.limits);
   if (!current.ok) return err(current.error);
   const initial = measureChange(stage.codebase, request, stage.limits);
   if (!initial.ok) return err(initial.error);
@@ -38,21 +38,20 @@ function measureCosts(
   });
 }
 
-/** 「実装を終える」操作。base は挑戦前のコード、implemented は部品を置いたあとのコード。 */
+/** 「実装を終える」操作。design は変更コスト、base は置き方を測るコード。 */
 export function evaluateImplementationUseCase(
   stage: Pick<Stage, 'limits' | 'codebase'>,
-  base: Codebase,
-  implemented: Codebase,
+  codebases: Readonly<{ design: Codebase; base: Codebase; implemented: Codebase }>,
   request: ChangeRequest,
 ): Result<ChangeOutcome, ImplementationError> {
-  const costs = measureCosts(stage, base, request);
+  const costs = measureCosts(stage, codebases.design, request);
   if (!costs.ok) return err(costs.error);
-  const placement = measurePlacement(base, implemented, request);
+  const placement = measurePlacement(codebases.base, codebases.implemented, request);
   if (!placement.ok) return err(placement.error);
   return ok({
     request,
     placement: { placement: placement.value, score: scorePlacement(placement.value, changeKindOf(request)) },
-    sample: sampleImplementation(base, request),
+    sample: sampleImplementation(codebases.base, request),
     ...costs.value,
   });
 }

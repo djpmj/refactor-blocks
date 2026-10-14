@@ -41,7 +41,7 @@ const extractMethodStage: Stage = {
     '月次の売上レポートを画面に出す ReportService。売上の集計・前月比の計算・表の組み立て・出力が、1つのメソッド printMonthlyReport に上から順に書かれている。',
   goal: 'メソッドは28行以内に。メソッドをクリックし、まとまった処理を選んで「メソッドとして抽出」しよう',
   limits: { method: 28, class: 54, file: 61 },
-  dependencyLimit: 2,
+  dependencyLimit: 3,
   responsibilityLimit: 3,
   changeRequests: [
     { id: 'req-report-yoy', title: '前年同月比も出して', description: '経営会議用に、前月比だけでなく前年同月比もレポートに出したい。', responsibility: 'aggregation', linesPerSite: 12, partName: 'compareWithLastYear' },
@@ -120,7 +120,7 @@ const orderServiceStage: Stage = {
     'ネットショップの注文を受け付ける OrderService。placeOrder の中に、入力と在庫の検証・小計と消費税(軽減税率あり)の計算・DBへの保存・確認メールの送信が全部入っている。税の計算を担当する TaxCalculator は用意されているが、まだ空っぽ。',
   goal: 'メソッドは22行以内に。税の計算は抽出してから TaxCalculator へドラッグで移そう',
   limits: { method: 22, class: 50, file: 60 },
-  dependencyLimit: 2,
+  dependencyLimit: 3,
   // 税の計算を TaxCalculator へ移せば OrderService の責務が4種類になり、上限を満たす
   responsibilityLimit: 4,
   changeRequests: [

@@ -310,7 +310,11 @@ function finishImplementation(state: GameState): Partial<GameState> {
   const session = state.changeSession;
   const request = session === null ? undefined : state.stage.changeRequests[session.index];
   if (session === null || request === undefined) return {};
-  const result = evaluateImplementationUseCase(state.stage, session.carried, state.codebase, request);
+  const result = evaluateImplementationUseCase(state.stage, {
+    design: session.base,
+    base: session.carried,
+    implemented: state.codebase,
+  }, request);
   if (!result.ok) return { message: result.error === 'unplaced-part' ? UNPLACED_MESSAGE : 'この依頼で変更が必要な場所が見つかりません', notice: null };
   const next = state.stage.changeRequests.at(session.index + 1);
   const carried = withoutTray(state.codebase);
