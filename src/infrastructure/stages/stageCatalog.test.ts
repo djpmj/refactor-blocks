@@ -14,7 +14,8 @@ import { findMisplacedResponsibilities } from '../../domain/scoring/misplacedRes
 import { findMixedMethods } from '../../domain/scoring/mixedMethods';
 import { behaviorTests, runBehaviorTests } from '../../domain/testing/behaviorTests';
 import type { Result } from '../../domain/shared/Result';
-import { applySolutionSteps, sampleAnswerSteps, solutionSnapshots, type SolutionStep } from '../../domain/stage/sampleAnswer';
+import { applySolutionSteps, sampleAnswerCodebase, sampleAnswerSteps, solutionSnapshots, type SolutionStep } from '../../domain/stage/sampleAnswer';
+import { sampleImplementation } from '../../domain/change/sampleImplementation';
 import type { Stage } from '../../domain/stage/Stage';
 import { methodNamingOf } from '../../domain/stage/methodNaming';
 import { blankDesignProblems } from '../blankDesigns/blankDesignProblems';
@@ -733,6 +734,66 @@ function danglingFieldRefs(stage: Stage): string[] {
 }
 
 describe('stageCatalog', () => {
+  const knownChangeRequestExceptions: Readonly<Record<string, string>> = {
+    'intermediate-cyclic-dependency/req-price-rule': '置き先の Order に依頼外の責務が3種類残るため混在の減点がある。循環依存ステージを再設計するときに解消する。',
+    'intermediate-cyclic-dependency/req-member-discount': '置き先の Order に依頼外の責務が3種類残るため混在の減点がある。循環依存ステージを再設計するときに解消する。',
+    'intermediate-misplaced-private/req-sms': '置き先の NotificationService に依頼外の責務が3種類残るため混在の減点がある。可視性ステージの教材を再構成するときに解消する。',
+    'intermediate-misplaced-private/req-log-format': '置き先の NotificationService に依頼外の責務が3種類残るため混在の減点がある。可視性ステージの教材を再構成するときに解消する。',
+    'intermediate-feature-envy/req-free-admin-seat': '置き先の UserService に依頼外の責務が2種類残るため混在の減点がある。Feature Envyの題材を再設計するときに解消する。',
+    'intermediate-feature-envy/req-campaign-trial': '置き先の UserService に依頼外の責務が2種類残るため混在の減点がある。Feature Envyの題材を再設計するときに解消する。',
+    'intermediate-anemic-domain-model/req-premium-daily-limit': '置き先の Account に依頼外の責務が3種類残るため混在の減点がある。ドメインモデル教材を再設計するときに解消する。',
+    'intermediate-anemic-domain-model/req-deposit-while-frozen': '置き先の Account に依頼外の責務が3種類残るため混在の減点がある。ドメインモデル教材を再設計するときに解消する。',
+    'intermediate-extract-class/req-late-night-overtime': '置き先の Employee に依頼外の責務が2種類残るため混在の減点がある。抽出クラスの題材を再設計するときに解消する。',
+    'intermediate-member-rank-branching/req-premium-shipping': '置き先の Member に依頼外の責務が1種類残るため混在の減点がある。会員ランク分岐の題材を再設計するときに解消する。',
+    'advanced-notifier-hierarchy/req-notification-format': '置き先の通知クラスに依頼外の責務が1種類残るため混在の減点がある。通知階層を再設計するときに解消する。',
+    'advanced-payment-gateway-interface/req-payment-logging': '置き先の決済クラスに依頼外の責務が2種類残るため混在の減点がある。決済Gateway教材を再設計するときに解消する。',
+    'advanced-payment-gateway-interface/req-gateway-integration': '置き先の決済クラスに依頼外の責務が2種類残るため混在の減点がある。決済Gateway教材を再設計するときに解消する。',
+    'advanced-report-factory/req-report-delivery': '置き先のレポートクラスに依頼外の責務が1種類残るため混在の減点がある。Factory教材を再設計するときに解消する。',
+    'advanced-collapse-hierarchy/req-fiscal-year': '置き先の会計クラスに依頼外の責務が1種類残るため混在の減点がある。階層統合教材を再設計するときに解消する。',
+    'advanced-interface-segregation/req-task-assignee': '置き先のタスククラスに依頼外の責務が1種類残るため混在の減点がある。インターフェース分離教材を再設計するときに解消する。',
+    'advanced-value-object/req-accept-euro': '置き先の Money に依頼外の責務が2種類残るため混在の減点がある。Value Object教材を再設計するときに解消する。',
+    'advanced-value-object/req-hide-yen-decimals': '置き先の Money に依頼外の責務が2種類残るため混在の減点がある。Value Object教材を再設計するときに解消する。',
+    'advanced-template-method/req-order-validation': '置き先のテンプレート処理クラスに依頼外の責務が2種類残るため混在の減点がある。Template Method教材を再設計するときに解消する。',
+    'advanced-template-method/req-add-xml': '新しい具象クラスの追加で既存クラスの変更が1件必要となり、置き先にも依頼外責務が2種類残る。Template Method教材を再設計するときに解消する。',
+  };
+
+  it('解答例の設計で変更依頼は100点(既知例外を除く)で、例外は改善後に削除する', () => {
+    // Arrange
+    const results: { key: string; score: number | undefined }[] = [];
+    const weakModifyCosts: string[] = [];
+    for (const stage of stages) {
+      const answer = sampleAnswerCodebase(stage);
+      for (const request of stage.changeRequests) {
+        const key = `${stage.id}/${request.id}`;
+        const sample = sampleImplementation(answer, request);
+        results.push({ key, score: sample?.score });
+        if (changeKindOf(request) !== 'modify') continue;
+        const before = measureChange(stage.codebase, request, stage.limits);
+        const after = measureChange(answer, request, stage.limits);
+        if (!before.ok || !after.ok) {
+          weakModifyCosts.push(`${key}:変更コストを測定できない`);
+        } else if (scoreChange(after.value).total < scoreChange(before.value).total) {
+          weakModifyCosts.push(`${key}:解答例の変更コストが初期状態より低い`);
+        }
+      }
+    }
+    const scoresByKey = new Map(results.map((result) => [result.key, result.score]));
+    const invalidExceptions: string[] = [];
+    for (const [key, reason] of Object.entries(knownChangeRequestExceptions)) {
+      if (reason.trim().length === 0 || scoresByKey.get(key) === 100) invalidExceptions.push(key);
+    }
+    const unexpectedFailures = results.filter((result) => result.score !== 100 && !Object.hasOwn(knownChangeRequestExceptions, result.key));
+    const tutorialOrBeginnerExceptions = Object.keys(knownChangeRequestExceptions).filter((key) => /^(tutorial|beginner)-/.test(key));
+
+    // Act / Assert
+    expect(Object.keys(knownChangeRequestExceptions).length).toBeLessThan(22);
+    expect(invalidExceptions).toEqual([]);
+    expect(unexpectedFailures).toEqual([]);
+    expect(tutorialOrBeginnerExceptions).toEqual([]);
+    expect(Object.values(knownChangeRequestExceptions).every((reason) => /とき|時/.test(reason))).toBe(true);
+    expect(weakModifyCosts).toEqual([]);
+  });
+
   it('問題文にあるコード識別子は、そのステージのクラス名かメソッド名である', () => {
     // Arrange
     // Act
