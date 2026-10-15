@@ -2,6 +2,7 @@ import { MarkerType, type Edge, type Node } from "@xyflow/react";
 import { allClasses, fieldsOf, findClass, findMethod, parentIds, type CodeClass, type Codebase } from "../../domain/codebase/Codebase";
 import { classDependencies } from "../../domain/codebase/dependencies";
 import type { VisibilityViolationDependency } from "../../domain/scoring/visibility";
+import { TRAY_FILE_ID } from "../../domain/blank/tray";
 
 export type FileNodeData = { fileId: string };
 export type ClassNodeData = { classId: string };
@@ -165,8 +166,9 @@ function rowWidth(files: readonly CodeFile[], metrics: ReadonlyMap<string, FileM
  * クラスはファイルノードの子(parentId)として配置する。最初はステージ作者が手で座標を持たなくて済むよう自動配置にしている。
  */
 export function layoutCodebase(codebase: Codebase): CodebaseFlowNode[] {
-  const rows = fileRows(codebase);
-  const metrics = new Map(codebase.files.map((file) => [file.id, measureFile(file)] as const));
+  const visibleCodebase = { files: codebase.files.filter((file) => file.id !== TRAY_FILE_ID || file.classes.some((codeClass) => codeClass.methods.length > 0)) };
+  const rows = fileRows(visibleCodebase);
+  const metrics = new Map(visibleCodebase.files.map((file) => [file.id, measureFile(file)] as const));
   const widestRow = Math.max(0, ...rows.map((files) => rowWidth(files, metrics)));
   const nodes: CodebaseFlowNode[] = [];
   let rowY = 0;

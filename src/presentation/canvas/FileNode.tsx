@@ -12,6 +12,7 @@ import { useShowDetails } from './semanticZoom';
 import { useDropTargetClassNames } from './DropTargetsContext';
 import { useResolvedCelebration } from './useResolvedCelebration';
 import { FileMarkPopover } from './FileMarkPopover';
+import { TRAY_FILE_ID } from '../../domain/blank/tray';
 
 /** 修正が必要なファイルの印。色だけに頼らずアイコンとラベルでも伝える。ズームで詳細を隠していても出す。 */
 function FileMark({ severity, points, reasons, codebase, fileId }: Readonly<{
@@ -48,8 +49,9 @@ export function FileNode({ data }: Readonly<NodeProps<FileFlowNode>>) {
   const stage = useGameStore((state) => state.stage);
   const file = codebase.files.find((candidate) => candidate.id === data.fileId);
   const limit = useGameStore((state) => state.stage.limits.file);
-  const points = useGameStore((state) => fileDeductions(state.codebase, state.stage).get(data.fileId) ?? 0);
-  const reasons = fileDeductionReasons(codebase, stage).get(data.fileId) ?? [];
+  const isTray = data.fileId === TRAY_FILE_ID;
+  const points = useGameStore((state) => isTray ? 0 : fileDeductions(state.codebase, state.stage).get(data.fileId) ?? 0);
+  const reasons = isTray ? [] : fileDeductionReasons(codebase, stage).get(data.fileId) ?? [];
   const flagged = useGameStore((state) => {
     const rule = state.focusedRule;
     return rule !== null
@@ -76,7 +78,7 @@ export function FileNode({ data }: Readonly<NodeProps<FileFlowNode>>) {
           <span className={lines > limit ? 'line-badge line-badge--over' : 'line-badge'}>{lines}行</span>
         ) : null}
       </div>
-      {file.classes.length === 0 ? <div className="file-node__empty">ここにクラスをドロップ</div> : null}
+      {file.classes.length === 0 && !isTray ? <div className="file-node__empty">ここにクラスをドロップ</div> : null}
     </div>
   );
 }
