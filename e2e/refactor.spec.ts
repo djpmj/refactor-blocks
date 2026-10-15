@@ -1211,7 +1211,7 @@ async function implementRequests(page: Page, parts: readonly string[], targets: 
 
 async function readinessOf(page: Page, kind: 'current' | 'initial'): Promise<number> {
   const text = await page.getByTestId(`change-readiness-${kind}`).innerText();
-  return Number.parseInt(text, 10);
+  return Number(text.match(/\d+/g)?.at(-1));
 }
 
 /** 税の計算を抽出して TaxCalculator へ移す(チュートリアル2)。 */
@@ -1271,7 +1271,9 @@ test('変更依頼に挑戦すると部品置き場に部品が出て、置く�
   // Assert(部品は部品置き場にあり、置くまで終えられない)
   await expect(page.getByTestId('change-request-title')).toHaveText('軽減税率の対象を増やして');
   await expect(page.getByTestId('change-request-kind')).toContainText('ルールの変更');
+  await expect(page.getByTestId('change-panel')).not.toContainText('新しいクラスは右クリックで継承元');
   await expect(page.getByTestId('class-部品置き場').getByTestId('method-addReducedTaxItems')).toBeVisible();
+  await expect(page.getByTestId('file-部品置き場').getByTestId('file-mark')).toHaveCount(0);
   await expect(page.getByTestId('change-request-finish')).toBeDisabled();
   await expect(page.getByTestId('change-part-status')).toContainText('部品はまだ部品置き場にあります');
 
@@ -1297,6 +1299,11 @@ test('変更依頼に挑戦すると部品置き場に部品が出て、置く�
   // Assert
   const outcome = page.getByTestId('change-outcome-req-reduced-tax');
   await expect(outcome.getByTestId('outcome-current')).toHaveText('95点');
+  await expect(outcome.getByTestId('outcome-initial')).toContainText('点');
+  await expect(outcome).toContainText('変更のしやすさ');
+  await expect(outcome).toContainText('組み替える前は');
+  await expect(page.getByTestId('change-readiness')).toContainText('この設計に、依頼の変更を入れる手間');
+  await expect(page.getByTestId('change-placement-score')).toContainText('あなたが部品を置いた場所が、自然な置き場所だったか');
   await expect(outcome.getByTestId('outcome-sample')).toContainText('解答例:');
   await expect(outcome.getByTestId('outcome-placement')).toContainText('点');
   await expect(page.getByTestId('change-readiness')).toBeVisible();
@@ -1406,6 +1413,7 @@ test('実装中に Ctrl+Z で部品が部品置き場に戻る。挑戦をやめ
   await reachFullScoreOnOrderStage(page);
   await startChangeRequests(page);
   await dragMethodToClass(page, 'method-addReducedTaxItems', 'class-OrderService');
+  await expect(page.getByTestId('class-部品置き場')).toHaveCount(0);
   await expect(page.getByTestId('change-part-status')).toContainText('OrderService に置きました');
 
   // Act
@@ -1413,6 +1421,7 @@ test('実装中に Ctrl+Z で部品が部品置き場に戻る。挑戦をやめ
 
   // Assert(部品が部品置き場に戻る。挑戦前の calculateTax は残る)
   await expect(page.getByTestId('change-part-status')).toContainText('部品はまだ部品置き場にあります');
+  await expect(page.getByTestId('class-部品置き場')).toBeVisible();
   await expect(page.getByTestId('class-部品置き場').getByTestId('method-addReducedTaxItems')).toBeVisible();
   await expect(page.getByTestId('method-validateStock')).toBeVisible();
 
@@ -1434,6 +1443,7 @@ test('上級2: PayPay の追加は、新しいクラスで PaymentGateway を実
   await solvePaymentStage(page);
   await startChangeRequests(page);
   await expect(page.getByTestId('change-request-kind')).toContainText('機能の追加');
+  await expect(page.getByTestId('change-panel')).toContainText('新しいクラスは右クリックで継承元・実装するインターフェースを設定できます。');
 
   // Act(1件目: 余白へ出して PaymentGateway を実装する。charge という同名メソッドが他にもあるので部品置き場の中に絞る)
   await dragToEmptyCanvas(page, page.getByTestId('class-部品置き場').getByTestId('method-charge'));

@@ -11,18 +11,19 @@ import { useGameStore } from '../store/useGameStore';
 import { describeDeductions, describePlacement, siteNames } from './describeChange';
 import { describeRumorPayoff } from './describeRumorPayoff';
 import { rumoredRequests } from '../../domain/change/rumors';
+import { usesInheritance } from './usesInheritance';
 
 const KIND_LABEL: Record<ChangeKind, string> = { modify: 'ルールの変更', extend: '機能の追加' };
 
 function CostRows({ current, initial, codebase, previous }: Readonly<{ current: ChangeAssessment; initial: ChangeAssessment; codebase: Codebase; previous?: number }>) {
   return (
     <>
-      <p className="change-outcome__scores">
-        今のコード <strong data-testid="outcome-current">{current.score.total}点</strong> / 初期状態 <span data-testid="outcome-initial">{initial.score.total}点</span>
-        {previous === undefined ? null : <span data-testid="outcome-previous"> / 前回 {previous}点</span>}
-      </p>
       <p className="change-outcome__facts">
         変更が必要: {siteNames(current, codebase)}({current.impact.classesTouched}クラス・{current.impact.filesTouched}ファイル・+{current.impact.linesAdded}行)
+      </p>
+      <p className="change-outcome__scores">
+        変更のしやすさ <strong data-testid="outcome-current">{current.score.total}点</strong>(組み替える前は <span data-testid="outcome-initial">{initial.score.total}点</span>)
+        {previous === undefined ? null : <span data-testid="outcome-previous"> / 前回 {previous}点</span>}
       </p>
     </>
   );
@@ -54,11 +55,6 @@ function OutcomeCard({ outcome, codebase, previous }: Readonly<{ outcome: Change
   return (
     <li className="change-outcome" data-testid={`change-outcome-${request.id}`}>
       <h3 className="change-outcome__title">{request.title}</h3>
-      {rumorPayoff !== undefined && (
-        <p className={`rumor-payoff${placement.score.total === 100 ? ' rumor-payoff--ready' : ' rumor-payoff--unready'}`} data-testid="rumor-payoff">
-          {rumorPayoff}
-        </p>
-      )}
       {current === null || initial === null ? (
         <p className="change-outcome__facts">機能の追加なので、置き方だけで採点します</p>
       ) : (
@@ -68,6 +64,11 @@ function OutcomeCard({ outcome, codebase, previous }: Readonly<{ outcome: Change
         置き方 {placement.score.total}点(置いた先: {placement.placement.partClassName})
       </p>
       <SampleAnswer sample={sample} />
+      {rumorPayoff === undefined ? null : (
+        <p className={`rumor-payoff${placement.score.total === 100 ? ' rumor-payoff--ready' : ' rumor-payoff--unready'}`} data-testid="rumor-payoff">
+          {rumorPayoff}
+        </p>
+      )}
       {reasons.length === 0 ? (
         <p className="change-outcome__good">減点なし。既存のコードを触らず、自然な場所に置けています</p>
       ) : (
@@ -91,13 +92,17 @@ function Results({ outcomes }: Readonly<{ outcomes: readonly ChangeOutcome[] }>)
   return (
     <>
       <h2 className="method-editor__title">変更依頼の結果</h2>
-      <p data-testid="change-readiness">
-        変更容易性スコア: <strong data-testid="change-readiness-current">{averageScore(costs.map((cost) => cost.current.score))}点</strong>
-        (初期状態は <span data-testid="change-readiness-initial">{averageScore(costs.map((cost) => cost.initial.score))}点</span>)
-      </p>
-      <p data-testid="change-placement-score">
-        実装スコア: <strong>{averageScore(outcomes.map((outcome) => outcome.placement.score))}点</strong>
-      </p>
+      <div className={`change-score-summary${costs.length === 0 ? ' change-score-summary--placement-only' : ''}`}>
+        {costs.length === 0 ? null : <p data-testid="change-readiness">
+          変更のしやすさ <strong data-testid="change-readiness-current">{averageScore(costs.map((cost) => cost.current.score))}点</strong>
+          <span data-testid="change-readiness-initial">組み替える前は {averageScore(costs.map((cost) => cost.initial.score))}点</span>
+          <span>この設計に、依頼の変更を入れる手間(直す場所・読む量・行数の上限)</span>
+        </p>}
+        <p data-testid="change-placement-score">
+          置き方 <strong>{averageScore(outcomes.map((outcome) => outcome.placement.score))}点</strong>
+          <span>あなたが部品を置いた場所が、自然な置き場所だったか</span>
+        </p>
+      </div>
       <ul className="change-outcomes">
         {outcomes.map((outcome) => (
           <OutcomeCard
@@ -188,7 +193,7 @@ export function ChangeRequestPanel() {
           <p>{request.description}</p>
           <p className="method-editor__hint">
             部品置き場の {changePart(request).name}() を、実装する場所へドラッグしてください。既存のクラスへ落とすとそのクラスに足し、余白へ落とすと新しいクラスができます。
-            新しいクラスは右クリックで継承元・実装するインターフェースを設定できます。Ctrl+Z で戻せます
+            {usesInheritance(stage) ? '新しいクラスは右クリックで継承元・実装するインターフェースを設定できます。' : ''}Ctrl+Z で戻せます
           </p>
           <PartStatus request={request} />
           <InspectedMethod />

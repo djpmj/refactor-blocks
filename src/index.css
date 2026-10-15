@@ -412,6 +412,10 @@ input.class-node__name { width: 14ch; }
 .change-outcome__title { margin: 0 0 4px; font-size: 14px; }
 .change-outcome__reasons { margin: 4px 0 0; padding-left: 18px; color: var(--muted); }
 .change-outcome__good { margin: 4px 0 0; color: var(--muted); }
+.change-score-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.change-score-summary--placement-only { grid-template-columns: minmax(0, 1fr); }
+.change-score-summary > p { min-width: 0; min-height: 76px; margin: 0; padding: 8px; border: 1px solid var(--border); border-radius: 8px; }
+.change-score-summary > p span { display: block; color: var(--muted); }
 .change-inspect { border: 1px dashed var(--border); border-radius: 8px; padding: 8px 12px; font-size: 13px; }
 .change-inspect__title { margin: 0 0 4px; font-size: 13px; font-family: ui-monospace, monospace; }
 .change-inspect__fragments { margin: 0; padding-left: 18px; }
