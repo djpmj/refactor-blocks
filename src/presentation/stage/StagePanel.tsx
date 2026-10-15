@@ -107,7 +107,7 @@ function ScoreArea({ stage, codebase, score, disabled }: Readonly<{ stage: Stage
     <>
       <ScoreBadge score={score} codebase={codebase} />
       <TestStatus stage={stage} codebase={codebase} />
-      <ScoreBreakdown score={score} disabled={disabled} />
+      <ScoreBreakdown key={`${stage.id}-${String(disabled)}`} score={score} disabled={disabled} />
     </>
   );
 }
