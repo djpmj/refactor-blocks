@@ -37,7 +37,7 @@ function ModifyBefore({ pain, codebase }: Readonly<{ pain: ChangePain; codebase:
 function ModifyAfter({ pain }: Readonly<{ pain: ChangePain }>) {
   return (
     <>
-      {pain.improved && <p>同じ変更が <strong>{pain.initial.siteIds.length} か所 → {pain.current.siteIds.length} か所</strong> で済むようになりました。</p>}
+      {pain.current.siteIds.length < pain.initial.siteIds.length && <p>同じ変更が <strong>{pain.initial.siteIds.length} か所 → {pain.current.siteIds.length} か所</strong> で済むようになりました。</p>}
       {pain.current.readLines < pain.initial.readLines && <p>読む量は <strong>{pain.initial.readLines} 行 → {pain.current.readLines} 行</strong> になりました。</p>}
     </>
   );

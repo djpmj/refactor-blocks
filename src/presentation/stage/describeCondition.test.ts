@@ -61,4 +61,18 @@ describe('describeCondition', () => {
       goal: 'アクセス制御: 0件にする', current: '今: 2件',
     });
   });
+
+  it('空のクラス・ファイルは中身を入れる選択肢も示す', () => {
+    // Arrange
+    const clearCondition: ClearCondition = { rule: 'empty', count: 0 };
+    const unmetCondition: ClearCondition = { rule: 'empty', count: 1 };
+
+    // Act
+    const cleared = describeCondition(clearCondition, stage, {});
+    const unmet = describeCondition(unmetCondition, stage, {});
+
+    // Assert
+    expect(cleared).toEqual({ goal: '空のクラス・ファイル: 0件にする(中身を入れるか、消す)', current: null });
+    expect(unmet).toEqual({ goal: '空のクラス・ファイル: 0件にする(中身を入れるか、消す)', current: '今: 1件' });
+  });
 });

@@ -16,6 +16,7 @@ function describeRule(condition: ClearCondition, stage: Pick<Stage, 'limits' | '
   }
   if (condition.rule === 'coupling') return `結合度: 依存先は${stage.dependencyLimit}クラスまで`;
   if (condition.rule === 'responsibility') return `責務の混在: 1クラス${stage.responsibilityLimit}種類まで`;
+  if (condition.rule === 'empty') return '空のクラス・ファイル: 0件にする(中身を入れるか、消す)';
   return condition.rule === 'cycle' ? '循環依存: 輪を0組にする' : `${RULE_LABEL[condition.rule]}: 0件にする`;
 }
 
