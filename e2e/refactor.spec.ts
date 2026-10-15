@@ -1224,6 +1224,30 @@ async function extractTaxToCalculator(page: Page) {
   await expect(page.getByTestId('class-TaxCalculator').getByTestId('method-calculateTax')).toBeVisible();
 }
 
+test('チュートリアル2で移動したprivateメソッドを自動でpublic化し、undoで一緒に戻す', async ({ page }) => {
+  // Arrange
+  await openOrderStage(page);
+  await page.getByTestId('method-placeOrder').click();
+  await page.getByLabel('消費税を計算する(軽減税率あり)').check();
+  await page.getByLabel('新しいメソッド名').fill('calculateTax');
+  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+
+  // Act
+  await dragMethodToClass(page, 'method-calculateTax', 'class-TaxCalculator');
+
+  // Assert
+  const taxMethod = page.getByTestId('class-TaxCalculator').getByTestId('method-calculateTax').locator('.method-chip');
+  await expect(taxMethod).toHaveClass(/method-chip--public/);
+  await expect(page.locator('.error-toast[role="status"]')).toContainText('calculateTax() は TaxCalculator の外(OrderService)から呼ばれるようになったので、public にしました');
+
+  // Act: undo
+  await page.keyboard.press('Control+z');
+
+  // Assert
+  await expect(page.getByTestId('class-OrderService').getByTestId('method-calculateTax').locator('.method-chip')).toHaveClass(/method-chip--private/);
+  await expect(page.locator('.error-toast[role="status"]')).toHaveCount(0);
+});
+
 /** チュートリアル2を100点にする: 税・保存・メール・在庫検証を抽出し、税は TaxCalculator へ移す。 */
 async function reachFullScoreOnOrderStage(page: Page) {
   await extractTaxToCalculator(page);

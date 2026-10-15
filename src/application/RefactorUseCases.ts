@@ -2,6 +2,7 @@ import { addClass, type AddClassError } from '../domain/codebase/addClass';
 import { addNewFile } from '../domain/codebase/addNewFile';
 import { findClassOfMethod, findFileOfClass, findMethod, type Codebase, type CodeClass, type Visibility } from '../domain/codebase/Codebase';
 import { changeVisibility, type ChangeVisibilityError } from '../domain/codebase/changeVisibility';
+import { publicizeCrossClassCalls } from '../domain/codebase/publicizeCrossClassCalls';
 import { deleteClass, type DeleteClassError, type DeleteResult } from '../domain/codebase/deleteClass';
 import { deleteFile, type DeleteFileError } from '../domain/codebase/deleteFile';
 import { deleteMethod, type DeleteMethodError } from '../domain/codebase/deleteMethod';
@@ -19,6 +20,7 @@ import { addInterface, removeInterface, setSuperclass, type AddInterfaceError, t
 import { err, ok, type Result } from '../domain/shared/Result';
 
 export type IdGenerator = () => string;
+export type MoveMethodOptions = { readonly visibilityEnforced?: boolean };
 
 export type ExtractMethodInput = {
   readonly sourceMethodId: string;
@@ -111,11 +113,15 @@ export function moveMethodUseCase(
   codebase: Codebase,
   methodId: string,
   targetClassId: string,
-): Result<Codebase, Exclude<MoveMethodError, 'same-class'>> {
+  options: MoveMethodOptions = {},
+): Result<{ codebase: Codebase; publicized: readonly string[] }, Exclude<MoveMethodError, 'same-class'>> {
   const result = moveMethod(codebase, methodId, targetClassId);
-  if (result.ok) return ok(result.value);
+  if (result.ok) {
+    const publicized = options.visibilityEnforced === true ? { codebase: result.value, publicized: [] } : publicizeCrossClassCalls(result.value);
+    return ok(publicized);
+  }
   const { error } = result;
-  return error === 'same-class' ? ok(codebase) : err(error);
+  return error === 'same-class' ? ok({ codebase, publicized: [] }) : err(error);
 }
 
 /** プレイヤーの「フィールドを別クラスへドロップ」操作。同じクラスへのドロップは何もしない操作として成功扱いにする。 */
@@ -198,12 +204,14 @@ export function moveClassToNewFileUseCase(
 export function moveMethodToNewClassUseCase(
   codebase: Codebase,
   methodId: string,
-  generateId: IdGenerator,
-): Result<{ codebase: Codebase; fileId: string }, MoveMethodToNewClassError> {
-  const classId = generateId();
-  const fileId = generateId();
+  options: { readonly generateId: IdGenerator; readonly visibilityEnforced?: boolean },
+): Result<{ codebase: Codebase; fileId: string; publicized: readonly string[] }, MoveMethodToNewClassError> {
+  const classId = options.generateId();
+  const fileId = options.generateId();
   const result = moveMethodToNewClass(codebase, methodId, { classId, fileId });
-  return result.ok ? ok({ codebase: result.value, fileId }) : result;
+  if (!result.ok) return result;
+  const publicized = options.visibilityEnforced === true ? { codebase: result.value, publicized: [] } : publicizeCrossClassCalls(result.value);
+  return ok({ ...publicized, fileId });
 }
 
 /** プレイヤーの「メソッドを空のファイルへドロップ」操作。新しいクラスをそのファイル内に作る。 */
@@ -211,9 +219,12 @@ export function moveMethodToNewClassInFileUseCase(
   codebase: Codebase,
   methodId: string,
   fileId: string,
-  generateId: IdGenerator,
-): Result<Codebase, MoveMethodToNewClassInFileError> {
-  return moveMethodToNewClassInFile(codebase, methodId, fileId, generateId());
+  options: { readonly generateId: IdGenerator; readonly visibilityEnforced?: boolean },
+): Result<{ codebase: Codebase; publicized: readonly string[] }, MoveMethodToNewClassInFileError> {
+  const result = moveMethodToNewClassInFile(codebase, methodId, fileId, options.generateId());
+  if (!result.ok) return result;
+  const publicized = options.visibilityEnforced === true ? { codebase: result.value, publicized: [] } : publicizeCrossClassCalls(result.value);
+  return ok(publicized);
 }
 
 /** プレイヤーの「クラス名を変更」操作。 */
