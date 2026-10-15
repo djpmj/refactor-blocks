@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-15 13:55 UTC PR #200 Publicize inaccessible methods after moves
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(1733件) / npm run lint ✅ / npm run typecheck ✅ / E2Eはこの環境で実行不可のためPR記載の結果を前提とした
+- マージ: squash & delete-branch
+
 ## 2026-10-14 15:00 UTC PR #196 chore(deps): bump the development-dependencies group across 1 directory with 8 updates
 
 - 判定: 合格(blocker無し)

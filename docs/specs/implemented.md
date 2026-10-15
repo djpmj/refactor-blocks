@@ -97,3 +97,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [cycle-count-display](cycle-count-display.md) | 循環依存を矢印の本数ではなく輪の組(クラス名と向き)で表示する |
 | [tiered-hints](tiered-hints.md) | ヒントを「どこが問題?」→「次の一手」→「動きで見る」の3段階にする |
 | [change-request-fairness](change-request-fairness.md) | 変更依頼の比較を開始時の設計にそろえ、チュートリアル・初級の解答例で変更が100点で入るようにする |
+| [auto-public-on-move](auto-public-on-move.md) | 可視性を採点しないステージで、移動後に別クラスから呼ばれる private/protected メソッドを自動で public にする |
