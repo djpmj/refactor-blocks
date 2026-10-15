@@ -190,7 +190,7 @@ describe('moveMethodUseCase', () => {
     const result = moveMethodUseCase(codebase, 'method-place', 'class-order');
 
     // Assert
-    expect(result).toEqual({ ok: true, value: codebase });
+    expect(result).toEqual({ ok: true, value: { codebase, publicized: [] } });
   });
 
   it('別クラスへのドロップでメソッドを移動する', () => {
@@ -202,7 +202,7 @@ describe('moveMethodUseCase', () => {
 
     // Assert
     if (!result.ok) throw new Error(result.error);
-    expect(result.value.files[1].classes[0].methods.map((method) => method.id)).toEqual(['method-place']);
+    expect(result.value.codebase.files[1].classes[0].methods.map((method) => method.id)).toEqual(['method-place']);
   });
 
   it('同じクラス以外のエラーはそのまま返す', () => {
@@ -214,6 +214,45 @@ describe('moveMethodUseCase', () => {
 
     // Assert
     expect(result).toEqual({ ok: false, error: 'class-not-found' });
+  });
+
+  it('visibilityEnforced が false のとき移動先・移動元に残る越境呼び出しの両方を public 化する', () => {
+    // Arrange
+    const codebase: Codebase = { files: [{ id: 'file', path: 'sample.ts', classes: [
+      { id: 'source', name: 'Source', methods: [
+        { id: 'moved', name: 'moved', visibility: 'private', fragments: [{ id: 'move-call-left', label: 'call', lines: 1, responsibility: 'misc', uses: ['left'] }] },
+        { id: 'left', name: 'left', visibility: 'private', fragments: [{ id: 'left-body', label: 'body', lines: 1, responsibility: 'misc' }] },
+      ] },
+      { id: 'target', name: 'Target', methods: [] },
+      { id: 'caller', name: 'Caller', methods: [{ id: 'caller-method', name: 'caller', visibility: 'public', fragments: [{ id: 'call-moved', label: 'call', lines: 1, responsibility: 'misc', uses: ['moved'] }] }] },
+    ] }] };
+
+    // Act
+    const result = moveMethodUseCase(codebase, 'moved', 'target', { visibilityEnforced: false });
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    expect(findMethod(result.value.codebase, 'moved')?.visibility).toBe('public');
+    expect(findMethod(result.value.codebase, 'left')?.visibility).toBe('public');
+    expect(result.value.publicized).toEqual(['left', 'moved']);
+    expect(findMethod(codebase, 'moved')?.visibility).toBe('private');
+  });
+
+  it('visibilityEnforced が true のときは越境呼び出しがあっても可視性を変えない', () => {
+    // Arrange
+    const base = sampleCodebase();
+    const codebase: Codebase = { files: base.files.map((file) => file.id === 'file-order' ? {
+      ...file,
+      classes: [{ ...file.classes[0], methods: [{ ...file.classes[0].methods[0], visibility: 'private' as const }] }],
+    } : { ...file, classes: [{ ...file.classes[0], methods: [{ id: 'caller', name: 'caller', visibility: 'public', fragments: [{ id: 'call', label: 'call', lines: 1, responsibility: 'misc', uses: ['method-place'] }] }] }] }) };
+
+    // Act
+    const result = moveMethodUseCase(codebase, 'method-place', 'class-tax', { visibilityEnforced: true });
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    expect(findMethod(result.value.codebase, 'method-place')?.visibility).toBe('private');
+    expect(result.value.publicized).toEqual([]);
   });
 });
 
@@ -655,13 +694,14 @@ describe('moveClassToNewFileUseCase / moveMethodToNewClassUseCase', () => {
     const ids = ['generated-class', 'generated-file'];
 
     // Act
-    const result = moveMethodToNewClassUseCase(codebase, 'method-place', () => ids.shift() ?? '');
+    const result = moveMethodToNewClassUseCase(codebase, 'method-place', { generateId: () => ids.shift() ?? '' });
 
     // Assert
     if (!result.ok) throw new Error(result.error);
     expect(findClassOfMethod(result.value.codebase, 'method-place')?.id).toBe('generated-class');
     expect(findFileOfClass(result.value.codebase, 'generated-class')?.id).toBe(result.value.fileId);
     expect(result.value.fileId).toBe('generated-file');
+    expect(result.value.publicized).toEqual([]);
   });
 
   it('メソッドを指定されたファイルに注入されたIDのクラスを作って移す', () => {
@@ -670,11 +710,12 @@ describe('moveClassToNewFileUseCase / moveMethodToNewClassUseCase', () => {
     const codebase = { files: [...base.files, { id: 'target-file', path: 'src/NewFile.ts', classes: [] }] };
 
     // Act
-    const result = moveMethodToNewClassInFileUseCase(codebase, 'method-place', 'target-file', () => 'generated-class');
+    const result = moveMethodToNewClassInFileUseCase(codebase, 'method-place', 'target-file', { generateId: () => 'generated-class' });
 
     // Assert
     if (!result.ok) throw new Error(result.error);
-    expect(findClassOfMethod(result.value, 'method-place')?.id).toBe('generated-class');
-    expect(findFileOfClass(result.value, 'generated-class')?.id).toBe('target-file');
+    expect(findClassOfMethod(result.value.codebase, 'method-place')?.id).toBe('generated-class');
+    expect(findFileOfClass(result.value.codebase, 'generated-class')?.id).toBe('target-file');
+    expect(result.value.publicized).toEqual([]);
   });
 });

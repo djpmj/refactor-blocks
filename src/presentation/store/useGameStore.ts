@@ -7,7 +7,7 @@ import { withChangePart } from '../../domain/change/changePart';
 import { checkManualFix, isManualFixSolved } from '../../domain/change/checkManualFix';
 import { painRequestsOf } from '../../domain/change/changePain';
 import { stageStep, type StageStep } from '../../domain/change/stageStep';
-import { findField, findMethod, type Codebase, type Visibility } from '../../domain/codebase/Codebase';
+import { allClasses, findClassOfMethod, findField, findMethod, type Codebase, type Visibility } from '../../domain/codebase/Codebase';
 import { autoNameClasses } from '../../domain/codebase/autoNameClasses';
 import { emptyHistory, recordChange, redoHistory, undoHistory, type History, type Travel } from '../../domain/codebase/history';
 import { scoreCodebase, type ScoreRule } from '../../domain/scoring/score';
@@ -268,6 +268,22 @@ function commit(state: GameState, codebase: Codebase, celebrate = true): Partial
     history: recordChange(state.history, state.codebase),
     selectedFieldId: fieldStillThere ? state.selectedFieldId : null,
   };
+}
+
+function publicizedMoveNotice(after: Codebase, publicizedIds: readonly string[]): string | null {
+  const publicized = publicizedIds.flatMap((id) => {
+    const method = findMethod(after, id);
+    const owner = method === undefined ? undefined : findClassOfMethod(after, id);
+    return method === undefined || owner === undefined ? [] : [{ method, owner }];
+  });
+  if (publicized.length === 0) return null;
+  if (publicized.length > 1) {
+    const names = publicized.map(({ method }) => `${method.name}()`).join('・');
+    return `外のクラスから呼ばれるようになったので、${names} を public にしました`;
+  }
+  const { method, owner } = publicized[0];
+  const caller = allClasses(after).find((codeClass) => codeClass.id !== owner.id && codeClass.methods.some((candidate) => candidate.fragments.some((fragment) => (fragment.uses ?? []).includes(method.id))));
+  return caller === undefined ? null : `${method.name}() は ${owner.name} の外(${caller.name})から呼ばれるようになったので、public にしました`;
 }
 
 /** 操作の結果を状態の更新にする。成功したらコードベースを差し替え、失敗したら理由を出す。 */
@@ -611,6 +627,35 @@ function renameActions(
 }
 
 /** ドラッグ&ドロップによる移動系の操作と、メソッドの可視性を変える操作。 */
+function moveMethodAction(set: (partial: Partial<GameState>) => void, get: () => GameState): (methodId: string, targetClassId: string) => void {
+  return (methodId, targetClassId) => {
+    const state = get();
+    const blocked = blockDuringOpeningFix(state);
+    if (blocked !== null) {
+      set(blocked);
+      return;
+    }
+    const enforced = state.stage.visibilityEnforced === true;
+    const result = moveMethodUseCase(state.codebase, methodId, targetClassId, { visibilityEnforced: enforced });
+    const notice = result.ok ? publicizedMoveNotice(result.value.codebase, result.value.publicized) : null;
+    set({ ...applyResult(state, result.ok ? { ok: true, value: result.value.codebase } : result, describeMoveError), ...(result.ok ? { notice } : {}) });
+  };
+}
+
+function moveMethodToNewClassInFileAction(set: (partial: Partial<GameState>) => void, get: () => GameState, newId: () => string): (methodId: string, fileId: string) => void {
+  return (methodId, fileId) => {
+    const state = get();
+    const blocked = blockDuringOpeningFix(state);
+    if (blocked !== null) {
+      set(blocked);
+      return;
+    }
+    const result = moveMethodToNewClassInFileUseCase(state.codebase, methodId, fileId, { generateId: newId, visibilityEnforced: state.stage.visibilityEnforced === true });
+    const notice = result.ok ? publicizedMoveNotice(result.value.codebase, result.value.publicized) : null;
+    set({ ...applyResult(state, result.ok ? { ok: true, value: result.value.codebase } : result, describeMoveOutError), ...(result.ok ? { notice } : {}) });
+  };
+}
+
 function moveActions(
   apply: Apply,
   set: (partial: Partial<GameState>) => void,
@@ -618,9 +663,7 @@ function moveActions(
 ): Pick<GameState, 'moveMethod' | 'moveField' | 'changeVisibility' | 'moveClass' | 'moveClassToNewFile' | 'moveMethodToNewClass' | 'moveMethodToNewClassInFile'> {
   const newId = () => crypto.randomUUID();
   return {
-    moveMethod: (methodId, targetClassId) => {
-      apply(moveMethodUseCase(get().codebase, methodId, targetClassId), describeMoveError);
-    },
+    moveMethod: moveMethodAction(set, get),
     moveField: (fieldId, targetClassId) => {
       apply(moveFieldUseCase(get().codebase, fieldId, targetClassId), describeMoveFieldError);
     },
@@ -651,17 +694,17 @@ function moveActions(
         set(blocked);
         return null;
       }
-      const result = moveMethodToNewClassUseCase(get().codebase, methodId, newId);
+      const state = get();
+      const result = moveMethodToNewClassUseCase(state.codebase, methodId, { generateId: newId, visibilityEnforced: state.stage.visibilityEnforced === true });
       if (!result.ok) {
         apply(result, describeMoveOutError);
         return null;
       }
-      set(applyResult(get(), { ok: true, value: result.value.codebase }, describeMoveOutError));
+      const notice = publicizedMoveNotice(result.value.codebase, result.value.publicized);
+      set({ ...applyResult(state, { ok: true, value: result.value.codebase }, describeMoveOutError), notice });
       return result.value.fileId;
     },
-    moveMethodToNewClassInFile: (methodId, fileId) => {
-      apply(moveMethodToNewClassInFileUseCase(get().codebase, methodId, fileId, newId), describeMoveOutError);
-    },
+    moveMethodToNewClassInFile: moveMethodToNewClassInFileAction(set, get, newId),
   };
 }
 

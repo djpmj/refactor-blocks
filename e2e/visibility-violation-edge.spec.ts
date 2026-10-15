@@ -46,6 +46,28 @@ test('中級3の越境矢印を説明し、Move Method後に警告を消す', as
   await expect(edge).toHaveCount(0);
 });
 
+test('中級3では越境先を別クラスへ移してもprivateを自動public化せず、警告を残す', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await selectStage(page, '中級3: 越境する private メソッド');
+  await page.getByTestId('method-renderTemplate').click({ button: 'right' });
+  const menu = page.getByTestId('context-menu');
+  await menu.getByRole('menuitem', { name: 'このファイルにクラスを追加' }).click();
+  await menu.getByLabel('追加するクラス名').fill('NewClass');
+  await menu.getByRole('button', { name: '追加' }).click();
+
+  // Act
+  const target = page.getByTestId('class-InvoicePdfRenderer');
+  await page.getByTestId('method-renderTemplate').click({ button: 'right' });
+  const moveMenu = page.getByTestId('context-menu').getByRole('menu', { name: '別のクラスへ移動', exact: true });
+  await moveMenu.getByRole('menuitem', { name: 'NewClass', exact: true }).click();
+
+  // Assert
+  await expect(target.getByTestId('method-renderTemplate').locator('.method-chip')).toHaveClass(/method-chip--private/);
+  await expect(page.locator('.react-flow__edge.edge--visibility')).toHaveCount(1);
+  await expect(page.locator('.error-toast[role="status"]')).toHaveCount(0);
+});
+
 test('中級1の循環矢印に説明バッジを表示する', async ({ page }) => {
   await page.goto('/');
   await selectStage(page, '中級1: 循環依存を断ち切る');

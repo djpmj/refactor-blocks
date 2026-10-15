@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { changePart, withChangePart } from '../../domain/change/changePart';
 import { withoutTray } from '../../domain/blank/tray';
-import { allClasses } from '../../domain/codebase/Codebase';
+import { allClasses, findMethod } from '../../domain/codebase/Codebase';
 import { moveMethod } from '../../domain/codebase/moveMethod';
 import { checkManualFix } from '../../domain/change/checkManualFix';
 import { painRequestsOf } from '../../domain/change/changePain';
@@ -15,6 +15,53 @@ import { blankDesignProblems } from '../../infrastructure/blankDesigns/blankDesi
 import { saveDrafts } from '../../infrastructure/progress/draftStorage';
 
 const ghost = { kind: 'method' as const, methodId: 'method-example', toClassId: 'class-example' };
+
+describe('move visibility notice', () => {
+  it('抽出メソッドを別クラスへ移すとpublic化を知らせ、undoでprivateと通知を戻す', () => {
+    // Arrange
+    const stage = stages.find((candidate) => candidate.title === 'チュートリアル2: 太った placeOrder');
+    if (stage === undefined) throw new Error('チュートリアル2のステージが必要です');
+    const store = createGameStore([stage], false, false);
+
+    // Act
+    expect(store.getState().extractMethod({ sourceMethodId: 'method-place-order', fragmentIds: ['frag-tax'], newMethodName: 'calculateTax' })).toBe(true);
+    const method = allClasses(store.getState().codebase).flatMap((codeClass) => codeClass.methods).find((candidate) => candidate.name === 'calculateTax');
+    if (method === undefined) throw new Error('抽出した calculateTax が必要です');
+    store.getState().moveMethod(method.id, 'class-tax-calculator');
+
+    // Assert
+    expect(findMethod(store.getState().codebase, method.id)?.visibility).toBe('public');
+    expect(store.getState().notice).toBe('calculateTax() は TaxCalculator の外(OrderService)から呼ばれるようになったので、public にしました');
+
+    // Act: undo treats the move and visibility change as one history entry
+    store.getState().undo();
+
+    // Assert
+    expect(findMethod(store.getState().codebase, method.id)?.visibility).toBe('private');
+    expect(store.getState().notice).toBeNull();
+  });
+
+  it('複数の越境メソッドは、名前を順序どおり並べて知らせる', () => {
+    // Arrange
+    const stage = stages.find((candidate) => candidate.title === 'チュートリアル2: 太った placeOrder');
+    if (stage === undefined) throw new Error('チュートリアル2のステージが必要です');
+    const codebase = { files: [{ id: 'file', path: 'sample.ts', classes: [
+      { id: 'caller', name: 'OrderController', methods: [{ id: 'call-tax', name: 'callTax', visibility: 'public' as const, fragments: [{ id: 'call-tax-fragment', label: 'call', lines: 1, responsibility: 'misc', uses: ['tax'] }] }] },
+      { id: 'source', name: 'OrderService', methods: [
+        { id: 'tax', name: 'calculateTax', visibility: 'private' as const, fragments: [{ id: 'tax-call', label: 'call', lines: 1, responsibility: 'misc', uses: ['save'] }] },
+        { id: 'save', name: 'saveOrder', visibility: 'protected' as const, fragments: [{ id: 'save-body', label: 'body', lines: 1, responsibility: 'misc' }] },
+      ] },
+      { id: 'target', name: 'TaxCalculator', methods: [] },
+    ] }] };
+    const store = createGameStore([{ ...stage, codebase, visibilityEnforced: false }], false, false);
+
+    // Act
+    store.getState().moveMethod('tax', 'target');
+
+    // Assert
+    expect(store.getState().notice).toBe('外のクラスから呼ばれるようになったので、calculateTax()・saveOrder() を public にしました');
+  });
+});
 
 describe('delete inline notice', () => {
   const stage = stages.find((candidate) => candidate.title === '中級12: 横流しするだけの OrderManager');
