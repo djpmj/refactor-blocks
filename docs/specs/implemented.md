@@ -98,3 +98,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [tiered-hints](tiered-hints.md) | ヒントを「どこが問題?」→「次の一手」→「動きで見る」の3段階にする |
 | [change-request-fairness](change-request-fairness.md) | 変更依頼の比較を開始時の設計にそろえ、チュートリアル・初級の解答例で変更が100点で入るようにする |
 | [auto-public-on-move](auto-public-on-move.md) | 可視性を採点しないステージで、移動後に別クラスから呼ばれる private/protected メソッドを自動で public にする |
+| [small-text-fixes](small-text-fixes.md) | 100点後カードの「か所」文・空クラス条件文・減点の内訳の開閉の小さな文言/表示不具合を直す |

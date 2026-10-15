@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-15 14:25 UTC PR #201 Fix small change result text issues
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅ / E2E 232件中230件成功(hint-highlight・score-jump の2件はmasterでも同一に失敗する既存事象)。Issue #179 の受け入れ基準を差分で確認
+- マージ: squash & delete-branch
+
 ## 2026-10-15 13:55 UTC PR #200 Publicize inaccessible methods after moves
 
 - 判定: 合格(blocker無し)
