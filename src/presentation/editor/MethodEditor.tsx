@@ -281,7 +281,10 @@ function MethodEditorBody({ method, showVisibility, stage }: Readonly<{ method: 
   const owner = findClassOfMethod(codebase, method.id);
   // codebaseが変わらない限り同じ配列参照を保つ(毎レンダー新しい配列を作るとZustandの購読が無限ループする)
   const mergeCandidates = useMemo(() => findMergeCandidates(codebase, method.id), [codebase, method.id]);
-  const marks = useMemo(() => responsibilityMarks(initialCodebase, codebase), [initialCodebase, codebase]);
+  const marks = useMemo(
+    () => responsibilityMarks(initialCodebase, codebase, stage.changeRequests.map((request) => request.responsibility)),
+    [initialCodebase, codebase, stage.changeRequests],
+  );
   const extractMethod = useGameStore((state) => state.extractMethod);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [activeTab, setActiveTab] = useState<'edit' | 'code'>('edit');

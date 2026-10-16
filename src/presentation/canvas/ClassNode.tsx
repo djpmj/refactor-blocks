@@ -6,7 +6,8 @@ import { classLines } from "../../domain/codebase/lineCount";
 import { previewExtractMethod } from "../../application/RefactorUseCases";
 import { classLayers } from "../../domain/scoring/layers";
 import { classResponsibilities } from "../../domain/scoring/responsibilities";
-import { responsibilityMarkLetter, responsibilityMarks } from "../../domain/stage/responsibilityMarks";
+import { responsibilityMarks } from "../../domain/stage/responsibilityMarks";
+import { responsibilityMarkLetter } from "../editor/responsibilityMarkLetter";
 import { violationTargets } from "../../domain/scoring/violationTargets";
 import { useGameStore } from "../store/useGameStore";
 import { classDragId, classDropId } from "./dndIds";
@@ -127,8 +128,10 @@ function ClassLineBadge({ codeClass, limit }: Readonly<{ codeClass: CodeClass; l
 function ClassResponsibilityBadge({ codeClass, limit }: Readonly<{ codeClass: CodeClass; limit: number }>) {
   const current = useGameStore((state) => state.codebase);
   const initial = useGameStore((state) => state.stage.codebase);
+  const stage = useGameStore((state) => state.stage);
+  const reservedResponsibilities = stage.changeRequests.map((request) => request.responsibility);
   const responsibilities = classResponsibilities(codeClass);
-  const marks = responsibilityMarks(initial, current);
+  const marks = responsibilityMarks(initial, current, reservedResponsibilities);
   if (responsibilities.length === 0) return null;
   const letters = responsibilities.map((responsibility) => responsibilityMarkLetter(marks.get(responsibility) ?? 0));
   const over = responsibilities.length > limit;

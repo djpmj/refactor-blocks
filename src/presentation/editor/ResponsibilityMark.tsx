@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { responsibilityMarkLetter } from '../../domain/stage/responsibilityMarks';
+import { responsibilityMarkLetter } from './responsibilityMarkLetter';
 
 /** 責務の種類名を隠し、色と英字で同じ種類を識別する印。 */
 export function ResponsibilityMark({ number }: Readonly<{ number: number }>) {

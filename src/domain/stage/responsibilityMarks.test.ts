@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Codebase } from '../codebase/Codebase';
-import { responsibilityMarkLetter, responsibilityMarks } from './responsibilityMarks';
+import { responsibilityMarks } from './responsibilityMarks';
 
 function codebase(responsibilities: readonly string[]): Codebase {
   return {
@@ -12,31 +12,38 @@ function codebase(responsibilities: readonly string[]): Codebase {
 }
 
 describe('responsibilityMarks', () => {
-  it('色の周期を越えても異なる英字の印を付けられる', () => {
-    // Arrange
-    const numbers = [0, 8, 25, 26, 27];
-
-    // Act
-    const letters = numbers.map(responsibilityMarkLetter);
-
-    // Assert
-    expect(letters).toEqual(['A', 'I', 'Z', 'AA', 'AB']);
-  });
-
-  it('初期コードの最初の出現順に連番を付け、currentだけの責務は辞書順で列挙する', () => {
+  it('初期コードの最初の出現順に連番を付け、予約された変更依頼の責務は辞書順で続ける', () => {
     // Arrange
     const initial = codebase(['x', 'y', 'x', 'z', 'call']);
     const current = codebase(['p', 'm', 'call']);
 
     // Act
-    const marks = responsibilityMarks(initial, current);
+    const marks = responsibilityMarks(initial, current, ['p', 'm']);
 
     // Assert
     expect([...marks.keys()]).toEqual(['x', 'y', 'z', 'm', 'p']);
     expect(marks.get('x')).toBe(0);
     expect(marks.get('y')).toBe(1);
     expect(marks.get('z')).toBe(2);
-    expect(marks.get('m')).not.toBe(marks.get('p'));
+    expect(marks.get('m')).toBe(3);
+    expect(marks.get('p')).toBe(4);
+  });
+
+  it('後から表示される変更依頼の責務が既存の印をずらさない', () => {
+    // Arrange
+    const initial = codebase(['x', 'y']);
+    const reserved = ['p', 'm'];
+    const beforeSecondRequest = codebase(['x', 'p']);
+    const afterSecondRequest = codebase(['x', 'p', 'm']);
+
+    // Act
+    const beforeMarks = responsibilityMarks(initial, beforeSecondRequest, reserved);
+    const afterMarks = responsibilityMarks(initial, afterSecondRequest, reserved);
+
+    // Assert
+    expect(beforeMarks.get('p')).toBe(3);
+    expect(afterMarks.get('p')).toBe(3);
+    expect(afterMarks.get('m')).toBe(2);
   });
 
 
