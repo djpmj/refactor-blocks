@@ -100,3 +100,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [auto-public-on-move](auto-public-on-move.md) | 可視性を採点しないステージで、移動後に別クラスから呼ばれる private/protected メソッドを自動で public にする |
 | [small-text-fixes](small-text-fixes.md) | 100点後カードの「か所」文・空クラス条件文・減点の内訳の開閉の小さな文言/表示不具合を直す |
 | [change-results-clarity](change-results-clarity.md) | 変更依頼の点数を「変更のしやすさ」「置き方」にそろえ、継承の案内の出し分けと空の部品置き場の非表示を行う |
+| [responsibility-colors](responsibility-colors.md) | 処理に責務の種類の色と英字の印を付け、クラスに責務の種類数を出す |

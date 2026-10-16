@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-16 19:30 UTC PR #202 feat: show responsibility colors and counts
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(1721件) / npm run lint ✅ / npm run typecheck ✅ / E2Eはレビュー環境にChromiumが無く未実行のためPR記載の226件成功を前提とした。Issue #173 の受け入れ基準(印の色と英字・呼び出し行に印なし・クラスの責務種類数・番号の安定)を差分で確認
+- マージ: squash & delete-branch
+
 ## 2026-10-15 14:45 UTC PR #199 Clarify change request result scores
 
 - 判定: 合格(blocker無し)
@@ -210,28 +216,4 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm run check(test 1610件/lint/typecheck) ✅。E2Eはレビュー環境にChromiumが無く未実行(PR本文は185件成功と報告、E2E期待値の更新は差分で確認)。Issue #133・仕様書fragment-label-commentsの受け入れ基準を差分で確認(fragmentCodeで表示と行数計算の判定を共通化)
-- マージ: squash & delete-branch
-
-## 2026-10-11 01:40 UTC PR #140 Enable story mode by default
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(test 1610件/lint/typecheck) ✅。E2Eはレビュー環境にChromiumが無く未実行(PR本文は185件成功と報告)。Issue #132の受け入れ基準を差分で確認(ボタンのCSSセレクタが実DOMに一致)
-- マージ: squash & delete-branch
-
-## 2026-10-11 01:25 UTC PR #139 解答の再生ダイアログのウィンドウコントロールをそろえる
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(test 1607件/lint/typecheck) ✅。E2Eはレビュー環境で起動できず未実行(PR本文は185件成功と報告)。Issue #131の受け入れ基準(window-controls/SVGアイコン/aria-label・title/CSS)を差分で確認
-- マージ: squash & delete-branch
-
-## 2026-10-10 15:05 UTC PR #137 ボタンの見た目を共通の既定スタイルにそろえる
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(test 1607件/lint/typecheck) ✅。E2Eはレビュー環境で起動できず未実行(PR本文は185件成功と報告)。Issue #130の受け入れ基準(重複定義の削除・`!important`除去・ChangePainCardの主要ボタン化)を差分で確認
-- マージ: squash & delete-branch
-
-## 2026-10-10 10:20 UTC PR #129 減点内訳をホバーして原因をプレビュー
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(test 1607件/lint/typecheck) ✅。E2Eはレビュー環境にChromiumが無く未実行(PR本文は184件成功と報告)。Issue #114の受け入れ基準を差分で確認
 - マージ: squash & delete-branch
