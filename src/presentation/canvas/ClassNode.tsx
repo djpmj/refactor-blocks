@@ -5,6 +5,9 @@ import { classDependencies, cyclicClassIds } from "../../domain/codebase/depende
 import { classLines } from "../../domain/codebase/lineCount";
 import { previewExtractMethod } from "../../application/RefactorUseCases";
 import { classLayers } from "../../domain/scoring/layers";
+import { classResponsibilities } from "../../domain/scoring/responsibilities";
+import { responsibilityMarks } from "../../domain/stage/responsibilityMarks";
+import { responsibilityMarkLetter } from "../editor/responsibilityMarkLetter";
 import { violationTargets } from "../../domain/scoring/violationTargets";
 import { useGameStore } from "../store/useGameStore";
 import { classDragId, classDropId } from "./dndIds";
@@ -122,6 +125,27 @@ function ClassLineBadge({ codeClass, limit }: Readonly<{ codeClass: CodeClass; l
   return <span className={lines > limit ? 'line-badge line-badge--over' : 'line-badge'}>{lines}行</span>;
 }
 
+function ClassResponsibilityBadge({ codeClass, limit }: Readonly<{ codeClass: CodeClass; limit: number }>) {
+  const current = useGameStore((state) => state.codebase);
+  const initial = useGameStore((state) => state.stage.codebase);
+  const stage = useGameStore((state) => state.stage);
+  const reservedResponsibilities = stage.changeRequests.map((request) => request.responsibility);
+  const responsibilities = classResponsibilities(codeClass);
+  const marks = responsibilityMarks(initial, current, reservedResponsibilities);
+  if (responsibilities.length === 0) return null;
+  const letters = responsibilities.map((responsibility) => responsibilityMarkLetter(marks.get(responsibility) ?? 0));
+  const over = responsibilities.length > limit;
+  return (
+    <span
+      className={over ? 'responsibility-count responsibility-count--over' : 'responsibility-count'}
+      data-testid={`class-responsibilities-${codeClass.name}`}
+      title={`責務 ${letters.join('・')}`}
+    >
+      責務 {responsibilities.length}種類{over ? `(上限 ${limit})` : ''}
+    </span>
+  );
+}
+
 export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
   const resolved = useResolvedCelebration('classIds', data.classId);
   const codeClass = useGameStore((state) =>
@@ -131,6 +155,7 @@ export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
     cyclicClassIds(classDependencies(state.codebase)).has(data.classId),
   );
   const limit = useGameStore((state) => state.stage.limits.class);
+  const responsibilityLimit = useGameStore((state) => state.stage.responsibilityLimit);
   const layerName = useGameStore((state) => {
     const { layers } = state.stage;
     const index = layers === undefined ? undefined : classLayers(state.codebase, layers).get(data.classId);
@@ -172,6 +197,7 @@ export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
         <ClassNameLabel classId={data.classId} name={codeClass.name} />
         {layerName === undefined ? null : <LayerTag name={layerName} className={codeClass.name} />}
         {isCyclic ? <CyclicMark /> : null}
+        {showDetails ? <ClassResponsibilityBadge codeClass={codeClass} limit={responsibilityLimit} /> : null}
         {showDetails ? <ClassLineBadge codeClass={codeClass} limit={limit} /> : null}
       </div>
       {showDetails ? <ClassBody codeClass={codeClass} /> : null}
