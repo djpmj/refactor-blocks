@@ -15,7 +15,7 @@ model: sonnet
    - `npm test`(AAAパターンのテストが全て通るか。`domain`/`application`層の新しいロジックにテストがあるか)
    - `npm run lint`(命名規則・ネスト・複雑度・関数行数のルールに違反していないか)
    - `npm run typecheck`(型エラーがないか)
-   - UIの操作に関わる変更では `npm run test:e2e`(PlaywrightのE2Eテスト)
+   - UIの操作に関わる変更では `npm run test:e2e`(PlaywrightのE2Eテスト。並行実行のため、worktreeごとに別の `E2E_PORT` を指定する。例: `E2E_PORT=5191 npm run test:e2e`)
 4. 仕様書の「受け入れ基準」を一つずつ照らし合わせ、満たしているかを判定する。
 5. コードを読み、正しさ・簡潔さ・DDDのレイヤー境界(`domain`/`application`が外部ライブラリに依存していないか等)の観点で問題があれば指摘する。
 6. `CLAUDE.md` の「実装方針: ponytail」の観点で過剰設計がないかを見る(`.claude/skills/ponytail-review/SKILL.md` のタグ `delete`/`reuse`/`stdlib`/`native`/`yagni`/`shrink` を使う)。過剰設計の指摘は原則 suggestion とし、DDDの層構成・TDD・E2Eテストなどリポジトリで明示的に決めているものは指摘対象にしない。
