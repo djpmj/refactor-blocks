@@ -6,7 +6,7 @@ import { clearConditions, worstMeasures } from './clearConditions';
 
 function score(counts: Partial<Record<Score['deductions'][number]['rule'], number>>): Score {
   const rules: Score['deductions'][number]['rule'][] = ['line-limit', 'coupling', 'cycle', 'responsibility', 'visibility', 'unused'];
-  return { total: 100, deductions: rules.map((rule) => ({ rule, count: counts[rule] ?? 0, points: 0 })) };
+  return { total: 100, deducted: 0, deductions: rules.map((rule) => ({ rule, count: counts[rule] ?? 0, points: 0 })) };
 }
 
 describe('clearConditions', () => {

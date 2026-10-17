@@ -33,5 +33,6 @@ export function describeScore(score: Score, codebase?: Codebase): string {
         : '';
       return `${RULE_LABEL[deduction.rule]}${cycleCount} -${deduction.points}`;
     });
-  return details.length === 0 ? `✅ ${score.total}点` : `${score.total}点(${details.join(' / ')})`;
+  const deductionSummary = score.total === 0 ? [`減点の合計 -${score.deducted}`, ...details].join(' / ') : details.join(' / ');
+  return details.length === 0 ? `✅ ${score.total}点` : `${score.total}点(${deductionSummary})`;
 }

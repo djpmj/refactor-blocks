@@ -44,6 +44,8 @@ export type ScoreDeduction = {
 
 export type Score = {
   readonly total: number;
+  /** 減点の合計。total は 0 点を下限にする。 */
+  readonly deducted: number;
   readonly deductions: readonly ScoreDeduction[];
 };
 
@@ -111,5 +113,5 @@ export function scoreCodebase(
     ] as const
   ).map((rule): ScoreDeduction => ({ rule, count: counts[rule], points: counts[rule] * POINTS_PER_VIOLATION }));
   const deducted = deductions.reduce((sum, deduction) => sum + deduction.points, 0);
-  return { total: Math.max(0, FULL_SCORE - deducted), deductions };
+  return { total: Math.max(0, FULL_SCORE - deducted), deducted, deductions };
 }
