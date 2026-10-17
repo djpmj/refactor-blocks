@@ -132,6 +132,9 @@ export function ClearConditionList({ stage, codebase, initial, current }: Readon
               <span className="clear-condition__description">
                 <span className="clear-condition__goal">{description.goal}</span>
                 {description.current !== null && <span className="clear-condition__current">{description.current}</span>}
+                {stage.conditionNotes?.[condition.rule] === undefined ? null : (
+                  <small className="clear-condition__note">理由: {stage.conditionNotes[condition.rule]}</small>
+                )}
               </span>
             </li>
           );

@@ -169,6 +169,20 @@ describe('初期違反の種類', () => {
   });
 });
 
+describe('依存上限の理由', () => {
+  it('依存先の上限が0のリファクタリングステージには結合度の理由がある', () => {
+    // Arrange
+    const noDependencyStages = stages.filter((stage) => stage.dependencyLimit === 0);
+
+    // Act
+    const missingNotes = noDependencyStages.filter((stage) => stage.conditionNotes?.coupling === undefined);
+
+    // Assert
+    expect(noDependencyStages.length).toBeGreaterThan(0);
+    expect(missingNotes).toEqual([]);
+  });
+});
+
 describe('責務の混ざったメソッド', () => {
   it('中級1の模範解答は混在抽出をせず、最後に100点になる', () => {
     // Arrange

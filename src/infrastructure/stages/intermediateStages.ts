@@ -353,6 +353,9 @@ const misplacedPrivateStage: Stage = {
     'NotificationService だけで通知を組み立てられるようにしよう(依存先は0クラス)',
   limits: { method: 17, class: 100, file: 300 },
   dependencyLimit: 0,
+  conditionNotes: {
+    coupling: 'private を public にして呼べるようにするのではなく、処理を使う側のクラスへ移して、ほかのクラスを呼ばずに済む形を目指すため',
+  },
   responsibilityLimit: 4,
   visibilityEnforced: true,
   changeRequests: [

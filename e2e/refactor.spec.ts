@@ -1702,6 +1702,10 @@ test('中級3: renderTemplate を public にするとアクセス制御の減点
   // Arrange
   await page.goto('/');
   await selectStage(page, '中級3: 越境する private メソッド');
+  await page.getByRole('button', { name: 'サイドバーを開く' }).click();
+  const couplingCondition = page.getByText('結合度: 依存先は0クラスまで', { exact: false });
+  await expect(couplingCondition).toBeVisible();
+  await expect(couplingCondition.locator('..')).toContainText('理由: private を public にして呼べるようにするのではなく、処理を使う側のクラスへ移して、ほかのクラスを呼ばずに済む形を目指すため');
   const score = page.getByTestId('score');
   await expect(score).toContainText('70点');
   await expect(score).toContainText('アクセス制御 -10');
@@ -1711,6 +1715,12 @@ test('中級3: renderTemplate を public にするとアクセス制御の減点
   await page.getByTestId('method-renderTemplate').click();
   const select = page.getByLabel('メソッド renderTemplate の可視性');
   await expect(select).toBeVisible();
+  const visibilityHint = page.locator('.method-editor__visibility-hint');
+  await expect(visibilityHint).toContainText('public: どのクラスからも呼べる');
+  await expect(visibilityHint).toContainText('protected: このクラスと子クラスから呼べる');
+  await expect(visibilityHint).toContainText('private: このクラスの中だけで呼べる');
+  await expect(visibilityHint).toContainText('protected が選べないのは、そこまで広げて呼んでいるクラスが無いからです(必要のない公開を避けるため)');
+  await expect(visibilityHint).not.toContainText('親クラスの抽象メソッド');
   // <option> は toBeDisabled() の対象外(Playwright は disabled を持つ要素を button/input/select などに限る)なので、プロパティで確かめる
   await expect(select.locator('option[value="protected"]')).toHaveJSProperty('disabled', true);
 
@@ -1730,6 +1740,12 @@ test('中級3: renderTemplate を public にするとアクセス制御の減点
 
   // Assert
   await expect(score).toContainText('アクセス制御 -10');
+
+  // Act: 抽象メソッドを実装していない一般メソッドでも抽象の説明は出さない
+  await page.getByRole('button', { name: /notifyShipment\(\)/ }).click();
+
+  // Assert
+  await expect(page.locator('.method-editor__visibility-hint')).not.toContainText('親クラスの抽象メソッド');
 });
 
 test('上級8: upload を private にした後、ステージ開始時の public に戻せる', async ({ page }) => {

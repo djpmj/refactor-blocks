@@ -1,6 +1,7 @@
 import type { ChangeRequest } from '../change/ChangeRequest';
 import type { Codebase } from '../codebase/Codebase';
 import type { LineLimits } from '../scoring/lineLimits';
+import type { ScoreRule } from '../scoring/score';
 
 /** ステージの難易度。ステージ選択ではこの順に並べる。 */
 export type StageLevel = 'tutorial' | 'beginner' | 'intermediate' | 'advanced';
@@ -44,6 +45,8 @@ export type Stage = {
   readonly limits: LineLimits;
   /** 1クラスが依存してよいクラス数の上限。 */
   readonly dependencyLimit: number;
+  /** クリア条件に添える、そのステージで上限を特別にしている理由。ルールごとに1文。 */
+  readonly conditionNotes?: Readonly<Partial<Record<ScoreRule, string>>>;
   /** 1クラスに混ぜてよい責務(Fragment の responsibility)の種類数の上限。 */
   readonly responsibilityLimit: number;
   /** 1つのメソッドに一緒に入っていても減点しない責務の組。 */
