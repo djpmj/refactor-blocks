@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-17 UTC PR #205 feat: group context menu actions
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint/typecheck/vitest 1751件) ✅ / E2EはCI環境にPlaywrightブラウザが無く再実行できず、PR本文の成功報告(237件)に依拠
+- マージ: squash & delete-branch
+
 ## 2026-10-17 01:00 UTC PR #204 feat: show progress below the score floor
 
 - 判定: 合格(blocker無し)
