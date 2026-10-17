@@ -72,7 +72,8 @@ export function fieldAccessors(codebase: Codebase, fieldId: string): readonly Fi
 
 1. 中級6で `Subscription.status` をクリックすると、`BillingService.cancelSubscription() — 読み書き` に `外から` のラベルが付き、強調されている
 2. 一覧の下に、`BillingService.cancelSubscription() が、Subscription の外からこのデータを書き換えています。…Subscription へ移すと…` の直し方が出る
-3. `cancelSubscription()` の書き換えの処理を `Subscription` へ移すと、`外から` のラベルと直し方が消える
+3. `cancelSubscription()` の書き換えの処理を `Subscription` へ移すと、`cancelSubscription()` の行から `外から` のラベルと書き換えの強調が消え、書き換えの直し方も消える。
+   外から読むだけのメソッドが残る場合(中級6では `BillingService.renewSubscription()`)は、その行の `外から`(読むだけの色)と、読む処理の直し方(`… が Subscription のデータを読んでいます。…`)に変わる(「見た目・動きの仕様」のとおり)
 4. 持ち主の中だけで使われるフィールドには、`外から` も直し方も出ない
 5. `npm run check` と `npm run test:e2e` が通る
 

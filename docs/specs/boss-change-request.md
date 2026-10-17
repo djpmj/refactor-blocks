@@ -6,12 +6,41 @@
 ところが今の変更依頼は、どれも「1つの責務を少し変える」同じくらいの重さで、ステージの山場になる依頼が無い。
 結果も「置き方○点」の数字だけで、「組み替えていなかったら大変だった」ことが見えない。
 
-そこで、各ステージの変更依頼の最後に**鬼の変更(ボス)**を1つ置く。
-ボスは、冒頭の手直し(#160)で直した責務に**新しい種類を足す**依頼(extend)にする
-(例: 税率の変更を手で直したステージで、最後に「国ごとに税の計算を切り替えたい」が来る)。
+そこで、**組み替えの効果が点数に表れるステージ**の変更依頼の最後に、**鬼の変更(ボス)**を1つ置く。
+ボスは、冒頭の手直し(#160)で直した責務を**大きく作り直す**重い依頼にする
+(例: 税率の変更を手で直したステージで、最後に「税の計算を、品目ごとの税率と端数処理まで含めて作り直して」が来る)。
 
-- その責務を組み替えで切り出していれば、隣に新しいクラスを足すだけで済む
-- 切り出していなければ、大きなクラスを書き換えることになり、行数の上限も超える
+- その責務を組み替えで切り出していれば、切り出したクラス1つを直すだけで済む(100点)
+- 切り出していなければ、ほかの責務と同居する大きなクラスを書き換えることになり、行数の上限も超える
+
+### 調べて分かったこと(2026-10-17 追記)
+
+当初は「全ステージに、新しい種類を足す(extend)ボスを置く」としていたが、今の置き方の採点では成り立たないと分かった(全ステージで計測)。
+
+- 機能の追加(extend)の点は「置き先のクラスにある別の責務 −5」と「呼ばれている抽象を実装すれば減点なし」だけで決まる。
+  模範解答で拡張の入口(抽象)ができないステージでは、組み替える前でも「別の責務が少ない小さなクラス」に置けば 85〜90点になり、組み替えの差が出ない
+- extend のボスは、模範解答の設計でも 90点止まりのステージがほとんどで、`change-request-fairness`(#176)の「解答例の設計では100点」を満たせない
+- 冒頭と同じ責務の重い変更(modify)なら、次の11ステージで「解答例の設計で100点、かつ組み替える前の最善より高い」が成り立つ
+
+| ステージ | 冒頭の責務 | 組み替える前の最善 → 解答例 |
+| --- | --- | --- |
+| チュートリアル1 tutorial-extract-method | aggregation | 90 → 100 |
+| チュートリアル2 tutorial-order-service | tax | 90 → 100 |
+| 初級1 beginner-user-controller | notification | 90 → 100 |
+| 初級2 beginner-invoice-service | rendering | 85 → 100 |
+| 中級4 intermediate-volatile-tax | tax | 90 → 100 |
+| 中級5 intermediate-volatile-format | formatting | 90 → 100 |
+| 中級8 intermediate-extract-class | address | 85 → 100 |
+| 中級9 intermediate-copy-paste-tax | tax | 95 → 100 |
+| 中級11 intermediate-layered-order-api | persistence | 90 → 100 |
+| 上級3 advanced-discount-strategy | discount-premium | 90 → 100 |
+| 上級4 advanced-report-factory | report-building | 90 → 100 |
+
+(`linesPerSite` は冒頭の依頼の2倍(20以上)、冒頭の依頼と同じ責務の modify で計測)
+
+そのため、ボスは**差が出るステージにだけ**置き、種類は modify を基本にする(差が出て #176 も満たせるなら extend でもよい)。
+差が出ないステージ(採点の仕組み上、組み替えの効果が置き方の点に表れないステージ)には置かない。
+置き方の採点そのものを見直して全ステージに広げるのは、別の仕様で扱う。
 
 結果画面では、**同じボスを組み替える前のコードに入れていたら**どうなったか(最善の置き方でも何点で、既存の何クラスを書き換え、どのクラスが行数の上限を超えるか)を自動で計算する。
 それを今の結果と並べて、「この設計のおかげで一撃で済んだ」を際立たせる。
@@ -31,7 +60,7 @@
 | 新規 | `src/presentation/change/describeBoss.test.ts` | presentation | 上のテスト |
 | 変更 | `src/presentation/change/ChangeRequestPanel.tsx` | presentation | ボスの依頼票の見た目と、結果カードの比較 |
 | 変更 | `src/index.css` | presentation | ボスの依頼票・比較のスタイル |
-| 変更 | `src/infrastructure/stages/tutorialStages.ts` / `beginnerStages.ts` / `intermediateStages.ts` / `advancedStages.ts` | infrastructure | modify の依頼があるステージすべてに、ボスの依頼を最後に1つ足す |
+| 変更 | `src/infrastructure/stages/tutorialStages.ts` / `beginnerStages.ts` / `intermediateStages.ts` / `advancedStages.ts` | infrastructure | 上の表のステージに、ボスの依頼を最後に1つ足す |
 | 変更 | `src/infrastructure/stages/stageCatalog.test.ts` | infrastructure | ボスの置き方と、ボスが設計の差を生むことを守るテスト |
 | 新規 | `e2e/boss-change-request.spec.ts` | E2E | ボスの依頼票と結果の比較を確かめる |
 
@@ -43,12 +72,12 @@
 // src/domain/change/ChangeRequest.ts
 export type ChangeRequest = {
   // 既存のフィールドに加えて
-  /** true なら、そのステージの鬼の変更(ボス)。kind: 'extend' で、changeRequests の最後に置く。 */
+  /** true なら、そのステージの鬼の変更(ボス)。changeRequests の最後に置く。 */
   readonly boss?: true;
 };
 ```
 
-- `painRequestsOf(stage).extend` は、`boss` でない最初の extend にする(ボスを100点前のカード「新しい種類を足すなら?」で見せない)。
+- `painRequestsOf(stage)` の `modify`・`extend` は、どちらも `boss` でない最初の依頼にする(ボスを100点前のカードや冒頭の手直しに使わない)。
   これにより `change-rumors`(#165)の `rumoredRequests` には、ボスが自動で入る(#165 が実装済みなら、ボスにも `rumor` を書く)
 
 ```ts
@@ -84,13 +113,13 @@ export type ChangeOutcome = {
 
 ## ボスの依頼の作り方(ステージ定義を書く人向け)
 
-- modify の依頼があるリファクタリングのステージすべてに、ボスを1つ足す。`changeRequests` の**最後**に置く
-- `kind: 'extend'`、`boss: true`。`responsibility` は新しい種類の責務(例: `'tax-overseas'`)。`partName` も必ず書く
-- 冒頭の手直しで直した責務(`painRequestsOf(stage).modify.responsibility`)に**新しい種類を足す**依頼にする。
-  タイトルは「〜ごとに切り替えたい」「〜も扱えるようにして」のように、重さが伝わるものにする
+- 「調べて分かったこと」の表のステージに、ボスを1つ足す。`changeRequests` の**最後**に置く。ほかのステージには置かない
+- `boss: true`。`kind` は省略(modify)を基本にし、`responsibility` は冒頭の手直しで直した責務(`painRequestsOf(stage).modify.responsibility`)にする。`partName` と `rumor`(#165)も必ず書く
+- 冒頭の手直しの責務を**大きく作り直す**依頼にする。タイトルは「〜まで含めて作り直して」「〜を全面的に変えて」のように、重さが伝わるものにする
 - `linesPerSite` は、組み替えていない大きなクラスに入れるとクラスの行数の上限を超える程度に大きくする(目安: 他の依頼の1.5〜2倍)
+- 下のカタログのテスト(解答例で100点・組み替える前より高い)を満たさないボスは、責務・種類・`linesPerSite` を見直す。どうしても満たせないステージには置かない
 - 例(チュートリアル2「太った placeOrder」。冒頭の手直しは税の計算の変更):
-  `{ id: 'req-boss-overseas-tax', title: '海外向けの注文は、国ごとの税で計算して', description: '来月から海外にも販売する。注文の配送先の国によって、税の計算方法を切り替えたい。', responsibility: 'tax-overseas', linesPerSite: 20, kind: 'extend', boss: true, partName: 'calculateOverseasTax' }`
+  `{ id: 'req-boss-tax-overhaul', title: '税の計算を、品目ごとの税率と端数処理まで含めて作り直して', description: '来月から軽減税率の品目が増え、端数処理も品目ごとに変わる。税の計算をまるごと作り直したい。', responsibility: 'tax', linesPerSite: 20, boss: true, partName: 'calculateTaxByItem' }`
 
 ## 見た目・動きの仕様
 
@@ -128,6 +157,7 @@ export type ChangeOutcome = {
 
 - extend がボスだけ → `extend` は `undefined`
 - ボスでない extend とボスがある → `extend` はボスでない方
+- modify の依頼のあとに modify のボスがある → `modify` はボスでない方
 - 既存のテストはそのまま通る
 
 ### `bossCounterfactual`(`domain/change/bossCounterfactual.ts`)
@@ -150,23 +180,24 @@ export type ChangeOutcome = {
 
 ### ステージカタログ(`stageCatalog.test.ts`)
 
-- modify の依頼があるリファクタリングのステージすべてに、ボスがちょうど1つあり、`changeRequests` の最後にある
-- ボスは `kind: 'extend'` で `partName` がある
-- **ボスが設計の差を生む**: 解答例があるステージで、`sampleImplementation(sampleAnswerCodebase(stage), boss).score` > `sampleImplementation(stage.codebase, boss).score`。
-  これが成り立たないボスは、責務や `linesPerSite` を見直す
+- ボスのあるステージでは、ボスはちょうど1つで、`changeRequests` の最後にあり、`partName` がある
+- 「調べて分かったこと」の表の11ステージには、ボスがある(ボスのあるステージの一覧をテストに書き、減ったら失敗する)
+- **ボスが設計の差を生む**: ボスのあるすべてのステージで、`sampleImplementation(sampleAnswerCodebase(stage), boss).score` > `sampleImplementation(stage.codebase, boss).score`
+- ボスは #176 の「解答例の設計で100点」のテストの既知の例外に入れない(ボスは解答例の設計で100点になる)
 
 ## 受け入れ基準
 
-1. どのリファクタリングのステージでも、変更依頼に挑戦すると最後の依頼がボスで、依頼票に `⚠ 鬼の変更` が出る
+1. 「調べて分かったこと」の表の11ステージでは、変更依頼に挑戦すると最後の依頼がボスで、依頼票に `⚠ 鬼の変更` が出る。ほかのステージにはボスが出ない
 2. 100点前のカード「新しい種類を足すなら?」にボスは出ない
 3. 解答例どおりに組み替えてからボスを実装すると、結果カードに比較の欄が出る。「組み替える前のコードなら」の点数が「あなたの設計では」より低く、「冒頭の「…」の処理を切り出しておいたおかげで」の文が出る
 4. 組み替える前のコードでボスを入れると行数の上限を超えるステージでは、比較の欄にそのクラス名が出る
-5. カタログのテストで、ボスの置き場所・種類・設計の差を生むことが全ステージで確かめられる
+5. カタログのテストで、ボスの置き場所と、ボスが設計の差を生む(解答例で100点、かつ組み替える前より高い)ことが、ボスのある全ステージで確かめられる
 6. 既存の変更依頼の E2E は、依頼が1件増えても通るように直す(依頼の数や「依頼 N / M」を数えている箇所)
 7. `npm run check` と `npm run test:e2e` が通る。`npm run stage-report` の出力に差分が出る場合は再生成してコミットする
 
 ## スコープ外
 
+- 置き方の採点(`scorePlacement`)の見直しと、ボスを全ステージへ広げること。採点の仕組み上、差が出ないステージ(循環をほどく・横流しをなくす・継承を畳むなど)は、採点を見直す別の仕様で扱う
 - 複数の責務にまたがる変更(1つの依頼で2つの責務を変える)。上級ステージ向けに別の仕様で扱う
 - ボスの依頼票のアニメーション・効果音
 - ボスだけを単独で挑戦する入口
