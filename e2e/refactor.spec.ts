@@ -1984,7 +1984,7 @@ test('中級8: フィールドを選ぶと説明と使用メソッドが表示�
   await expect(panel.getByRole('heading', { name: /Employee\.baseSalary/ })).toBeVisible();
   await expect(panel).toContainText('型: decimal');
   await expect(panel).toContainText('基本給(月額)');
-  await expect(panel).toContainText('calculateMonthlyPay — 読む');
+  await expect(panel).toContainText('Employee.calculateMonthlyPay() — 読む');
   await expect(field).toHaveAttribute('aria-pressed', 'true');
 
   // Act: フィールドからメソッドへ切り替え
