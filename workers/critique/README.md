@@ -1,5 +1,7 @@
 # critique worker
 
+リクエスト検証を変更した場合は、ゲーム本体とは別に動く講評 Worker も再デプロイする。ゲームが送る形と Worker の検証の契約は、root の `src/infrastructure/critique/critiqueContract.test.ts` で全ステージの初期コード・解答例を使って確認する。
+
 AI講評のプロキシ。ブラウザから講評データ(`src/domain/critique/critiqueRequest.ts` の `CritiqueRequest`)を受け取り、
 Claude APIを呼んで講評文だけを返す。`ANTHROPIC_API_KEY` はここ(Workersのシークレット)に置き、
 ブラウザ側には一切渡さない。

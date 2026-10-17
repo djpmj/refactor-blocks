@@ -48,3 +48,19 @@ test('講評の取得に失敗したら、エラーメッセージを表示す�
   await expect(error).toHaveText('AI講評を取得できませんでした。しばらくしてからもう一度お試しください');
   await expect(error).toHaveAttribute('role', 'status');
 });
+
+test('400が返ったら、リクエスト形式の不具合を知らせる', async ({ page }) => {
+  // Arrange
+  await page.route(CRITIQUE_ENDPOINT, async (route) => {
+    await route.fulfill({ status: 400, json: { error: 'invalid-request' } });
+  });
+  await page.goto('/');
+
+  // Act
+  await page.getByRole('button', { name: 'AIの講評をもらう' }).click();
+
+  // Assert
+  await expect(page.locator('.critique-panel__error')).toHaveText(
+    'AI講評のリクエストの形が合いませんでした(不具合です)。ゲームを最新にして、もう一度お試しください',
+  );
+});
