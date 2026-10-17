@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-17 23:10 UTC PR #250 ボス結果の文言と比較欄の表示を改善する (#218)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(1797件) / npm run lint ✅ / npm run typecheck ✅。E2Eはレビュー環境にPlaywrightブラウザが無く未実行(PR本文では全件成功)。Issue #218・docs/specs/boss-result-and-layout-fixes.mdの文言・CSS・引用符変更と一致
+- マージ: squash & delete-branch
+
 ## 2026-10-17 12:00 UTC PR #239 implementをOrca管理の5件並列バッチに変更
 
 - 判定: 合格(blocker無し)
@@ -210,10 +216,4 @@
 
 - 判定: 合格(blocker無し。suggestion: FileNodeでfileDeductionReasonsを毎レンダー計算しているのでselector化を検討)
 - 確認した内容: npm run check(lint/typecheck/test 1676件) ✅。E2Eはレビュー環境で実行許可が得られず未実行(PR本文では204件通過)。Issue #161・docs/specs/file-mark-reasons.mdのfileDeductionsがfileDeductionReasonsの合計から導出されること、AC1の-5点と既存定数10点の矛盾は既存採点との整合を優先した判断として妥当と確認
-- マージ: squash & delete-branch
-
-## 2026-10-12 04:46 UTC PR #163 正解・不正解の色分けとアニメーション演出
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(1674件) / npm run lint ✅ / npm run typecheck ✅。E2Eはレビュー環境で実行不可(ブラウザ未導入。PR本文では203件通過)。Issue #159・docs/specs/answer-feedback-animation.mdのAnswerVerdict共通化、reduced-motion対応、ライト/ダークの文字色トークンを確認
 - マージ: squash & delete-branch
