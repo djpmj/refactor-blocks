@@ -9,8 +9,8 @@ import {
   type DragStartEvent,
   type UniqueIdentifier,
 } from '@dnd-kit/core';
-import { Background, Controls, Panel, ReactFlow, useReactFlow, type EdgeTypes, type NodeChange, type NodeTypes, type ReactFlowInstance, type XYPosition } from '@xyflow/react';
-import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
+import { Background, Controls, Panel, ReactFlow, useNodesInitialized, useReactFlow, type EdgeTypes, type NodeChange, type NodeTypes, type ReactFlowInstance, type XYPosition } from '@xyflow/react';
+import { useCallback, useEffect, useMemo, useRef, useState, type Dispatch, type RefObject, type SetStateAction } from 'react';
 import { DropTargetsContext, type DropTargetsState } from './DropTargetsContext';
 import { createPortal } from 'react-dom';
 import { findClass, findClassOfMethod, findField, findFileOfClass, findMethod, type Codebase } from '../../domain/codebase/Codebase';
@@ -36,7 +36,11 @@ import { GhostAnimation } from './GhostAnimation';
 import type { Edge } from '@xyflow/react';
 import { dropTargetIds, type Dragging } from './dropTargets';
 import { placeFiles } from './keepFilePositions';
+import { autoViewport } from './autoViewport';
+import { DETAIL_ZOOM, useShowDetails } from './semanticZoom';
+import { shouldRefit, type AutoFitState } from './autoFit';
 
+const CANVAS_MIN_ZOOM = 0.3;
 const nodeTypes: NodeTypes = { fileNode: FileNode, classNode: ClassNode };
 const edgeTypes: EdgeTypes = { topRoute: TopRouteEdge, offset: OffsetEdge, warning: WarningEdge };
 
@@ -85,13 +89,94 @@ function moveMethodToDropTarget(
   if (targetFileId !== null) moveIntoFile(methodId, targetFileId);
 }
 
-/** ステージを切り替えたときやファイルが増えたとき、画面外に出ないよう全体が収まるように表示し直す。 */
-function FitViewOnLayoutChange({ stageId, fileCount, layoutResetCount, arrangeVersion }: Readonly<{ stageId: string; fileCount: number; layoutResetCount: number; arrangeVersion: number }>) {
-  const { fitView } = useReactFlow<CodebaseFlowNode>();
+function canvasSize(): { width: number; height: number } | null {
+  const canvas = document.querySelector('.app__canvas');
+  if (!(canvas instanceof HTMLElement)) return null;
+  const { width, height } = canvas.getBoundingClientRect();
+  return width > 0 && height > 0 ? { width, height } : null;
+}
+
+/** 図全体を自動で合わせる。メソッドが隠れる倍率(DETAIL_ZOOM)未満にはせず、収まらない分は左上から見せる。 */
+function useAutoViewportFit() {
+  const { getNodes, getNodesBounds, setViewport } = useReactFlow<CodebaseFlowNode>();
+  const measured = () => getNodes().every((node) => node.measured?.width !== undefined && node.measured.height !== undefined);
+  // 変更依頼の実装中は倍率に関わらずメソッドを出し、部品置き場まで全体を見渡せる必要があるので、床を設けない
+  const implementing = useGameStore((state) => state.changeSession !== null);
+  /** 合わせたら true。ノードが増えた直後は useNodesInitialized が古いままのことがあるので、計測が済んでいなければ何もせず false。 */
+  return (): boolean => {
+    const size = canvasSize();
+    const nodes = getNodes();
+    if (size === null || nodes.length === 0 || !measured()) return false;
+    void setViewport(autoViewport(getNodesBounds(nodes), size, { minZoom: implementing ? CANVAS_MIN_ZOOM : DETAIL_ZOOM, maxZoom: 2, padding: 0.1 }));
+    return true;
+  };
+}
+
+/** ステージを切り替えたときやファイルが増えたとき、画面外に出ないよう全体を自動で合わせ直す。 */
+function FitViewOnLayoutChange({ stageId, fileCount, layoutResetCount, arrangeVersion, autoFitStateRef }: Readonly<{ stageId: string; fileCount: number; layoutResetCount: number; arrangeVersion: number; autoFitStateRef: RefObject<AutoFitState> }>) {
+  const fit = useAutoViewportFit();
+  const nodesInitialized = useNodesInitialized();
+  const lastLayoutKeyRef = useRef<string | null>(null);
   useEffect(() => {
-    void fitView();
-  }, [stageId, fileCount, layoutResetCount, arrangeVersion, fitView]);
+    if (!nodesInitialized) return;
+    const layoutKey = `${stageId}:${fileCount}:${layoutResetCount}:${arrangeVersion}`;
+    if (lastLayoutKeyRef.current === layoutKey) return;
+    if (!fit()) return;
+    lastLayoutKeyRef.current = layoutKey;
+    autoFitStateRef.current = { userMoved: false, lastSize: canvasSize() };
+    // fit は毎回作り直されるが、中身は最新のノードとキャンバスの大きさだけを読むため依存に含めない
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [arrangeVersion, autoFitStateRef, fileCount, layoutResetCount, nodesInitialized, stageId]);
   return null;
+}
+
+/**
+ * キャンバスの大きさが変わったら、プレイヤーが動かしていない図を合わせ直す。
+ * 待ち時間を置くと、パネルの出現などの直後に遅れて表示が動いてプレイヤーの操作に割り込むので、変化のたびにすぐ合わせる。
+ * 合わせられなかった(ノードの計測前・ドラッグ中)ときは、その状態が解けたときにもう一度確かめる。
+ */
+function FitViewOnResize({ autoFitStateRef, dragInteractionActive }: Readonly<{ autoFitStateRef: RefObject<AutoFitState>; dragInteractionActive: boolean }>) {
+  const fit = useAutoViewportFit();
+  const nodesInitialized = useNodesInitialized();
+  const ready = nodesInitialized && !dragInteractionActive;
+  const latest = useRef({ fit, ready });
+  useEffect(() => {
+    latest.current = { fit, ready };
+  });
+  const refitIfNeeded = useCallback((size: { width: number; height: number } | null) => {
+    if (size === null || !latest.current.ready || !shouldRefit(autoFitStateRef.current, size)) return;
+    autoFitStateRef.current = { userMoved: false, lastSize: size };
+    latest.current.fit();
+  }, [autoFitStateRef]);
+  useEffect(() => {
+    const canvas = document.querySelector('.app__canvas');
+    if (!(canvas instanceof HTMLElement)) return;
+    const observer = new ResizeObserver((entries) => {
+      const { width, height } = entries[0].contentRect;
+      refitIfNeeded(width > 0 && height > 0 ? { width, height } : null);
+    });
+    observer.observe(canvas);
+    return () => observer.disconnect();
+  }, [refitIfNeeded]);
+  useEffect(() => {
+    if (ready) refitIfNeeded(canvasSize());
+  }, [ready, refitIfNeeded]);
+  return null;
+}
+
+/** 縮小してメソッドを隠している間、そのことと戻し方を知らせる。変更依頼の実装中は常に中身を出すので出さない。 */
+function DetailZoomNotice({ onZoom }: Readonly<{ onZoom: () => void }>) {
+  const { zoomTo } = useReactFlow<CodebaseFlowNode>();
+  const showDetails = useShowDetails();
+  if (showDetails) return null;
+  return (
+    <Panel position="top-left">
+      <div className="detail-zoom-notice" data-testid="detail-zoom-notice" role="status">
+        <span>縮小中はメソッドを隠しています</span>
+        <button type="button" className="nodrag nopan" onClick={() => { onZoom(); void zoomTo(DETAIL_ZOOM); }}>中身が見える大きさにする</button>
+      </div>
+    </Panel>
+  );
 }
 
 function hasFileId(codebase: Codebase, id: string): boolean {
@@ -207,23 +292,31 @@ type CanvasFlowProps = {
   readonly stageId: string;
   readonly visibleFileCount: number;
   readonly codebase: Codebase;
+  readonly autoFitStateRef: RefObject<AutoFitState>;
+  readonly onMoveStart: (event: MouseEvent | TouchEvent | null) => void;
+  readonly onManualFit: () => void;
+  readonly onControlZoom: () => void;
+  readonly dragInteractionActive: boolean;
 };
 
-function CanvasFlow({ nodes, edges, onNodesChange, setFlow, contextMenu, selectMethod, stageId, visibleFileCount, codebase, layoutResetCount, arrangeVersion, arrange }: CanvasFlowProps & { readonly layoutResetCount: number; readonly arrangeVersion: number; readonly arrange: () => void }) {
+function CanvasFlow({ nodes, edges, onNodesChange, setFlow, contextMenu, selectMethod, stageId, visibleFileCount, codebase, layoutResetCount, arrangeVersion, arrange, autoFitStateRef, onMoveStart, onManualFit, onControlZoom, dragInteractionActive }: CanvasFlowProps & { readonly layoutResetCount: number; readonly arrangeVersion: number; readonly arrange: () => void }) {
   return (
     <WarningEdgeStateProvider>
       <ReactFlow
         nodes={nodes} edges={edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes}
-        onNodesChange={onNodesChange} onInit={setFlow} nodesConnectable={false} minZoom={0.3}
+        onNodesChange={onNodesChange} onInit={setFlow} nodesConnectable={false} minZoom={CANVAS_MIN_ZOOM}
+        onMoveStart={onMoveStart}
         onNodeContextMenu={contextMenu.onNodeContextMenu} onPaneContextMenu={contextMenu.onPaneContextMenu}
         onPaneClick={() => selectMethod(null)}
       >
-        <InheritanceMarker /><Background gap={24} /><Controls showInteractive={false} />
+        <InheritanceMarker /><Background gap={24} /><Controls showInteractive={false} onFitView={onManualFit} onZoomIn={onControlZoom} onZoomOut={onControlZoom} />
         <Panel position="top-right">
           <button type="button" className="nodrag nopan" data-testid="canvas-arrange" aria-label="依存の向きに沿って並べ直す" onClick={arrange}>整列</button>
         </Panel>
+        <DetailZoomNotice onZoom={onControlZoom} />
         <GhostAnimation nodes={nodes} />
-        <FitViewOnLayoutChange stageId={stageId} fileCount={visibleFileCount} layoutResetCount={layoutResetCount} arrangeVersion={arrangeVersion} />
+        <FitViewOnLayoutChange stageId={stageId} fileCount={visibleFileCount} layoutResetCount={layoutResetCount} arrangeVersion={arrangeVersion} autoFitStateRef={autoFitStateRef} />
+        <FitViewOnResize autoFitStateRef={autoFitStateRef} dragInteractionActive={dragInteractionActive} />
         <FitViewForRule codebase={codebase} nodes={nodes} />
       </ReactFlow>
     </WarningEdgeStateProvider>
@@ -308,6 +401,27 @@ function useDropHandler(codebase: Codebase, onEnd: () => void, flow: ReactFlowIn
   };
 }
 
+function useAutoFitActions() {
+  const autoFitStateRef = useRef<AutoFitState>({ userMoved: false, lastSize: null });
+  const onMoveStart = (event: MouseEvent | TouchEvent | null) => {
+    if (event !== null) autoFitStateRef.current = { ...autoFitStateRef.current, userMoved: true };
+  };
+  const onManualFit = () => {
+    autoFitStateRef.current = { userMoved: false, lastSize: canvasSize() };
+  };
+  const onControlZoom = () => {
+    autoFitStateRef.current = { ...autoFitStateRef.current, userMoved: true };
+  };
+  return { autoFitStateRef, onMoveStart, onManualFit, onControlZoom };
+}
+
+function useDragInteraction() {
+  const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
+  const start = (event: DragStartEvent) => setActiveId(event.active.id);
+  const finish = () => setActiveId(null);
+  return { activeId, start, finish };
+}
+
 /** active が false の間(設計くらべで隠れている間)は、開いていた右クリックメニューを閉じる。 */
 export function CodebaseCanvas({ active }: Readonly<{ active: boolean }>) {
   const codebase = useGameStore((state) => state.codebase);
@@ -319,7 +433,8 @@ export function CodebaseCanvas({ active }: Readonly<{ active: boolean }>) {
   const nodes = usePlacedCanvasNodes(codebase, overrides, rememberPositions);
   const visibleFileCount = fitFileCount(codebase, overrides);
   const edges = useCanvasEdges(codebase, nodes, visibilityEnforced);
-  const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
+  const { activeId, start: handleDragStart, finish: handleDragFinish } = useDragInteraction();
+  const dragInteractionActive = activeId !== null;
   const dragging = useMemo<Dragging | null>(() => {
     if (activeId === null) return null;
     const methodId = parseMethodDragId(activeId);
@@ -333,30 +448,28 @@ export function CodebaseCanvas({ active }: Readonly<{ active: boolean }>) {
     dragging === null ? null : { dragging, targets: dropTargetIds(codebase, dragging) }
   ), [codebase, dragging]);
   const [flow, setFlow] = useState<ReactFlowInstance<CodebaseFlowNode> | null>(null);
+  const { autoFitStateRef, onMoveStart, onManualFit, onControlZoom } = useAutoFitActions();
   const sensors = useSensors(useSensor(PointerSensor, POINTER_ACTIVATION), useSensor(KeyboardSensor));
   const contextMenu = useCanvasContextMenu();
   // メニューは document.body へのポータルなので、画面を隠しただけでは消えない(隠れたコードベースを操作できてしまう)
   useDismissContextMenuWhenInactive(active, contextMenu.close);
 
 
-  const handleDragEnd = useDropHandler(codebase, () => {
-    setActiveId(null);
-  }, flow, setPosition);
+  const handleDragEnd = useDropHandler(codebase, handleDragFinish, flow, setPosition);
 
   return (
     <DndContext
       sensors={sensors}
-      onDragStart={(event: DragStartEvent) => setActiveId(event.active.id)}
+      onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      onDragCancel={() => {
-        setActiveId(null);
-      }}
+      onDragCancel={handleDragFinish}
     >
       <DropTargetsContext.Provider value={dropTargets}>
         <CanvasFlow
           nodes={nodes} edges={edges} onNodesChange={handleNodesChange} setFlow={setFlow} contextMenu={contextMenu}
           selectMethod={selectMethod} stageId={stageId} visibleFileCount={visibleFileCount} codebase={codebase}
           layoutResetCount={layoutResetCount} arrangeVersion={arrangeVersion} arrange={arrange}
+          autoFitStateRef={autoFitStateRef} onMoveStart={onMoveStart} onManualFit={onManualFit} onControlZoom={onControlZoom} dragInteractionActive={dragInteractionActive}
         />
       </DropTargetsContext.Provider>
       <DraggingOverlay activeId={activeId} />

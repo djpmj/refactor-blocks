@@ -16,7 +16,6 @@ test('メソッドの移動先を表示し、ドロップとEscで強調を解�
   const sourceClass = page.getByTestId('class-OrderService');
   const targetClass = page.getByTestId('class-TaxCalculator');
   const method = page.getByTestId('method-placeOrder');
-  await page.getByRole('button', { name: 'Fit View' }).click();
 
   // Act: pointer drag中は有効/無効のクラスが分かる
   await startPointerDrag(page, method);
@@ -79,7 +78,6 @@ test('フィールドとクラスの移動候補を表示する', async ({ page 
   const sourceClass = page.getByTestId('class-Subscription');
   const targetClass = page.getByTestId('class-BillingService');
   const field = page.getByTestId('field-status');
-  await page.getByRole('button', { name: 'Fit View' }).click();
 
   // Act: キーボードドラッグでもフィールド候補を表示し、Escで解除する
   await field.focus();

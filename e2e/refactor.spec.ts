@@ -528,7 +528,7 @@ test('ズームアウトするとファイル名とクラス名だけになり�
   await expect(method).toBeVisible();
 
   // Act
-  for (let i = 0; i < 4; i++) await page.getByRole('button', { name: 'Zoom Out' }).click();
+  for (let i = 0; i < 8; i++) await page.getByRole('button', { name: 'Zoom Out' }).click();
 
   // Assert
   await expect(method).toHaveCount(0);
@@ -538,7 +538,7 @@ test('ズームアウトするとファイル名とクラス名だけになり�
   await expect(page.getByTestId('file-src/order/OrderService.ts')).not.toContainText('行');
 
   // Act
-  for (let i = 0; i < 4; i++) await page.getByRole('button', { name: 'Zoom In' }).click();
+  for (let i = 0; i < 8; i++) await page.getByRole('button', { name: 'Zoom In' }).click();
 
   // Assert
   await expect(method).toBeVisible();
@@ -1596,6 +1596,13 @@ test('メソッドをファイルの枠外へドラッグすると、新しい�
   await expect(page.getByTestId('file-src/NewClass.ts')).toBeVisible();
 });
 
+/** ファイルの箱のヘッダーの縦の中心。ズーム倍率に依らず、ドロップした位置との差を測れる。 */
+async function headerCenterY(file: Locator): Promise<number> {
+  const header = await file.locator('.file-node__header').boundingBox();
+  if (header === null) throw new Error('ファイルのヘッダーの位置を取得できません');
+  return header.y + header.height / 2;
+}
+
 test('メソッドを余白の指定位置へドロップすると、その位置にファイルが現れる', async ({ page }) => {
   // Arrange
   await openOrderStage(page);
@@ -1618,7 +1625,7 @@ test('メソッドを余白の指定位置へドロップすると、その位�
   const bounds = await file.boundingBox();
   expect(bounds).not.toBeNull();
   expect(Math.abs(bounds!.x + bounds!.width / 2 - drop.x)).toBeLessThanOrEqual(60);
-  expect(Math.abs(bounds!.y + 18 - drop.y)).toBeLessThanOrEqual(12);
+  expect(Math.abs(await headerCenterY(file) - drop.y)).toBeLessThanOrEqual(12);
 
   // Act: UndoしてからRedoする
   await page.keyboard.press('Control+z');
@@ -1630,7 +1637,7 @@ test('メソッドを余白の指定位置へドロップすると、その位�
   const restored = await file.boundingBox();
   expect(restored).not.toBeNull();
   expect(Math.abs(restored!.x + restored!.width / 2 - drop.x)).toBeLessThanOrEqual(60);
-  expect(Math.abs(restored!.y + 18 - drop.y)).toBeLessThanOrEqual(12);
+  expect(Math.abs(await headerCenterY(file) - drop.y)).toBeLessThanOrEqual(12);
 });
 
 test('クラスを余白の指定位置へドロップすると、新しいファイルがその位置に現れる', async ({ page }) => {
@@ -2288,7 +2295,10 @@ test('移動メニュー: 開き直したメニューに古いフォーカス復
   await expect(menu.getByRole('menu', { name: '別のクラスへ移動', exact: true })).toBeVisible();
 
   // Act
-  await page.getByTestId('field-trialDays').click({ button: 'right' });
+  // (図の合わせが済んだあとは開いているメニューがフィールドに重なるので、右クリックのイベントを直接送る)
+  const fieldBox = await page.getByTestId('field-trialDays').boundingBox();
+  if (fieldBox === null) throw new Error('フィールドの位置を取得できません');
+  await page.getByTestId('field-trialDays').dispatchEvent('contextmenu', { bubbles: true, cancelable: true, button: 2, clientX: fieldBox.x + fieldBox.width / 2, clientY: fieldBox.y + fieldBox.height / 2 });
   // フォーカス復帰が予約されるフレームを確実に過ぎてから検証する。
   await page.evaluate('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
 
