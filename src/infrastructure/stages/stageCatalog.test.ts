@@ -10,6 +10,7 @@ import { methodLines } from '../../domain/codebase/lineCount';
 import { suggestMethodName } from '../../domain/codebase/suggestMethodName';
 import { autoNameClasses } from '../../domain/codebase/autoNameClasses';
 import { scoreCodebase } from '../../domain/scoring/score';
+import { findLineLimitViolations } from '../../domain/scoring/lineLimits';
 import { findMisplacedResponsibilities } from '../../domain/scoring/misplacedResponsibilities';
 import { findMixedMethods } from '../../domain/scoring/mixedMethods';
 import { behaviorTests, runBehaviorTests } from '../../domain/testing/behaviorTests';
@@ -756,6 +757,24 @@ describe('stageCatalog', () => {
     'advanced-template-method/req-order-validation': '置き先のテンプレート処理クラスに依頼外の責務が2種類残るため混在の減点がある。Template Method教材を再設計するときに解消する。',
     'advanced-template-method/req-add-xml': '新しい具象クラスの追加で既存クラスの変更が1件必要となり、置き先にも依頼外責務が2種類残る。Template Method教材を再設計するときに解消する。',
   };
+
+  it('中級10の模範解答は14手で、初期状態の価格・送料メソッドは上限を超える', () => {
+    // Arrange
+    const stage = stages.find((candidate) => candidate.id === 'intermediate-member-rank-branching');
+    if (stage === undefined) throw new Error('中級10がありません');
+
+    // Act
+    const violations = findLineLimitViolations(stage.codebase, stage.limits);
+
+    // Assert
+    expect(sampleAnswerSteps[stage.id]).toHaveLength(14);
+    expect(JSON.stringify(stage)).not.toContain('VIP');
+    expect(violations).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: 'method', targetId: 'method-quote-price' }),
+      expect.objectContaining({ kind: 'method', targetId: 'method-quote-shipping' }),
+    ]));
+    expect(scoreCodebase(stage.codebase, stage).total).toBeLessThan(100);
+  });
 
   it('解答例の設計で変更依頼は100点(既知例外を除く)で、例外は改善後に削除する', () => {
     // Arrange

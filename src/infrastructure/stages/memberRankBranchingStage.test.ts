@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { changeKindOf } from '../../domain/change/ChangeRequest';
 import { measureExtendPain, painRequestsOf } from '../../domain/change/changePain';
 import { scoreCodebase } from '../../domain/scoring/score';
+import { findLineLimitViolations } from '../../domain/scoring/lineLimits';
 import { applySolutionSteps, sampleAnswerSteps, type SolutionStep } from '../../domain/stage/sampleAnswer';
 import { stages } from './stageCatalog';
 
@@ -12,6 +13,11 @@ if (extend === undefined) throw new Error('中級10に extend の依頼があり
 const solution = sampleAnswerSteps[stage.id] ?? [];
 
 describe('中級10: 会員ランクごとのif分岐', () => {
+  it('2ランク分の模範解答は14手である', () => {
+    // Arrange / Act / Assert
+    expect(solution).toHaveLength(14);
+  });
+
   it('初期状態は100点にならず、模範解答(抽出→ランクごとのクラスへ移動→implements)で100点になる', () => {
     // Arrange / Act
     const initial = scoreCodebase(stage.codebase, stage);
@@ -22,9 +28,20 @@ describe('中級10: 会員ランクごとのif分岐', () => {
     expect(solved.total).toBe(100);
   });
 
+  it('初期状態の価格・送料メソッドは行数の上限を超える', () => {
+    // Arrange / Act
+    const violations = findLineLimitViolations(stage.codebase, stage.limits);
+
+    // Assert
+    expect(violations).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: 'method', targetId: 'method-quote-price' }),
+      expect.objectContaining({ kind: 'method', targetId: 'method-quote-shipping' }),
+    ]));
+  });
+
   it('抽出だけして同じクラスに残した状態は100点にならず、書き換えるクラスも減らない', () => {
     // Arrange
-    const extractOnly: SolutionStep[] = ['regular', 'premium', 'vip'].flatMap((rank): SolutionStep[] => [
+    const extractOnly: SolutionStep[] = ['regular', 'premium'].flatMap((rank): SolutionStep[] => [
       { extract: { from: 'quotePrice', fragmentIds: [`frag-price-${rank}`], name: `${rank}Price` } },
       { extract: { from: 'quoteShipping', fragmentIds: [`frag-shipping-${rank}`], name: `${rank}Shipping` } },
     ]);

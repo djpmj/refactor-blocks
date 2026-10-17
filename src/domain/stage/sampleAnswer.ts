@@ -340,7 +340,7 @@ export const sampleAnswerSteps: Partial<Record<string, readonly SolutionStep[]>>
   ],
   'intermediate-member-rank-branching': [
     // 名前の重複を避けるため、ランクごとに抽出→移動する。どのクラスも価格と送料の両方を持つ。
-    ...['Regular', 'Premium', 'Vip'].flatMap((rank): SolutionStep[] => [
+    ...['Regular', 'Premium'].flatMap((rank): SolutionStep[] => [
       { addFile: `src/membership/${rank}Rank.ts` },
       { addClass: { name: `${rank}Rank`, file: `src/membership/${rank}Rank.ts` } },
       { extract: { from: 'quotePrice', fragmentIds: [`frag-price-${rank.toLowerCase()}`], name: 'calculatePrice' } },
