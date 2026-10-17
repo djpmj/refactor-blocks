@@ -109,3 +109,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [critique-contract-fix](critique-contract-fix.md) | AI講評リクエストからpath必須を外し、送る形と受ける形を契約テストで固定、400専用メッセージを出す |
 | [field-access-info](field-access-info.md) | フィールドの説明に、使うメソッドをクラス名つきで出し、外からの読み書きと直し方を示す |
 | [pain-request-alignment](pain-request-alignment.md) | 変更依頼カードに直すクラス・ファイル・クラス行数の前後を出し、各ステージの1件目の依頼を模範解答で守る |
+| [e2e-port-isolation](e2e-port-isolation.md) | E2Eのポートを E2E_PORT で変えられるようにし、別worktreeのサーバーを黙って再利用しない |

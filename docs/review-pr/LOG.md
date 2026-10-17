@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-17 10:10 UTC PR #212 test: make the E2E port configurable
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint / typecheck / test 1777件)✅ / E2Eはこの環境でChromiumが無く実行できず未実行(PR記載の238件成功を前提とした)。Issue #211 の受け入れ基準を差分で確認(E2E_PORT検証・E2E_REUSE_SERVER・storageState内包・相対パスのcritique endpoint・storage-state.json削除)。e2e側のモックは `**/__critique-test__` で相対パスでも一致
+- マージ: squash & delete-branch
+
 ## 2026-10-17 06:10 UTC PR #210 feat: show class and file relief in the change pain card
 
 - 判定: 合格(blocker無し)
@@ -210,10 +216,4 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(1651件) / npm run lint ✅ / npm run typecheck ✅ / E2E(visibility-violation-edge.spec.ts 3件) ✅。Issue #149・docs/specs/warning-edge-popover-front.mdの原因と振る舞い、最小変更(開いた時だけz-index 30)を確認
-- マージ: squash & delete-branch
-
-## 2026-10-12 00:35 UTC PR #155 feat: resize preview method panels
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check ✅(1641件のtest / lint / typecheck) / E2E: 環境にchromiumが無く未実行(PR本文は195/195 PASS)。Issue #148・docs/specs/preview-panel-resizable.mdの振る舞い、既存フック再利用、DDD層境界を確認
 - マージ: squash & delete-branch
