@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-17 01:00 UTC PR #204 feat: show progress below the score floor
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(1748件) / npm run lint ✅ / npm run typecheck ✅ / E2Eはレビュー環境にChromiumが無く未実行のためPR記載の235件成功を前提とした。Issue #183 の受け入れ基準(0点時の減点合計表示・減点減少時のゲージ発光と読み上げ・1点以上は従来表示)を差分で確認
+- マージ: squash & delete-branch
+
 ## 2026-10-17 00:30 UTC PR #203 feat: improve operation discoverability
 
 - 判定: 合格(blocker無し)
@@ -210,10 +216,4 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅(E2EはChromium未導入のため未実行。差分は目視確認、PR本文では186件成功の報告)
-- マージ: squash & delete-branch
-
-## 2026-10-11 04:40 UTC PR #142 Wait for drag overlay before clicking in anemic model E2E
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅(E2EはChromium未導入のため未実行。PR本文では185件成功の報告)
 - マージ: squash & delete-branch

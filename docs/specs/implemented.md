@@ -102,3 +102,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [change-results-clarity](change-results-clarity.md) | 変更依頼の点数を「変更のしやすさ」「置き方」にそろえ、継承の案内の出し分けと空の部品置き場の非表示を行う |
 | [responsibility-colors](responsibility-colors.md) | 処理に責務の種類の色と英字の印を付け、クラスに責務の種類数を出す |
 | [operation-discoverability](operation-discoverability.md) | 統合・呼び出し元へ戻す・可視性の操作を、操作ガイドとエディタの文言で見つけやすくする |
+| [score-floor-progress](score-floor-progress.md) | 0点のままでも減点の合計を表示し、減ったらゲージを光らせて読み上げる |
