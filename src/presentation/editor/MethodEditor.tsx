@@ -6,6 +6,9 @@ import {
   findClassOfMethod,
   findField,
   findMethod,
+  isAbstractLike,
+  isInterfaceLike,
+  parentIds,
   isStubMethod,
   type Codebase,
   type Fragment,
@@ -29,6 +32,7 @@ import { ClassCodePreview } from './ClassCodePreview';
 import { useGameStore } from '../store/useGameStore';
 import { FieldInfo } from './FieldInfo';
 import { ResponsibilityMark } from './ResponsibilityMark';
+import { describeVisibility } from './describeVisibility';
 
 function toggle(selected: ReadonlySet<string>, id: string): Set<string> {
   const next = new Set(selected);
@@ -192,6 +196,25 @@ function isVisibility(value: string): value is Visibility {
   return VISIBILITY_OPTIONS.some((visibility) => visibility === value);
 }
 
+function implementsAbstractMethod(codebase: Codebase, method: Method): boolean {
+  const owner = findClassOfMethod(codebase, method.id);
+  if (owner === undefined) return false;
+  const pending = [...parentIds(owner)];
+  const visited = new Set<string>();
+  while (pending.length > 0) {
+    const parentId = pending.shift();
+    if (parentId === undefined || visited.has(parentId)) continue;
+    visited.add(parentId);
+    const parent = findClass(codebase, parentId);
+    if (parent === undefined) continue;
+    const hasAbstractDeclaration = (isAbstractLike(parent) || isInterfaceLike(parent))
+      && parent.methods.some((candidate) => candidate.name === method.name && candidate.fragments.length === 0);
+    if (hasAbstractDeclaration) return true;
+    pending.push(...parentIds(parent));
+  }
+  return false;
+}
+
 function useExtractPreviewSummary(method: Method, selected: ReadonlySet<string>, newName: string): string | undefined {
   const setExtractDraft = useGameStore((state) => state.setExtractDraft);
   const codebase = useGameStore((state) => state.codebase);
@@ -218,6 +241,11 @@ function VisibilitySelect({ method }: Readonly<{ method: Method }>) {
       ),
     [codebase, method.id, method.visibility, originalCodebase],
   );
+  const visibilityDescription = describeVisibility({
+    current: method.visibility,
+    disabled: VISIBILITY_OPTIONS.filter((visibility) => disabled.has(visibility)),
+    implementsAbstract: implementsAbstractMethod(codebase, method),
+  });
   return (
     <div className="method-editor__visibility">
       <label>
@@ -238,7 +266,7 @@ function VisibilitySelect({ method }: Readonly<{ method: Method }>) {
           ))}
         </select>
       </label>
-      <p className="method-editor__visibility-hint">可視性を広げるには呼び出し元が必要です。ステージ開始時の可視性にはいつでも戻せます。親の抽象宣言を実装する場合も public / protected を選べます</p>
+      <p className="method-editor__visibility-hint">{visibilityDescription.map((line) => <span key={line}>{line}</span>)}</p>
     </div>
   );
 }
