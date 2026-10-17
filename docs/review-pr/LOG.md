@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-17 06:10 UTC PR #210 feat: show class and file relief in the change pain card
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint / typecheck / test 1773件)✅ / E2Eはこの環境で実行できず未実行(PR記載の240件成功を前提とした)。Issue #181 の受け入れ基準を差分で確認。suggestion: ModifyBeforeでfirstSitesTextを2回呼んでいる
+- マージ: squash & delete-branch
+
 ## 2026-10-17 06:00 UTC PR #209 feat: show where field accesses come from
 
 - 判定: 合格(blocker無し)
@@ -210,16 +216,4 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm run check ✅(1641件のtest / lint / typecheck) / E2E: 環境にchromiumが無く未実行(PR本文は195/195 PASS)。Issue #148・docs/specs/preview-panel-resizable.mdの振る舞い、既存フック再利用、DDD層境界を確認
-- マージ: squash & delete-branch
-
-## 2026-10-12 00:30 UTC PR #154 feat: shorten suggested names for extracted methods
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(1651件) / npm run lint ✅ / npm run typecheck ✅ / E2E: 環境にchromiumが無く未実行(PR本文は193/193 PASS、差分の期待値は実装と整合)。Issue #147の振る舞い・DDD層境界を確認。suggestion: JSDocがsuggestMethodNameから離れている
-- マージ: squash & delete-branch
-
-## 2026-10-11 23:42 UTC PR #153 feat: show method details during manual fix
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(1629件) / npm run lint ✅ / npm run typecheck ✅(E2EはChromium未導入のため未実行。PR本文では全E2E 191/191 PASSの報告)
 - マージ: squash & delete-branch
