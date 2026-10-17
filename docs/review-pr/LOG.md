@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-17 00:30 UTC PR #203 feat: improve operation discoverability
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(1744件) / npm run lint ✅ / npm run typecheck ✅ / E2Eはレビュー環境にChromiumが無く未実行のためPR記載の233件成功を前提とした。Issue #182 の受け入れ基準(ガイド3項目・統合欄の見出し/ボタン/ラベル・インライン説明)を差分で確認
+- マージ: squash & delete-branch
+
 ## 2026-10-16 19:30 UTC PR #202 feat: show responsibility colors and counts
 
 - 判定: 合格(blocker無し)
@@ -210,10 +216,4 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅(E2EはChromium未導入のため未実行。PR本文では185件成功の報告)
-- マージ: squash & delete-branch
-
-## 2026-10-11 02:55 UTC PR #141 Show fragment labels as comments in the code tab
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(test 1610件/lint/typecheck) ✅。E2Eはレビュー環境にChromiumが無く未実行(PR本文は185件成功と報告、E2E期待値の更新は差分で確認)。Issue #133・仕様書fragment-label-commentsの受け入れ基準を差分で確認(fragmentCodeで表示と行数計算の判定を共通化)
 - マージ: squash & delete-branch
