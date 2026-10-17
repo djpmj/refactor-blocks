@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-17 02:45 UTC PR #207 Explain visibility and dependency limits
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(1759件) / npm run lint ✅ / npm run typecheck ✅ / E2EはChromium未導入で実行不可(PR記載の237件成功と差分で確認)。Issue #186 の受け入れ基準1〜3を差分で確認
+- マージ: squash & delete-branch
+
 ## 2026-10-17 02:30 UTC PR #206 Reduce member ranks in intermediate stage
 
 - 判定: 合格(blocker無し)
@@ -210,10 +216,4 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(1637件) / npm run lint ✅ / npm run typecheck ✅(E2EはChromium未導入のため未実行。PR本文では全E2E 189/190、失敗1件は単独再実行でPASSの報告)
-- マージ: squash & delete-branch
-
-## 2026-10-11 15:30 UTC PR #145 feat: add method panel to code previews
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(1625件) / npm run lint ✅ / npm run typecheck ✅(E2EはPR記載のPASSを確認、本レビューでは未実行)
 - マージ: squash & delete-branch

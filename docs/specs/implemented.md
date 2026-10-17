@@ -105,3 +105,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [score-floor-progress](score-floor-progress.md) | 0点のままでも減点の合計を表示し、減ったらゲージを光らせて読み上げる |
 | [context-menu-grouping](context-menu-grouping.md) | 右クリックメニューを対象ごとの組に分け、メソッドを新しいクラスへ移す項目を足す |
 | [rank-branching-two-ranks](rank-branching-two-ranks.md) | 中級10の会員ランクを2つに減らし、模範解答を14手にする |
+| [visibility-and-limit-notes](visibility-and-limit-notes.md) | 可視性の説明をやさしくし、依存上限0のステージにはクリア条件に理由を添える |
