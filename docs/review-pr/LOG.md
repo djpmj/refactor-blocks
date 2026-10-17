@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-17 12:00 UTC PR #239 implementをOrca管理の5件並列バッチに変更
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅。変更は .agents/skills/implement/SKILL.md と .codex/agents/implementation-orchestrator.toml のみ(src/ と .github/workflows/ は未変更)。最大5件並列・E2E_PORT分離・評価最大3回・独立評価の維持を差分で確認
+- マージ: squash & delete-branch
+
 ## 2026-10-17 10:50 UTC PR #214 feat: refit the canvas on resize without hiding method details
 
 - 判定: 合格(blocker無し)
@@ -210,10 +216,4 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(1674件) / npm run lint ✅ / npm run typecheck ✅。E2Eはレビュー環境で実行不可(ブラウザ未導入。PR本文では203件通過)。Issue #159・docs/specs/answer-feedback-animation.mdのAnswerVerdict共通化、reduced-motion対応、ライト/ダークの文字色トークンを確認
-- マージ: squash & delete-branch
-
-## 2026-10-12 01:30 UTC PR #158 feat: explain inlined methods when deleting classes
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(1674件) / npm run lint ✅ / npm run typecheck ✅。E2Eはレビュー環境で実行できず未確認(PR本文では201件通過)。Issue #151・docs/specs/delete-inline-notice.mdの、deleteClass/deleteFileが{codebase, inlined}を返すこと、noticeとmessageの排他、ErrorToastの情報表示(role=status)を確認
 - マージ: squash & delete-branch
