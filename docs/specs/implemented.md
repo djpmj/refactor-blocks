@@ -106,3 +106,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [context-menu-grouping](context-menu-grouping.md) | 右クリックメニューを対象ごとの組に分け、メソッドを新しいクラスへ移す項目を足す |
 | [rank-branching-two-ranks](rank-branching-two-ranks.md) | 中級10の会員ランクを2つに減らし、模範解答を14手にする |
 | [visibility-and-limit-notes](visibility-and-limit-notes.md) | 可視性の説明をやさしくし、依存上限0のステージにはクリア条件に理由を添える |
+| [critique-contract-fix](critique-contract-fix.md) | AI講評リクエストからpath必須を外し、送る形と受ける形を契約テストで固定、400専用メッセージを出す |

@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-17 03:20 UTC PR #208 fix: align critique request contract
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint/typecheck/vitest 1763件) ✅ / workers/critique typecheck ✅ / E2Eはこの環境で実行できず未実行(PR記載の238件成功を前提とした)。Issue #188 の受け入れ基準(path必須の撤廃・契約テスト・400専用メッセージ)を差分で確認。Worker再デプロイは人が実施
+- マージ: squash & delete-branch
+
 ## 2026-10-17 02:45 UTC PR #207 Explain visibility and dependency limits
 
 - 判定: 合格(blocker無し)
@@ -210,10 +216,4 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(1629件) / npm run lint ✅ / npm run typecheck ✅(E2EはChromium未導入のため未実行。PR本文では全E2E 191/191 PASSの報告)
-- マージ: squash & delete-branch
-
-## 2026-10-11 23:40 UTC PR #152 feat: automatically name new classes by role
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(1637件) / npm run lint ✅ / npm run typecheck ✅(E2EはChromium未導入のため未実行。PR本文では全E2E 189/190、失敗1件は単独再実行でPASSの報告)
 - マージ: squash & delete-branch
