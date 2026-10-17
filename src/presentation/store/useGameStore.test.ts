@@ -273,6 +273,35 @@ describe('opening and closing manual-fix flow', () => {
     expect(store.getState().openingFixes[stage.id]).toEqual({ missed: 2, extra: 0, sites: 3, fixedIds: [] });
     expect(store.getState().closingFixSolved).toBe(false);
   });
+
+  it('0点のまま減点の合計が減ると成功演出を出し、増える操作では出さない', () => {
+    if (stage === undefined) throw new Error('tax stage is required');
+    const store = createGameStore([stage], false, false);
+    const fileId = stage.codebase.files[0].id;
+
+    // Arrange: 初期の減点100に空クラスを足して120にする
+    const beforeClassIds = new Set(allClasses(store.getState().codebase).map(({ id }) => id));
+    expect(store.getState().addClass(fileId, 'TemporaryEmpty')).toBe(true);
+    const addedClass = allClasses(store.getState().codebase).find(({ id }) => !beforeClassIds.has(id));
+    if (addedClass === undefined) throw new Error('added class is required');
+    expect(scoreCodebase(store.getState().codebase, stage)).toMatchObject({ total: 0, deducted: 120 });
+    expect(store.getState().celebration).toBeNull();
+
+    // Act
+    expect(store.getState().deleteClass(addedClass.id)).toBe(true);
+
+    // Assert
+    expect(scoreCodebase(store.getState().codebase, stage)).toMatchObject({ total: 0, deducted: 100 });
+    expect(store.getState().celebration).toMatchObject({ scoreBefore: 0, scoreAfter: 0, deductedBefore: 120, deductedAfter: 100 });
+
+    // Act: 減点を増やす操作では新しい成功演出を作らない
+    const sequence = store.getState().celebration?.seq;
+    expect(store.getState().addClass(fileId, 'AnotherTemporaryEmpty')).toBe(true);
+
+    // Assert
+    expect(scoreCodebase(store.getState().codebase, stage)).toMatchObject({ total: 0, deducted: 120 });
+    expect(store.getState().celebration?.seq).toBe(sequence);
+  });
 });
 
 describe('impact review dialog state', () => {

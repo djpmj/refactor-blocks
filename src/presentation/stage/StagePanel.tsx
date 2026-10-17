@@ -81,19 +81,27 @@ function StageSidebarToggle({ open, onToggle }: Readonly<{ open: boolean; onTogg
   return <button type="button" className="sidebar-toggle" aria-expanded={open} aria-controls="stage-sidebar" aria-label={label} title={label} onClick={onToggle}>{open ? '«' : '»'}</button>;
 }
 
+type ScoreCelebration = { readonly scoreAfter: number; readonly deductedBefore: number; readonly deductedAfter: number } | null;
+
+function isFloorProgress(score: Score, celebration: ScoreCelebration): boolean {
+  return celebration !== null && celebration.scoreAfter === 0 && score.total === 0 && score.deducted === celebration.deductedAfter && celebration.deductedAfter < celebration.deductedBefore;
+}
+
 /** 点数を丸いゲージで見せる。詳細(減点の内訳)は隣のテキストに出す。 */
 function ScoreBadge({ score, codebase }: Readonly<{ score: Score; codebase: Codebase }>) {
   const celebration = useGameStore((state) => state.celebration);
   const rising = celebration !== null && celebration.scoreAfter === score.total && celebration.scoreAfter > celebration.scoreBefore;
+  const floorProgress = isFloorProgress(score, celebration);
   const animation = useCountUp(score.total, rising ? celebration.seq : null, rising ? celebration.scoreBefore : score.total, rising);
   const degrees = Math.max(0, Math.min(100, animation.value)) * 3.6;
-  const ringClass = ['score-badge__ring', animation.active ? 'score-badge__ring--celebrate' : '', animation.active && score.total === 100 ? 'score-badge__ring--perfect' : ''].filter(Boolean).join(' ');
+  const celebrating = animation.active || floorProgress;
+  const ringClass = ['score-badge__ring', celebrating ? 'score-badge__ring--celebrate' : '', animation.active && score.total === 100 ? 'score-badge__ring--perfect' : ''].filter(Boolean).join(' ');
   return (
     <div className="score-badge">
       <div className={ringClass} data-testid="score-ring" style={{ background: `conic-gradient(var(--accent) ${String(degrees)}deg, var(--border) 0)` }}>
         <span className="score-badge__value" aria-hidden="true" data-testid="score-value">{animation.value}点</span>
       </div>
-      <span className="sr-only" aria-live="polite" data-testid="score-announcement">{score.total}点</span>
+      <span className="sr-only" aria-live="polite" data-testid="score-announcement">{floorProgress && celebration !== null ? `減点の合計が -${celebration.deductedBefore} から -${celebration.deductedAfter} に減りました` : `${score.total}点`}</span>
       <span className="score-badge__detail" data-testid="score">
         {describeScore(score, codebase)}
       </span>

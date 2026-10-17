@@ -75,6 +75,7 @@ describe('scoreCodebase', () => {
     // Assert
     expect(score).toEqual({
       total: 100,
+      deducted: 0,
       deductions: [
         { rule: 'line-limit', count: 0, points: 0 },
         { rule: 'coupling', count: 0, points: 0 },
@@ -97,6 +98,17 @@ describe('scoreCodebase', () => {
         { rule: 'mixed-method', count: 0, points: 0 },
       ],
     });
+  });
+
+  it('0点を下限に保ちながら減点の合計を返す', () => {
+    // Arrange
+    const codebase: Codebase = { files: Array.from({ length: 13 }, (_, index) => ({ id: `file-${String(index)}`, path: `empty-${String(index)}.ts`, classes: [] })) };
+
+    // Act
+    const score = scoreCodebase(codebase, { ...LOOSE, codebase });
+
+    // Assert
+    expect(score).toMatchObject({ total: 0, deducted: 130 });
   });
 
   it('新しく抽出した複数責務のメソッドを1件・10点減点する', () => {

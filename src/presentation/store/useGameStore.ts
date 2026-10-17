@@ -114,7 +114,7 @@ type GameState = {
   stage: Stage;
   layoutResetCount: number;
   codebase: Codebase;
-  celebration: { readonly seq: number; readonly scoreBefore: number; readonly scoreAfter: number; readonly resolved: ViolationTarget } | null;
+  celebration: { readonly seq: number; readonly scoreBefore: number; readonly scoreAfter: number; readonly deductedBefore: number; readonly deductedAfter: number; readonly resolved: ViolationTarget } | null;
   ghost: GhostMove | null;
   playGhost: (move: GhostMove) => void;
   clearGhost: () => void;
@@ -247,12 +247,15 @@ function methodSelectionActions(set: (partial: Partial<GameState>) => void, get:
 /** コードベースが変わったときだけ、変更前のものを履歴に積んで差し替える。何も変わらない操作は1手に数えない。 */
 function celebrationFor(state: GameState, codebase: Codebase, enabled: boolean): GameState['celebration'] | undefined {
   if (!enabled || state.changeSession !== null) return undefined;
-  const scoreBefore = scoreCodebase(state.codebase, state.stage).total;
-  const scoreAfter = scoreCodebase(codebase, state.stage).total;
+  const before = scoreCodebase(state.codebase, state.stage);
+  const after = scoreCodebase(codebase, state.stage);
+  const scoreBefore = before.total;
+  const scoreAfter = after.total;
   const resolved = resolvedTargets(state.codebase, codebase, state.stage);
   const hasResolved = resolved.fileIds.length + resolved.classIds.length + resolved.methodIds.length > 0;
-  if (scoreAfter <= scoreBefore && !hasResolved) return undefined;
-  return { seq: (state.celebration?.seq ?? 0) + 1, scoreBefore, scoreAfter, resolved };
+  const floorProgress = scoreBefore === 0 && scoreAfter === 0 && after.deducted < before.deducted;
+  if (scoreAfter <= scoreBefore && !floorProgress && !hasResolved) return undefined;
+  return { seq: (state.celebration?.seq ?? 0) + 1, scoreBefore, scoreAfter, deductedBefore: before.deducted, deductedAfter: after.deducted, resolved };
 }
 
 function commit(state: GameState, codebase: Codebase, celebrate = true): Partial<GameState> {
