@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-17 10:30 UTC PR #213 feat: add a boss change request where refactoring pays off
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint / typecheck / test 1789件)✅ / E2E 243件中240通過(hint-highlight・score-jump の2件はmasterでも同様に失敗する既存問題、operation-guide はflaky)。Issue #170 の受け入れ基準を差分で確認(boss フラグ・痛みカードからの除外・bossCounterfactual・比較表示・11ステージのボス・カタログテスト)
+- マージ: squash & delete-branch
+
 ## 2026-10-17 10:10 UTC PR #212 test: make the E2E port configurable
 
 - 判定: 合格(blocker無し)
@@ -210,10 +216,4 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(1665件) / npm run lint ✅ / npm run typecheck ✅。E2Eはレビュー環境で実行不可(ブラウザ未導入。PR本文では199件通過)。Issue #150・docs/specs/mixed-responsibility-method.mdの`mixed-method`ルール(初期にないメソッド・call除外・cohesiveResponsibilities)の実装とdomain層の純粋関数であることを確認
-- マージ: squash & delete-branch
-
-## 2026-10-12 00:45 UTC PR #156 fix: bring open warning popovers to front
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(1651件) / npm run lint ✅ / npm run typecheck ✅ / E2E(visibility-violation-edge.spec.ts 3件) ✅。Issue #149・docs/specs/warning-edge-popover-front.mdの原因と振る舞い、最小変更(開いた時だけz-index 30)を確認
 - マージ: squash & delete-branch
