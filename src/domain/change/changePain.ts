@@ -1,5 +1,5 @@
 import { allClasses, findClassOfMethod, isInterfaceLike, type Codebase } from '../codebase/Codebase';
-import { methodLines } from '../codebase/lineCount';
+import { classLines, methodLines } from '../codebase/lineCount';
 import type { Stage } from '../stage/Stage';
 import { changeKindOf, type ChangeRequest } from './ChangeRequest';
 import { measureChange } from './measureChange';
@@ -12,6 +12,8 @@ export type PainSummary = {
   readonly files: number;
   /** 変更箇所のメソッドの行数(`methodLines`)の合計。同じメソッドは1回だけ数える。 */
   readonly readLines: number;
+  /** 直す場所があるクラスの行数(`classLines`)の合計。そのクラスを開いて目を通す量。同じクラスは1回だけ数える。 */
+  readonly classLines: number;
 };
 
 export type ChangePain = {
@@ -33,7 +35,12 @@ function summarize(codebase: Codebase, request: ChangeRequest, limits: Stage['li
   const result = measureChange(codebase, request, limits);
   if (!result.ok) return undefined;
   const siteIds = result.value.sites;
-  return { siteIds, classes: result.value.classesTouched, files: result.value.filesTouched, readLines: readLinesOf(codebase, siteIds) };
+  return { siteIds, classes: result.value.classesTouched, files: result.value.filesTouched, readLines: readLinesOf(codebase, siteIds), classLines: classLinesOf(codebase, siteIds) };
+}
+
+function classLinesOf(codebase: Codebase, siteIds: readonly string[]): number {
+  const owners = new Set(siteIds.flatMap((id) => findClassOfMethod(codebase, id) ?? []));
+  return [...owners].reduce((sum, owner) => sum + classLines(owner, codebase), 0);
 }
 
 // ponytail: 「読む行数」は変更箇所のメソッドの行数の合計で近似する(クラスの全体や、呼び出し元は数えない)。実際の理解の手間とずれると分かったら、呼び出し元・同じクラスの関係メソッドも足す
@@ -53,7 +60,8 @@ export function measurePain(stage: Pick<Stage, 'codebase' | 'changeRequests' | '
   const improved = currentSummary.siteIds.length < initial.siteIds.length
     || (currentSummary.siteIds.length === initial.siteIds.length
       && (currentSummary.classes < initial.classes || currentSummary.files < initial.files))
-    || currentSummary.readLines < initial.readLines;
+    || currentSummary.readLines < initial.readLines
+    || currentSummary.classLines < initial.classLines;
   return { request, initial, current: currentSummary, improved };
 }
 

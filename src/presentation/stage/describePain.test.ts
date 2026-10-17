@@ -5,7 +5,7 @@ import type { ChangePain } from '../../domain/change/changePain';
 describe('describePainTrend', () => {
   it('直す場所が増えたら途中の状態を説明する', () => {
     // Arrange
-    const pain: Pick<ChangePain, 'initial' | 'current'> = { initial: { siteIds: ['a'], readLines: 39, classes: 1, files: 1 }, current: { siteIds: ['a', 'b'], readLines: 44, classes: 1, files: 1 } };
+    const pain: Pick<ChangePain, 'initial' | 'current'> = { initial: { siteIds: ['a'], readLines: 39, classes: 1, files: 1, classLines: 40 }, current: { siteIds: ['a', 'b'], readLines: 44, classes: 1, files: 1, classLines: 40 } };
 
     // Act
     const trend = describePainTrend(pain);
@@ -16,7 +16,7 @@ describe('describePainTrend', () => {
 
   it('場所が同じでも読む量が増えたら説明する', () => {
     // Arrange
-    const pain: Pick<ChangePain, 'initial' | 'current'> = { initial: { siteIds: ['a'], readLines: 39, classes: 1, files: 1 }, current: { siteIds: ['a'], readLines: 42, classes: 1, files: 1 } };
+    const pain: Pick<ChangePain, 'initial' | 'current'> = { initial: { siteIds: ['a'], readLines: 39, classes: 1, files: 1, classLines: 40 }, current: { siteIds: ['a'], readLines: 42, classes: 1, files: 1, classLines: 40 } };
 
     // Act
     const trend = describePainTrend(pain);
@@ -27,7 +27,7 @@ describe('describePainTrend', () => {
 
   it('改善後や変化がないときは説明しない', () => {
     // Arrange
-    const pain: Pick<ChangePain, 'initial' | 'current'> = { initial: { siteIds: ['a', 'b'], readLines: 80, classes: 1, files: 1 }, current: { siteIds: ['a'], readLines: 20, classes: 1, files: 1 } };
+    const pain: Pick<ChangePain, 'initial' | 'current'> = { initial: { siteIds: ['a', 'b'], readLines: 80, classes: 1, files: 1, classLines: 40 }, current: { siteIds: ['a'], readLines: 20, classes: 1, files: 1, classLines: 40 } };
 
     // Act
     const trend = describePainTrend(pain);
