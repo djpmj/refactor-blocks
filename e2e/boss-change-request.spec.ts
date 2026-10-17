@@ -55,11 +55,13 @@ test('組み替えたチュートリアル2では、ボスが最後に出て、1
   await implement(page, 'method-calculateTaxByItem', 'class-TaxCalculator', page.getByTestId('boss-comparison'));
 
   const comparison = page.getByTestId('boss-comparison');
+  await expect(comparison).toContainText('鬼の変更の置き方の点数で比べています');
   await expect(comparison).toContainText('組み替える前のコードなら');
   await expect(comparison).toContainText('最善の置き方でも 90点');
   await expect(comparison).toContainText('あなたの設計では');
-  await expect(comparison).toContainText('100点');
+  await expect(comparison).toContainText('置き方 100点');
   await expect(comparison).toContainText('冒頭の「軽減税率の対象を増やして」の処理を切り出しておいたおかげで');
+  await expect(comparison).toContainText('最善の置き方でも');
 });
 
 test('組み替えていないと、ボスの比較にも行数の上限を超えるクラスが出る', async ({ page }) => {

@@ -1,6 +1,25 @@
 import { expect, test } from '@playwright/test';
 import { selectStage } from './selectStage.js';
 
+test('手直し中もメソッド行数のバッジは一行で表示する', async ({ page }) => {
+  // Arrange
+  await page.setViewportSize({ width: 1800, height: 1400 });
+  await page.goto('/');
+  await selectStage(page, 'チュートリアル1: 長いメソッドを分ける', { completeOpeningFix: false });
+  const method = page.getByTestId('method-printMonthlyReport');
+
+  // Act
+  const openSidebar = page.getByRole('button', { name: 'サイドバーを開く' });
+  if (await openSidebar.count() > 0) await openSidebar.click();
+  await page.getByRole('button', { name: '実際に直してみる' }).click();
+  await method.click();
+
+  // Assert
+  await expect(method.locator('.method-chip__fixed-mark')).toBeVisible();
+  await expect(method.locator('.method-chip__lines')).toHaveText('39行');
+  await expect(method.locator('.method-chip')).toHaveCSS('height', '27px');
+});
+
 test('抽出の選択中に結果をプレビューし、抽出・Undo・ステージ切り替えで下書きを解除する', async ({ page }) => {
   // Arrange
   await page.goto('/');

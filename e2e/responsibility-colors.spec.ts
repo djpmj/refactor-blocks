@@ -63,3 +63,21 @@ test('責務の印とクラスごとの種類数を表示し、移動後も印�
     expect(palette.every((color) => contrastWithWhite(color) >= 4.5)).toBe(true);
   }
 });
+
+test('上級3の長いクラス名と責務バッジは間隔を空けて折り返す', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/');
+  await selectStage(page, '上級3: 会員ランクの割引をStrategyパターンへ組み替える');
+  const header = page.getByTestId('class-header-DiscountService');
+  const name = header.locator('.class-node__name-group');
+  const badge = page.getByTestId('class-responsibilities-DiscountService');
+
+  await expect(header).toHaveCSS('flex-wrap', 'wrap');
+  await expect(header).toHaveCSS('gap', '8px');
+  const nameBox = await name.boundingBox();
+  const badgeBox = await badge.boundingBox();
+  if (nameBox === null || badgeBox === null) throw new Error('クラス名または責務バッジが見つかりません');
+  const overlapX = nameBox.x < badgeBox.x + badgeBox.width && badgeBox.x < nameBox.x + nameBox.width;
+  const overlapY = nameBox.y < badgeBox.y + badgeBox.height && badgeBox.y < nameBox.y + nameBox.height;
+  expect(overlapX && overlapY).toBe(false);
+});

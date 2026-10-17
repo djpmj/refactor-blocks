@@ -69,6 +69,7 @@ test('変更依頼中はうわさ欄を隠す', async ({ page }) => {
   }).toPass();
   await expect(page.getByTestId('change-request-title')).toHaveText('表に「構成比」列を追加して');
   await expect(page.getByTestId('rumor-came-true')).toContainText('レポートの表の見せ方');
+  await expect(page.getByTestId('rumor-came-true')).not.toContainText('「「');
   await dragMethodToClass(page, 'method-buildShareColumn', 'class-ReportService');
   await expect(async () => {
     await page.getByTestId('change-request-finish').click({ timeout: 1000 });
