@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-17 06:00 UTC PR #209 feat: show where field accesses come from
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(1767件) / npm run lint ✅ / npm run typecheck ✅ / E2Eはこの環境で実行できず未実行(PR記載の239件成功を前提とした)。Issue #187 の受け入れ基準1〜4を差分で確認
+- マージ: squash & delete-branch
+
 ## 2026-10-17 03:20 UTC PR #208 fix: align critique request contract
 
 - 判定: 合格(blocker無し)

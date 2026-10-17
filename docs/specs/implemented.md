@@ -107,3 +107,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [rank-branching-two-ranks](rank-branching-two-ranks.md) | 中級10の会員ランクを2つに減らし、模範解答を14手にする |
 | [visibility-and-limit-notes](visibility-and-limit-notes.md) | 可視性の説明をやさしくし、依存上限0のステージにはクリア条件に理由を添える |
 | [critique-contract-fix](critique-contract-fix.md) | AI講評リクエストからpath必須を外し、送る形と受ける形を契約テストで固定、400専用メッセージを出す |
+| [field-access-info](field-access-info.md) | フィールドの説明に、使うメソッドをクラス名つきで出し、外からの読み書きと直し方を示す |
