@@ -108,9 +108,11 @@ function MergeSection({ method, candidates }: Readonly<{ method: Method; candida
 
   return (
     <div className="method-editor__merge">
-      <h3 className="method-editor__merge-title">似た処理を持つメソッド</h3>
+      <h3 className="method-editor__merge-title">似た処理を持つメソッドと統合</h3>
+      <p className="method-editor__merge-description">同じ処理を1つのメソッドにまとめます。統合したメソッドは、今選んでいるメソッドの場所に残ります</p>
+      <label className="method-editor__merge-label" htmlFor="method-editor-merge-name">統合後の名前</label>
       <input
-        aria-label="統合後のメソッド名"
+        id="method-editor-merge-name"
         value={name}
         onChange={(event) => {
           setName(event.target.value);
@@ -126,7 +128,7 @@ function MergeSection({ method, candidates }: Readonly<{ method: Method; candida
                 mergeMethods(method.id, candidate.method.id, name);
               }}
             >
-              {findClass(codebase, candidate.ownerClassId)?.name ?? '?'}.{candidate.method.name}()
+              {findClass(codebase, candidate.ownerClassId)?.name ?? '?'}.{candidate.method.name}() と統合する
             </button>
           </li>
         ))}
@@ -251,14 +253,18 @@ function MethodActions({ method, showVisibility }: Readonly<{ method: Method; sh
     <>
       {showVisibility && method.fragments.length > 0 ? <VisibilitySelect method={method} /> : null}
       {hasCaller ? (
-        <button
-          type="button"
-          onClick={() => {
-            inlineMethod(method.id);
-          }}
-        >
-          呼び出し元へ戻す
-        </button>
+        <div className="method-editor__inline-action">
+          <button
+            type="button"
+            title="このメソッドの中身を呼び出し元へ書き戻して、このメソッドを消します"
+            onClick={() => {
+              inlineMethod(method.id);
+            }}
+          >
+            呼び出し元へ戻す
+          </button>
+          <p className="method-editor__inline-hint">このメソッドの中身を呼び出し元へ書き戻して、このメソッドを消します</p>
+        </div>
       ) : null}
       {isStubMethod(method) ? (
         <button

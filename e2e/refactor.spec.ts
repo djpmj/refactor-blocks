@@ -252,7 +252,10 @@ test('抽出したメソッドを「呼び出し元へ戻す」と、処理が�
   await page.getByTestId('method-calculateTax').click();
 
   // Act
-  await page.getByRole('button', { name: '呼び出し元へ戻す' }).click();
+  const inlineButton = page.getByRole('button', { name: '呼び出し元へ戻す' });
+  await expect(inlineButton).toHaveAttribute('title', 'このメソッドの中身を呼び出し元へ書き戻して、このメソッドを消します');
+  await expect(page.locator('.method-editor__inline-hint')).toHaveText('このメソッドの中身を呼び出し元へ書き戻して、このメソッドを消します');
+  await inlineButton.click();
 
   // Assert
   await expect(page.getByTestId('method-calculateTax')).toHaveCount(0);
@@ -1779,7 +1782,7 @@ test('上級1ステージ: 重複した送信ログ記録処理をExtract Method
   await page.getByTestId('method-logEmailNotification').click();
   const candidate = page.getByTestId('merge-candidate-logSmsNotification');
   await expect(candidate).toBeVisible();
-  await page.getByLabel('統合後のメソッド名').fill('logNotification');
+  await page.getByLabel('統合後の名前').fill('logNotification');
   await candidate.click();
 
   // Assert
@@ -2274,7 +2277,7 @@ test('上級8: 呼び出しだけの importOrders を似た処理を持つメソ
   }
   for (const name of ['readLines', 'validateOrders', 'saveOrders']) {
     await page.getByTestId('class-CsvOrderImporter').getByTestId(`method-${name}`).click();
-    await page.getByLabel('統合後のメソッド名').fill(name);
+    await page.getByLabel('統合後の名前').fill(name);
     await page.getByTestId(`merge-candidate-${name}`).click();
   }
   for (const owner of ['CsvOrderImporter', 'JsonOrderImporter']) {
@@ -2288,8 +2291,8 @@ test('上級8: 呼び出しだけの importOrders を似た処理を持つメソ
 
   // Act
   await page.getByTestId('class-CsvOrderImporter').getByTestId('method-importOrders').click();
-  await expect(page.getByText('似た処理を持つメソッド', { exact: true })).toBeVisible();
-  await page.getByLabel('統合後のメソッド名').fill('importOrders');
+  await expect(page.getByText('似た処理を持つメソッドと統合', { exact: true })).toBeVisible();
+  await page.getByLabel('統合後の名前').fill('importOrders');
   await page.getByTestId('merge-candidate-importOrders').click();
 
   // Assert: public を保持し、共通の骨組みが1つになる

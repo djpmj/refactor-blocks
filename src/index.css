@@ -344,6 +344,10 @@ input.class-node__name { width: 14ch; }
 .method-editor__extract input { padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); }
 .method-editor__merge { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
 .method-editor__merge-title { font-size: 13px; margin: 0; }
+.method-editor__merge-description { margin: 0; color: var(--muted); font-size: 12px; }
+.method-editor__merge-label { font-size: 12px; }
+.method-editor__inline-action { display: flex; flex-direction: column; align-items: flex-start; }
+.method-editor__inline-hint { margin: 4px 0 0; color: var(--muted); font-size: 11px; }
 .method-editor__merge input { padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); }
 .merge-candidate-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .merge-candidate-list button { padding: 4px 10px; font-size: 12px; }
