@@ -442,6 +442,12 @@ input.class-node__name { width: 14ch; }
 .change-panel { display: flex; flex-direction: column; gap: 8px; }
 .change-outcomes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
 .change-outcome { border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 13px; }
+.change-panel--boss { border-left: 6px solid var(--danger); background: color-mix(in srgb, var(--danger) 8%, var(--surface)); }
+.boss-label { margin: 0; font-weight: 700; color: var(--answer-danger-text); }
+.boss-comparison { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 4px; }
+.boss-comparison__side { border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; }
+.boss-comparison__side p { margin: 2px 0; }
+.boss-comparison__summary { margin: 4px 0 0; font-weight: 600; }
 .change-outcome__title { margin: 0 0 4px; font-size: 14px; }
 .change-outcome__reasons { margin: 4px 0 0; padding-left: 18px; color: var(--muted); }
 .change-outcome__good { margin: 4px 0 0; color: var(--muted); }

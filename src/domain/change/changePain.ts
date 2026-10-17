@@ -23,11 +23,12 @@ export type ChangePain = {
   readonly improved: boolean;
 };
 
-/** 'modify' とは別に、機能の追加の依頼を痛みの対象にする。それぞれ最初の1件。 */
+/** 'modify' とは別に、機能の追加の依頼を痛みの対象にする。それぞれ最初の1件。ボスは除く。 */
 export function painRequestsOf(stage: Pick<Stage, 'changeRequests'>): { readonly modify?: ChangeRequest; readonly extend?: ChangeRequest } {
+  const normal = stage.changeRequests.filter((request) => request.boss !== true);
   return {
-    modify: stage.changeRequests.find((request) => changeKindOf(request) === 'modify'),
-    extend: stage.changeRequests.find((request) => changeKindOf(request) === 'extend'),
+    modify: normal.find((request) => changeKindOf(request) === 'modify'),
+    extend: normal.find((request) => changeKindOf(request) === 'extend'),
   };
 }
 

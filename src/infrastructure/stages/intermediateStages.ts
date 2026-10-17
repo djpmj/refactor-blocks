@@ -540,6 +540,7 @@ const volatileTaxStage: Stage = {
   changeRequests: [
     { id: 'req-reduced-tax-items', title: '軽減税率の対象品目を増やして', description: '新しく扱い始めた定期購読の新聞を、軽減税率の対象として計算する。', responsibility: 'tax', linesPerSite: 14, partName: 'addNewspaperReducedTax' },
     { id: 'req-tax-rounding', title: '税額の端数処理を変えて', description: '税額の端数を、明細ごとではなく請求単位でまとめて切り捨てる。', responsibility: 'tax', linesPerSite: 14, partName: 'roundTaxPerInvoice', rumor: { from: '先輩の田中さん', text: '「税の扱い」を変えたいという話が、いつか出てくるかもしれないらしいです。' } },
+    { id: 'req-boss-tax-overhaul', title: '税の計算を、品目ごとの税率と端数処理まで含めて作り直して', description: '軽減税率の品目が大幅に増え、端数処理も品目ごとに変わる。税の計算をまるごと作り直したい。', responsibility: 'tax', linesPerSite: 28, boss: true, partName: 'rebuildTaxCalculation', rumor: { from: '先輩の田中さん', text: '税の扱いを根本から見直す、大きな制度変更が来るらしいです。' } },
   ],
   codebase: salesReportCodebase,
 };
@@ -594,6 +595,7 @@ const volatileFormatStage: Stage = {
   changeRequests: [
     { id: 'req-column-order', title: '取引先向けに列の並びを変えて', description: '大口の取引先向けに、商品コードを先頭の列に移した帳票を出す。', responsibility: 'formatting', linesPerSite: 14, partName: 'reorderColumnsForKeyAccount' },
     { id: 'req-pdf-output', title: 'PDFでも出せるようにして', description: 'これまでのCSVに加えて、PDFの帳票も出せるようにする。', responsibility: 'formatting', linesPerSite: 14, partName: 'renderPdfReport', rumor: { from: '営業の佐藤さん', text: '「表の見せ方」を変えたいという話が、いつか出てくるかもしれないらしいです。' } },
+    { id: 'req-boss-format-overhaul', title: '帳票の出力を、テンプレート方式と複数形式まで含めて作り直して', description: '帳票の見た目を取引先ごとのテンプレートで切り替え、CSV・PDF・Excelに出せるようにする。出力の仕組みをまるごと作り直したい。', responsibility: 'formatting', linesPerSite: 28, boss: true, partName: 'rebuildReportFormatting', rumor: { from: '営業の佐藤さん', text: '帳票の出し方を、大きく作り変えたいという声が上がっているらしいです。' } },
   ],
   codebase: salesReportCodebase,
 };
@@ -1044,6 +1046,7 @@ const extractClassStage: Stage = {
   changeRequests: [
     { id: 'req-building-name', title: '住所に建物名・部屋番号の欄を足して', description: '源泉徴収票の郵送が届かないことがあるので、建物名と部屋番号も持てるようにしたい', responsibility: 'address', linesPerSite: 6, partName: 'addBuildingName' },
     { id: 'req-late-night-overtime', title: '深夜残業の割増率を上げて', description: '22時以降の残業は、割増率を50%で計算したい', responsibility: 'payroll', linesPerSite: 8, partName: 'applyLateNightPremium', rumor: { from: 'PMの鈴木さん', text: '「勤務時間帯の計算」を変えたいという話が、いつか出てくるかもしれないらしいです。' } },
+    { id: 'req-boss-address-overhaul', title: '住所の扱いを、海外の住所形式と郵便番号の検証まで含めて作り直して', description: '海外在住の従業員にも対応するため、住所の持ち方を国ごとの形式に対応させ、郵便番号の検証も入れたい。住所まわりをまるごと作り直したい。', responsibility: 'address', linesPerSite: 14, boss: true, partName: 'rebuildAddress', rumor: { from: 'PMの鈴木さん', text: '住所の持ち方を、大きく変える話が出ているらしいです。' } },
   ],
   codebase: {
     files: [
@@ -1197,6 +1200,7 @@ const copyPasteTaxStage: Stage = {
   changeRequests: [
     { id: 'req-reduced-tax-rate', title: '軽減税率8%に対応して', description: '飲食料品は消費税を8%で計算するようにしたい。', responsibility: 'tax', linesPerSite: 8, partName: 'applyReducedTaxRate' },
     { id: 'req-order-stock-check', title: '在庫確認のルールを見直して', description: '注文確定のとき、予約在庫も数に入れて確かめたい。', responsibility: 'ordering', linesPerSite: 6, partName: 'countReservedStock', rumor: { from: 'QAの高橋さん', text: '在庫の数え方に、何か変化があるかもしれないと聞きました。' } },
+    { id: 'req-boss-tax-overhaul', title: '税の計算を、品目ごとの税率と端数処理まで含めて作り直して', description: '軽減税率の品目が増え、端数処理も品目ごとに変わる。注文ごとにコピーされていた税の計算を、まるごと作り直したい。', responsibility: 'tax', linesPerSite: 16, boss: true, partName: 'rebuildTaxCalculation', rumor: { from: 'QAの高橋さん', text: '税の計算に、大きな制度変更が入るかもしれないと聞きました。' } },
   ],
   codebase: {
     files: [
@@ -1499,6 +1503,7 @@ const layeredOrderApiStage: Stage = {
   changeRequests: [
     { id: 'req-external-storage', title: '保存先をDBから外部APIに変えて', description: '注文の保存先を、自社DBから外部の注文管理APIに切り替えることになった。', responsibility: 'persistence', linesPerSite: 10, partName: 'switchToExternalApi' },
     { id: 'req-free-shipping', title: '送料無料の条件を変えて', description: '送料無料になる条件を、合計5,000円以上から3,000円以上に下げたい。', responsibility: 'order-rule', linesPerSite: 6, partName: 'reviseFreeShippingRule', rumor: { from: 'PMの鈴木さん', text: '「注文の条件」を変えたいという話が、いつか出てくるかもしれないらしいです。' } },
+    { id: 'req-boss-persistence-overhaul', title: '保存を、外部APIへの切り替えと再送・履歴管理まで含めて作り直して', description: '注文の保存先を外部APIに切り替え、失敗時の再送と変更履歴の管理も入れる。保存の仕組みをまるごと作り直したい。', responsibility: 'persistence', linesPerSite: 20, boss: true, partName: 'rebuildPersistence', rumor: { from: 'PMの鈴木さん', text: 'データの持ち方を大きく変える話が、近々出るらしいです。' } },
   ],
   codebase: {
     files: [

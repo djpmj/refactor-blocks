@@ -46,6 +46,7 @@ const extractMethodStage: Stage = {
   changeRequests: [
     { id: 'req-report-yoy', title: '前年同月比も出して', description: '経営会議用に、前月比だけでなく前年同月比もレポートに出したい。', responsibility: 'aggregation', linesPerSite: 12, partName: 'compareWithLastYear' },
     { id: 'req-report-share', title: '表に「構成比」列を追加して', description: '売上の表に、全体に占める割合の列を足したい。', responsibility: 'formatting', linesPerSite: 12, partName: 'buildShareColumn', rumor: { from: '営業の佐藤さん', text: '経理の人たちが、レポートの表の見せ方をそのうち変えたいと話していたらしいですよ。' } },
+    { id: 'req-boss-aggregation', title: '集計を、前年同月比と店舗別の内訳まで含めて作り直して', description: '経営会議の要望で、売上の集計を前月比だけでなく、前年同月比と店舗別の内訳まで出せるよう全面的に作り直したい。', responsibility: 'aggregation', linesPerSite: 20, boss: true, partName: 'rebuildAggregation', rumor: { from: '先輩の田中さん', text: '数字の出し方を、根こそぎ変える大きな話が出るかもしれないと聞きました。' } },
   ],
   codebase: {
     files: [
@@ -127,6 +128,7 @@ const orderServiceStage: Stage = {
     { id: 'req-reduced-tax', title: '軽減税率の対象を増やして', description: '来月から、持ち帰り用の総菜も軽減税率(8%)の対象になる。', responsibility: 'tax', linesPerSite: 8, partName: 'addReducedTaxItems' },
     { id: 'req-mail-text', title: '確認メールの文面を変えて', description: '確認メールに、お問い合わせ窓口の案内を入れたい。', responsibility: 'notification', linesPerSite: 6, partName: 'addContactGuide', rumor: { from: '先輩の田中さん', text: 'お客様に伝える内容が、今後少し変わるかもしれないそうです。' } },
     { id: 'req-stock-rule', title: '在庫の検証ルールを足して', description: '1回の注文で買える数量に上限を設けたい。', responsibility: 'validation', linesPerSite: 5, partName: 'validateQuantityLimit', rumor: { from: '先輩の田中さん', text: '「受け付けの条件」を変えたいという話が、いつか出てくるかもしれないらしいです。' } },
+    { id: 'req-boss-tax', title: '税の計算を、品目ごとの税率と端数処理まで含めて作り直して', description: '来月から軽減税率の品目が増え、端数処理も品目ごとに変わる。税の計算をまるごと作り直したい。', responsibility: 'tax', linesPerSite: 20, boss: true, partName: 'calculateTaxByItem', rumor: { from: '先輩の田中さん', text: '税まわりで、大きな制度変更が来るかもしれないと聞きました。' } },
   ],
   codebase: {
     files: [

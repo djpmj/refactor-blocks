@@ -22,6 +22,8 @@ export type ChangeRequest = {
   readonly partName?: string;
   /** 変更依頼の前に見せるうわさ。 */
   readonly rumor?: ChangeRumor;
+  /** true なら、そのステージの鬼の変更(ボス)。changeRequests の最後に置く。 */
+  readonly boss?: true;
 };
 
 /** 変更依頼の責務を持つメソッドが1つもない。 */

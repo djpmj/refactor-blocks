@@ -34,6 +34,20 @@ describe('painRequestsOf', () => {
     expect(onlyModify).toEqual({ modify, extend: undefined });
   });
 
+  it('ボスは modify にも extend にも選ばれない', () => {
+    // Arrange
+    const bossModify = { ...modify, id: 'boss-modify', boss: true as const };
+    const bossExtend = { ...extend, id: 'boss-extend', boss: true as const };
+
+    // Act
+    const onlyBosses = painRequestsOf({ changeRequests: [bossModify, bossExtend] });
+    const withNormal = painRequestsOf({ changeRequests: [bossModify, modify, bossExtend, extend] });
+
+    // Assert
+    expect(onlyBosses).toEqual({ modify: undefined, extend: undefined });
+    expect(withNormal).toEqual({ modify, extend });
+  });
+
   it('どちらも無ければ両方undefined', () => {
     // Arrange / Act
     const result = painRequestsOf({ changeRequests: [] });
