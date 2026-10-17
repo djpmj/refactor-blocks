@@ -21,14 +21,14 @@ export function StoryOutro({ stage, perfect }: Readonly<{ stage: Stage; perfect:
     <section className="story-card" aria-label="章の結び" data-testid="story-outro">
       <h3>第{found.number}章 おわり</h3>
       <p>{found.chapter.outro}</p>
-      {firstRequest !== undefined && (
+      {firstRequest !== undefined && step === 'change-request' && (
         <>
           <p>
             <strong data-testid="story-request-title">{firstRequest.title}</strong>
           </p>
-          {step === 'change-request' && <button type="button" data-testid="story-accept" onClick={startChangeRequests}>
+          <button type="button" data-testid="story-accept" onClick={startChangeRequests}>
             依頼を受ける
-          </button>}
+          </button>
         </>
       )}
       {next === undefined ? (
