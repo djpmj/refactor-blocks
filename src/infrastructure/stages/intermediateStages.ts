@@ -1273,7 +1273,7 @@ const copyPasteTaxStage: Stage = {
 };
 
 /**
- * 中級10: 会員ランク(通常/プレミアム/VIP)ごとのif分岐が、価格(PriceCalculator)と送料(ShippingCalculator)の2クラスに散らばっている。
+ * 中級10: 会員ランク(通常/プレミアム)ごとのif分岐が、価格(PriceCalculator)と送料(ShippingCalculator)の2クラスに散らばっている。
  * 契約だけを持つ MemberRank は用意されていて、CheckoutService が呼んでいるが、どのクラスとも実装関係で結ばれていない。
  * ランクごとのクラスに集めて MemberRank を実装すると、ランクの追加が「新しいクラス1つ」で済むことが体験できる(オブジェクト指向の入口)。
  * 上級3(割引のStrategy、受け皿は1メソッド)と違い、1クラスが価格と送料の2メソッドを持つ。既存の操作だけで解ける。
@@ -1282,10 +1282,8 @@ const memberRankBranchingStage: Stage = {
   classNames: {
     "price-regular": "RegularRank",
     "price-premium": "PremiumRank",
-    "price-vip": "VipRank",
     "shipping-regular": "RegularRank",
     "shipping-premium": "PremiumRank",
-    "shipping-vip": "VipRank",
     "validation": "Validator",
     "pricing": "MemberPriceCalculator",
     "ordering": "OrderingHandler",
@@ -1293,10 +1291,8 @@ const memberRankBranchingStage: Stage = {
   methodNames: {
     "price-regular": "calculatePrice",
     "price-premium": "calculatePrice",
-    "price-vip": "calculatePrice",
     "shipping-regular": "calculateShipping",
     "shipping-premium": "calculateShipping",
-    "shipping-vip": "calculateShipping",
     "validation": "validateOrder",
     "pricing": "priceOrder",
     "ordering": "saveOrder",
@@ -1332,13 +1328,13 @@ const memberRankBranchingStage: Stage = {
   why: '会員ランクが増えるたびに、価格と送料の2つのクラスを開いて分岐を足していました。ランクごとのクラスにしたので、新しいランクはクラスを1つ足すだけで済み、既存のコードを壊す心配がありません。',
   description:
     '価格を決める PriceCalculator.quotePrice と、送料を決める ShippingCalculator.quoteShipping が、' +
-    '会員ランク(通常/プレミアム/VIP)ごとのif分岐を、それぞれ持っている。新しいランクが増えるたびに、2つのクラスを開いて分岐を足すことになる。' +
+    '会員ランク(通常/プレミアム)ごとのif分岐を、それぞれ持っている。新しいランクが増えるたびに、2つのクラスを開いて分岐を足すことになる。' +
     '価格と送料の契約だけを持つ MemberRank は用意され、CheckoutService が呼んでいるが、まだどのクラスとも実装関係で結ばれていない。',
   goal:
-    '会員ランクごとの分岐を、ランクごとの新しいクラス(RegularRank/PremiumRank/VipRank)に集めよう。Extract Methodで分岐を calculatePrice / calculateShipping として取り出し、Move Methodでランクのクラスへ移す。' +
-    '1つのクラスが価格と送料の両方を持つ。3クラスとも MemberRank を実装(implements)すると、新しいランクはクラスを足すだけで済む。メソッドは17行・クラスは23行以内',
-  limits: { method: 17, class: 23, file: 24 },
-  // 模範解答では、価格・送料の両方がランクごとの3クラスを呼ぶ。結合度の改善はこのステージの狙いではない。
+    '会員ランクごとの分岐を、ランクごとの新しいクラス(RegularRank/PremiumRank)に集めよう。Extract Methodで分岐を calculatePrice / calculateShipping として取り出し、Move Methodでランクのクラスへ移す。' +
+    '1つのクラスが価格と送料の両方を持つ。2クラスとも MemberRank を実装(implements)すると、新しいランクはクラスを足すだけで済む。メソッドは17行・クラスは24行・ファイルは25行以内',
+  limits: { method: 17, class: 24, file: 25 },
+  // 模範解答では、価格・送料の両方がランクごとの2クラスを呼ぶ。結合度の改善はこのステージの狙いではない。
   dependencyLimit: 3,
   responsibilityLimit: 3,
   changeRequests: [
@@ -1360,9 +1356,8 @@ const memberRankBranchingStage: Stage = {
                 name: 'quotePrice',
                 visibility: 'public',
                 fragments: [
-                  { id: 'frag-price-regular', label: '会員ランクが「通常」なら、定価で計算する', lines: 4, responsibility: 'price-regular', suggestedName: 'calculatePrice' , code: { csharp: "if (items.Count == 0) return 0;\nvar regularAmount = items.Sum(item => item.UnitPrice * item.Quantity);\nvar regularTotal = decimal.Round(regularAmount, 2);\nif (rank == MemberRank.Regular) return regularTotal;" }},
-                  { id: 'frag-price-premium', label: '会員ランクが「プレミアム」なら、10%引きで計算する', lines: 4, responsibility: 'price-premium', suggestedName: 'calculatePrice' , code: { csharp: "if (items.Count == 0) return 0;\nvar premiumAmount = items.Sum(item => item.UnitPrice * item.Quantity);\nvar discountedTotal = premiumAmount * 0.90m;\nif (rank == MemberRank.Premium) return decimal.Round(discountedTotal, 2);" }},
-                  { id: 'frag-price-vip', label: '会員ランクが「VIP」なら、20%引きで計算する', lines: 4, responsibility: 'price-vip', suggestedName: 'calculatePrice' , code: { csharp: "if (items.Count == 0) return 0;\nvar vipAmount = items.Sum(item => item.UnitPrice * item.Quantity);\nvar vipDiscountedTotal = vipAmount * 0.80m;\nreturn decimal.Round(vipDiscountedTotal, 2);" }},
+                  { id: 'frag-price-regular', label: '会員ランクが「通常」なら、定価で計算する', lines: 6, responsibility: 'price-regular', suggestedName: 'calculatePrice' , code: { csharp: "if (items.Count == 0) return 0;\nvar regularAmount = items.Sum(item =>\n    item.UnitPrice * item.Quantity);\nvar regularTotal = decimal.Round(regularAmount,\n    2);\nif (rank == MemberRank.Regular) return regularTotal;" }},
+                  { id: 'frag-price-premium', label: '会員ランクが「プレミアム」なら、10%引きで計算する', lines: 6, responsibility: 'price-premium', suggestedName: 'calculatePrice' , code: { csharp: "if (items.Count == 0) return 0;\nvar premiumAmount = items.Sum(item =>\n    item.UnitPrice * item.Quantity);\nvar discountedTotal = premiumAmount * 0.90m;\nreturn rank == MemberRank.Premium ? decimal.Round(discountedTotal,\n    2) : throw new ArgumentOutOfRangeException(nameof(rank));" }},
                 ],
               },
             ],
@@ -1382,9 +1377,8 @@ const memberRankBranchingStage: Stage = {
                 name: 'quoteShipping',
                 visibility: 'public',
                 fragments: [
-                  { id: 'frag-shipping-regular', label: '会員ランクが「通常」なら、送料を全額かける', lines: 4, responsibility: 'shipping-regular', suggestedName: 'calculateShipping' , code: { csharp: "if (weight <= 0) throw new ArgumentOutOfRangeException(nameof(weight));\nvar regularZone = _zoneResolver.Resolve(address);\nvar regularShippingFee = _shippingRates.Calculate(regularZone, weight);\nif (rank == MemberRank.Regular) return regularShippingFee;" }},
-                  { id: 'frag-shipping-premium', label: '会員ランクが「プレミアム」なら、送料を半額にする', lines: 4, responsibility: 'shipping-premium', suggestedName: 'calculateShipping' , code: { csharp: "if (weight <= 0) throw new ArgumentOutOfRangeException(nameof(weight));\nvar premiumZone = _zoneResolver.Resolve(address);\nvar premiumShippingFee = _shippingRates.Calculate(premiumZone, weight);\nif (rank == MemberRank.Premium) return premiumShippingFee * 0.5m;" }},
-                  { id: 'frag-shipping-vip', label: '会員ランクが「VIP」なら、送料を無料にする', lines: 4, responsibility: 'shipping-vip', suggestedName: 'calculateShipping' , code: { csharp: "if (weight <= 0) throw new ArgumentOutOfRangeException(nameof(weight));\nvar vipZone = _zoneResolver.Resolve(address);\nvar vipShippingFee = _shippingRates.Calculate(vipZone, weight);\nreturn rank == MemberRank.Vip ? 0m : vipShippingFee;" }},
+                  { id: 'frag-shipping-regular', label: '会員ランクが「通常」なら、送料を全額かける', lines: 6, responsibility: 'shipping-regular', suggestedName: 'calculateShipping' , code: { csharp: "if (weight <= 0) throw new ArgumentOutOfRangeException(nameof(weight));\nvar regularZone = _zoneResolver.Resolve(\n    address);\nvar regularShippingFee = _shippingRates.Calculate(\n    regularZone, weight);\nif (rank == MemberRank.Regular) return regularShippingFee;" }},
+                  { id: 'frag-shipping-premium', label: '会員ランクが「プレミアム」なら、送料を半額にする', lines: 6, responsibility: 'shipping-premium', suggestedName: 'calculateShipping' , code: { csharp: "if (weight <= 0) throw new ArgumentOutOfRangeException(nameof(weight));\nvar premiumZone = _zoneResolver.Resolve(\n    address);\nvar premiumShippingFee = _shippingRates.Calculate(\n    premiumZone, weight);\nreturn rank == MemberRank.Premium ? premiumShippingFee * 0.5m : throw new ArgumentOutOfRangeException(nameof(rank));" }},
                 ],
               },
             ],

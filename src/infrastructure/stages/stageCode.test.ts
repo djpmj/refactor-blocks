@@ -347,15 +347,29 @@ describe('ステージのC#コード', () => {
   });
 
   it('member rank price and shipping branches avoid duplicate local declarations', () => {
-    const price = ['frag-price-regular', 'frag-price-premium', 'frag-price-vip']
+    const price = ['frag-price-regular', 'frag-price-premium']
       .map((id) => fragmentById(id).code?.csharp ?? '').join('\n');
-    const shipping = ['frag-shipping-regular', 'frag-shipping-premium', 'frag-shipping-vip']
+    const shipping = ['frag-shipping-regular', 'frag-shipping-premium']
       .map((id) => fragmentById(id).code?.csharp ?? '').join('\n');
     const declared = (code: string, name: string) => [...code.matchAll(new RegExp(`var ${name}\\s*=`, 'g'))].length;
     expect(declared(price, 'total')).toBeLessThanOrEqual(1);
     expect(declared(price, 'discountedTotal')).toBeLessThanOrEqual(1);
     expect(declared(shipping, 'zone')).toBeLessThanOrEqual(1);
     expect(declared(shipping, 'shippingFee')).toBeLessThanOrEqual(1);
+  });
+
+  it('中級10の価格・送料は2ランクを明示し、未対応ランクを例外にする', () => {
+    const regularPrice = fragmentById('frag-price-regular').code?.csharp ?? '';
+    const premiumPrice = fragmentById('frag-price-premium').code?.csharp ?? '';
+    const regularShipping = fragmentById('frag-shipping-regular').code?.csharp ?? '';
+    const premiumShipping = fragmentById('frag-shipping-premium').code?.csharp ?? '';
+
+    expect(regularPrice).toContain('rank == MemberRank.Regular');
+    expect(premiumPrice).toContain('rank == MemberRank.Premium');
+    expect(premiumPrice).toContain('throw new ArgumentOutOfRangeException(nameof(rank));');
+    expect(regularShipping).toContain('rank == MemberRank.Regular');
+    expect(premiumShipping).toContain('rank == MemberRank.Premium');
+    expect(premiumShipping).toContain('throw new ArgumentOutOfRangeException(nameof(rank));');
   });
 
   it('premium and VIP discounts use distinct locals in the shared method scope', () => {
