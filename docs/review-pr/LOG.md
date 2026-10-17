@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-17 23:35 UTC PR #252 左パネルの段階遷移とスクロールを改善する (#217)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(npm test ✅ 1797件 / lint ✅ / typecheck ✅)。E2Eはレビュー環境にPlaywrightブラウザが無く未実行(PR本文では全254件成功)。Issue #217・docs/specs/sidebar-flow-visibility.mdの、ステージ切替で先頭へ戻す/段階進行でカードへスクロール/依頼タイトルを change-request のみ表示、を差分で確認。domain/application変更なし
+- マージ: squash & delete-branch
+
 ## 2026-10-17 23:25 UTC PR #251 解答例の各手順にステージの可視性設定を反映する (#219)
 
 - 判定: 合格(blocker無し)
@@ -216,10 +222,4 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm run check(lint/typecheck/test 1674件) ✅ / E2E 205件 ✅。Issue #162・docs/specs/clear-condition-badges.mdの、goal/current分離、達成数表示、達成瞬間の演出と初期化・リセット・undo/redo時の抑止、reduced-motionを確認。domain/application変更なし
-- マージ: squash & delete-branch
-
-## 2026-10-12 07:11 UTC PR #167 ファイルの減点理由をアイコンから表示
-
-- 判定: 合格(blocker無し。suggestion: FileNodeでfileDeductionReasonsを毎レンダー計算しているのでselector化を検討)
-- 確認した内容: npm run check(lint/typecheck/test 1676件) ✅。E2Eはレビュー環境で実行許可が得られず未実行(PR本文では204件通過)。Issue #161・docs/specs/file-mark-reasons.mdのfileDeductionsがfileDeductionReasonsの合計から導出されること、AC1の-5点と既存定数10点の矛盾は既存採点との整合を優先した判断として妥当と確認
 - マージ: squash & delete-branch
