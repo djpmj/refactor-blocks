@@ -21,7 +21,6 @@ test('ファイル位置を操作後も保ち、整列・元に戻す・最初�
   await selectStage(page, 'チュートリアル2: 太った placeOrder');
   const orderId = 'file-src/order/OrderService.ts';
   const taxId = 'file-src/tax/TaxCalculator.ts';
-  const initialOrder = await boxPosition(page, orderId);
   const initialTax = await boxPosition(page, taxId);
   const initialOrderFlow = await flowPosition(page, orderId);
   const initialTaxFlow = await flowPosition(page, taxId);
@@ -34,6 +33,7 @@ test('ファイル位置を操作後も保ち、整列・元に戻す・最初�
   await page.mouse.up();
   const manuallyMovedTax = await boxPosition(page, taxId);
   expect(manuallyMovedTax).not.toEqual(initialTax);
+  const manuallyMovedTaxFlow = await flowPosition(page, taxId);
 
   // Act: placeOrder から税計算を抽出して TaxCalculator へドラッグする
   await page.getByTestId('method-placeOrder').click();
@@ -53,8 +53,9 @@ test('ファイル位置を操作後も保ち、整列・元に戻す・最初�
   await expect(target.getByTestId('method-calculateTax')).toBeVisible();
 
   // Assert: 手で置いた TaxCalculator と OrderService は操作後もその位置にある
-  await expect.poll(() => boxPosition(page, taxId)).toEqual(manuallyMovedTax);
-  await expect.poll(() => boxPosition(page, orderId)).toEqual(initialOrder);
+  // (メソッドエディタの表示でキャンバスの幅が変わると表示が合わせ直されるので、画面の位置ではなく図の座標で比べる)
+  await expect.poll(() => flowPosition(page, taxId)).toEqual(manuallyMovedTaxFlow);
+  await expect.poll(() => flowPosition(page, orderId)).toEqual(initialOrderFlow);
 
   // Act: 整列はキーボードからも使え、依存先を呼び出し元より下へ置く
   const arrange = page.getByTestId('canvas-arrange');
@@ -63,13 +64,13 @@ test('ファイル位置を操作後も保ち、整列・元に戻す・最初�
   await arrange.focus();
   await page.keyboard.press('Enter');
   await expect.poll(async () => (await boxPosition(page, taxId)).y > (await boxPosition(page, orderId)).y).toBe(true);
-  const alignedTax = await boxPosition(page, taxId);
-  const alignedOrder = await boxPosition(page, orderId);
+  const alignedTax = await flowPosition(page, taxId);
+  const alignedOrder = await flowPosition(page, orderId);
 
   // Act & Assert: undo は配置を保ち、reset はステージ初期配置に戻す
   await page.getByRole('button', { name: '元に戻す' }).click();
-  await expect.poll(() => boxPosition(page, taxId)).toEqual(alignedTax);
-  await expect.poll(() => boxPosition(page, orderId)).toEqual(alignedOrder);
+  await expect.poll(() => flowPosition(page, taxId)).toEqual(alignedTax);
+  await expect.poll(() => flowPosition(page, orderId)).toEqual(alignedOrder);
   await page.getByRole('button', { name: '最初に戻す' }).click();
   await expect.poll(() => flowPosition(page, orderId)).toEqual(initialOrderFlow);
   await expect.poll(() => flowPosition(page, taxId)).toEqual(initialTaxFlow);

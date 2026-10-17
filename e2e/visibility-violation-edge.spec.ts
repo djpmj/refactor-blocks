@@ -33,7 +33,6 @@ test('中級3の越境矢印を説明し、Move Method後に警告を消す', as
   await page.keyboard.press('Escape');
   const source = page.getByTestId('method-renderTemplate');
   const target = page.getByTestId('class-NotificationService');
-  await page.getByRole('button', { name: 'Fit View' }).click();
   const from = await source.boundingBox();
   const to = await target.boundingBox();
   if (from === null || to === null) throw new Error('Move Method の要素位置を取得できません');

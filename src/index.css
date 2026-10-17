@@ -789,3 +789,5 @@ input.class-node__name { width: 14ch; }
   .impact-review__canvas { height: 320px; }
 }
 .impact-review:not([open]) { display: none; }
+
+.detail-zoom-notice { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); font-size: 13px; }
