@@ -16,6 +16,16 @@ function LocationList({ description }: Readonly<{ description: PainDescription }
   );
 }
 
+/** 減ったものだけを並べた「最初は …」の中身。何も減っていなければ undefined。 */
+function firstSitesText({ initial, current }: Pick<ChangePain, 'initial' | 'current'>): string | undefined {
+  const parts = [
+    current.siteIds.length < initial.siteIds.length ? `${initial.siteIds.length} か所` : undefined,
+    current.classes < initial.classes ? `${initial.classes} クラス` : undefined,
+    current.files < initial.files ? `${initial.files} ファイル` : undefined,
+  ].filter((part) => part !== undefined);
+  return parts.length === 0 ? undefined : parts.join('・');
+}
+
 function ModifyBefore({ pain, codebase }: Readonly<{ pain: ChangePain; codebase: Codebase }>) {
   const trend = describePainTrend(pain);
   return (
@@ -23,10 +33,13 @@ function ModifyBefore({ pain, codebase }: Readonly<{ pain: ChangePain; codebase:
       <p className="change-pain__request"><strong>{pain.request.title}</strong></p>
       <p>{pain.request.description}</p>
       <p aria-live="polite">直す場所は今 <strong>{pain.current.siteIds.length} か所</strong>（{pain.current.classes} クラス・{pain.current.files} ファイル）
-        {pain.current.siteIds.length < pain.initial.siteIds.length && <>（最初は {pain.initial.siteIds.length} か所でした）</>}
+        {firstSitesText(pain) !== undefined && <>（最初は {firstSitesText(pain)}でした）</>}
       </p>
       <p aria-live="polite">その場所を直すために、目を通す行数は今 <strong>{pain.current.readLines} 行</strong>
         {pain.current.readLines < pain.initial.readLines && <>（最初は {pain.initial.readLines} 行でした）</>}
+      </p>
+      <p aria-live="polite">そのクラスを開くと、目を通す行数は今 <strong>{pain.current.classLines} 行</strong>
+        {pain.current.classLines < pain.initial.classLines && <>（最初は {pain.initial.classLines} 行でした）</>}
       </p>
       {trend !== undefined && <p data-testid="pain-trend">{trend}</p>}
       <LocationList description={describePain(codebase, pain.current)} />
@@ -35,8 +48,12 @@ function ModifyBefore({ pain, codebase }: Readonly<{ pain: ChangePain; codebase:
 }
 
 function ModifyAfter({ pain }: Readonly<{ pain: ChangePain }>) {
+  const { initial, current } = pain;
+  const filesShrank = current.files < initial.files;
   return (
     <>
+      {(current.classes < initial.classes || filesShrank) && <p>直すクラスは <strong>{initial.classes} クラス{filesShrank && `・${initial.files} ファイル`} → {current.classes} クラス{filesShrank && `・${current.files} ファイル`}</strong> にまとまりました。</p>}
+      {current.classLines < initial.classLines && <p>開いて読むクラスの行数は <strong>{initial.classLines} 行 → {current.classLines} 行</strong> になりました。</p>}
       {pain.current.siteIds.length < pain.initial.siteIds.length && <p>同じ変更が <strong>{pain.initial.siteIds.length} か所 → {pain.current.siteIds.length} か所</strong> で済むようになりました。</p>}
       {pain.current.readLines < pain.initial.readLines && <p>読む量は <strong>{pain.initial.readLines} 行 → {pain.current.readLines} 行</strong> になりました。</p>}
     </>

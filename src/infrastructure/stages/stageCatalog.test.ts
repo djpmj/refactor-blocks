@@ -3,6 +3,7 @@ import { changeKindOf, type ChangeRequest } from '../../domain/change/ChangeRequ
 import { findChangeSites } from '../../domain/change/findChangeSites';
 import { measureChange } from '../../domain/change/measureChange';
 import { measureExtendPain, measurePain, painRequestsOf } from '../../domain/change/changePain';
+import { isClearlyRelieved } from '../../domain/change/painRelief';
 import { rumoredRequests } from '../../domain/change/rumors';
 import { averageScore, scoreChange } from '../../domain/change/scoreChange';
 import { allClasses, fieldsOf, isAbstractLike, isInterfaceLike, mapClasses, touchedFieldIds, type Codebase } from '../../domain/codebase/Codebase';
@@ -788,6 +789,34 @@ describe('stageCatalog', () => {
       expect.objectContaining({ kind: 'method', targetId: 'method-quote-shipping' }),
     ]));
     expect(scoreCodebase(stage.codebase, stage).total).toBeLessThan(100);
+  });
+
+  it('解答例で1件目のmodifyの依頼がはっきり楽になる(対象外を除く)', () => {
+    // Arrange
+    const notRelievedExceptions: Readonly<Record<string, string>> = {
+      'intermediate-middle-man': '横流しの除去は呼び出しの中継を消すだけで、直す場所・クラス・行数のどれも変わらないため。呼び出しの段数を数えるようにしたときに外す',
+    };
+    const failures: string[] = [];
+    const staleExceptions: string[] = [];
+
+    // Act
+    for (const stage of stages) {
+      if (sampleAnswerSteps[stage.id] === undefined) continue;
+      const pain = measurePain(stage, sampleAnswerCodebase(stage));
+      if (pain === undefined) continue;
+      const relieved = isClearlyRelieved(pain.initial, pain.current);
+      const excluded = Object.hasOwn(notRelievedExceptions, stage.id);
+      if (excluded && relieved) staleExceptions.push(stage.id);
+      if (!excluded && !relieved) {
+        const { initial, current } = pain;
+        failures.push(`${stage.id}/${pain.request.id}: 場所 ${initial.siteIds.length}→${current.siteIds.length}・クラス ${initial.classes}→${current.classes}・ファイル ${initial.files}→${current.files}・読む行数 ${initial.readLines}→${current.readLines}・クラスの行数 ${initial.classLines}→${current.classLines}`);
+      }
+    }
+
+    // Assert
+    expect(failures).toEqual([]);
+    expect(staleExceptions).toEqual([]);
+    expect(Object.values(notRelievedExceptions).every((reason) => reason.trim().length > 0)).toBe(true);
   });
 
   it('解答例の設計で変更依頼は100点(既知例外を除く)で、例外は改善後に削除する', () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { CodeClass, Codebase } from '../codebase/Codebase';
-import { methodLines } from '../codebase/lineCount';
+import { classLines, methodLines } from '../codebase/lineCount';
 import { fragment, sampleCodebase } from '../codebase/testFixtures';
 import type { Stage } from '../stage/Stage';
 import { measureExtendPain, measurePain, painRequestsOf } from './changePain';
@@ -171,6 +171,52 @@ describe('measurePain readLines', () => {
 
     // Assert
     expect(result?.current.siteIds).toHaveLength(1);
+    expect(result?.improved).toBe(true);
+  });
+});
+
+describe('measurePain classLines', () => {
+  const m = (id: string, fragments: ReturnType<typeof fragment>[]) => ({ id, name: id, visibility: 'public' as const, fragments });
+  const cls = (id: string, methods: ReturnType<typeof m>[]): CodeClass => ({ id, name: id, methods });
+  const fileOf = (classes: CodeClass[]): Codebase => ({ files: [{ id: 'f', path: 'a.ts', classes }] });
+
+  it('2つのクラスに直す場所があれば、2つのクラスの行数の合計になる', () => {
+    // Arrange
+    const first = cls('c1', [m('m1', [fragment('a', 2, 'tax')])]);
+    const second = cls('c2', [m('m2', [fragment('b', 2, 'tax')])]);
+    const codebase = fileOf([first, second]);
+
+    // Act
+    const result = measurePain(stage(codebase), codebase);
+
+    // Assert
+    expect(result?.current.classLines).toBe(classLines(first) + classLines(second));
+  });
+
+  it('同じクラスに直す場所が2つあっても、クラスの行数は1回だけ数える', () => {
+    // Arrange
+    const only = cls('c1', [m('m1', [fragment('a', 2, 'tax')]), m('m2', [fragment('b', 2, 'tax')])]);
+    const codebase = fileOf([only]);
+
+    // Act
+    const result = measurePain(stage(codebase), codebase);
+
+    // Assert
+    expect(result?.current.classLines).toBe(classLines(only));
+  });
+
+  it('直す場所・読む行数が同じでもclassLinesが減ればimprovedになる', () => {
+    // Arrange
+    const initial = fileOf([cls('c1', [m('m1', [fragment('a', 2, 'tax')]), m('other', [fragment('o', 30, 'x')])])]);
+    const current = fileOf([cls('c1', [m('m1', [fragment('a', 2, 'tax')])]), cls('c2', [m('other', [fragment('o', 30, 'x')])])]);
+
+    // Act
+    const result = measurePain(stage(initial), current);
+
+    // Assert
+    expect(result?.current.siteIds).toHaveLength(1);
+    expect(result?.current.readLines).toBe(result?.initial.readLines);
+    expect(result?.current.classLines).toBeLessThan(result?.initial.classLines ?? 0);
     expect(result?.improved).toBe(true);
   });
 });

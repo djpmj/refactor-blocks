@@ -35,9 +35,10 @@ function FixResultStatus({ codebase, result }: Readonly<{ codebase: Codebase; re
 function FixComparison({ stage, codebase, openingFix }: Readonly<{ stage: Stage; codebase: Codebase; openingFix: ResultViewProps['openingFix'] }>) {
   const pain = measurePain(stage, codebase);
   if (pain === undefined) return null;
+  const classShift = pain.current.classes < pain.initial.classes ? `(${pain.initial.classes} クラス → ${pain.current.classes} クラス)` : '';
   return openingFix === null
-    ? <p data-testid="fix-comparison">直す場所 {pain.initial.siteIds.length} か所 → {pain.current.siteIds.length} か所、読む量 {pain.initial.readLines} 行 → {pain.current.readLines} 行になりました</p>
-    : <p data-testid="fix-comparison">冒頭: 直す場所 {pain.initial.siteIds.length} か所・読む量 {pain.initial.readLines} 行(直し忘れ {openingFix?.missed ?? 0} か所) → 今回: 直す場所 {pain.current.siteIds.length} か所・読む量 {pain.current.readLines} 行</p>;
+    ? <p data-testid="fix-comparison">直す場所 {pain.initial.siteIds.length} か所 → {pain.current.siteIds.length} か所{classShift}、読む量 {pain.initial.readLines} 行 → {pain.current.readLines} 行になりました</p>
+    : <p data-testid="fix-comparison">冒頭: 直す場所 {pain.initial.siteIds.length} か所・読む量 {pain.initial.readLines} 行(直し忘れ {openingFix?.missed ?? 0} か所) → 今回: 直す場所 {pain.current.siteIds.length} か所{classShift}・読む量 {pain.current.readLines} 行</p>;
 }
 
 function PainSummary({ codebase, result, opening }: Readonly<{ codebase: Codebase; result: ManualFixResult; opening: boolean }>) {
