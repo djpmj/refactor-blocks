@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-17 02:30 UTC PR #206 Reduce member ranks in intermediate stage
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(1755件) / npm run lint ✅ / npm run typecheck ✅(E2Eはこの環境で実行できず未実行。差分はステージ定義とテストのみ)
+- マージ: squash & delete-branch
+
 ## 2026-10-17 UTC PR #205 feat: group context menu actions
 
 - 判定: 合格(blocker無し)
@@ -210,16 +216,4 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(1625件) / npm run lint ✅ / npm run typecheck ✅(E2EはPR記載のPASSを確認、本レビューでは未実行)
-- マージ: squash & delete-branch
-
-## 2026-10-11 14:55 UTC PR #144 feat: keep existing file positions stable
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(lint/typecheck/test 1625件)✅(E2EはChromium未導入のため未実行。PR本文では187件成功の報告)
-- マージ: squash & delete-branch
-
-## 2026-10-11 14:12 UTC PR #143 feat: score misplaced class responsibilities
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅(E2EはChromium未導入のため未実行。差分は目視確認、PR本文では186件成功の報告)
 - マージ: squash & delete-branch

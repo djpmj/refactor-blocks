@@ -104,3 +104,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [operation-discoverability](operation-discoverability.md) | 統合・呼び出し元へ戻す・可視性の操作を、操作ガイドとエディタの文言で見つけやすくする |
 | [score-floor-progress](score-floor-progress.md) | 0点のままでも減点の合計を表示し、減ったらゲージを光らせて読み上げる |
 | [context-menu-grouping](context-menu-grouping.md) | 右クリックメニューを対象ごとの組に分け、メソッドを新しいクラスへ移す項目を足す |
+| [rank-branching-two-ranks](rank-branching-two-ranks.md) | 中級10の会員ランクを2つに減らし、模範解答を14手にする |
