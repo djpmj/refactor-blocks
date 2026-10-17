@@ -71,7 +71,7 @@ describe('advanced-notifier-hierarchy', () => {
     expect(smsMethodNames).toContain('buildSmsBody');
   });
 
-  it('模範解答では、NotifierBaseに移した処理はprivateのままにならず、継承した子クラスから呼べるprotectedになる', () => {
+  it('可視性を採点しない模範解答では、NotifierBaseに移した処理がpublicになる', () => {
     // Arrange
     const solved = sampleAnswerCodebase(stage);
 
@@ -80,7 +80,7 @@ describe('advanced-notifier-hierarchy', () => {
     const visibilities = notifierBase?.methods.map((method) => method.visibility) ?? [];
 
     // Assert
-    expect(visibilities).toEqual(['protected']);
+    expect(visibilities).toEqual(['public']);
   });
 
   it('初期状態では、まだ継承関係が結ばれていない', () => {
