@@ -1,4 +1,4 @@
-﻿import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { selectStage } from './selectStage.js';
 
 async function dragToEmptyCanvas(page: Page, method: Locator): Promise<void> {
@@ -79,7 +79,7 @@ test('作成したクラス名は内容に追従し、手動リネーム後は�
   // Act: rename to opt out of automatic naming
   await page.getByTestId('class-header-InvoiceStorage').click({ button: 'right' });
   const menu = page.getByTestId('context-menu');
-  await menu.getByRole('menuitem', { name: 'クラスの名前を変更' }).click();
+  await menu.getByRole('menuitem', { name: '名前を変更' }).click();
   const nameInput = menu.getByLabel('新しいクラス名');
   await nameInput.fill('CustomArchive');
   await nameInput.press('Enter');
