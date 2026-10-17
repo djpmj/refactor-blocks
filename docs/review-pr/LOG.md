@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-17 10:50 UTC PR #214 feat: refit the canvas on resize without hiding method details
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint / typecheck / test 1797件)✅。E2Eはレビュー環境で実行不可(ブラウザ未導入。PR本文では252件通過)。Issue #180・#189 と docs/specs/canvas-refit-on-resize.md・detail-zoom-floor.md の、リサイズ時の自動再フィット(ユーザー操作後は抑止)・DETAIL_ZOOM未満にしない autoViewport・縮小中の案内を差分で確認。変更は presentation 層のみで純粋関数にユニットテストあり
+- マージ: squash & delete-branch
+
 ## 2026-10-17 10:30 UTC PR #213 feat: add a boss change request where refactoring pays off
 
 - 判定: 合格(blocker無し)
@@ -210,10 +216,4 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(1674件) / npm run lint ✅ / npm run typecheck ✅。E2Eはレビュー環境で実行できず未確認(PR本文では201件通過)。Issue #151・docs/specs/delete-inline-notice.mdの、deleteClass/deleteFileが{codebase, inlined}を返すこと、noticeとmessageの排他、ErrorToastの情報表示(role=status)を確認
-- マージ: squash & delete-branch
-
-## 2026-10-12 01:05 UTC PR #157 feat: score mixed responsibilities in extracted methods
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(1665件) / npm run lint ✅ / npm run typecheck ✅。E2Eはレビュー環境で実行不可(ブラウザ未導入。PR本文では199件通過)。Issue #150・docs/specs/mixed-responsibility-method.mdの`mixed-method`ルール(初期にないメソッド・call除外・cohesiveResponsibilities)の実装とdomain層の純粋関数であることを確認
 - マージ: squash & delete-branch
