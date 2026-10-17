@@ -10,6 +10,7 @@ import { mergeMethods } from '../codebase/mergeMethods';
 import { moveClass } from '../codebase/moveClass';
 import { moveField } from '../codebase/moveField';
 import { moveMethod } from '../codebase/moveMethod';
+import { publicizeCrossClassCalls } from '../codebase/publicizeCrossClassCalls';
 import { renameClass } from '../codebase/renameClass';
 import { addInterface, removeInterface, setSuperclass } from '../codebase/setSuperclass';
 import type { Result } from '../shared/Result';
@@ -120,6 +121,12 @@ type StructuralStep = Exclude<
   | { readonly changeVisibility: unknown }
 >;
 
+export type SolutionStepOptions = { readonly visibilityEnforced?: boolean };
+
+function shouldPublicizeAfter(step: SolutionStep): boolean {
+  return 'move' in step || 'moveField' in step || 'moveClass' in step || 'setSuperclass' in step;
+}
+
 /** ファイル・クラス・継承/実装関係の組み替え(処理の中身を伴わない手)を適用する。 */
 function applyStructuralStep(codebase: Codebase, step: StructuralStep, newId: string): Codebase {
   if ('addFile' in step) return unwrap(addFile(codebase, step.addFile, newId));
@@ -186,16 +193,22 @@ function applyStep(codebase: Codebase, step: SolutionStep, newId: string): Codeb
  * 手順を順番に適用し、各手の後のコードを返す。先頭(添字0)は適用前の codebase そのもの。長さは steps.length + 1。
  * 新しく振るIDは呼び出し元のIDと衝突しないよう連番(`solution-<添字>`)にする。
  */
-export function solutionSnapshots(codebase: Codebase, steps: readonly SolutionStep[]): readonly Codebase[] {
+export function solutionSnapshots(codebase: Codebase, steps: readonly SolutionStep[], options: SolutionStepOptions = {}): readonly Codebase[] {
   return steps.reduce<readonly Codebase[]>(
-    (snapshots, step, index) => [...snapshots, applyStep(snapshots[index], step, `solution-${String(index)}`)],
+    (snapshots, step, index) => {
+      const result = applyStep(snapshots[index], step, `solution-${String(index)}`);
+      const codebaseAfterStep = options.visibilityEnforced === true || !shouldPublicizeAfter(step)
+        ? result
+        : publicizeCrossClassCalls(result).codebase;
+      return [...snapshots, codebaseAfterStep];
+    },
     [codebase],
   );
 }
 
 /** 手順を順番に適用した最終形のコードを返す。 */
-export function applySolutionSteps(codebase: Codebase, steps: readonly SolutionStep[]): Codebase {
-  const snapshots = solutionSnapshots(codebase, steps);
+export function applySolutionSteps(codebase: Codebase, steps: readonly SolutionStep[], options: SolutionStepOptions = {}): Codebase {
+  const snapshots = solutionSnapshots(codebase, steps, options);
   return snapshots[snapshots.length - 1];
 }
 
@@ -469,10 +482,10 @@ export const sampleAnswerSteps: Partial<Record<string, readonly SolutionStep[]>>
 
 /** ステージの模範解答を適用した最終形のコードベース。「解答例の図」に使う。 */
 export function sampleAnswerCodebase(
-  stage: Pick<Stage, 'id' | 'codebase'>,
+  stage: Pick<Stage, 'id' | 'codebase' | 'visibilityEnforced'>,
   steps: Partial<Record<string, readonly SolutionStep[]>> = sampleAnswerSteps,
 ): Codebase {
   const solution = steps[stage.id];
   if (solution === undefined) throw new Error(`ステージ ${stage.id} の模範解答が定義されていません`);
-  return applySolutionSteps(stage.codebase, solution);
+  return applySolutionSteps(stage.codebase, solution, { visibilityEnforced: stage.visibilityEnforced });
 }

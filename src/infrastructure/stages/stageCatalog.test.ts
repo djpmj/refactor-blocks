@@ -14,6 +14,7 @@ import { scoreCodebase } from '../../domain/scoring/score';
 import { findLineLimitViolations } from '../../domain/scoring/lineLimits';
 import { findMisplacedResponsibilities } from '../../domain/scoring/misplacedResponsibilities';
 import { findMixedMethods } from '../../domain/scoring/mixedMethods';
+import { findVisibilityViolations } from '../../domain/scoring/visibility';
 import { behaviorTests, runBehaviorTests } from '../../domain/testing/behaviorTests';
 import type { Result } from '../../domain/shared/Result';
 import { applySolutionSteps, sampleAnswerCodebase, sampleAnswerSteps, solutionSnapshots, type SolutionStep } from '../../domain/stage/sampleAnswer';
@@ -220,13 +221,40 @@ describe('責務の混ざったメソッド', () => {
   it('全ステージと白紙設計の模範解答に違反がない', () => {
     // Arrange / Act / Assert
     for (const stage of stages) {
-      const solved = applySolutionSteps(stage.codebase, sampleAnswerSteps[stage.id] ?? []);
+      const solved = applySolutionSteps(stage.codebase, sampleAnswerSteps[stage.id] ?? [], { visibilityEnforced: stage.visibilityEnforced });
       expect(findMixedMethods(solved, stage.codebase, stage.cohesiveResponsibilities), stage.id).toEqual([]);
     }
     for (const problem of blankDesignProblems) {
       const solved = applySolutionSteps(problem.codebase, problem.modelAnswer);
       expect(findMixedMethods(solved, problem.codebase, problem.cohesiveResponsibilities), problem.id).toEqual([]);
     }
+  });
+
+  it('可視性を採点しないステージの解答例には越境呼び出しの違反がない', () => {
+    // Arrange
+    const visibilityViolations: string[] = [];
+
+    // Act
+    for (const stage of stages) {
+      if (stage.visibilityEnforced === true) continue;
+      const solved = sampleAnswerCodebase(stage);
+      visibilityViolations.push(...findVisibilityViolations(solved).map(({ methodId }) => `${stage.id}/${methodId}`));
+    }
+
+    // Assert
+    expect(visibilityViolations).toEqual([]);
+  });
+
+  it('可視性を採点するステージの模範解答でも明示的な可視性修正は維持する', () => {
+    // Arrange
+    const enforcedStages = stages.filter((stage) => stage.visibilityEnforced === true);
+
+    // Act
+    const visibilityViolations = enforcedStages.flatMap((stage) => findVisibilityViolations(sampleAnswerCodebase(stage)));
+
+    // Assert
+    expect(enforcedStages.length).toBeGreaterThan(0);
+    expect(visibilityViolations).toEqual([]);
   });
 
   it('中級1で合計金額と決済をまとめて抽出すると1件減点し、決済だけなら違反しない', () => {
@@ -258,7 +286,7 @@ describe('責務の混ざったメソッド', () => {
     // Arrange
     const stage = stages.find((candidate) => candidate.id === 'intermediate-anemic-domain-model');
     if (stage === undefined) throw new Error('貧血症ステージがありません');
-    const solved = applySolutionSteps(stage.codebase, sampleAnswerSteps[stage.id] ?? []);
+    const solved = applySolutionSteps(stage.codebase, sampleAnswerSteps[stage.id] ?? [], { visibilityEnforced: stage.visibilityEnforced });
 
     // Act
     const violations = findMixedMethods(solved, stage.codebase, stage.cohesiveResponsibilities);
@@ -271,7 +299,7 @@ describe('責務の混ざったメソッド', () => {
 });
 
 /** ステージの狙いを飛ばした手順。これで100点になってしまうなら、ステージの数値の作りが甘い。 */
-const shortcuts: ReadonlyArray<{ readonly stageId: string; readonly description: string; readonly steps: readonly SolutionStep[] }> = [
+const shortcuts: ReadonlyArray<{ readonly stageId: string; readonly description: string; readonly steps: readonly SolutionStep[]; readonly expectedScore?: number }> = [
   {
     stageId: 'advanced-template-method',
     description: '共通3手順だけ親へ移し、骨組みを子に残す',
@@ -282,6 +310,7 @@ const shortcuts: ReadonlyArray<{ readonly stageId: string; readonly description:
     stageId: 'advanced-template-method',
     description: 'parse を private のまま骨組みを親へ移す',
     steps: templateSolution.filter((step) => !('changeVisibility' in step)),
+    expectedScore: 100,
   },
   {
     stageId: 'beginner-user-controller',
@@ -1118,7 +1147,7 @@ describe('stageCatalog', () => {
       expect(sampleAnswerSteps[stage.id]).toBeDefined();
 
       // Act
-      const solved = applySolutionSteps(stage.codebase, sampleAnswerSteps[stage.id] ?? []);
+      const solved = applySolutionSteps(stage.codebase, sampleAnswerSteps[stage.id] ?? [], { visibilityEnforced: stage.visibilityEnforced });
 
       // Assert
       expect(scoreCodebase(solved, stage)).toEqual(expect.objectContaining({ total: 100 }));
@@ -1129,7 +1158,7 @@ describe('stageCatalog', () => {
       const steps = sampleAnswerSteps[stage.id] ?? [];
 
       // Act
-      const snapshots = solutionSnapshots(stage.codebase, steps);
+      const snapshots = solutionSnapshots(stage.codebase, steps, { visibilityEnforced: stage.visibilityEnforced });
 
       // Assert
       expect(snapshots).toHaveLength(steps.length + 1);
@@ -1139,7 +1168,7 @@ describe('stageCatalog', () => {
     it('模範解答のどの手の後も、振る舞いのテストが全部緑(途中で private のまま別クラスへ移した一時的なコンパイルエラーを除く)', () => {
       // Arrange
       const steps = sampleAnswerSteps[stage.id] ?? [];
-      const snapshots = solutionSnapshots(stage.codebase, steps);
+      const snapshots = solutionSnapshots(stage.codebase, steps, { visibilityEnforced: stage.visibilityEnforced });
 
       // Act
       const reds = redFailuresAcross(stage, snapshots);
@@ -1189,7 +1218,7 @@ describe('stageCatalog', () => {
 
     it('模範解答にすると、変更依頼のコストが初期状態より下がる(変更容易性スコアが上がる)', () => {
       // Arrange
-      const solved = applySolutionSteps(stage.codebase, sampleAnswerSteps[stage.id] ?? []);
+      const solved = applySolutionSteps(stage.codebase, sampleAnswerSteps[stage.id] ?? [], { visibilityEnforced: stage.visibilityEnforced });
 
       // Act
       const before = changeReadiness(stage, stage.codebase);
@@ -1206,7 +1235,7 @@ describe('stageCatalog', () => {
 
     it('模範解答にしても、変更が必要なクラスの数は初期状態より増えない', () => {
       // Arrange
-      const solved = applySolutionSteps(stage.codebase, sampleAnswerSteps[stage.id] ?? []);
+      const solved = applySolutionSteps(stage.codebase, sampleAnswerSteps[stage.id] ?? [], { visibilityEnforced: stage.visibilityEnforced });
 
       // Act
       const before = classesTouchedPerRequest(stage, stage.codebase);
@@ -1217,16 +1246,21 @@ describe('stageCatalog', () => {
     });
   });
 
-  it.each(shortcuts)('$stageId: 「$description」では100点にならない', ({ stageId, steps }) => {
+  it.each(shortcuts)('$stageId: 「$description」の結果を確認する', ({ stageId, steps, expectedScore }) => {
     // Arrange
     const stage = stages.find((candidate) => candidate.id === stageId);
     if (stage === undefined) throw new Error(`ステージ ${stageId} がありません`);
 
     // Act
-    const played = applySolutionSteps(stage.codebase, steps);
+    const played = applySolutionSteps(stage.codebase, steps, { visibilityEnforced: stage.visibilityEnforced });
 
     // Assert
-    expect(scoreCodebase(played, stage).total).toBeLessThan(100);
+    const score = scoreCodebase(played, stage).total;
+    if (expectedScore === undefined) {
+      expect(score).toBeLessThan(100);
+    } else {
+      expect(score).toBe(expectedScore);
+    }
   });
 
   it('入口のあるステージが大半を占める', () => {

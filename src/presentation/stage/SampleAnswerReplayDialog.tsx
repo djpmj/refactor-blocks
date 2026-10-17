@@ -24,7 +24,7 @@ export function SampleAnswerReplayDialog({ stage, steps, onClose }: SampleAnswer
   const [maximized, setMaximized] = useState(false);
   const [selectedMethodId, setSelectedMethodId] = useState<string | null>(null);
   const { width, handleProps } = useResizableSidebarWidth({ side: 'right', defaultWidth: 360, minWidth: 280, maxWidth: 640, ariaLabel: 'メソッドパネルの幅を変更' });
-  const snapshots = useMemo(() => solutionSnapshots(stage.codebase, steps), [stage, steps]);
+  const snapshots = useMemo(() => solutionSnapshots(stage.codebase, steps, { visibilityEnforced: stage.visibilityEnforced }), [stage, steps]);
   const totals = useMemo(() => snapshots.map((snapshot) => scoreCodebase(snapshot, stage).total), [snapshots, stage]);
   useEffect(() => {
     const dialog = ref.current;

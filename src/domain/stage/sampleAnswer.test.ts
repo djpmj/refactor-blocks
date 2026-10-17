@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { allClasses, findClass, findClassOfMethod, type Codebase } from '../codebase/Codebase';
+import { findVisibilityViolations } from '../scoring/visibility';
 import { applySolutionSteps, sampleAnswerCodebase, solutionSnapshots, type SolutionStep } from './sampleAnswer';
 
 /** クラスA(メソッドrunに処理2つ)とクラスBを持つ最小のコードベース。 */
@@ -59,6 +60,44 @@ function withFieldsOf(codebase: Codebase, className: string, fields: NonNullable
 }
 
 describe('applySolutionSteps', () => {
+  it('別クラスへ移したprivateメソッドを、可視性を採点しない場合はpublicにする', () => {
+    // Arrange
+    const codebase: Codebase = { files: [{ id: 'file', path: 'src/a.ts', classes: [
+      { id: 'class-a', name: 'A', methods: [
+        { id: 'caller', name: 'run', visibility: 'public', fragments: [{ id: 'call', label: '呼び出し', lines: 1, responsibility: 'call', uses: ['method-work'] }] },
+        { id: 'method-work', name: 'work', visibility: 'private', fragments: [{ id: 'work', label: '処理', lines: 1, responsibility: 'work' }] },
+      ] },
+      { id: 'class-b', name: 'B', methods: [] },
+    ] }] };
+    const steps: SolutionStep[] = [{ move: { method: 'work', toClass: 'B' } }];
+
+    // Act
+    const result = applySolutionSteps(codebase, steps);
+
+    // Assert
+    expect(findClassOfMethod(result, 'method-work')?.methods.find(({ id }) => id === 'method-work')?.visibility).toBe('public');
+    expect(findVisibilityViolations(result)).toHaveLength(0);
+  });
+
+  it('visibilityEnforcedがtrueなら、別クラスへ移したprivateメソッドをprivateのままにする', () => {
+    // Arrange
+    const codebase: Codebase = { files: [{ id: 'file', path: 'src/a.ts', classes: [
+      { id: 'class-a', name: 'A', methods: [
+        { id: 'caller', name: 'run', visibility: 'public', fragments: [{ id: 'call', label: '呼び出し', lines: 1, responsibility: 'call', uses: ['method-work'] }] },
+        { id: 'method-work', name: 'work', visibility: 'private', fragments: [{ id: 'work', label: '処理', lines: 1, responsibility: 'work' }] },
+      ] },
+      { id: 'class-b', name: 'B', methods: [] },
+    ] }] };
+    const steps: SolutionStep[] = [{ move: { method: 'work', toClass: 'B' } }];
+
+    // Act
+    const result = applySolutionSteps(codebase, steps, { visibilityEnforced: true });
+
+    // Assert
+    expect(findClassOfMethod(result, 'method-work')?.methods.find(({ id }) => id === 'method-work')?.visibility).toBe('private');
+    expect(findVisibilityViolations(result)).toHaveLength(1);
+  });
+
   it('inlineステップでfromClassを指定してメソッドを呼び出し元へ戻す', () => {
     // Arrange
     const codebase: Codebase = { files: [{ id: 'file', path: 'src/a.ts', classes: [
@@ -320,7 +359,7 @@ describe('applySolutionSteps', () => {
 describe('sampleAnswerCodebase', () => {
   it('ステージIDに登録された手順を、ステージの初期コードベースに適用する', () => {
     // Arrange
-    const stage = { id: 'stage-x', codebase: twoClassCodebase() };
+    const stage = { id: 'stage-x', codebase: twoClassCodebase(), visibilityEnforced: false };
     const steps: Partial<Record<string, readonly SolutionStep[]>> = {
       'stage-x': [{ move: { method: 'run', toClass: 'B' } }],
     };
@@ -335,7 +374,7 @@ describe('sampleAnswerCodebase', () => {
 
   it('手順が登録されていないステージIDを渡すと例外を投げる', () => {
     // Arrange
-    const stage = { id: 'unknown-stage', codebase: twoClassCodebase() };
+    const stage = { id: 'unknown-stage', codebase: twoClassCodebase(), visibilityEnforced: false };
 
     // Act
     const act = () => sampleAnswerCodebase(stage, {});
@@ -397,5 +436,23 @@ describe('solutionSnapshots', () => {
 
     // Assert
     expect(codebase).toEqual(before);
+  });
+
+  it('移動直後のスナップショットでも越境呼び出し先をpublicにする', () => {
+    // Arrange
+    const codebase: Codebase = { files: [{ id: 'file', path: 'src/a.ts', classes: [
+      { id: 'class-a', name: 'A', methods: [
+        { id: 'caller', name: 'run', visibility: 'public', fragments: [{ id: 'call', label: '呼び出し', lines: 1, responsibility: 'call', uses: ['method-work'] }] },
+        { id: 'method-work', name: 'work', visibility: 'private', fragments: [{ id: 'work', label: '処理', lines: 1, responsibility: 'work' }] },
+      ] },
+      { id: 'class-b', name: 'B', methods: [] },
+    ] }] };
+    const moveStep: SolutionStep[] = [{ move: { method: 'work', toClass: 'B' } }];
+
+    // Act
+    const result = solutionSnapshots(codebase, moveStep);
+
+    // Assert
+    expect(findClassOfMethod(result[1], 'method-work')?.methods.find(({ id }) => id === 'method-work')?.visibility).toBe('public');
   });
 });
