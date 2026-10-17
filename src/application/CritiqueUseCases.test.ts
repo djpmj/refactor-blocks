@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { sampleCodebase } from '../domain/codebase/testFixtures';
 import { scoreCodebase } from '../domain/scoring/score';
-import { describeCritiqueError, requestCritiqueUseCase } from './CritiqueUseCases';
+import { CritiqueRequestError, describeCritiqueError, requestCritiqueUseCase } from './CritiqueUseCases';
 
 const STAGE = {
   codebase: sampleCodebase(),
@@ -37,6 +37,19 @@ describe('requestCritiqueUseCase', () => {
     // Assert
     expect(result).toEqual({ ok: false, error: 'request-failed' });
   });
+
+  it('400を表すリクエスト形式エラーなら専用のエラーを返す', async () => {
+    // Arrange
+    const codebase = sampleCodebase();
+    const score = scoreCodebase(codebase, STAGE);
+    const requestCritique = () => Promise.reject(new CritiqueRequestError());
+
+    // Act
+    const result = await requestCritiqueUseCase(codebase, STAGE, score, requestCritique);
+
+    // Assert
+    expect(result).toEqual({ ok: false, error: 'invalid-request' });
+  });
 });
 
 describe('describeCritiqueError', () => {
@@ -44,6 +57,13 @@ describe('describeCritiqueError', () => {
     // Act & Assert
     expect(describeCritiqueError('request-failed')).toBe(
       'AI講評を取得できませんでした。しばらくしてからもう一度お試しください',
+    );
+  });
+
+  it('invalid-requestのメッセージを返す', () => {
+    // Act & Assert
+    expect(describeCritiqueError('invalid-request')).toBe(
+      'AI講評のリクエストの形が合いませんでした(不具合です)。ゲームを最新にして、もう一度お試しください',
     );
   });
 });

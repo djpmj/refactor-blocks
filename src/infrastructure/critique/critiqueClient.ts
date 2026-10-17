@@ -1,4 +1,4 @@
-import type { RequestCritique } from '../../application/CritiqueUseCases';
+import { CritiqueRequestError, type RequestCritique } from '../../application/CritiqueUseCases';
 
 type CritiqueResponseBody = { readonly critique: string };
 
@@ -24,6 +24,7 @@ export const fetchCritique: RequestCritique = async (request) => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request),
   });
+  if (response.status === 400) throw new CritiqueRequestError();
   if (!response.ok) throw new Error(`AI講評の取得に失敗しました(status: ${response.status})`);
   const body: unknown = await response.json();
   if (!isCritiqueResponseBody(body)) throw new Error('AI講評の応答が不正です');

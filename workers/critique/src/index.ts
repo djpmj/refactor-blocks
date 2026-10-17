@@ -1,72 +1,15 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { isCritiqueRequestBody, MAX_BODY_LENGTH, type CritiqueRequestBody } from './validate';
 
 export interface Env {
   readonly ANTHROPIC_API_KEY: string;
   readonly CRITIQUE_RATE_LIMITER: RateLimit;
 }
 
-/**
- * ブラウザから届く講評リクエストの形。src/domain/critique/critiqueRequest.ts の CritiqueRequest と対応するが、
- * Workersはアプリ本体と別デプロイのため、型はここに複製する(信頼境界の外から届くデータなので、
- * 実際にはこの形を満たすかを実行時に検証する)。
- */
-type CritiqueRequestBody = {
-  readonly goal: string;
-  readonly score: {
-    readonly total: number;
-    readonly deductions: readonly { readonly rule: string; readonly count: number; readonly points: number }[];
-  };
-  readonly files: readonly {
-    readonly path: string;
-    readonly lines: number;
-    readonly deductionPoints: number;
-    readonly classes: readonly {
-      readonly name: string;
-      readonly lines: number;
-      readonly methods: readonly { readonly name: string; readonly visibility: string; readonly lines: number }[];
-    }[];
-  }[];
-};
-
-/** リクエストの文字数の上限。想定より大きい・壊れた入力をここで弾く。 */
-const MAX_BODY_LENGTH = 20_000;
 const MODEL = 'claude-haiku-4-5-20251001';
 const MAX_OUTPUT_TOKENS = 1024;
 /** レート制限にかかったときに、次に試してよいまでの目安として返す秒数(wrangler.tomlのperiodと合わせる)。 */
 const RATE_LIMIT_RETRY_AFTER_SECONDS = 60;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
-
-function isMethodSummary(value: unknown): boolean {
-  return (
-    isRecord(value) && typeof value.name === 'string' && typeof value.visibility === 'string' && typeof value.lines === 'number'
-  );
-}
-
-function isClassSummary(value: unknown): boolean {
-  return isRecord(value) && typeof value.name === 'string' && typeof value.lines === 'number' && Array.isArray(value.methods) && value.methods.every(isMethodSummary);
-}
-
-function isFileSummary(value: unknown): boolean {
-  return (
-    isRecord(value) &&
-    typeof value.path === 'string' &&
-    typeof value.lines === 'number' &&
-    typeof value.deductionPoints === 'number' &&
-    Array.isArray(value.classes) &&
-    value.classes.every(isClassSummary)
-  );
-}
-
-/** 信頼境界: ブラウザから届いたJSONが講評に使える形か確認する。 */
-function isCritiqueRequestBody(value: unknown): value is CritiqueRequestBody {
-  if (!isRecord(value) || typeof value.goal !== 'string') return false;
-  const { score, files } = value;
-  if (!isRecord(score) || typeof score.total !== 'number' || !Array.isArray(score.deductions)) return false;
-  return Array.isArray(files) && files.every(isFileSummary);
-}
 
 /** 採点結果とファイル構成から、Claudeに渡す日本語のプロンプトを組み立てる。 */
 function buildPrompt(request: CritiqueRequestBody): string {

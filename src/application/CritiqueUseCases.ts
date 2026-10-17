@@ -7,7 +7,13 @@ import type { Stage } from '../domain/stage/Stage';
 /** AI講評APIへの実際の通信。infrastructure層が実装を注入する。 */
 export type RequestCritique = (request: CritiqueRequest) => Promise<string>;
 
-export type CritiqueError = 'request-failed';
+export type CritiqueError = 'request-failed' | 'invalid-request';
+
+export class CritiqueRequestError extends Error {
+  constructor() {
+    super('invalid-request');
+  }
+}
 
 /** プレイヤーの「AIの講評をもらう」操作。通信の成否をResultにして返す。 */
 export async function requestCritiqueUseCase(
@@ -19,13 +25,15 @@ export async function requestCritiqueUseCase(
   const request = buildCritiqueRequest(codebase, stage, score);
   try {
     return ok(await requestCritique(request));
-  } catch {
+  } catch (error) {
+    if (error instanceof CritiqueRequestError) return err('invalid-request');
     return err('request-failed');
   }
 }
 
 const CRITIQUE_ERROR_MESSAGES: Record<CritiqueError, string> = {
   'request-failed': 'AI講評を取得できませんでした。しばらくしてからもう一度お試しください',
+  'invalid-request': 'AI講評のリクエストの形が合いませんでした(不具合です)。ゲームを最新にして、もう一度お試しください',
 };
 
 export function describeCritiqueError(error: CritiqueError): string {
