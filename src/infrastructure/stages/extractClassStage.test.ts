@@ -83,9 +83,10 @@ describe('中級8: 給与と住所を抱えた社員クラス', () => {
     expect(score.deductions.filter((d) => d.points > 0).map((d) => d.rule)).toEqual(['cohesion']);
   });
 
-  it('変更依頼2件は、初期・模範解答のあとで表どおりの点数になる', () => {
+  it('冒頭の変更依頼2件は、初期・模範解答のあとで表どおりの点数になる', () => {
     // Arrange
-    const { codebase, limits, changeRequests } = stage;
+    const { codebase, limits } = stage;
+    const changeRequests = stage.changeRequests.filter((request) => request.boss !== true);
     const solved = applySolutionSteps(codebase, solution);
     const [buildingNameRequest, lateNightOvertimeRequest] = changeRequests;
 

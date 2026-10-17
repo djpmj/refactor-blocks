@@ -362,6 +362,7 @@ const discountStrategyStage: Stage = {
   changeRequests: [
     { id: 'req-premium-discount', title: 'プレミアム会員の割引率を変えて', description: 'プレミアム会員の割引率を12%に変えたい。', responsibility: 'discount-premium', linesPerSite: 5, partName: 'revisePremiumRate' },
     { id: 'req-vip-discount', title: 'VIP会員の割引条件を変えて', description: 'VIP会員には送料無料に加えてポイント還元率も上げたい。', responsibility: 'discount-vip', linesPerSite: 6, partName: 'raiseVipPointRate', rumor: { from: '営業の佐藤さん', text: '「会員特典」を変えたいという話が、いつか出てくるかもしれないらしいです。' } },
+    { id: 'req-boss-premium-overhaul', title: 'プレミアム会員の割引を、段階制と期間限定の特典まで含めて作り直して', description: 'プレミアム会員の割引を、利用額に応じた段階制にし、期間限定の特典も組み合わせたい。割引の仕組みをまるごと作り直したい。', responsibility: 'discount-premium', linesPerSite: 12, boss: true, partName: 'rebuildPremiumDiscount', rumor: { from: '営業の佐藤さん', text: '会員向けの割引を、全面的に作り変える話が出ているらしいです。' } },
   ],
   codebase: {
     files: [
@@ -465,6 +466,7 @@ const reportFactoryStage: Stage = {
   changeRequests: [
     { id: 'req-report-building', title: '帳票のタイトルの付け方を見直して', description: '週次・月次のレポートのタイトルに、出力日時を含めたい。', responsibility: 'report-building', linesPerSite: 6, partName: 'addExportedAtToTitle' },
     { id: 'req-report-delivery', title: 'レポートの送信方法を見直して', description: 'レポート送信に、失敗時の再送処理を追加したい。', responsibility: 'report-delivery', linesPerSite: 5, partName: 'retryReportDelivery', rumor: { from: '先輩の田中さん', text: '「帳票の届け方」を変えたいという話が、いつか出てくるかもしれないらしいです。' } },
+    { id: 'req-boss-building-overhaul', title: '帳票の組み立てを、テンプレートと集計期間の自由設定まで含めて作り直して', description: '帳票を利用者が選んだテンプレートと集計期間で組み立てられるようにしたい。帳票の組み立てをまるごと作り直したい。', responsibility: 'report-building', linesPerSite: 12, boss: true, partName: 'rebuildReportBuilding', rumor: { from: '先輩の田中さん', text: '帳票の作り方を、根本から変える話があるらしいです。' } },
   ],
   codebase: {
     files: [

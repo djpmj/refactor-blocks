@@ -50,6 +50,23 @@ function addPreviousPartToFile(file: Codebase['files'][number]): Codebase['files
     expect(result.value.placement.score.total).toBe(90);
   });
 
+  it('ボスの依頼には bossCounterfactual が付き、ボスでない依頼には付かない', () => {
+    // Arrange
+    const boss: ChangeRequest = { ...request, boss: true };
+    const implemented = placedIn('class-tax');
+    if (!implemented.ok) throw new Error('成功するはず');
+    const codebases = { design: sampleCodebase(), base: sampleCodebase(), implemented: implemented.value };
+
+    // Act
+    const bossResult = evaluateImplementationUseCase(stage, codebases, boss);
+    const normalResult = evaluateImplementationUseCase(stage, codebases, request);
+
+    // Assert
+    if (!bossResult.ok || !normalResult.ok) throw new Error('成功するはず');
+    expect(bossResult.value.bossCounterfactual?.score).toBe(bossResult.value.sample?.score);
+    expect(normalResult.value.bossCounterfactual).toBeUndefined();
+  });
+
   it("'extend': current と initial は null で、依頼の責務がコードになくても ok", () => {
     // Arrange
     const extend: ChangeRequest = { ...request, kind: 'extend', responsibility: 'gateway' };

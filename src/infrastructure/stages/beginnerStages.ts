@@ -47,6 +47,7 @@ const userControllerStage: Stage = {
   changeRequests: [
     { id: 'req-mail-footer', title: 'メールに配信停止の案内を付けて', description: 'ユーザーに送るメールすべての末尾に、配信停止の案内を入れる必要がある。', responsibility: 'notification', linesPerSite: 4, partName: 'appendUnsubscribeGuide' },
     { id: 'req-soft-delete', title: 'ユーザー削除を論理削除にして', description: 'ユーザーを物理的には消さず、削除日時を記録する方式に変える。', responsibility: 'persistence', linesPerSite: 6, partName: 'markUserDeleted', rumor: { from: 'PMの鈴木さん', text: '「データの残し方」を変えたいという話が、いつか出てくるかもしれないらしいです。' } },
+    { id: 'req-boss-notification', title: '通知を、メール以外のチャネルと配信設定まで含めて作り直して', description: 'ユーザーへの通知を、メールだけでなくアプリ内通知にも対応させ、ユーザーごとの配信設定も持たせる。通知の仕組みをまるごと作り直したい。', responsibility: 'notification', linesPerSite: 8, boss: true, partName: 'rebuildNotification', rumor: { from: 'PMの鈴木さん', text: 'お知らせの届け方を、全面的に変える話が進んでいるらしいです。' } },
   ],
   codebase: {
     files: [
@@ -144,6 +145,7 @@ const invoiceServiceStage: Stage = {
   changeRequests: [
     { id: 'req-pdf-layout', title: '請求書PDFのレイアウトを変えて', description: 'ロゴの位置と明細表の列幅を変更したい。', responsibility: 'rendering', linesPerSite: 10, partName: 'adjustPdfLayout' },
     { id: 'req-rounding', title: '金額の端数処理を変えて', description: '請求金額の端数を、切り捨てから四捨五入にする。', responsibility: 'pricing', linesPerSite: 6, partName: 'roundHalfUp', rumor: { from: '先輩の田中さん', text: '「金額の決め方」を変えたいという話が、いつか出てくるかもしれないらしいです。' } },
+    { id: 'req-boss-rendering', title: '請求書の描画を、PDFだけでなくHTMLや多言語まで含めて作り直して', description: '請求書をPDFだけでなくHTMLでも出し、英語版も作ることになった。描画の仕組みをまるごと作り直したい。', responsibility: 'rendering', linesPerSite: 20, boss: true, partName: 'rebuildRendering', rumor: { from: '営業の佐藤さん', text: '請求書の見た目まわりで、大きな刷新があるかもしれないと聞きました。' } },
   ],
   codebase: {
     files: [

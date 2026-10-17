@@ -1,3 +1,4 @@
+import { bossCounterfactual, type BossCounterfactual } from '../domain/change/bossCounterfactual';
 import { changeKindOf, type ChangeError, type ChangeRequest } from '../domain/change/ChangeRequest';
 import { measureChange } from '../domain/change/measureChange';
 import { measurePlacement, type PlacementError } from '../domain/change/measurePlacement';
@@ -18,6 +19,8 @@ export type ChangeOutcome = {
   readonly current: ChangeAssessment | null;
   /** 初期状態のコードでの変更コスト(比較用)。'extend' では null。 */
   readonly initial: ChangeAssessment | null;
+  /** ボスの依頼のときだけ。組み替える前のコードに入れていたら。 */
+  readonly bossCounterfactual?: BossCounterfactual;
 };
 
 export type ImplementationError = ChangeError | PlacementError;
@@ -38,6 +41,11 @@ function measureCosts(
   });
 }
 
+function withBossCounterfactual(stage: Pick<Stage, 'limits' | 'codebase'>, request: ChangeRequest): Pick<ChangeOutcome, 'bossCounterfactual'> {
+  const counterfactual = bossCounterfactual(stage, request);
+  return counterfactual === undefined ? {} : { bossCounterfactual: counterfactual };
+}
+
 /** 「実装を終える」操作。design は変更コスト、base は置き方を測るコード。 */
 export function evaluateImplementationUseCase(
   stage: Pick<Stage, 'limits' | 'codebase'>,
@@ -53,5 +61,6 @@ export function evaluateImplementationUseCase(
     placement: { placement: placement.value, score: scorePlacement(placement.value, changeKindOf(request)) },
     sample: sampleImplementation(codebases.base, request),
     ...costs.value,
+    ...withBossCounterfactual(stage, request),
   });
 }

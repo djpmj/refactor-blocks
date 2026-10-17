@@ -48,6 +48,16 @@ function rumorViolations(stage: Stage, speakers: ReadonlySet<string>): string[] 
   return [...missingOrLeaking, ...unexpected];
 }
 
+function hasBoss(stage: Stage): boolean {
+  return stage.changeRequests.some((request) => request.boss === true);
+}
+
+function hasOneTrailingBoss(stage: Stage): boolean {
+  const last = stage.changeRequests.at(-1);
+  const bossCount = stage.changeRequests.filter((request) => request.boss === true).length;
+  return bossCount === 1 && last?.boss === true && last.partName !== undefined && last.rumor !== undefined;
+}
+
 function stageResponsibilities(stage: Stage): Set<string> {
   const responsibilities = new Set<string>();
   for (const codeClass of allClasses(stage.codebase)) {
@@ -854,6 +864,40 @@ describe('stageCatalog', () => {
     expect(tutorialOrBeginnerExceptions).toEqual([]);
     expect(Object.values(knownChangeRequestExceptions).every((reason) => /とき|時/.test(reason))).toBe(true);
     expect(weakModifyCosts).toEqual([]);
+  });
+
+  it('ボスは決めた11ステージの、changeRequestsの最後に1つだけあり、partNameとrumorを持つ', () => {
+    // Arrange
+    const bossStageIds = [
+      'tutorial-extract-method', 'tutorial-order-service', 'beginner-user-controller', 'beginner-invoice-service',
+      'intermediate-volatile-tax', 'intermediate-volatile-format', 'intermediate-extract-class', 'intermediate-copy-paste-tax',
+      'intermediate-layered-order-api', 'advanced-discount-strategy', 'advanced-report-factory',
+    ];
+
+    // Act
+    const withBoss = stages.filter(hasBoss);
+    const malformed = withBoss.filter((stage) => !hasOneTrailingBoss(stage));
+
+    // Assert
+    expect(new Set(withBoss.map((stage) => stage.id))).toEqual(new Set(bossStageIds));
+    expect(malformed.map((stage) => stage.id)).toEqual([]);
+  });
+
+  it('ボスは設計の差を生む: 解答例の設計で100点、かつ組み替える前の最善より高い', () => {
+    // Arrange
+    const failures: string[] = [];
+
+    // Act
+    for (const stage of stages) {
+      const boss = stage.changeRequests.find((request) => request.boss === true);
+      if (boss === undefined) continue;
+      const after = sampleImplementation(sampleAnswerCodebase(stage), boss)?.score;
+      const before = sampleImplementation(stage.codebase, boss)?.score;
+      if (after !== 100 || before === undefined || before >= after) failures.push(`${stage.id}: ${String(before)} → ${String(after)}`);
+    }
+
+    // Assert
+    expect(failures).toEqual([]);
   });
 
   it('問題文にあるコード識別子は、そのステージのクラス名かメソッド名である', () => {

@@ -8,8 +8,10 @@ import { findClassOfMethod, findMethod, type Codebase, type Method } from '../..
 import { fragmentLines, methodLines } from '../../domain/codebase/lineCount';
 import { CodebasePreviewDialog } from '../preview/CodebasePreviewDialog';
 import { useGameStore } from '../store/useGameStore';
+import { describeBoss } from './describeBoss';
 import { describeDeductions, describePlacement, siteNames } from './describeChange';
 import { describeRumorPayoff } from './describeRumorPayoff';
+import { painRequestsOf } from '../../domain/change/changePain';
 import { rumoredRequests } from '../../domain/change/rumors';
 import { usesInheritance } from './usesInheritance';
 
@@ -47,6 +49,34 @@ function SampleAnswer({ sample }: Readonly<{ sample: SampleImplementation | unde
   );
 }
 
+const BOSS_LABEL = '⚠ 鬼の変更';
+
+/** ボスの結果: 組み替える前のコードに入れていたら、と今の設計を並べる。 */
+function BossComparison({ outcome }: Readonly<{ outcome: ChangeOutcome }>) {
+  const openingTitle = useGameStore((state) => painRequestsOf(state.stage).modify?.title);
+  const { bossCounterfactual: before, placement } = outcome;
+  if (before === undefined) return null;
+  const modifiedCount = placement.placement.modifiedClassIds.length;
+  return (
+    <div data-testid="boss-comparison">
+      <div className="boss-comparison">
+        <div className="boss-comparison__side">
+          <strong>組み替える前のコードなら</strong>
+          <p>最善の置き方でも {before.score}点</p>
+          <p>既存の {before.modifiedClassNames.length} クラスを書き換え({before.modifiedClassNames.join('・')})</p>
+          {before.overLimitClassNames.map((name) => <p key={name}>{name} が行数の上限を超える</p>)}
+        </div>
+        <div className="boss-comparison__side">
+          <strong>あなたの設計では</strong>
+          <p>{placement.score.total}点</p>
+          <p>{modifiedCount === 0 ? '既存のクラスを書き換えずに済んだ' : `既存の ${modifiedCount} クラスを書き換え`}</p>
+        </div>
+      </div>
+      <p className="boss-comparison__summary">{describeBoss(outcome, openingTitle)}</p>
+    </div>
+  );
+}
+
 /** 機能の追加(current が null)では、コストの行は出さず置き方だけで採点する。 */
 function OutcomeCard({ outcome, codebase, previous }: Readonly<{ outcome: ChangeOutcome; codebase: Codebase; previous?: number }>) {
   const { current, initial, request, placement, sample } = outcome;
@@ -54,6 +84,7 @@ function OutcomeCard({ outcome, codebase, previous }: Readonly<{ outcome: Change
   const rumorPayoff = describeRumorPayoff(outcome, codebase);
   return (
     <li className="change-outcome" data-testid={`change-outcome-${request.id}`}>
+      {request.boss === true && <p className="boss-label">{BOSS_LABEL}</p>}
       <h3 className="change-outcome__title">{request.title}</h3>
       {current === null || initial === null ? (
         <p className="change-outcome__facts">機能の追加なので、置き方だけで採点します</p>
@@ -64,6 +95,7 @@ function OutcomeCard({ outcome, codebase, previous }: Readonly<{ outcome: Change
         置き方 {placement.score.total}点(置いた先: {placement.placement.partClassName})
       </p>
       <SampleAnswer sample={sample} />
+      <BossComparison outcome={outcome} />
       {rumorPayoff === undefined ? null : (
         <p className={`rumor-payoff${placement.score.total === 100 ? ' rumor-payoff--ready' : ' rumor-payoff--unready'}`} data-testid="rumor-payoff">
           {rumorPayoff}
@@ -177,11 +209,12 @@ export function ChangeRequestPanel() {
   const request = stage.changeRequests.at(session.index);
   const isRumored = request !== undefined && rumoredRequests(stage).some((candidate) => candidate.id === request.id);
   return (
-    <aside className="method-editor change-panel" aria-label="変更依頼" data-testid="change-panel">
+    <aside className={`method-editor change-panel${request?.boss === true ? ' change-panel--boss' : ''}`} aria-label="変更依頼" data-testid="change-panel">
       {request === undefined ? (
         <Results outcomes={session.outcomes} />
       ) : (
         <>
+          {request.boss === true && <p className="boss-label" data-testid="boss-label">{BOSS_LABEL}</p>}
           <p className="method-editor__hint">
             依頼 {session.index + 1} / {stage.changeRequests.length}
             <span data-testid="change-request-kind"> {KIND_LABEL[changeKindOf(request)]}</span>

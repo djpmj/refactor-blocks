@@ -1190,7 +1190,7 @@ async function solvePaymentStage(page: Page) {
 }
 
 /** チュートリアル2の依頼の部品名(依頼の順)。 */
-const TAX_PARTS = ['addReducedTaxItems', 'addContactGuide', 'validateQuantityLimit'] as const;
+const TAX_PARTS = ['addReducedTaxItems', 'addContactGuide', 'validateQuantityLimit', 'calculateTaxByItem'] as const;
 
 /** 部品を置いたあとの「実装を終える」。ドラッグ直後の1回目のクリックはdnd-kitに握りつぶされることがあるので、次の依頼(か結果)に進むまで押し直す。 */
 async function finishRequest(page: Page) {
@@ -1303,6 +1303,8 @@ test('変更依頼に挑戦すると部品置き場に部品が出て、置く�
   await finishRequest(page);
   await dragMethodToClass(page, 'method-validateQuantityLimit', 'class-OrderService');
   await finishRequest(page);
+  await dragMethodToClass(page, 'method-calculateTaxByItem', 'class-OrderService');
+  await finishRequest(page);
 
   // Assert
   const outcome = page.getByTestId('change-outcome-req-reduced-tax');
@@ -1324,7 +1326,7 @@ test('責務を分けたあとで同じ依頼を受けると、初期状態よ�
   await reachFullScoreOnOrderStage(page);
 
   // Act
-  await implementRequests(page, TAX_PARTS, ['TaxCalculator', 'OrderService', 'OrderService']);
+  await implementRequests(page, TAX_PARTS, ['TaxCalculator', 'OrderService', 'OrderService', 'TaxCalculator']);
 
   // Assert
   const outcome = page.getByTestId('change-outcome-req-reduced-tax');
@@ -1339,7 +1341,7 @@ test('結果画面から戻ると、部品置き場は消えてキャンバス�
   await reachFullScoreOnOrderStage(page);
   const lines = page.getByTestId('method-placeOrder').locator('.method-chip__lines');
   const before = await lines.innerText();
-  await implementRequests(page, TAX_PARTS, ['OrderService', 'OrderService', 'OrderService']);
+  await implementRequests(page, TAX_PARTS, ['OrderService', 'OrderService', 'OrderService', 'OrderService']);
 
   // Act
   await page.getByTestId('change-request-close').click();
@@ -1380,7 +1382,7 @@ test('変更依頼の結果は、リファクタリングに戻っても手が�
   // Arrange
   await openOrderStage(page);
   await reachFullScoreOnOrderStage(page);
-  await implementRequests(page, TAX_PARTS, ['OrderService', 'OrderService', 'OrderService']);
+  await implementRequests(page, TAX_PARTS, ['OrderService', 'OrderService', 'OrderService', 'OrderService']);
 
   // Act
   await page.getByTestId('change-request-close').click();
@@ -1393,7 +1395,7 @@ test('変更依頼の結果は、リファクタリングに戻っても手が�
   await expect(page.getByTestId('change-request-start')).toHaveText('もう一度挑戦');
 
   // Act(税の部品を TaxCalculator へ置いて、もう一度挑戦する)
-  await implementRequests(page, TAX_PARTS, ['TaxCalculator', 'OrderService', 'OrderService']);
+  await implementRequests(page, TAX_PARTS, ['TaxCalculator', 'OrderService', 'OrderService', 'TaxCalculator']);
 
   // Assert
   const outcome = page.getByTestId('change-outcome-req-reduced-tax');
@@ -1404,7 +1406,7 @@ test('変更依頼の実装中は、前回の変更箇所の印を出さない(�
   // Arrange
   await openOrderStage(page);
   await reachFullScoreOnOrderStage(page);
-  await implementRequests(page, TAX_PARTS, ['OrderService', 'OrderService', 'OrderService']);
+  await implementRequests(page, TAX_PARTS, ['OrderService', 'OrderService', 'OrderService', 'OrderService']);
   await page.getByTestId('change-request-close').click();
   await expect(page.getByTestId('change-site-badge').first()).toBeVisible();
 
