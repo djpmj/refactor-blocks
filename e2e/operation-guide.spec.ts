@@ -16,6 +16,14 @@ test('操作ガイドはボタンと ? キーで開閉し、Esc・閉じるボ�
       await expect(dialog.getByText(description, { exact: true })).toBeVisible();
     }
   }
+  for (const operation of ['似た処理をまとめる', '呼び出し元へ戻す', '公開範囲を変える']) {
+    await expect(dialog.getByText(operation, { exact: true })).toBeVisible();
+  }
+  const sectionHeadings = await dialog.locator('.operation-guide__section h3').allTextContents();
+  expect(sectionHeadings.indexOf('リファクタリング')).toBe(sectionHeadings.indexOf('処理を抽出する') + 1);
+  await expect(dialog.getByText('同じ処理を持つメソッドが別の場所にあると、エディタに候補が出ます。統合すると1つのメソッドになり、呼び出し元はすべてそれを呼ぶようになります。')).toBeVisible();
+  await expect(dialog.getByText('抽出したメソッドや横流しするだけのメソッドの中身を、呼び出し元へ書き戻して消します(Inline Method)。')).toBeVisible();
+  await expect(dialog.getByText('public / protected / private を選べます。可視性を扱うステージでだけ表示されます。')).toBeVisible();
 
   await page.keyboard.press('Escape');
   await expect(dialog).not.toBeVisible();

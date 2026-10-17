@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { Fragment, useEffect, useRef } from 'react';
 import { OPERATION_GUIDE } from './operationGuide';
 
 const TITLE_ID = 'operation-guide-title';
@@ -8,6 +8,28 @@ const KEY_MATCH = /^(Ctrl\+Shift\+Z|Ctrl\+Z|Cmd\+Shift\+Z|Cmd\+Z|Ctrl\+Y|Cmd\+Y|
 function OperationText({ text }: Readonly<{ text: string }>) {
   return text.split(KEY_PATTERN).map((part, index) =>
     KEY_MATCH.test(part) ? <kbd key={`${part}-${String(index)}`}>{part}</kbd> : part,
+  );
+}
+
+function RefactoringGuideSection() {
+  return (
+    <section className="operation-guide__section">
+      <h3>リファクタリング</h3>
+      <dl>
+        <div className="operation-guide__item">
+          <dt>似た処理をまとめる</dt>
+          <dd><div>メソッドをクリック → 「似た処理を持つメソッドと統合」</div><div>同じ処理を持つメソッドが別の場所にあると、エディタに候補が出ます。統合すると1つのメソッドになり、呼び出し元はすべてそれを呼ぶようになります。</div></dd>
+        </div>
+        <div className="operation-guide__item">
+          <dt>呼び出し元へ戻す</dt>
+          <dd><div>メソッドをクリック → 「呼び出し元へ戻す」</div><div>抽出したメソッドや横流しするだけのメソッドの中身を、呼び出し元へ書き戻して消します(Inline Method)。</div></dd>
+        </div>
+        <div className="operation-guide__item">
+          <dt>公開範囲を変える</dt>
+          <dd><div>メソッドをクリック → 「可視性」</div><div>public / protected / private を選べます。可視性を扱うステージでだけ表示されます。</div></dd>
+        </div>
+      </dl>
+    </section>
   );
 }
 
@@ -32,17 +54,20 @@ export function OperationGuideDialog({ open, onClose, onRepeatTour, repeatTourDi
       </div>
       <div className="operation-guide__content">
         {OPERATION_GUIDE.map((section) => (
-          <section className="operation-guide__section" key={section.heading}>
-            <h3>{section.heading}</h3>
-            <dl>
-              {section.items.map(({ operation, description }) => (
-                <div className="operation-guide__item" key={operation}>
-                  <dt><OperationText text={operation} /></dt>
-                  <dd>{description}</dd>
-                </div>
-              ))}
-            </dl>
-          </section>
+          <Fragment key={section.heading}>
+            <section className="operation-guide__section">
+              <h3>{section.heading}</h3>
+              <dl>
+                {section.items.map(({ operation, description }) => (
+                  <div className="operation-guide__item" key={operation}>
+                    <dt><OperationText text={operation} /></dt>
+                    <dd>{description}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+            {section.heading === '処理を抽出する' ? <RefactoringGuideSection /> : null}
+          </Fragment>
         ))}
         <button type="button" onClick={onRepeatTour} disabled={repeatTourDisabled} data-testid="repeat-first-visit-tour">
           初回ガイドをもう一度
