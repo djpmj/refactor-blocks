@@ -92,7 +92,7 @@ test('処理のあるファイルは削除できず、循環依存の減点が�
   await openStage(page, '中級1: 循環依存を断ち切る');
   const file = page.getByTestId('file-src/order/Order.ts');
   await file.click({ button: 'right', position: { x: 10, y: 10 } });
-  await page.getByTestId('context-menu').getByRole('menuitem', { name: 'ファイルを削除' }).click();
+  await page.getByTestId('context-menu').getByRole('menuitem', { name: 'このファイルを削除' }).click();
 
   const toast = page.locator('.app__canvas').getByRole('alert');
   await expect(toast).toHaveText('⚠処理が残っているクラスがあるファイルは削除できません。先にメソッドを別のクラスへ移してください×');
@@ -112,7 +112,7 @@ test('処理のあるファイルは削除できず、循環依存の減点が�
   await page.getByLabel('メッセージを閉じる').click();
   await expect(page.getByRole('alert')).toHaveCount(0);
   await file.click({ button: 'right', position: { x: 10, y: 10 } });
-  await page.getByTestId('context-menu').getByRole('menuitem', { name: 'ファイルを削除' }).click();
+  await page.getByTestId('context-menu').getByRole('menuitem', { name: 'このファイルを削除' }).click();
 
   // Assert
   await expect(page.locator('.app__canvas').getByRole('alert')).toContainText('処理が残っているクラスがあるファイルは削除できません');
@@ -140,7 +140,7 @@ test('狭い画面でもトーストはキャンバスコントロールに重�
   await openStage(page, '中級1: 循環依存を断ち切る');
   const file = page.getByTestId('file-src/order/Order.ts');
   await file.click({ button: 'right', position: { x: 10, y: 10 } });
-  await page.getByTestId('context-menu').getByRole('menuitem', { name: 'ファイルを削除' }).click();
+  await page.getByTestId('context-menu').getByRole('menuitem', { name: 'このファイルを削除' }).click();
 
   const toggle = page.getByRole('button', { name: /サイドバーを(開く|閉じる)/ });
   for (const width of [600, 800, 1000, 1100]) {
@@ -182,7 +182,7 @@ test('public の横流しメソッドが残るクラスは処理を呼び出し�
   await visibility.selectOption('public');
   const extractedClass = page.getByTestId('class-InvoiceMailer');
   await extractedClass.locator('[data-testid^="class-header-"]').click({ button: 'right' });
-  await page.getByTestId('context-menu').getByRole('menuitem', { name: 'クラスを削除' }).click();
+  await page.getByTestId('context-menu').getByRole('menuitem', { name: /^(?!このファイル).*を削除$/ }).click();
 
   await expect(extractedClass).toHaveCount(0);
   await expect(page.getByTestId('method-gatherNotificationInfo')).toHaveCount(0);

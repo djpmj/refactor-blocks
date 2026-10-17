@@ -1,4 +1,4 @@
-﻿import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { releaseAllManualFixSites, selectStage, startChangeRequests } from './selectStage.js';
 
 async function dragMethodToClass(page: Page, methodId: string, classId: string) {
@@ -135,7 +135,7 @@ test('ランクのクラスにMemberRankを実装させると、新しいクラ�
 
   await page.getByTestId('method-quotePrice').click({ button: 'right' });
   const menu = page.getByTestId('context-menu');
-  await menu.getByRole('menuitem', { name: 'このファイルにクラスを追加' }).click();
+  await menu.getByRole('menuitem', { name: 'クラスを追加' }).click();
   await menu.getByLabel('追加するクラス名').fill('RegularRank');
   await menu.getByRole('button', { name: '追加' }).click();
   await expect(card).toContainText('既存の 1 クラスを書き換えます');

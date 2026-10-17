@@ -1,6 +1,6 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject, type SubmitEvent } from 'react';
-import { createPortal } from 'react-dom';
-import { findClass, findSuperclass } from '../../domain/codebase/Codebase';
+import { Fragment, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type RefObject, type SubmitEvent } from 'react';
+import { createPortal, flushSync } from 'react-dom';
+import { findClass, findField, findMethod, findSuperclass, type Codebase } from '../../domain/codebase/Codebase';
 import { moveMethodTargets } from '../../domain/codebase/moveMethod';
 import { moveFieldTargets } from '../../domain/codebase/moveField';
 import { moveClassTargets } from '../../domain/codebase/moveClass';
@@ -9,6 +9,7 @@ import { availableParents } from '../../domain/codebase/setSuperclass';
 import { useGameStore, useGameStoreApi, type GameStore } from '../store/useGameStore';
 import { clampMenuPosition, type Point } from './clampMenuPosition';
 import type { ContextMenuTarget } from './useCanvasContextMenu';
+import { contextMenuGroups, type MenuGroup } from './contextMenuGroups';
 
 type Mode = 'menu' | 'class' | 'renameClass';
 type FormMode = Exclude<Mode, 'menu'>;
@@ -76,58 +77,6 @@ function usePositionWithinViewport(menuRef: RefObject<HTMLElement | null>, x: nu
   return position;
 }
 
-type MenuItem =
-  | { kind: 'form'; mode: FormMode; label: string }
-  | { kind: 'action'; run: () => void; label: string }
-  | { kind: 'move-class-submenu'; label: string }
-  | { kind: 'move-submenu'; label: string }
-  | { kind: 'extends-submenu'; label: string }
-  | { kind: 'implements-submenu'; label: string };
-
-/** 右クリックした場所で使える項目。クラスの上ならクラス、ファイルの上ならファイルに対する項目が増える。 */
-function menuItemsFor(target: ContextMenuTarget, onClose: () => void, api: GameStore): MenuItem[] {
-  const { deleteClass, deleteFile } = api.getState();
-  const { classId, fileId } = target;
-  const moveClassItems: MenuItem[] = classId !== null && target.member === null
-    ? [{ kind: 'move-class-submenu', label: '別のファイルへ移動' }]
-    : [];
-  const moveItems: MenuItem[] = target.member === null ? [] : [{ kind: 'move-submenu', label: '別のクラスへ移動' }];
-  return [
-    ...moveClassItems,
-    ...moveItems,
-    ...(fileId === null ? [] : [{ kind: 'form' as const, mode: 'class' as const, label: 'このファイルにクラスを追加' }]),
-    { kind: 'action', label: 'ファイルを追加', run: () => { api.getState().addFile(); onClose(); } },
-    ...(classId === null ? [] : [{ kind: 'form' as const, mode: 'renameClass' as const, label: 'クラスの名前を変更' }]),
-    ...(classId === null ? [] : [{ kind: 'extends-submenu' as const, label: '継承元を設定' }]),
-    ...(classId === null ? [] : [{ kind: 'implements-submenu' as const, label: '実装するインターフェースを設定' }]),
-    // 確認ダイアログは出さない。誤って消してもCtrl+Zの取り消し履歴で戻せる
-    ...(classId === null
-      ? []
-      : [
-          {
-            kind: 'action' as const,
-            label: 'クラスを削除',
-            run: () => {
-              deleteClass(classId);
-              onClose();
-            },
-          },
-        ]),
-    ...(fileId === null
-      ? []
-      : [
-          {
-            kind: 'action' as const,
-            label: 'ファイルを削除',
-            run: () => {
-              deleteFile(fileId);
-              onClose();
-            },
-          },
-        ]),
-  ];
-}
-
 /** トリガー要素の右側にサブメニューを出す。開いた瞬間のトリガーの位置から計算し、ビューポートからははみ出さない。 */
 function useSubmenuPosition(triggerRef: RefObject<HTMLElement | null>, submenuRef: RefObject<HTMLElement | null>, open: boolean): Point {
   const [position, setPosition] = useState<Point>({ x: 0, y: 0 });
@@ -163,9 +112,6 @@ function SubmenuTrigger({ label, open, setOpen, wrapperRef, triggerRef, children
       onMouseLeave={() => {
         setOpen(false);
       }}
-      onFocus={() => {
-        setOpen(true);
-      }}
       onBlur={(event) => {
         if (!(event.relatedTarget instanceof Node) || !wrapperRef.current?.contains(event.relatedTarget)) setOpen(false);
       }}
@@ -176,6 +122,13 @@ function SubmenuTrigger({ label, open, setOpen, wrapperRef, triggerRef, children
         role="menuitem"
         aria-haspopup="menu"
         aria-expanded={open}
+        onKeyDown={(event) => {
+          if (event.key === 'ArrowRight') {
+            event.preventDefault();
+            event.stopPropagation();
+            flushSync(() => setOpen(true));
+          }
+        }}
         onClick={() => {
           // ホバーで既に開いていることがあるので、開閉のトグルにはしない(トグルだとホバー直後のクリックで閉じてしまう)
           setOpen(true);
@@ -233,6 +186,7 @@ function ExtendsMenuItem({ target, label, onClose }: Readonly<ExtendsMenuItemPro
 function MoveMenuItem({ target, label, onClose }: Readonly<ExtendsMenuItemProps>) {
   const codebase = useGameStore((state) => state.codebase);
   const { moveMethod, moveField } = useGameStoreApi().getState();
+  const moveMethodToNewClass = useGameStore((state) => state.moveMethodToNewClass);
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -241,7 +195,7 @@ function MoveMenuItem({ target, label, onClose }: Readonly<ExtendsMenuItemProps>
   const member = target.member;
   if (member === null) return null;
   const candidates = member.kind === 'method' ? moveMethodTargets(codebase, member.id) : moveFieldTargets(codebase, member.id);
-  if (candidates.length === 0) return null;
+  if (candidates.length === 0 && member.kind !== 'method') return null;
   const select = (classId: string) => {
     if (member.kind === 'method') moveMethod(member.id, classId);
     else moveField(member.id, classId);
@@ -250,6 +204,12 @@ function MoveMenuItem({ target, label, onClose }: Readonly<ExtendsMenuItemProps>
   return (
     <SubmenuTrigger label={label} open={open} setOpen={setOpen} wrapperRef={wrapperRef} triggerRef={triggerRef}>
       <div ref={submenuRef} role="menu" aria-label={label} className="context-menu context-menu__submenu" style={{ left: position.x, top: position.y }}>
+        {member.kind === 'method' ? (
+          <>
+            <button type="button" role="menuitem" onClick={() => { moveMethodToNewClass(member.id); onClose(); }}>新しいクラスへ</button>
+            {candidates.length > 0 ? <div role="separator" className="context-menu__separator" /> : null}
+          </>
+        ) : null}
         {candidates.map((candidate) => (
           <button key={candidate.id} type="button" role="menuitem" onClick={() => select(candidate.id)}>
             {candidate.name}
@@ -339,43 +299,77 @@ function ImplementsMenuItem({ target, label }: Readonly<ImplementsMenuItemProps>
   );
 }
 
-type MenuItemsProps = { items: readonly MenuItem[]; target: ContextMenuTarget; onSelectForm: (mode: FormMode) => void; onClose: () => void };
+type MenuItemsProps = { target: ContextMenuTarget; onSelectForm: (mode: FormMode) => void; onClose: () => void; api: GameStore };
 
-function MenuItems({ items, target, onSelectForm, onClose }: Readonly<MenuItemsProps>) {
+function memberName(target: ContextMenuTarget, codebase: Codebase): string | undefined {
+  if (target.member?.kind === 'method') return findMethod(codebase, target.member.id)?.name;
+  if (target.member?.kind === 'field') return findField(codebase, target.member.id)?.name;
+  return undefined;
+}
+
+function focusSubmenuItem(activeItem: Element | null): boolean {
+  if (activeItem === null) return false;
+  const wrapper = activeItem.closest('.context-menu__submenu-wrapper');
+  const firstSubmenuItem = wrapper?.querySelector<HTMLElement>('[role="menu"] [role="menuitem"]');
+  if (firstSubmenuItem === null || firstSubmenuItem === undefined) return false;
+  firstSubmenuItem.focus();
+  return true;
+}
+
+function handleMenuKeyDown(event: ReactKeyboardEvent<HTMLDivElement>, menuRef: RefObject<HTMLDivElement | null>): void {
+  if (event.key === 'ArrowRight') {
+    if (focusSubmenuItem(document.activeElement)) event.preventDefault();
+    return;
+  }
+  if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+  const menuItems = [...(menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [])];
+  if (menuItems.length === 0) return;
+  event.preventDefault();
+  const index = menuItems.findIndex((item) => item === document.activeElement);
+  const next = event.key === 'ArrowDown' ? (index + 1) % menuItems.length : (index - 1 + menuItems.length) % menuItems.length;
+  menuItems[next]?.focus();
+}
+
+function MenuGroupItems({ group, target, onSelectForm, onClose, api }: MenuItemsProps & { group: MenuGroup }) {
+  return <div role="group" aria-label={group.heading} className="context-menu__group">
+    <div role="presentation" className="context-menu__heading">{group.heading}</div>
+    {group.items.map((item) => {
+      if (item.kind === 'move-class-submenu') return <MoveClassMenuItem key={item.kind} target={target} label={item.label} onClose={onClose} />;
+      if (item.kind === 'move-submenu') return <MoveMenuItem key={item.kind} target={target} label={item.label} onClose={onClose} />;
+      if (item.kind === 'extends-submenu') return <ExtendsMenuItem key={item.kind} target={target} label={item.label} onClose={onClose} />;
+      if (item.kind === 'implements-submenu') return <ImplementsMenuItem key={item.kind} target={target} label={item.label} />;
+      if (item.kind === 'action') return <button key={item.action} type="button" role="menuitem" className={item.action.startsWith('delete') ? 'context-menu__danger' : undefined} onClick={() => {
+        if (item.action === 'addFile') api.getState().addFile();
+        if (item.action === 'deleteClass' && target.classId !== null) api.getState().deleteClass(target.classId);
+        if (item.action === 'deleteFile' && target.fileId !== null) api.getState().deleteFile(target.fileId);
+        onClose();
+      }}>{item.label}</button>;
+      return <button key={item.mode} type="button" role="menuitem" onClick={() => onSelectForm(item.mode)}>{item.label}</button>;
+    })}
+  </div>;
+}
+
+function MenuItems({ target, onSelectForm, onClose, api }: Readonly<MenuItemsProps>) {
   const menuRef = useRef<HTMLDivElement>(null);
+  const codebase = useGameStore((state) => state.codebase);
+  const member = memberName(target, codebase);
+  const className = target.classId === null ? undefined : findClass(codebase, target.classId)?.name;
+  const groups = contextMenuGroups(target, { member, className }).filter((group) => {
+    if (group.kind !== 'member' || target.member === null) return true;
+    return target.member.kind === 'method' || moveFieldTargets(codebase, target.member.id).length > 0;
+  });
   useLayoutEffect(() => {
     // nullを返す項目を飛ばし、実際に描画された先頭項目にフォーカスする。
     menuRef.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
   }, [target]);
   return (
-    <div ref={menuRef} role="menu" aria-label="キャンバスのメニュー">
-      {items.map((item) => {
-        if (item.kind === 'move-class-submenu') {
-          return <MoveClassMenuItem key={item.kind} target={target} label={item.label} onClose={onClose} />;
-        }
-        if (item.kind === 'move-submenu') {
-          return <MoveMenuItem key={item.kind} target={target} label={item.label} onClose={onClose} />;
-        }
-        if (item.kind === 'extends-submenu') {
-          return <ExtendsMenuItem key={item.kind} target={target} label={item.label} onClose={onClose} />;
-        }
-        if (item.kind === 'implements-submenu') {
-          return <ImplementsMenuItem key={item.kind} target={target} label={item.label} />;
-        }
-        return (
-          <button
-            key={item.kind === 'form' ? item.mode : item.label}
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              if (item.kind === 'form') onSelectForm(item.mode);
-              else item.run();
-            }}
-          >
-            {item.label}
-          </button>
-        );
-      })}
+    <div ref={menuRef} role="menu" aria-label="キャンバスのメニュー" onKeyDown={(event) => handleMenuKeyDown(event, menuRef)}>
+      {groups.map((group, groupIndex) => (
+        <Fragment key={group.kind}>
+        {groupIndex > 0 ? <div role="separator" className="context-menu__separator" /> : null}
+        <MenuGroupItems group={group} target={target} onSelectForm={onSelectForm} onClose={onClose} api={api} />
+        </Fragment>
+      ))}
     </div>
   );
 }
@@ -443,7 +437,7 @@ export function CanvasContextMenu({ target, onClose, onDismiss }: Readonly<{ tar
   return createPortal(
     <div ref={menuRef} className="context-menu" style={{ left: position.x, top: position.y }} data-testid="context-menu">
       {mode === 'menu' ? (
-        <MenuItems items={menuItemsFor(target, onClose, api)} target={target} onSelectForm={setMode} onClose={onClose} />
+        <MenuItems target={target} onSelectForm={setMode} onClose={onClose} api={api} />
       ) : (
         <MenuForm target={target} mode={mode} onDone={onClose} />
       )}

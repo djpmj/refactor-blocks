@@ -1,4 +1,4 @@
-﻿import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { selectStage, startChangeRequests } from './selectStage.js';
 
 test('右サイドバーの幅をドラッグとキーボードで調整し、白紙設計でも使える', async ({ page }) => {
@@ -206,7 +206,7 @@ async function addFileFromMenu(page: Page) {
 async function addClassFromMenu(page: Page, methodName: string, className: string) {
   await page.getByTestId(`method-${methodName}`).click({ button: 'right' });
   const menu = page.getByTestId('context-menu');
-  await menu.getByRole('menuitem', { name: 'このファイルにクラスを追加' }).click();
+  await menu.getByRole('menuitem', { name: 'クラスを追加' }).click();
   await menu.getByLabel('追加するクラス名').fill(className);
   await menu.getByRole('button', { name: '追加' }).click();
 }
@@ -290,7 +290,7 @@ test('中級12: 横流しメソッドを呼び出し元へ戻してOrderManager�
 
   // Act: 空のOrderManagerファイルを削除する
   await clickExposedTarget(page, page.getByTestId('file-src/order/OrderManager.ts'), 'right');
-  await page.getByTestId('context-menu').getByRole('menuitem', { name: 'ファイルを削除' }).click();
+  await page.getByTestId('context-menu').getByRole('menuitem', { name: 'このファイルを削除' }).click();
 
   // Assert
   await expect(page.getByTestId('file-src/order/OrderManager.ts')).toHaveCount(0);
@@ -306,7 +306,7 @@ test('中級12: OrderManagerファイル削除で処理を戻した案内を出�
 
   // Act
   await clickExposedTarget(page, page.getByTestId('file-src/order/OrderManager.ts'), 'right');
-  await page.getByTestId('context-menu').getByRole('menuitem', { name: 'ファイルを削除' }).click();
+  await page.getByTestId('context-menu').getByRole('menuitem', { name: 'このファイルを削除' }).click();
 
   // Assert
   const notice = page.locator('.error-toast[role="status"]');
@@ -321,7 +321,7 @@ test('中級12: OrderManagerファイル削除で処理を戻した案内を出�
 
   // Act: deleting again and undoing also clears the notice
   await clickExposedTarget(page, page.getByTestId('file-src/order/OrderManager.ts'), 'right');
-  await page.getByTestId('context-menu').getByRole('menuitem', { name: 'ファイルを削除' }).click();
+  await page.getByTestId('context-menu').getByRole('menuitem', { name: 'このファイルを削除' }).click();
   await expect(page.locator('.error-toast[role="status"]')).toBeVisible();
   await page.keyboard.press('Control+z');
 
@@ -402,7 +402,12 @@ test('クラスヘッダーではShift+F10とTab/Enterでファイルを選ん�
   // Assert
   const menu = page.getByTestId('context-menu');
   await expect(menu.getByRole('menuitem').first()).toHaveText('別のファイルへ移動');
-  await page.keyboard.press('Tab');
+  await page.mouse.move(0, 0);
+  const trigger = menu.getByRole('menuitem', { name: '別のファイルへ移動' });
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  await page.keyboard.press('ArrowRight');
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  await page.keyboard.press('ArrowDown');
   await page.keyboard.press('Enter');
   await expect(page.getByTestId('file-src/order/OrderService.ts')).toContainText('0行');
   await expect(page.getByTestId('file-src/tax/TaxCalculator.ts')).toContainText('37行');
@@ -767,7 +772,7 @@ test('メソッドを右クリックしてメニューから、そのクラス�
   await page.getByTestId('method-placeOrder').click({ button: 'right' });
   const menu = page.getByTestId('context-menu');
   await expect(menu).not.toContainText('.ts');
-  await menu.getByRole('menuitem', { name: 'このファイルにクラスを追加' }).click();
+  await menu.getByRole('menuitem', { name: 'クラスを追加' }).click();
   await menu.getByLabel('追加するクラス名').fill('OrderValidator');
   await menu.getByLabel('追加するクラス名').press('Enter');
 
@@ -787,7 +792,7 @@ test('キャンバスの余白を右クリックしてメニューから、フ�
   const menu = page.getByTestId('context-menu');
   await expect(menu.getByRole('menuitem', { name: 'ファイルの名前を変更' })).toHaveCount(0);
   await expect(menu).not.toContainText('.ts');
-  await expect(menu.getByRole('menuitem', { name: 'このファイルにクラスを追加' })).toHaveCount(0);
+  await expect(menu.getByRole('menuitem', { name: 'クラスを追加' })).toHaveCount(0);
   await menu.getByRole('menuitem', { name: 'ファイルを追加' }).click();
   await expect(menu).toHaveCount(0);
 
@@ -829,7 +834,7 @@ test('クラスを右クリックして名前を変更すると、キャンバ�
   const menu = page.getByTestId('context-menu');
 
   // Act
-  await menu.getByRole('menuitem', { name: 'クラスの名前を変更' }).click();
+  await menu.getByRole('menuitem', { name: '名前を変更' }).click();
   const input = menu.getByLabel('新しいクラス名');
   await expect(input).toHaveValue('TaxCalculator');
   await input.fill('TaxPolicy');
@@ -903,7 +908,7 @@ test('重複した名前には変更できず、理由が表示されて名前�
   await openOrderStage(page);
   await page.getByTestId('class-header-TaxCalculator').click({ button: 'right' });
   const menu = page.getByTestId('context-menu');
-  await menu.getByRole('menuitem', { name: 'クラスの名前を変更' }).click();
+  await menu.getByRole('menuitem', { name: '名前を変更' }).click();
   const input = menu.getByLabel('新しいクラス名');
 
   // Act
@@ -1015,7 +1020,7 @@ test('1つのクラスに2つのインターフェースを実装すると"imple
   await expect(menu).toHaveCount(0);
   await page.getByTestId('file-src/NewFile.ts').click({ button: 'right' });
   menu = page.getByTestId('context-menu');
-  await menu.getByRole('menuitem', { name: 'このファイルにクラスを追加' }).click();
+  await menu.getByRole('menuitem', { name: 'クラスを追加' }).click();
   await page.getByLabel('追加するクラス名').fill('Extra');
   await page.getByRole('button', { name: '追加' }).click();
 
@@ -1077,7 +1082,7 @@ test('クラスを右クリックして削除すると、キャンバスから�
   const menu = page.getByTestId('context-menu');
 
   // Act
-  await menu.getByRole('menuitem', { name: 'クラスを削除' }).click();
+  await menu.getByRole('menuitem', { name: /^(?!このファイル).*を削除$/ }).click();
 
   // Assert
   await expect(page.getByTestId('class-TaxCalculator')).toHaveCount(0);
@@ -1091,7 +1096,7 @@ test('ファイルを右クリックして削除すると、キャンバスか�
   const menu = page.getByTestId('context-menu');
 
   // Act
-  await menu.getByRole('menuitem', { name: 'ファイルを削除' }).click();
+  await menu.getByRole('menuitem', { name: 'このファイルを削除' }).click();
 
   // Assert
   await expect(page.getByTestId('file-src/tax/TaxCalculator.ts')).toHaveCount(0);
@@ -1119,7 +1124,7 @@ test('切り出したメソッドを含むクラスを削除すると、呼び�
   // Act
   await page.getByTestId('class-header-TaxCalculator').click({ button: 'right' });
   const menu = page.getByTestId('context-menu');
-  await menu.getByRole('menuitem', { name: 'クラスを削除' }).click();
+  await menu.getByRole('menuitem', { name: /^(?!このファイル).*を削除$/ }).click();
 
   // Assert
   await expect(page.getByTestId('class-TaxCalculator')).toHaveCount(0);
@@ -1282,7 +1287,7 @@ test('変更依頼に挑戦すると部品置き場に部品が出て、置く�
 
   // Act: 変更依頼パネルを表示中に拒否された操作を行う
   await page.getByTestId('class-header-OrderService').click({ button: 'right' });
-  await page.getByTestId('context-menu').getByRole('menuitem', { name: 'クラスを削除' }).click();
+  await page.getByTestId('context-menu').getByRole('menuitem', { name: /^(?!このファイル).*を削除$/ }).click();
 
   // Assert
   const toast = page.locator('.app__canvas').getByRole('alert');
@@ -1687,7 +1692,7 @@ test('越境した private メソッドの呼び出しは減点され、呼び�
 
   // Act: 空になった TemplateEngine.ts を右クリックで削除する
   await page.getByTestId('file-src/notification/TemplateEngine.ts').click({ button: 'right', position: { x: 10, y: 10 } });
-  await page.getByTestId('context-menu').getByRole('menuitem', { name: 'ファイルを削除' }).click();
+  await page.getByTestId('context-menu').getByRole('menuitem', { name: 'このファイルを削除' }).click();
 
   // Assert
   await expect(page.getByTestId('score')).toContainText('100点');
@@ -2028,7 +2033,7 @@ test('中級6: フィールドを持つクラスは削除できない', async ({
   const menu = page.getByTestId('context-menu');
 
   // Act
-  await menu.getByRole('menuitem', { name: 'クラスを削除' }).click();
+  await menu.getByRole('menuitem', { name: /^(?!このファイル).*を削除$/ }).click();
 
   // Assert
   await expect(page.locator('.app__canvas').getByRole('alert')).toContainText('フィールドを持つクラスは削除できません。先にフィールドを別のクラスへ移してください');
@@ -2104,7 +2109,7 @@ test('中級8: 住所のフィールドとメソッドを新しいクラスへ�
   // Act: Employeeの右クリックメニューからAddressクラスを追加する
   await page.getByTestId('class-header-Employee').click({ button: 'right' });
   const menu = page.getByTestId('context-menu');
-  await menu.getByRole('menuitem', { name: 'このファイルにクラスを追加' }).click();
+  await menu.getByRole('menuitem', { name: 'クラスを追加' }).click();
   await menu.getByLabel('追加するクラス名').fill('Address');
   await menu.getByLabel('追加するクラス名').press('Enter');
   await expect(page.getByTestId('class-NewClass')).toBeVisible();
@@ -2134,9 +2139,10 @@ for (const kind of ['method', 'field']) {
     await chip.click({ button: 'right' });
     const menu = page.getByTestId('context-menu');
     await expect(menu.getByRole('menuitem').first()).toHaveText('別のクラスへ移動');
+    await menu.getByRole('menuitem', { name: '別のクラスへ移動' }).click();
     const candidates = menu.getByRole('menu', { name: '別のクラスへ移動', exact: true });
     await expect(candidates.getByRole('menuitem', { name: 'BillingService' })).toHaveCount(0);
-    await expect(candidates.getByRole('menuitem', { name: '新しいクラスへ移動' })).toHaveCount(0);
+    if (kind === 'method') await expect(candidates.getByRole('menuitem', { name: '新しいクラスへ' })).toHaveCount(1);
     await candidates.getByRole('menuitem', { name: 'Subscription', exact: true }).click();
 
     // Assert
@@ -2147,7 +2153,7 @@ for (const kind of ['method', 'field']) {
     await expect(source.getByTestId(chipId)).toBeVisible();
   });
 
-  test(`移動メニュー: ${kind}をShift+F10とTab/Enterだけで移動できる`, async ({ page }) => {
+    test(`移動メニュー: ${kind}をShift+F10と矢印キー/EnterだけでSubscriptionへ移動できる`, async ({ page }) => {
     // Arrange
     await openFeatureEnvyStage(page);
     const chipId = kind === 'method' ? 'method-renewSubscription' : 'field-trialDays';
@@ -2156,10 +2162,22 @@ for (const kind of ['method', 'field']) {
 
     // Act
     await chip.press('Shift+F10');
+    await page.mouse.move(0, 0);
     const menu = page.getByTestId('context-menu');
-    await expect(menu.getByRole('menuitem', { name: '別のクラスへ移動' })).toBeFocused();
-    await page.keyboard.press('Tab');
-    await expect(menu.getByRole('menuitem', { name: 'Subscription', exact: true })).toBeFocused();
+    const trigger = menu.getByRole('menuitem', { name: '別のクラスへ移動' });
+    await expect(trigger).toBeFocused();
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await page.keyboard.press('ArrowRight');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    const candidates = menu.getByRole('menu', { name: '別のクラスへ移動' });
+    await expect(candidates).toBeVisible();
+    const subscription = candidates.getByRole('menuitem', { name: 'Subscription', exact: true });
+    const candidateCount = await candidates.getByRole('menuitem').count();
+    for (let index = 0; index < candidateCount; index += 1) {
+      if (await subscription.evaluate((element) => element.matches(':focus'))) break;
+      await page.keyboard.press('ArrowDown');
+    }
+    await expect(subscription).toBeFocused();
     await page.keyboard.press('Enter');
 
     // Assert
@@ -2214,7 +2232,7 @@ test('移動メニュー: クラス・ファイル・余白では移動項目を
   }
 });
 
-test('移動メニュー: 候補が0件でも表示された先頭項目にフォーカスする', async ({ page }) => {
+test('移動メニュー: 候補が0件でも新しいクラスへ移動できる項目にフォーカスする', async ({ page }) => {
   // Arrange
   await page.goto('/');
   const chip = page.getByTestId('method-printMonthlyReport');
@@ -2222,15 +2240,21 @@ test('移動メニュー: 候補が0件でも表示された先頭項目にフ�
 
   // Act
   await chip.press('Shift+F10');
+  await page.mouse.move(0, 0);
 
   // Assert
   const menu = page.getByTestId('context-menu');
-  await expect(menu.getByRole('menuitem', { name: '別のクラスへ移動' })).toHaveCount(0);
-  await expect(menu.getByRole('menuitem').first()).toBeFocused();
-  await page.keyboard.press('Tab');
-  await expect(menu.getByRole('menuitem').nth(1)).toBeFocused();
-  await page.keyboard.press('Escape');
-  await expect(chip).toBeFocused();
+  await expect(menu.getByRole('menuitem', { name: '別のクラスへ移動' })).toBeFocused();
+  await page.keyboard.press('ArrowRight');
+  await expect(menu.getByRole('menuitem', { name: '別のクラスへ移動' })).toHaveAttribute('aria-expanded', 'true');
+  await expect(menu.getByRole('menu', { name: '別のクラスへ移動' })).toBeVisible();
+  await page.keyboard.press('ArrowDown');
+  await expect(menu.getByRole('menuitem', { name: '新しいクラスへ' })).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(menu).toHaveCount(0);
+  await expect(chip).toBeVisible();
+  await page.keyboard.press('Control+z');
+  await expect(chip).toBeVisible();
 });
 
 test('移動メニュー: 開き直したメニューに古いフォーカス復帰が干渉しない', async ({ page }) => {
@@ -2239,8 +2263,11 @@ test('移動メニュー: 開き直したメニューに古いフォーカス復
   const method = page.getByTestId('method-renewSubscription');
   await method.focus();
   await method.press('Shift+F10');
+  await page.mouse.move(0, 0);
   const menu = page.getByTestId('context-menu');
   await expect(menu.getByRole('menuitem', { name: '別のクラスへ移動' })).toBeFocused();
+  await page.keyboard.press('ArrowRight');
+  await expect(menu.getByRole('menu', { name: '別のクラスへ移動', exact: true })).toBeVisible();
 
   // Act
   await page.getByTestId('field-trialDays').click({ button: 'right' });
@@ -2249,9 +2276,9 @@ test('移動メニュー: 開き直したメニューに古いフォーカス復
 
   // Assert
   await expect(menu.getByRole('menuitem', { name: '別のクラスへ移動' })).toBeFocused();
-  await expect(menu.getByRole('menu', { name: '別のクラスへ移動', exact: true })).toBeVisible();
-  await page.keyboard.press('Tab');
-  await page.keyboard.press('Enter');
+  await expect(menu.getByRole('menu', { name: '別のクラスへ移動', exact: true })).toHaveCount(0);
+  await page.keyboard.press('ArrowRight');
+  await menu.getByRole('menu', { name: '別のクラスへ移動', exact: true }).getByRole('menuitem', { name: 'Subscription', exact: true }).click();
   await expect(page.getByTestId('class-Subscription').getByTestId('field-trialDays')).toBeVisible();
 });
 
@@ -2284,7 +2311,7 @@ test('上級8: 呼び出しだけの importOrders を似た処理を持つメソ
     await page.getByTestId(`class-header-${owner}`).click({ button: 'right' });
     const menu = page.getByTestId('context-menu');
     await menu.getByRole('menuitem', { name: '継承元を設定' }).click();
-    await menu.getByRole('menuitem', { name: 'OrderImporter', exact: true }).click();
+    await menu.getByRole('menu', { name: '継承元を設定' }).getByRole('menuitem', { name: 'OrderImporter', exact: true }).click();
     await page.getByTestId(`class-${owner}`).getByTestId('method-parse').click();
     await page.getByLabel('メソッド parse の可視性').selectOption('protected');
   }
@@ -2301,6 +2328,7 @@ test('上級8: 呼び出しだけの importOrders を似た処理を持つメソ
   for (const name of ['importOrders', 'readLines', 'validateOrders', 'saveOrders']) {
     await page.getByTestId(`method-${name}`).click({ button: 'right' });
     const menu = page.getByTestId('context-menu');
+    await menu.getByRole('menuitem', { name: '別のクラスへ移動' }).click();
     await menu.getByRole('menuitem', { name: 'OrderImporter', exact: true }).click();
     await expect(page.getByTestId('class-OrderImporter').getByTestId(`method-${name}`)).toBeVisible();
   }

@@ -51,7 +51,7 @@ test('メソッドを抽出して別クラスへ移しても、テストは緑�
   // Act: クラス名を変える
   await page.getByTestId('class-header-OrderService').click({ button: 'right' });
   const menu = page.getByTestId('context-menu');
-  await menu.getByRole('menuitem', { name: 'クラスの名前を変更' }).click();
+  await menu.getByRole('menuitem', { name: '名前を変更' }).click();
   await menu.getByLabel('新しいクラス名').fill('OrderUseCase');
   await menu.getByLabel('新しいクラス名').press('Enter');
   await summary.click();
