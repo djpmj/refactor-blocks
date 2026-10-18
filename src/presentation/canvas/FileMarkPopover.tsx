@@ -1,9 +1,11 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useGameStore } from '../store/useGameStore';
 import { findClass, findClassOfMethod, findMethod, type Codebase } from '../../domain/codebase/Codebase';
 import type { FileDeductionReason, FileSeverity } from '../../domain/scoring/fileScores';
 import { RULE_LABEL } from '../stage/describeScore';
-import { RULE_WHY } from '../stage/ruleWhy';
+import { lineLimitWhy, RULE_WHY } from '../stage/ruleWhy';
+import { findLineLimitViolations } from '../../domain/scoring/lineLimits';
 
 function targetName(codebase: Codebase, targetId: string): string {
   const method = findMethod(codebase, targetId);
@@ -26,6 +28,12 @@ export function FileMarkPopover({ anchor, tooltipId, severity, points, reasons, 
   const [position, setPosition] = useState({ left: 0, top: 0 });
   const label = severity === 'danger' ? `危険: -${points}点` : `修正が必要: -${points}点`;
   const rules = [...new Set(reasons.map((reason) => reason.rule))];
+  const stage = useGameStore((state) => state.stage);
+  const lineLimitKinds = new Map(findLineLimitViolations(codebase, stage.limits).map((violation) => [violation.targetId, violation.kind]));
+  const lineWhy = lineLimitWhy(reasons
+    .filter((reason) => reason.rule === 'line-limit')
+    .map((reason) => lineLimitKinds.get(reason.targetId))
+    .filter((kind) => kind !== undefined));
 
   useLayoutEffect(() => {
     const place = () => {
@@ -51,7 +59,9 @@ export function FileMarkPopover({ anchor, tooltipId, severity, points, reasons, 
     <div ref={ref} id={tooltipId} role="tooltip" data-testid="file-mark-reasons" className="file-mark-popover" style={{ left: position.left, top: position.top }}>
       <strong>{label}</strong>
       <ul>{reasons.map((reason, index) => <li key={`${reason.rule}-${reason.targetId}-${index}`}>{RULE_LABEL[reason.rule]}: {targetName(codebase, reason.targetId)} -{reason.points}点</li>)}</ul>
-      {rules.map((rule) => <p className="file-mark-popover__why" key={rule}>{RULE_WHY[rule].trouble}</p>)}
+      {rules.flatMap((rule) => rule === 'line-limit'
+        ? lineWhy.map((why) => <p className="file-mark-popover__why" key={`line-${why.trouble}`}>{why.trouble}</p>)
+        : <p className="file-mark-popover__why" key={rule}>{RULE_WHY[rule].trouble}</p>)}
     </div>,
     document.body,
   );

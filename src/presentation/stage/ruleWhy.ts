@@ -2,10 +2,32 @@ import type { ScoreRule } from '../../domain/scoring/score';
 
 export type RuleWhy = { readonly trouble: string; readonly because: string };
 
-export const RULE_WHY: Record<ScoreRule, RuleWhy> = {
-  'line-limit': {
+export const LINE_LIMIT_WHY: Record<'method' | 'class' | 'file', RuleWhy> = {
+  method: {
     trouble: '長いメソッドは、どこを直せばよいか探すだけで全体を読むことになります。複数人が同じ場所を同時に直して、衝突もしやすくなります。',
     because: '1か所を小さく保つと、読む量と衝突が減ります。',
+  },
+  class: {
+    trouble: '大きいクラスは、1か所を直すつもりでも、関係のないメソッドまで読むことになります。変わる理由が違う処理が同居していることも多く、巻き込んで壊しやすくなります。',
+    because: '変わる理由ごとにクラスを分けると、直すときに開くクラスが小さくなります。',
+  },
+  file: {
+    trouble: '大きいファイルは、何がどこにあるか探すだけで時間がかかり、複数人が同じファイルを同時に直して衝突しやすくなります。',
+    because: '持ち主(クラス)ごとにファイルを分けると、探す場所と衝突が減ります。',
+  },
+};
+
+export function lineLimitWhy(kinds: readonly ('method' | 'class' | 'file')[]): RuleWhy[] {
+  const uniqueKinds = new Set(kinds);
+  if (uniqueKinds.size === 0) return [LINE_LIMIT_WHY.method];
+  return (['method', 'class', 'file'] as const)
+    .filter((kind) => uniqueKinds.has(kind))
+    .map((kind) => LINE_LIMIT_WHY[kind]);
+}
+
+export const RULE_WHY: Record<ScoreRule, RuleWhy> = {
+  'line-limit': {
+    ...LINE_LIMIT_WHY.method,
   },
   coupling: {
     trouble: '呼んでいる先が多いほど、そのどれかが変わるたびに自分も壊れるおそれがあります。テストでも、呼び先の数だけ用意が要ります。',
