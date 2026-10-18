@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-18 10:55 UTC PR #255 行数違反の理由をメソッド・クラス・ファイルごとに説明する (#224)
+
+- 判定: 合格(blocker無し。suggestion: 中級2・チュートリアル1の出し分けを直接検証するE2Eの追加)
+- 確認した内容: npm run check(lint・typecheck・Vitest 1805件)✅。E2Eはレビュー環境で未実行(PR本文では256件成功)。Issue #224・docs/specs/line-limit-why-by-kind.mdの、種類別の説明・種類不明時のメソッド説明への既定・ヒント/減点内訳/ファイル印への反映を差分で確認。domain変更なし
+- マージ: squash & delete-branch
+
 ## 2026-10-18 08:40 UTC PR #253 行数バッジのE2E検証から環境依存の固定高さを除く
 
 - 判定: 合格(blocker無し)
@@ -212,20 +218,3 @@
 - 確認した内容: npm test(1702件) ✅ / npm run lint ✅ / npm run typecheck ✅。docs/specs/change-rumors.mdの変更対象ファイル一覧とrumoredRequests・describeRumorPayoff・RumorListの差分を確認。E2Eはこの環境で実行できず未実行(PR本文の219件成功を参照)
 - マージ: squash & delete-branch
 
-## 2026-10-12 13:25 UTC PR #190 feat: add toolbar answer menu
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(lint/typecheck/test 1693件) ✅。docs/specs/toolbar-answer-menu.mdの受け入れ基準をReferenceMenu.tsx・StagePanel.tsx・stageCatalog.testの差分で確認(ヒント総数はuseHintsのtotalと一致)。E2Eはブラウザ未導入のため未実行(CIのe2eジョブ成功を参照)
-- マージ: squash & delete-branch
-
-## 2026-10-12 12:50 UTC PR #166 手直しと変更依頼を段階的に進める
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(lint/typecheck/test 1692件) ✅。前回承認(5e6b525)以降はmasterのマージコミットのみ。docs/specs/post-perfect-flow.mdの段階制御・編集ロック・結果画面でのコード保持を確認。E2Eはブラウザ未導入のため未実行(PR本文の207件成功を参照)
-- マージ: squash & delete-branch
-
-## 2026-10-12 08:10 UTC PR #168 feat: clarify clear condition status (#162)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(lint/typecheck/test 1674件) ✅ / E2E 205件 ✅。Issue #162・docs/specs/clear-condition-badges.mdの、goal/current分離、達成数表示、達成瞬間の演出と初期化・リセット・undo/redo時の抑止、reduced-motionを確認。domain/application変更なし
-- マージ: squash & delete-branch
