@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { RULE_LABEL } from './describeScore';
-import { RULE_WHY } from './ruleWhy';
+import { LINE_LIMIT_WHY, lineLimitWhy, RULE_WHY } from './ruleWhy';
 
 describe('RULE_WHY', () => {
   it('全ルールに空でない理由がある', () => {
@@ -27,5 +27,40 @@ describe('RULE_WHY', () => {
 
     // Assert
     expect(whyKeys).toEqual(labelKeys);
+  });
+});
+
+describe('lineLimitWhy', () => {
+  it('違反の種類ごとに重複なく method、class、file の順で返す', () => {
+    // Arrange
+    const kinds = ['file', 'class', 'method', 'class'] as const;
+
+    // Act
+    const result = lineLimitWhy(kinds);
+
+    // Assert
+    expect(result).toEqual([LINE_LIMIT_WHY.method, LINE_LIMIT_WHY.class, LINE_LIMIT_WHY.file]);
+  });
+
+  it('method の重複は一件にまとめる', () => {
+    // Arrange
+    const kinds = ['method', 'method'] as const;
+
+    // Act
+    const result = lineLimitWhy(kinds);
+
+    // Assert
+    expect(result).toEqual([LINE_LIMIT_WHY.method]);
+  });
+
+  it('違反がない場合は既定の method 説明を返す', () => {
+    // Arrange
+    const kinds: ('method' | 'class' | 'file')[] = [];
+
+    // Act
+    const result = lineLimitWhy(kinds);
+
+    // Assert
+    expect(result).toEqual([LINE_LIMIT_WHY.method]);
   });
 });
