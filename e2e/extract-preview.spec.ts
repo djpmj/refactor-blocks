@@ -17,7 +17,12 @@ test('手直し中もメソッド行数のバッジは一行で表示する', as
   // Assert
   await expect(method.locator('.method-chip__fixed-mark')).toBeVisible();
   await expect(method.locator('.method-chip__lines')).toHaveText('39行');
-  await expect(method.locator('.method-chip')).toHaveCSS('height', '27px');
+  const lineBadgeRows = await method.locator('.method-chip__lines').evaluate((badge) => {
+    const range = badge.ownerDocument.createRange();
+    range.selectNodeContents(badge);
+    return new Set([...range.getClientRects()].map((rect) => Math.round(rect.top))).size;
+  });
+  expect(lineBadgeRows).toBe(1);
 });
 
 test('抽出の選択中に結果をプレビューし、抽出・Undo・ステージ切り替えで下書きを解除する', async ({ page }) => {
