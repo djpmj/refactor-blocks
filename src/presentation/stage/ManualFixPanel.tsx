@@ -6,6 +6,7 @@ import type { Stage } from '../../domain/stage/Stage';
 import { useGameStore } from '../store/useGameStore';
 import { explainChangeImpact } from '../../domain/change/changeImpact';
 import { ChangeImpactDialog } from '../change/ChangeImpactDialog';
+import { describeManualFix } from './describeManualFix';
 
 function nameOf(codebase: Codebase, methodId: string): string {
   const owner = findClassOfMethod(codebase, methodId);
@@ -41,11 +42,13 @@ function FixComparison({ stage, codebase, openingFix }: Readonly<{ stage: Stage;
     : <p data-testid="fix-comparison">冒頭: 直す場所 {pain.initial.siteIds.length} か所・読む量 {pain.initial.readLines} 行(直し忘れ {openingFix?.missed ?? 0} か所) → 今回: 直す場所 {pain.current.siteIds.length} か所{classShift}・読む量 {pain.current.readLines} 行</p>;
 }
 
-function PainSummary({ codebase, result, opening }: Readonly<{ codebase: Codebase; result: ManualFixResult; opening: boolean }>) {
+function PainSummary({ codebase, stage, result, opening }: Readonly<{ codebase: Codebase; stage: Stage; result: ManualFixResult; opening: boolean }>) {
+  const pain = measurePain(stage, codebase);
+  const classNames = result.siteClassIds.map((id) => codebase.files.flatMap((file) => file.classes).find((codeClass) => codeClass.id === id)?.name ?? id);
+  const messages = describeManualFix({ result, classNames, opening, readLines: pain?.current.readLines ?? 0 });
   return <>
     {result.extra.length > 0 && <p>関係のないメソッドに印を付けていました: {result.extra.map((id) => nameOf(codebase, id)).join('、')}</p>}
-    {result.sites >= 2 && <p>今のコードでは、この変更を入れるのに {result.sites} か所を直す必要があります。1か所にまとめれば、直し忘れは起きません</p>}
-    {opening && <p>この痛みを覚えておこう。組み替えたあと、同じ変更がどう変わるかを確かめます</p>}
+    {messages.map((message) => <p key={message}>{message}</p>)}
   </>;
 }
 
@@ -64,7 +67,7 @@ function ResultView({ stage, codebase, result, opening, closingFix, openingFix, 
   return (
     <>
       <FixResultStatus codebase={codebase} result={result} />
-      <PainSummary codebase={codebase} result={result} opening={opening} />
+      <PainSummary codebase={codebase} stage={stage} result={result} opening={opening} />
       {closingFix && solved && <FixComparison stage={stage} codebase={codebase} openingFix={openingFix} />}
       {closingFix && solved && <p>次は「変更依頼に挑戦」で、新しい機能を実際に足してみましょう</p>}
       {closingFix && !solved && <p>直し忘れや関係のない印がなくなるまで、もう一度やってみましょう。</p>}
@@ -88,6 +91,15 @@ function manualFixResult(codebase: Codebase, request: ReturnType<typeof painRequ
   return checkManualFix(codebase, request, manualFix.fixedIds);
 }
 
+function scrollBehavior(): ScrollBehavior {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+}
+
+function manualFixPhase(manualFix: { readonly released: boolean } | null): string {
+  if (manualFix === null) return 'closed';
+  return manualFix.released ? 'released' : 'editing';
+}
+
 /** 変更依頼を「手で直す」シミュレーション。印を付けてリリースすると、付け漏れ(直し忘れ)が本番バグとして報告される。 */
 export function ManualFixPanel({ stage, codebase }: Readonly<{ stage: Stage; codebase: Codebase }>) {
   const manualFix = useGameStore((state) => state.manualFix);
@@ -102,6 +114,9 @@ export function ManualFixPanel({ stage, codebase }: Readonly<{ stage: Stage; cod
   const impact = useMemo(() => request === undefined ? undefined : explainChangeImpact(stage.codebase, codebase, request), [codebase, request, stage.codebase]);
   const result = manualFixResult(codebase, request, manualFix);
   const solved = result !== null && isManualFixSolved(result);
+  const sectionRef = useRef<HTMLElement>(null);
+  const visiblePhase = manualFixPhase(manualFix);
+  const previousPhase = useRef(visiblePhase);
   const autoOpenedImpactReview = useRef(false);
   useEffect(() => {
     if (manualFix?.released !== true) autoOpenedImpactReview.current = false;
@@ -110,12 +125,27 @@ export function ManualFixPanel({ stage, codebase }: Readonly<{ stage: Stage; cod
       openImpactReview();
     }
   }, [impact, manualFix?.released, manualFix?.step, openImpactReview, solved]);
+  useEffect(() => {
+    if (visiblePhase !== 'closed' && visiblePhase !== previousPhase.current) {
+      requestAnimationFrame(() => {
+        const sidebar = sectionRef.current?.closest('.sidebar');
+        sectionRef.current?.scrollIntoView({ block: 'nearest', behavior: scrollBehavior() });
+        if (sidebar instanceof HTMLElement && sectionRef.current !== null) {
+          const target = sectionRef.current.getBoundingClientRect();
+          const container = sidebar.getBoundingClientRect();
+          if (target.bottom > container.bottom) sidebar.scrollBy({ top: target.bottom - container.bottom, behavior: scrollBehavior() });
+          if (target.top < container.top) sidebar.scrollBy({ top: target.top - container.top, behavior: scrollBehavior() });
+        }
+      });
+    }
+    previousPhase.current = visiblePhase;
+  }, [visiblePhase]);
   if (request === undefined) return null;
   const fixedCount = manualFix?.fixedIds.filter((id) => findClassOfMethod(codebase, id) !== undefined).length ?? 0;
   const canReviewImpact = impact !== undefined;
   return (
     <>
-      {manualFix !== null && <section className="manual-fix" aria-label="手で直すシミュレーション">
+      {manualFix !== null && <section ref={sectionRef} className="manual-fix" aria-label="手で直すシミュレーション">
         <h3>手で直してみる</h3>
         <p><strong>{request.title}</strong>: {request.description}</p>
         {manualFix.released && result !== null

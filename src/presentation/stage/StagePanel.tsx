@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type { Codebase } from '../../domain/codebase/Codebase';
 import { scoreCodebase, type Score } from '../../domain/scoring/score';
 import { biggestProblem } from '../../domain/scoring/biggestProblem';
@@ -74,6 +74,20 @@ function useStageSidebarWidth() {
   });
   const style: CSSProperties & { readonly '--sidebar-width': string } = { '--sidebar-width': `${width}px` };
   return { handleProps, style };
+}
+
+function useOpenSidebarForManualFix(active: boolean, setSidebarOpen: (open: boolean) => void): void {
+  const wasActive = useRef(active);
+  useEffect(() => {
+    if (!wasActive.current && active && window.innerWidth < 1400) setSidebarOpen(true);
+    wasActive.current = active;
+  }, [active, setSidebarOpen]);
+}
+
+function ManualFixSidebarOpener({ setSidebarOpen }: Readonly<{ setSidebarOpen: (open: boolean) => void }>) {
+  const manualFix = useGameStore((state) => state.manualFix);
+  useOpenSidebarForManualFix(manualFix !== null, setSidebarOpen);
+  return null;
 }
 
 function StageSidebarToggle({ open, onToggle }: Readonly<{ open: boolean; onToggle: () => void }>) {
@@ -277,8 +291,7 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
   // 狭い画面ではキャンバスを優先して、最初は閉じておく(描画は残し、hiddenで隠すだけ)
   const [sidebarOpen, toggleSidebar, setSidebarOpen] = useStageSidebar(stage.id, score.total >= 100);
   const { handleProps, style: sidebarStyle } = useStageSidebarWidth();
-  const revealedCount = stageHints.count;
-  const problemRevealed = stageHints.problemRevealed;
+  const { count: revealedCount, problemRevealed } = stageHints;
   const { hints, total } = useHints(stage, revealedCount);
   const stagePanelActions = useMemo(() => ({ recordProgress, startTour, setSidebarOpen }), [recordProgress, startTour, setSidebarOpen]);
   useStagePanelEffects(stage.id, score.total, stagePanelActions, tourStep);
@@ -293,6 +306,7 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
         <ScoreArea stage={stage} codebase={codebase} score={score} disabled={investigating} />
       </header>
       <CritiqueResult />
+      <ManualFixSidebarOpener setSidebarOpen={setSidebarOpen} />
       <div className={`app__body${sidebarOpen ? ' app__body--sidebar-open' : ''}`} style={sidebarStyle}>
         <StageSidebar
           stage={stage}
