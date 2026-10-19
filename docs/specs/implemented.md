@@ -117,3 +117,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [sample-answer-publicize](sample-answer-publicize.md) | 解答例の各手順で、可視性を採点しないステージでは別クラスから呼ばれる private を自動で public にする |
 | [sidebar-flow-visibility](sidebar-flow-visibility.md) | 左パネルをステージ切替で先頭へ戻し、段階が進んだら次のカードを見せ、章の結びの依頼タイトルは受ける段階だけ出す |
 | [line-limit-why-by-kind](line-limit-why-by-kind.md) | 行数減点の説明をメソッド・クラス・ファイルのどれが超えているかで出し分ける |
+| [change-cost-class-entanglement](change-cost-class-entanglement.md) | 変更のしやすさで、変更クラスに同居する別責務も「巻き込み(クラス)」として減点する |

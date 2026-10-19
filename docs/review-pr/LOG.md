@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-19 13:45 UTC PR #256 変更するクラスに同居する別責務も巻き込みとして採点する (#221)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint・typecheck・Vitest 1808件)✅。E2Eはレビュー環境で未実行(PR本文では256件成功)。Issue #221の classMixedResponsibilities・entangled-class(5点)・表示文言・模範解答調整を差分で確認
+- マージ: squash & delete-branch
+
 ## 2026-10-18 10:55 UTC PR #255 行数違反の理由をメソッド・クラス・ファイルごとに説明する (#224)
 
 - 判定: 合格(blocker無し。suggestion: 中級2・チュートリアル1の出し分けを直接検証するE2Eの追加)
@@ -210,11 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(1701件) / npm run lint ✅ / npm run typecheck ✅ / npm run test:e2e(215 passed。hint-highlight・score-jumpの2件はmasterでも同様に失敗する既存問題でPR無関係)
-- マージ: squash & delete-branch
-
-## 2026-10-12 19:41 UTC PR #169 feat: surface change request rumors
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(1702件) ✅ / npm run lint ✅ / npm run typecheck ✅。docs/specs/change-rumors.mdの変更対象ファイル一覧とrumoredRequests・describeRumorPayoff・RumorListの差分を確認。E2Eはこの環境で実行できず未実行(PR本文の219件成功を参照)
 - マージ: squash & delete-branch
 
