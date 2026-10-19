@@ -18,6 +18,8 @@ export type ChangeImpact = {
   readonly rippleClasses: readonly string[];
   /** 巻き込み: 変更箇所のメソッドに同居している、依頼と無関係な責務の種類数の合計。 */
   readonly mixedResponsibilities: number;
+  /** 巻き込み(クラス): 変更クラス内の別メソッドに同居する、依頼と無関係な責務の種類数の合計。 */
+  readonly classMixedResponsibilities: number;
   /** 触ったメソッド・クラス・ファイルのうち、変更後に行数の上限を超えているものの数。 */
   readonly overLimitTouched: number;
 };
@@ -55,6 +57,14 @@ export function measureChange(codebase: Codebase, request: ChangeRequest, limits
       .flatMap((codeClass) => codeClass.methods)
       .filter((method) => sites.includes(method.id))
       .reduce((sum, method) => sum + unrelatedResponsibilities(method, request), 0),
+    classMixedResponsibilities: touchedClasses.reduce((sum, codeClass) => {
+      const changedMethods = new Set(codeClass.methods.filter((method) => sites.includes(method.id)).map((method) => method.id));
+      const otherResponsibilities = codeClass.methods
+        .filter((method) => !changedMethods.has(method.id))
+        .flatMap((method) => method.fragments.map((fragment) => fragment.responsibility))
+        .filter((responsibility) => responsibility !== request.responsibility && responsibility !== CALL_RESPONSIBILITY);
+      return sum + new Set(otherResponsibilities).size;
+    }, 0),
     overLimitTouched: findLineLimitViolations(applied.value, limits).filter((violation) => touchedIds.has(violation.targetId)).length,
   });
 }

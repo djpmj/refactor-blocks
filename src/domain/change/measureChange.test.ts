@@ -45,6 +45,66 @@ function separatedCodebase(): Codebase {
 }
 
 describe('measureChange', () => {
+  it('変更クラス内の別メソッドにある無関係な責務の種類を数える', () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [{ id: 'file-tax', path: 'src/Tax.ts', classes: [{
+        id: 'class-tax', name: 'Tax', methods: [
+          { id: 'method-tax', name: 'tax', visibility: 'public', fragments: [fragment('tax', 4, 'tax')] },
+          { id: 'method-order', name: 'order', visibility: 'public', fragments: [fragment('order', 4, 'shipping'), fragment('save', 2, 'persistence'), fragment('notify', 2, 'notification')] },
+          { id: 'method-call', name: 'call', visibility: 'public', fragments: [fragment('call', 1, 'call')] },
+        ],
+      }] }],
+    };
+
+    // Act
+    const result = measureChange(codebase, taxRequest, limits);
+
+    // Assert
+    expect(result.ok && result.value.classMixedResponsibilities).toBe(3);
+  });
+
+  it('変更箇所が複数クラスなら、それぞれの別責務数を合計する', () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [{ id: 'file', path: 'src/Tax.ts', classes: [
+        { id: 'tax-a', name: 'TaxA', methods: [
+          { id: 'tax-a-site', name: 'tax', visibility: 'public', fragments: [fragment('tax-a-frag', 1, 'tax')] },
+          { id: 'other-a', name: 'other', visibility: 'public', fragments: [fragment('shipping-a', 1, 'shipping')] },
+        ] },
+        { id: 'tax-b', name: 'TaxB', methods: [
+          { id: 'tax-b-site', name: 'tax', visibility: 'public', fragments: [fragment('tax-b-frag', 1, 'tax')] },
+          { id: 'other-b', name: 'other', visibility: 'public', fragments: [fragment('notify-b', 1, 'notification')] },
+        ] },
+      ] }],
+    };
+
+    // Act
+    const result = measureChange(codebase, taxRequest, limits);
+
+    // Assert
+    expect(result.ok && result.value.classMixedResponsibilities).toBe(2);
+  });
+
+  it('税だけのクラスは0、注文の流れが同居するクラスは1種類と数える', () => {
+    // Arrange
+    const taxOnly: Codebase = { files: [{ id: 'file', path: 'tax.ts', classes: [{ id: 'tax', name: 'Tax', methods: [
+      { id: 'tax-site', name: 'tax', visibility: 'public', fragments: [fragment('tax', 1, 'tax')] },
+    ] }] }] };
+    const mixed: Codebase = { files: [{ id: 'file', path: 'tax.ts', classes: [{ id: 'tax', name: 'Tax', methods: [
+      { id: 'tax-site', name: 'tax', visibility: 'public', fragments: [fragment('tax', 1, 'tax')] },
+      { id: 'order-flow', name: 'order', visibility: 'public', fragments: [fragment('shipping', 1, 'shipping')] },
+    ] }] }] };
+
+    // Act
+    const onlyResult = measureChange(taxOnly, taxRequest, limits);
+    const mixedResult = measureChange(mixed, taxRequest, limits);
+
+    // Assert
+    expect(onlyResult.ok && onlyResult.value.classMixedResponsibilities).toBe(0);
+    expect(mixedResult.ok && mixedResult.value.classMixedResponsibilities).toBe(1);
+  });
+
   it('1メソッドに責務が混ざっていると、巻き込みと上限超えが増える', () => {
     // Arrange
     const codebase = sampleCodebase();
@@ -62,6 +122,7 @@ describe('measureChange', () => {
         linesAdded: 8,
         rippleClasses: [],
         mixedResponsibilities: 2,
+        classMixedResponsibilities: 0,
         overLimitTouched: 1,
       },
     });
@@ -84,6 +145,7 @@ describe('measureChange', () => {
         linesAdded: 8,
         rippleClasses: ['class-order'],
         mixedResponsibilities: 0,
+        classMixedResponsibilities: 0,
         overLimitTouched: 0,
       },
     });

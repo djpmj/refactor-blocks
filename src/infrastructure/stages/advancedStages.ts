@@ -181,7 +181,7 @@ const paymentGatewayInterfaceStage: Stage = {
     'どちらも「決済APIを呼び出す」処理と「決済ログを記録する」処理を1つのメソッド(charge)に詰め込んでいて、行数の上限を超えている。' +
     '実装を宣言していないと約束違反になる。',
   goal:
-    'StripeGateway・PaypalGateway の charge を、Extract Methodで責務(API呼び出し/ログ記録)ごとに分け、PaymentGateway を実装(implements)するよう設定しよう。' +
+    'StripeGateway・PaypalGateway の charge を、Extract Methodで責務(API呼び出し/ログ記録)ごとに分け、API・ログ・認証設定をそれぞれのクラスへ移してから、PaymentGateway を実装(implements)するよう設定しよう。' +
     'StripeGateway・PaypalGatewayの中身がどう変わっても、PaymentServiceの依存先は最初から最後まで PaymentGateway 1つのまま変わらない。上級3(方針を増やすほど依存も増える)と見比べてみよう。' +
     'メソッドは11行以内、1クラスの責務は3種類まで。実装を宣言していないと約束違反になる。',
   limits: { method: 11, class: 250, file: 400 },

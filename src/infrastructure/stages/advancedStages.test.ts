@@ -171,11 +171,17 @@ describe('advanced-payment-gateway-interface', () => {
     // Act
     const stripeMethodNames = classNamed(solved, 'StripeGateway').methods.map((method) => method.name);
     const paypalMethodNames = classNamed(solved, 'PaypalGateway').methods.map((method) => method.name);
+    const loggerMethodNames = classNamed(solved, 'PaymentLogger').methods.map((method) => method.name);
+    const stripeConfigMethodNames = classNamed(solved, 'StripeGatewayConfiguration').methods.map((method) => method.name);
+    const paypalConfigMethodNames = classNamed(solved, 'PaypalGatewayConfiguration').methods.map((method) => method.name);
     const paymentGateway = findClass(solved, 'class-payment-gateway');
 
     // Assert
-    expect(stripeMethodNames).toEqual(expect.arrayContaining(['charge', 'logStripePayment']));
-    expect(paypalMethodNames).toEqual(expect.arrayContaining(['charge', 'logPaypalPayment']));
+    expect(stripeMethodNames).toEqual(['charge']);
+    expect(paypalMethodNames).toEqual(['charge']);
+    expect(loggerMethodNames).toEqual(['logStripePayment', 'logPaypalPayment']);
+    expect(stripeConfigMethodNames).toEqual(['configureStripeCredentials']);
+    expect(paypalConfigMethodNames).toEqual(['configurePaypalCredentials']);
     expect(paymentGateway?.methods.map((method) => method.name)).toEqual(['charge']);
     expect(paymentGateway?.methods[0]?.fragments).toEqual([]);
   });
@@ -186,9 +192,11 @@ describe('advanced-payment-gateway-interface', () => {
 
     // Act
     const dependencies = classDependencies(solved);
+    const paymentServiceDependencies = dependencies.filter((dependency) => dependency.from === 'class-payment-service');
 
     // Assert
-    expect(dependencies).toEqual([{ from: 'class-payment-service', to: 'class-payment-gateway', cyclic: false }]);
+    expect(paymentServiceDependencies).toEqual([{ from: 'class-payment-service', to: 'class-payment-gateway', cyclic: false }]);
+    expect(dependencies.filter((dependency) => ['class-stripe-gateway', 'class-paypal-gateway'].includes(dependency.from))).toHaveLength(2);
   });
 
   describe('req-add-paypay(機能の追加)', () => {
