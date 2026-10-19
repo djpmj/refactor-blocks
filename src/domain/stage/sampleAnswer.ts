@@ -319,10 +319,17 @@ export const sampleAnswerSteps: Partial<Record<string, readonly SolutionStep[]>>
     { setSuperclass: { class: 'SmsNotifier', superclass: 'NotifierBase' } },
   ],
   'advanced-payment-gateway-interface': [
-    // StripeGateway・PaypalGatewayとも決済API呼び出し側のメソッド名が最初から同じ(charge)なので、
-    // fromClassでクラスを指定してどちらのchargeから抽出するかを曖昧さなく指定する。
+    // API・ログ・認証設定を別クラスに分け、変更理由ごとに変更先を絞る。
+    { addFile: 'src/payment/PaymentLogger.ts' },
+    { addClass: { name: 'PaymentLogger', file: 'src/payment/PaymentLogger.ts' } },
+    { addClass: { name: 'StripeGatewayConfiguration', file: 'src/payment/StripeGateway.ts' } },
+    { addClass: { name: 'PaypalGatewayConfiguration', file: 'src/payment/PaypalGateway.ts' } },
     { extract: { from: 'charge', fromClass: 'StripeGateway', fragmentIds: ['frag-log-payment-stripe'], name: 'logStripePayment' } },
     { extract: { from: 'charge', fromClass: 'PaypalGateway', fragmentIds: ['frag-log-payment-paypal'], name: 'logPaypalPayment' } },
+    { move: { method: 'logStripePayment', toClass: 'PaymentLogger' } },
+    { move: { method: 'logPaypalPayment', toClass: 'PaymentLogger' } },
+    { move: { method: 'configureStripeCredentials', toClass: 'StripeGatewayConfiguration' } },
+    { move: { method: 'configurePaypalCredentials', toClass: 'PaypalGatewayConfiguration' } },
     { addInterface: { class: 'StripeGateway', interface: 'PaymentGateway' } },
     { addInterface: { class: 'PaypalGateway', interface: 'PaymentGateway' } },
   ],

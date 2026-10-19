@@ -3,6 +3,8 @@ import { modelAnswerCodebase, reviewBlankDesign } from '../../domain/blank/revie
 import { applySolutionSteps } from '../../domain/stage/sampleAnswer';
 import { findUnplacedParts, TRAY_FILE_ID } from '../../domain/blank/tray';
 import { blankDesignProblems } from './blankDesignProblems';
+import { allClasses } from '../../domain/codebase/Codebase';
+import { moveMethod } from '../../domain/codebase/moveMethod';
 
 describe.each(blankDesignProblems)('$id', (problem) => {
   it('問題IDは重複しない', () => {
@@ -68,5 +70,23 @@ describe('blank-order-shipping', () => {
     expect(model.value.player.score.total).toBe(100);
     expect(grouped.value.player.score.total).toBeLessThan(model.value.player.score.total);
     expect(grouped.value.player.changeScore).toBeLessThanOrEqual(model.value.player.changeScore);
+  });
+
+  it('注文の流れを税クラスに同居させても、税の変更スコアは模範解答以下になる', () => {
+    // Arrange
+    const modelCodebase = modelAnswerCodebase(problem);
+    const taxClass = allClasses(modelCodebase).find((codeClass) => codeClass.name === 'TaxCalculator');
+    const placeOrder = allClasses(modelCodebase).flatMap((codeClass) => codeClass.methods).find((method) => method.name === 'placeOrder');
+    if (taxClass === undefined || placeOrder === undefined) throw new Error('模範解答に対象クラスまたはメソッドがありません');
+    const moved = moveMethod(modelCodebase, placeOrder.id, taxClass.id);
+    if (!moved.ok) throw new Error(moved.error);
+
+    // Act
+    const result = reviewBlankDesign(problem, moved.value);
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    expect(result.value.model.changes[1]?.score.total).toBe(95);
+    expect(result.value.player.changes[1]?.score.total).toBeLessThanOrEqual(95);
   });
 });
