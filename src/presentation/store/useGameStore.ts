@@ -704,7 +704,7 @@ function moveActions(
         return null;
       }
       const notice = publicizedMoveNotice(result.value.codebase, result.value.publicized);
-      set({ ...applyResult(state, { ok: true, value: result.value.codebase }, describeMoveOutError), notice });
+      set({ ...applyResult(state, { ok: true, value: autoNameClasses(result.value.codebase, state.stage.classNames) }, describeMoveOutError), notice });
       return result.value.fileId;
     },
     moveMethodToNewClassInFile: moveMethodToNewClassInFileAction(set, get, newId),

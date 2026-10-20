@@ -65,10 +65,12 @@ const ALL_PARTS = [
 
 /** 7つの部品をすべて、余白に作った1つのクラスへまとめて配置する(点数は問わず、答え合わせを試すためだけの配置)。 */
 async function placeAllParts(page: Page, view: Locator) {
-  await dragToEmptyCanvas(page, view, `method-${ALL_PARTS[0]}`);
+  const initialPart = 'placeOrder';
+  await dragToEmptyCanvas(page, view, `method-${initialPart}`);
   await page.getByRole('button', { name: 'Fit View' }).click();
   for (const name of ALL_PARTS.slice(1)) {
-    await dragMethodToClass(page, view, `method-${name}`, 'class-NewClass');
+    const initialClass = view.locator('.class-node').filter({ has: page.getByTestId(`method-${initialPart}`) });
+    await dragMethodToClass(page, view, `method-${name}`, await initialClass.getAttribute('data-testid') ?? '');
   }
 }
 
@@ -95,7 +97,7 @@ test('部品を1つ空いている所へドラッグすると、新しいクラ�
   await dragToEmptyCanvas(page, view, 'method-placeOrder');
 
   // Assert
-  await expect(view.getByTestId('class-NewClass').getByTestId('method-placeOrder')).toBeVisible();
+  await expect(view.getByTestId('class-OrderService').getByTestId('method-placeOrder')).toBeVisible();
   await expect(view.getByTestId('blank-unplaced')).toContainText('あと6個');
 });
 
@@ -110,6 +112,45 @@ test('白紙設計では本体のあるメソッドを選ぶと可視性欄が�
 
   // Assert
   await expect(view.getByLabel('メソッド placeOrder の可視性')).toBeVisible();
+});
+
+test('白紙設計の新しいクラスは部品の責務で命名し、同数行では先に入れた責務名を保つ', async ({ page }) => {
+  // Arrange
+  await openBlank(page);
+  const view = blankView(page);
+
+  // Act: 注文フローを配置し、別の余白へ保存4行を配置する
+  await dragToEmptyCanvas(page, view, 'method-placeOrder');
+  await expect(view.getByTestId('class-OrderService')).toBeVisible();
+  await dragToEmptyCanvas(page, view, 'method-saveOrder');
+
+  // Assert
+  await expect(view.getByTestId('class-OrderRepository').getByTestId('method-saveOrder')).toBeVisible();
+
+  // Act: メール3行を配置する
+  await dragToEmptyCanvas(page, view, 'method-sendOrderConfirmMail');
+  await expect(view.getByTestId('class-OrderMailer')).toBeVisible();
+
+  // Act: 3行の税処理をメールのクラスへ加える
+  await dragMethodToClass(page, view, 'method-calculateOrderTax', 'class-OrderMailer');
+  await expect(view.getByTestId('class-OrderMailer').getByTestId('method-calculateOrderTax')).toBeVisible();
+
+  // Assert: 同数行なら先に入っていた通知の責務名を保つ
+  await expect(view.getByTestId('class-OrderMailer')).toBeVisible();
+
+  // Act: 右クリックの「名前を変更」で手動命名し、別の部品を加える
+  await page.getByTestId('class-header-OrderMailer').click({ button: 'right' });
+  const menu = page.getByTestId('context-menu');
+  await menu.getByRole('menuitem', { name: '名前を変更' }).click();
+  const nameInput = menu.getByLabel('新しいクラス名');
+  await nameInput.fill('CustomMailer');
+  await nameInput.press('Enter');
+  await dragMethodToClass(page, view, 'method-sendShippedMail', 'class-CustomMailer');
+
+  // Assert: 手動命名後は内容が変わっても名前を維持する
+  await expect(view.getByTestId('class-CustomMailer').getByTestId('method-calculateOrderTax')).toBeVisible();
+  await expect(view.getByTestId('class-CustomMailer').getByTestId('method-sendShippedMail')).toBeVisible();
+  await expect(view.getByTestId('class-OrderMailer')).toHaveCount(0);
 });
 
 test('全部品を配置すると答え合わせができ、両者の設計スコアと変更依頼の結果、模範解答の図が出る', async ({ page }) => {
@@ -174,7 +215,7 @@ test('リファクタリングと白紙設計を行き来しても、それぞ�
   await page.getByTestId('mode-blank').click();
   const view = blankView(page);
   await dragToEmptyCanvas(page, view, 'method-placeOrder');
-  await expect(view.getByTestId('class-NewClass').getByTestId('method-placeOrder')).toBeVisible();
+  await expect(view.getByTestId('class-OrderService').getByTestId('method-placeOrder')).toBeVisible();
   await page.getByTestId('mode-refactor').click();
 
   // Assert: リファクタリングのコードベースがそのまま残っている
@@ -182,7 +223,7 @@ test('リファクタリングと白紙設計を行き来しても、それぞ�
 
   // Act & Assert: 白紙設計に戻ると配置も残っている
   await page.getByTestId('mode-blank').click();
-  await expect(view.getByTestId('class-NewClass').getByTestId('method-placeOrder')).toBeVisible();
+  await expect(view.getByTestId('class-OrderService').getByTestId('method-placeOrder')).toBeVisible();
 });
 
 test('キーボードだけで、モードの切り替え・答え合わせ・結果を閉じる操作ができる', async ({ page }) => {

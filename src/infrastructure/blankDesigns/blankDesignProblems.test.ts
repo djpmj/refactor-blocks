@@ -3,8 +3,54 @@ import { modelAnswerCodebase, reviewBlankDesign } from '../../domain/blank/revie
 import { applySolutionSteps } from '../../domain/stage/sampleAnswer';
 import { findUnplacedParts, TRAY_FILE_ID } from '../../domain/blank/tray';
 import { blankDesignProblems } from './blankDesignProblems';
+import { autoNameClasses } from '../../domain/codebase/autoNameClasses';
+import { moveMethodToNewClass } from '../../domain/codebase/moveToNewHome';
+
+function partResponsibilities(problem: (typeof blankDesignProblems)[number]): Set<string> {
+  const responsibilities = partMethods(problem).flatMap((method) => method.fragments).map((fragment) => fragment.responsibility);
+  return new Set(responsibilities.filter((responsibility) => responsibility !== 'call'));
+}
+
+function partMethods(problem: (typeof blankDesignProblems)[number]) {
+  return problem.codebase.files.flatMap((file) => file.classes).flatMap((codeClass) => codeClass.methods);
+}
+
+function partWithResponsibility(problem: (typeof blankDesignProblems)[number], responsibility: string | undefined) {
+  return partMethods(problem).find((method) => method.fragments.some((fragment) => fragment.responsibility === responsibility));
+}
 
 describe.each(blankDesignProblems)('$id', (problem) => {
+  it('部品の責務をすべて模範解答のクラス名へ対応づける', () => {
+    // Arrange
+    const responsibilities = partResponsibilities(problem);
+    const modelClassNames = modelAnswerCodebase(problem).files.flatMap((file) => file.classes).map((codeClass) => codeClass.name);
+
+    // Act
+    const configuredClassNames = Object.entries(problem.classNames);
+
+    // Assert
+    expect(new Set(configuredClassNames.map(([responsibility]) => responsibility))).toEqual(responsibilities);
+    expect(configuredClassNames.every(([, className]) => modelClassNames.includes(className))).toBe(true);
+  });
+
+  it('プレイヤー操作で作ったクラスには部品の責務から模範解答の名前が付く', () => {
+    // Arrange
+    const methods = partMethods(problem);
+    const responsibility = methods.flatMap((method) => method.fragments)
+      .find((fragment) => fragment.responsibility !== 'order-flow')?.responsibility;
+    const part = partWithResponsibility(problem, responsibility);
+    if (part === undefined || responsibility === undefined) throw new Error('責務のある部品が見つかりません');
+    const moved = moveMethodToNewClass(problem.codebase, part.id, { classId: 'new-class', fileId: 'new-file' });
+    if (!moved.ok) throw new Error(moved.error);
+
+    // Act
+    const named = autoNameClasses(moved.value, problem.classNames);
+
+    // Assert
+    const expectedClassName = problem.classNames[responsibility];
+    expect(named.files.flatMap((file) => file.classes).find((codeClass) => codeClass.id === 'new-class')?.name).toBe(expectedClassName);
+  });
+
   it('問題IDは重複しない', () => {
     // Arrange & Act
     const matches = blankDesignProblems.filter((candidate) => candidate.id === problem.id);
