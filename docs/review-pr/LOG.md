@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-20 10:40 UTC PR #262 基底へ移したメソッドをprotectedにし統合候補を保つ (#229)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test(1816件)✅ / npm run lint ✅ / npm run typecheck ✅。子孫からだけ呼ばれるメソッドはprotected・それ以外はpublic、private/protected間の統合(結果は広い可視性)、changed型と呼び出し元・通知文の更新を差分で確認。E2Eはこの環境で実行許可が無く未実行(PR本文では256/257件成功、残り1件は単独再実行で成功)
+- マージ: squash & delete-branch
+
 ## 2026-10-20 10:30 UTC PR #261 メソッドの読み上げ名と選択状態を明確にする (#227)
 
 - 判定: 合格(blocker無し)
@@ -210,11 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅ 1722件 / npm run lint ✅ / npm run typecheck ✅。E2Eはこの環境にChromiumが無く実行できなかったため、PR本文の報告(227件PASS)に依拠
-- マージ: squash & delete-branch
-
-## 2026-10-14 09:15 UTC PR #195 chore(deps): bump the production-dependencies group with 2 updates
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅ 1720件 / npm run lint ✅ / npm run typecheck ✅。package.json・lockのパッチ更新のみ(PR #196 は同時に承認したが、#195 マージ後にlock競合したためDependabotの再作成待ち)
 - マージ: squash & delete-branch
 
