@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-20 10:30 UTC PR #261 メソッドの読み上げ名と選択状態を明確にする (#227)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test(1813件)✅ / npm run lint ✅ / npm run typecheck ✅。読み上げ名の規則・aria-pressed・記号のaria-hiddenが仕様どおりであることを差分で確認。E2Eはこの環境にブラウザが無く未実行(PR本文では全257件成功)
+- マージ: squash & delete-branch
+
 ## 2026-10-20 03:50 UTC PR #260 新しく作ったクラスを表示領域へ収める (#223)
 
 - 判定: 合格(blocker無し)
@@ -210,17 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅ 1720件 / npm run lint ✅ / npm run typecheck ✅。package.json・lockのパッチ更新のみ(PR #196 は同時に承認したが、#195 マージ後にlock競合したためDependabotの再作成待ち)
-- マージ: squash & delete-branch
-
-## 2026-10-13 15:10 UTC PR #194 feat: 循環依存を輪の組で表示
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅ 1720件 / npm run lint ✅ / npm run typecheck ✅。E2Eはこの実行環境で225件すべて起動失敗のため未検証(E2E差分は目視確認、PR本文では225件PASS)
-- マージ: squash & delete-branch
-
-## 2026-10-13 14:40 UTC PR #193 refactor: compute pain trend once
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅ 1715件 / npm run lint ✅ / npm run typecheck ✅。ChangePainCard.tsxの1ファイルで describePainTrend を1回だけ計算する変更を差分で確認(表示ロジック不変のためE2Eは未実行)
 - マージ: squash & delete-branch
 

@@ -119,3 +119,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [new-class-into-view](new-class-into-view.md) | 余白へのドロップで作ったクラスが画面外にはみ出したら、ズームを変えずに見える位置へパンする |
 | [line-limit-why-by-kind](line-limit-why-by-kind.md) | 行数減点の説明をメソッド・クラス・ファイルのどれが超えているかで出し分ける |
 | [change-cost-class-entanglement](change-cost-class-entanglement.md) | 変更のしやすさで、変更クラスに同居する別責務も「巻き込み(クラス)」として減点する |
+| [method-chip-accessible-name](method-chip-accessible-name.md) | メソッドのボタンの読み上げ名に可視性・行数・警告・「直した」印を入れ、選択中を aria-pressed で伝える |
