@@ -1785,7 +1785,7 @@ test('中級3: renderTemplate を public にするとアクセス制御の減点
   await expect(score).toContainText('アクセス制御 -10');
 
   // Act: 抽象メソッドを実装していない一般メソッドでも抽象の説明は出さない
-  await page.getByRole('button', { name: /notifyShipment\(\)/ }).click();
+  await page.getByTestId('method-notifyShipment').click();
 
   // Assert
   await expect(page.locator('.method-editor__visibility-hint')).not.toContainText('親クラスの抽象メソッド');
