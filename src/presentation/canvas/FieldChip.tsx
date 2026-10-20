@@ -9,7 +9,7 @@ import { BLOCK_OPERATION_TITLES } from '../guide/operationGuide';
 export function FieldChipView({ field, selected = false }: Readonly<{ field: Field; selected?: boolean }>) {
   return (
     <div className={['field-chip', `field-chip--${field.visibility}`, selected ? 'field-chip--selected' : null].filter(Boolean).join(' ')}>
-      <span className="field-chip__visibility">{VISIBILITY_MARK[field.visibility]}</span>
+      <span className="field-chip__visibility" aria-hidden="true">{VISIBILITY_MARK[field.visibility]}</span>
       <span className="field-chip__name">{field.name}</span>
     </div>
   );

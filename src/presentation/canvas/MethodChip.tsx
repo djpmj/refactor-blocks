@@ -8,6 +8,7 @@ import { useInlineEdit } from './useInlineEdit';
 import { VISIBILITY_MARK } from './visibilityMark';
 import { BLOCK_OPERATION_TITLES } from '../guide/operationGuide';
 import { useResolvedCelebration } from './useResolvedCelebration';
+import { methodChipLabel } from './methodChipLabel';
 
 type MethodChipViewProps = {
   method: Method;
@@ -29,6 +30,13 @@ function useMethodOverLimit(method: Method): boolean {
   return methodLines(method, codebase) > limit;
 }
 
+function useMethodAccessibleName(method: Method, fixed: boolean, mixed: boolean): string {
+  const codebase = useGameStore((state) => state.codebase);
+  const limit = useGameStore((state) => state.stage.limits.method);
+  const lines = methodLines(method, codebase);
+  return methodChipLabel({ name: method.name, visibility: method.visibility, lines, lineLimit: limit, overLimit: lines > limit, mixed, fixed });
+}
+
 function MethodChipLineCount({ method, preview }: Readonly<{ method: Method; preview: MethodLinePreview | undefined }>) {
   const codebase = useGameStore((state) => state.codebase);
   if (preview === undefined) return <span className="method-chip__lines">{methodLines(method, codebase)}行</span>;
@@ -37,6 +45,17 @@ function MethodChipLineCount({ method, preview }: Readonly<{ method: Method; pre
 
 function MethodChipMarkers({ fixed, changeCount }: Readonly<{ fixed: boolean; changeCount: number }>) {
   return <>{fixed ? <span className="method-chip__fixed-mark" data-testid="fixed-mark">✔ 直した</span> : null}{changeCount > 0 ? <span className="method-chip__badge" data-testid="change-site-badge" title="直前の変更依頼で、変更が必要だったメソッド">変更×{changeCount}</span> : null}</>;
+}
+
+function useMethodMixed(methodId: string): boolean {
+  return useGameStore((state) => violationTargets(state.codebase, state.stage)['mixed-method'].methodIds.includes(methodId));
+}
+
+function useMethodFlagged(methodId: string): boolean {
+  return useGameStore((state) => {
+    const rule = state.focusedRule ?? (state.hintTarget === null ? state.previewRule : null);
+    return rule !== null ? violationTargets(state.codebase, state.stage)[rule].methodIds.includes(methodId) : state.hintTarget?.methodIds.includes(methodId) ?? false;
+  });
 }
 
 /** ドラッグ中のオーバーレイでも使う見た目だけのコンポーネント。 */
@@ -49,7 +68,7 @@ export function MethodChipView({ method, overLimit, selected = false, changeCoun
   return (
     <div className={classNames.join(' ')}>
       <MethodChipMarkers fixed={fixed} changeCount={changeCount} />
-      <span className="method-chip__visibility">{VISIBILITY_MARK[method.visibility]}</span>
+      <span className="method-chip__visibility" aria-hidden="true">{VISIBILITY_MARK[method.visibility]}</span>
       <span className="method-chip__name">{method.name}()</span>
       <MethodChipLineCount method={method} preview={linePreview} />
     </div>
@@ -77,15 +96,14 @@ function useManualFixMark(methodId: string) {
 export function MethodChip({ method, linePreview }: Readonly<{ method: Method; linePreview?: MethodLinePreview }>) {
   const resolved = useResolvedCelebration('methodIds', method.id);
   const overLimit = useMethodOverLimit(method);
-  const flagged = useGameStore((state) => {
-    const rule = state.focusedRule ?? (state.hintTarget === null ? state.previewRule : null);
-    return rule !== null ? violationTargets(state.codebase, state.stage)[rule].methodIds.includes(method.id) : state.hintTarget?.methodIds.includes(method.id) ?? false;
-  });
+  const flagged = useMethodFlagged(method.id);
   const selected = useGameStore((state) => state.manualFix === null && state.selectedMethodId === method.id);
   const inspectMethod = useGameStore((state) => state.inspectMethod);
   const inspected = useGameStore((state) => state.changeSession?.inspected === method.id);
   const renameMethod = useGameStore((state) => state.renameMethod);
   const { manualFixing, fixed, onClick } = useManualFixMark(method.id);
+  const mixed = useMethodMixed(method.id);
+  const accessibleName = useMethodAccessibleName(method, fixed, mixed);
   // 実装中に出すと答えが見えてしまうので、変更依頼に挑戦していないときだけ数える
   const changeCount = useGameStore((state) =>
     state.changeSession === null
@@ -112,6 +130,7 @@ export function MethodChip({ method, linePreview }: Readonly<{ method: Method; l
       className={`method-chip-button nodrag nopan${resolved ? ' method-chip-button--resolved' : ''}`}
       style={{ opacity: isDragging ? 0.3 : 1 }}
       data-testid={`method-${method.name}`}
+      aria-label={accessibleName}
       onMouseEnter={() => {
         inspectMethod(method.id);
       }}
@@ -132,7 +151,7 @@ export function MethodChip({ method, linePreview }: Readonly<{ method: Method; l
       {...attributes}
       // 印の付け外し中は Enter/Space を、キーボードドラッグの開始ではなくボタンのクリックとして使う
       {...(manualFixing ? { ...listeners, onKeyDown: undefined } : listeners)}
-      aria-pressed={manualFixing ? fixed : undefined}
+      aria-pressed={manualFixing ? fixed : selected}
       title={manualFixing ? BLOCK_OPERATION_TITLES.manualFix : BLOCK_OPERATION_TITLES.method}
     >
       <MethodChipView method={method} overLimit={overLimit} selected={selected} changeCount={changeCount} flagged={flagged} fixed={fixed} linePreview={linePreview} />
