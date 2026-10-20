@@ -61,6 +61,28 @@ describe('move visibility notice', () => {
     // Assert
     expect(store.getState().notice).toBe('外のクラスから呼ばれるようになったので、calculateTax()・saveOrder() を public にしました');
   });
+
+  it('子孫からの呼び出しでprivateをprotectedにしたと知らせる', () => {
+    // Arrange
+    const stage = stages.find((candidate) => candidate.title === 'チュートリアル2: 太った placeOrder');
+    if (stage === undefined) throw new Error('チュートリアル2のステージが必要です');
+    const codebase = { files: [{ id: 'file', path: 'sample.ts', classes: [
+      { id: 'parent', name: 'Parent', methods: [{ id: 'hidden', name: 'hidden', visibility: 'private' as const, fragments: [{ id: 'body', label: 'body', lines: 1, responsibility: 'misc' }] }] },
+      { id: 'child', name: 'Child', superclassId: 'parent', methods: [
+        { id: 'moved', name: 'moved', visibility: 'public' as const, fragments: [{ id: 'call-target', label: 'call', lines: 1, responsibility: 'misc' }] },
+        { id: 'child-caller', name: 'callHidden', visibility: 'public' as const, fragments: [{ id: 'call-hidden', label: 'call', lines: 1, responsibility: 'misc', uses: ['hidden'] }] },
+      ] },
+      { id: 'target', name: 'Target', methods: [] },
+    ] }] };
+    const store = createGameStore([{ ...stage, codebase, visibilityEnforced: false }], false, false);
+
+    // Act
+    store.getState().moveMethod('moved', 'target');
+
+    // Assert
+    expect(findMethod(store.getState().codebase, 'hidden')?.visibility).toBe('protected');
+    expect(store.getState().notice).toBe('hidden() は Parent の外(Child)から呼ばれるようになったので、protected にしました');
+  });
 });
 
 describe('delete inline notice', () => {
