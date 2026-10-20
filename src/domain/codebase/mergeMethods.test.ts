@@ -32,6 +32,14 @@ function file(id: string, path: string, classes: CodeClass[]): CodeFile {
   return { id, path, classes };
 }
 
+function visibilityFixture(methodAVisibility: Visibility, methodBVisibility: Visibility): Codebase {
+  return mapClasses(fixture(), (owner) => ({ ...owner, methods: owner.methods.map((item) => {
+    if (item.id === 'method-a') return { ...item, visibility: methodAVisibility };
+    if (item.id === 'method-b') return { ...item, visibility: methodBVisibility };
+    return item;
+  }) }));
+}
+
 /**
  * ClassA.logA / ClassB.logB / ClassC.logC は同じ duplicateGroup を持つ「本物の重複」。
  * ClassA.callerA / ClassB.callerB はそれぞれ logA / logB を呼び出す(統合後の呼び出し元の書き換えを確認するため)。
@@ -204,7 +212,7 @@ describe('mergeMethods', () => {
     ['存在しないmethodBId', request({ methodBId: 'missing' }), 'method-not-found'],
     ['methodAIdとmethodBIdが同じ', request({ methodBId: 'method-a' }), 'same-method'],
     ['同じクラスの中の2メソッド', request({ methodAId: 'method-a', methodBId: 'method-a-other' }), 'same-class'],
-    ['Bがpublic', request({ methodBId: 'method-d' }), 'not-private'],
+    ['Bがpublic', request({ methodBId: 'method-d' }), 'not-mergeable-visibility'],
     ['duplicateGroupの値が違う', request({ methodBId: 'method-h' }), 'shape-mismatch'],
     ['responsibility/labelが同じでもduplicateGroupが無ければ統合できない', request({ methodAId: 'method-e', methodBId: 'method-f' }), 'shape-mismatch'],
     ['Fragmentの個数が違う', request({ methodBId: 'method-g' }), 'shape-mismatch'],
@@ -311,7 +319,7 @@ describe('呼び出し行の統合', () => {
 
   it.each([
     ['名前違い', skeletonFixture('public', 'public', 'decode'), 'shape-mismatch'],
-    ['可視性違い', skeletonFixture('public', 'private'), 'not-private'],
+    ['publicとprivate', skeletonFixture('public', 'private'), 'not-mergeable-visibility'],
   ] as const)('%s は統合も候補表示もしない', (_label, base, error) => {
     // Arrange / Act
     const result = mergeMethods(base, skeletonRequest);
@@ -328,8 +336,34 @@ describe('呼び出し行の統合', () => {
     });
     const mixed = mapClasses(base, (owner) => ({ ...owner, methods: owner.methods.map(withRealFragment) }));
     // Act / Assert
-    expect(mergeMethods(mixed, skeletonRequest)).toEqual({ ok: false, error: 'not-private' });
+    expect(mergeMethods(mixed, skeletonRequest)).toEqual({ ok: false, error: 'not-mergeable-visibility' });
     expect(findMergeCandidates(mixed, 'a')).toEqual([]);
+  });
+
+  it('protected同士の形が一致する本物の処理は統合できる', () => {
+    // Arrange
+    const base = visibilityFixture('protected', 'protected');
+
+    // Act
+    const result = mergeMethods(base, request());
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    expect(findMethod(result.value, 'method-merged')?.visibility).toBe('protected');
+    expect(findMergeCandidates(base, 'method-a').map(({ method: candidate }) => candidate.id)).toContain('method-b');
+  });
+
+  it('privateとprotectedの形が一致すれば候補になり、統合結果はprotectedになる', () => {
+    // Arrange
+    const base = visibilityFixture('private', 'protected');
+
+    // Act
+    const result = mergeMethods(base, request());
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    expect(findMergeCandidates(base, 'method-a').map(({ method: candidate }) => candidate.id)).toContain('method-b');
+    expect(findMethod(result.value, 'method-merged')?.visibility).toBe('protected');
   });
 });
 
