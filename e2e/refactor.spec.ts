@@ -391,6 +391,71 @@ test('クラスヘッダーのメニューから別ファイルへ移動でき�
   await expect(page.getByTestId('file-src/tax/TaxCalculator.ts')).toContainText('3行');
 });
 
+test('クラスの右クリックメニューから新しいファイルへ移動し、フォーカスとUndoを保つ', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await selectStage(page, '中級2: 何でも入った1つのファイル');
+  const sourceFile = page.getByTestId('file-src/app/services.ts');
+  const source = page.getByTestId('class-header-ShippingService');
+  await source.click({ button: 'right' });
+  const menu = page.getByTestId('context-menu');
+  const action = menu.getByRole('menuitem', { name: '新しいファイルへ移動' });
+  await expect(action).toBeVisible();
+
+  // Act
+  await action.click();
+
+  // Assert
+  await expect(sourceFile).toBeVisible();
+  await expect(page.getByTestId('class-ShippingService')).toBeVisible();
+  await expect(page.locator('.react-flow__node-fileNode')).toHaveCount(2);
+  await expect(source).toBeFocused();
+  await expect(source).toHaveCSS('opacity', '1');
+  await expect(menu).toHaveCount(0);
+
+  // Assert: 新しいファイルの右に配置され、既存ファイルと重ならない
+  const files = page.locator('.react-flow__node-fileNode');
+  const sourceBox = await sourceFile.boundingBox();
+  const fileBoxes = await files.all().then(async (items) => Promise.all(items.map((item) => item.boundingBox())));
+  if (sourceBox === null || fileBoxes.some((box) => box === null)) throw new Error('ファイルの位置を取得できません');
+  const movedFileBox = fileBoxes.find((box) => box !== null && box.x !== sourceBox.x);
+  if (movedFileBox === undefined || movedFileBox === null) throw new Error('新しいファイルの位置を取得できません');
+  expect(movedFileBox.x).toBeGreaterThanOrEqual(sourceBox.x + sourceBox.width);
+
+  // Act: Undo
+  await page.keyboard.press('Control+z');
+
+  // Assert
+  await expect(page.getByTestId('class-ShippingService')).toBeVisible();
+  await expect(page.locator('.react-flow__node-fileNode')).toHaveCount(1);
+});
+
+test('クラスはShift+F10とTab/Enterだけで新しいファイルへ移動でき、唯一のクラスでは項目を隠す', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await selectStage(page, '中級2: 何でも入った1つのファイル');
+  const header = page.getByTestId('class-header-ShippingService');
+  await header.focus();
+
+  // Act
+  await page.keyboard.press('Shift+F10');
+  const menu = page.getByTestId('context-menu');
+  const action = menu.getByRole('menuitem', { name: '新しいファイルへ移動' });
+  await expect(action).toBeVisible();
+  for (let index = 0; index < await menu.getByRole('menuitem').count(); index += 1) {
+    if (await action.evaluate((element) => element.matches(':focus'))) break;
+    await page.keyboard.press('Tab');
+  }
+  await expect(action).toBeFocused();
+  await page.keyboard.press('Enter');
+
+  // Assert
+  await expect(header).toBeFocused();
+  await expect(page.getByTestId('class-ShippingService')).toBeVisible();
+  await header.click({ button: 'right' });
+  await expect(page.getByTestId('context-menu').getByRole('menuitem', { name: '新しいファイルへ移動' })).toHaveCount(0);
+});
+
 test('クラスヘッダーではShift+F10とTab/Enterでファイルを選んで移動できる', async ({ page }) => {
   // Arrange
   await openOrderStage(page);
@@ -1521,13 +1586,17 @@ test('新しいクラスは最後の変更依頼結果画面にも保持され�
 test('ファイルの箱をドラッグして位置をずらせる', async ({ page }) => {
   // Arrange
   await openOrderStage(page);
+  await page.getByRole('button', { name: 'Fit View' }).click();
+  await expect(page.locator('.drag-overlay')).toHaveCount(0);
   const file = page.locator('.react-flow__node[data-id="file-tax-calculator"]');
+  const header = file.locator('.file-node__header');
   const before = await file.boundingBox();
-  if (before === null) throw new Error('ファイルの位置を取得できません');
+  const headerBox = await header.boundingBox();
+  if (before === null || headerBox === null) throw new Error('ファイルの位置を取得できません');
 
   // Act: ファイルの箱の余白(クラスの外)をつかんで下へ動かす
-  const grabX = before.x + 8;
-  const grabY = before.y + 8;
+  const grabX = headerBox.x + headerBox.width / 2;
+  const grabY = headerBox.y + headerBox.height / 2;
   await page.mouse.move(grabX, grabY);
   await page.mouse.down();
   await page.mouse.move(grabX + 20, grabY + 120, { steps: 5 });
