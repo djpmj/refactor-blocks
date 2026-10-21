@@ -221,6 +221,11 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .cyclic-mark { font-size: 14px; margin-right: 6px; }
 .class-node__header { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); font-weight: 700; }
 .class-node__name-group { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.class-node__name-group--interface, .class-node__name-group--abstract { align-items: flex-start; flex-direction: column; gap: 2px; }
+.class-node__name-line { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.class-node__name-group--abstract .class-node__name { font-style: italic; }
+.class-node__stereotype { display: block; font-size: 10px; font-weight: 500; line-height: 1; white-space: nowrap; }
+.class-node:has(.class-node__name-group--interface) { border-style: dashed; }
 .class-node__layer { font-size: 11px; font-weight: 600; padding: 1px 6px; border: 1px solid var(--border); border-radius: 8px; margin-left: 6px; }
 .class-node__superclass { font-weight: 400; font-size: 12px; }
 .class-node__relation--extends { color: var(--edge-extends); }
@@ -267,6 +272,7 @@ input.class-node__name { width: 14ch; }
 .manual-fix__actions { display: flex; gap: 8px; margin-top: 8px; }
 .method-chip__visibility { font-weight: 700; }
 .method-chip__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.method-chip__name--empty { font-style: italic; }
 .method-chip__lines { flex: none; color: var(--muted); font-size: 12px; white-space: nowrap; }
 .method-chip__lines-after { color: #287a45; font-weight: 700; }
 .method-chip__lines-after--over { color: var(--danger); }

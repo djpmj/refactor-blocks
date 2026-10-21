@@ -31,6 +31,7 @@ function useMethodOverLimit(method: Method): boolean {
 
 function MethodChipLineCount({ method, preview }: Readonly<{ method: Method; preview: MethodLinePreview | undefined }>) {
   const codebase = useGameStore((state) => state.codebase);
+  if (method.fragments.length === 0) return <span className="method-chip__lines">中身なし</span>;
   if (preview === undefined) return <span className="method-chip__lines">{methodLines(method, codebase)}行</span>;
   return <span className="method-chip__lines"><span className="method-chip__lines-before">{preview.before}行</span> → <span className={preview.afterOverLimit ? 'method-chip__lines-after method-chip__lines-after--over' : 'method-chip__lines-after'}>{preview.after}行</span></span>;
 }
@@ -50,7 +51,7 @@ export function MethodChipView({ method, overLimit, selected = false, changeCoun
     <div className={classNames.join(' ')}>
       <MethodChipMarkers fixed={fixed} changeCount={changeCount} />
       <span className="method-chip__visibility">{VISIBILITY_MARK[method.visibility]}</span>
-      <span className="method-chip__name">{method.name}()</span>
+      <span className={method.fragments.length === 0 ? 'method-chip__name method-chip__name--empty' : 'method-chip__name'}>{method.name}()</span>
       <MethodChipLineCount method={method} preview={linePreview} />
     </div>
   );

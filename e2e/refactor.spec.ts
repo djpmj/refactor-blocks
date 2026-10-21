@@ -1521,20 +1521,23 @@ test('新しいクラスは最後の変更依頼結果画面にも保持され�
 test('ファイルの箱をドラッグして位置をずらせる', async ({ page }) => {
   // Arrange
   await openOrderStage(page);
+  await page.getByRole('button', { name: 'Fit View' }).click();
   const file = page.locator('.react-flow__node[data-id="file-tax-calculator"]');
-  const before = await file.boundingBox();
+  const before = await stableBoundingBox(page, file);
   if (before === null) throw new Error('ファイルの位置を取得できません');
 
-  // Act: ファイルの箱の余白(クラスの外)をつかんで下へ動かす
-  const grabX = before.x + 8;
-  const grabY = before.y + 8;
+  // Act: ファイルのヘッダー中央をつかんで下へ動かす
+  const header = await file.locator('.file-node__header').boundingBox();
+  if (header === null) throw new Error('ファイルのヘッダーが見つかりません');
+  const grabX = header.x + header.width / 2;
+  const grabY = header.y + header.height / 2;
   await page.mouse.move(grabX, grabY);
   await page.mouse.down();
   await page.mouse.move(grabX + 20, grabY + 120, { steps: 5 });
   await page.mouse.up();
 
   // Assert
-  const after = await file.boundingBox();
+  const after = await stableBoundingBox(page, file);
   expect(after?.y).toBeGreaterThan(before.y + 50);
 });
 

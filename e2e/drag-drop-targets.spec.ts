@@ -6,7 +6,7 @@ async function startPointerDrag(page: Page, source: Locator) {
   if (box === null) throw new Error('ドラッグ元が見つかりません');
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
-  await page.mouse.move(box.x + box.width / 2 + 12, box.y + box.height / 2, { steps: 2 });
+  await page.mouse.move(box.x + box.width / 2 + 12, box.y + box.height / 2, { steps: 5 });
 }
 
 test('メソッドの移動先を表示し、ドロップとEscで強調を解除する', async ({ page }) => {
@@ -69,6 +69,8 @@ test('メソッドの移動先を表示し、ドロップとEscで強調を解�
   await expect(sourceClass).toHaveClass(/class-node--can-drop/);
   await page.keyboard.press('Escape');
   await expect(page.locator('.class-node--can-drop, .class-node--cannot-drop')).toHaveCount(0);
+  await expect(page.locator('.drag-overlay')).toHaveCount(0);
+  await expect(sourceClass).toHaveCSS('opacity', '1');
 });
 
 test('フィールドとクラスの移動候補を表示する', async ({ page }) => {
@@ -88,9 +90,11 @@ test('フィールドとクラスの移動候補を表示する', async ({ page 
   await expect(targetClass).toHaveClass(/class-node--can-drop/);
   await page.keyboard.press('Escape');
   await expect(page.locator('.class-node--can-drop, .class-node--cannot-drop')).toHaveCount(0);
+  await expect(page.locator('.drag-overlay')).toHaveCount(0);
+  await expect(field).toHaveCSS('opacity', '1');
 
   // Act: フィールドをドラッグする
-  await startPointerDrag(page, field);
+  await startPointerDrag(page, sourceClass.getByTestId('field-status'));
 
   // Assert
   await expect(sourceClass).toHaveClass(/class-node--cannot-drop/);
@@ -103,6 +107,7 @@ test('フィールドとクラスの移動候補を表示する', async ({ page 
   await selectStage(page, 'チュートリアル2: 太った placeOrder');
   await page.getByRole('button', { name: 'Fit View' }).click();
   const classHeader = page.getByTestId('class-header-OrderService');
+  await expect(classHeader).toBeVisible();
   await startPointerDrag(page, classHeader);
 
   // Assert: 有効なファイルだけを強調し、同じファイルは暗くする
