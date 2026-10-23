@@ -1051,6 +1051,17 @@ describe('stageCatalog', () => {
     expect(answers.size).toBeGreaterThan(1);
   });
 
+  it.each(checkTargets)('%s: 理解度チェックの解説は正誤を書かない(判定行だけが伝える)', (_title, checks) => {
+    // Arrange
+    const explanations = checks.flatMap((check) => check.choices).map((choice) => choice.explanation);
+
+    // Act
+    const judging = explanations.filter((text) => /^(不)?正解です/.test(text));
+
+    // Assert
+    expect(judging).toEqual([]);
+  });
+
   describe.each(stages.map((stage) => [stage.title, stage] as const))('%s', (_title, stage) => {
     it('変更の痛みカード用の理由と初期集計がある', () => {
       // Arrange

@@ -17,8 +17,16 @@ function CheckResult({ check, chosen }: Readonly<{ check: ConceptCheck; chosen: 
   return (
     <div className="concept-check__result" aria-live="polite" data-testid="check-result">
       <AnswerVerdict correct={judgement.correct} label={judgement.correct ? '✓ 正解' : `✗ 不正解(正解: ${correctChoice?.text ?? ''})`} />
-      {chosenChoice !== undefined && <p>{chosenChoice.explanation}</p>}
-      {!judgement.correct && correctChoice !== undefined && <p>{correctChoice.explanation}</p>}
+      {chosenChoice !== undefined && (
+        <p>
+          <strong>{judgement.correct ? '解説:' : 'あなたの答えについて:'}</strong> {chosenChoice.explanation}
+        </p>
+      )}
+      {!judgement.correct && correctChoice !== undefined && (
+        <p>
+          <strong>正解の理由:</strong> {correctChoice.explanation}
+        </p>
+      )}
     </div>
   );
 }
