@@ -322,6 +322,18 @@ function useStageHintState(stageId: string, score: Score) {
   };
 }
 
+function StageHeader({ stage, codebase, score, investigating }: Readonly<{ stage: Stage; codebase: Codebase; score: Score; investigating: boolean }>) {
+  return (
+    <header className="stage-panel">
+      <h1 className="stage-panel__title">{stage.title}</h1>
+      <StageNavigation />
+      <div className="stage-panel__spacer" />
+      <CritiqueButton disabled={investigating} />
+      <ScoreArea stage={stage} codebase={codebase} score={score} disabled={investigating} />
+    </header>
+  );
+}
+
 /** ステージの目標と、行数・結合度・循環依存・責務の混在から出した点数を表示する。責務の中身(responsibility の値)は見せない。 */
 function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage; children: ReactNode; active: boolean }>) {
   // 実装中は部品置き場入りのコードなので、点数と進捗は挑戦前のコードで数える
@@ -345,14 +357,9 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
   return (
     <>
       <SpotlightTour />
-      <header className="stage-panel">
-        <h1 className="stage-panel__title">{stage.title}</h1>
-        <StageNavigation />
-        <div className="stage-panel__spacer" />
-        <CritiqueButton disabled={investigating} />
-        <ScoreArea stage={stage} codebase={codebase} score={score} disabled={investigating} />
-      </header>
+      <StageHeader stage={stage} codebase={codebase} score={score} investigating={investigating} />
       <CritiqueResult />
+      <ManualFixSidebarOpener setSidebarOpen={setSidebarOpen} />
       <div className={`app__body${sidebarOpen ? ' app__body--sidebar-open' : ''}`} style={sidebarStyle}>
         <StageSidebar
           key={stage.id}
@@ -370,7 +377,8 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
           sidebarRef={sidebarRef}
         />
         {sidebarOpen && <div className="sidebar-resizable__handle sidebar-resizable__handle--left" {...handleProps} />}
-        <StageSidebarToggle open={sidebarOpen} onToggle={toggleSidebar} />        <div className="workspace">
+        <StageSidebarToggle open={sidebarOpen} onToggle={toggleSidebar} />
+        <div className="workspace">
           <ActionToolbar
             stage={stage}
             isPerfect={score.total >= 100}
@@ -389,6 +397,5 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
 
 export function StagePanel({ children, active }: Readonly<{ children: ReactNode; active: boolean }>) {
   const stage = useGameStore((state) => state.stage);
-  const setSidebarOpen = useStageSidebar(stage.id, false)[2];
-  return <><StagePanelContent stage={stage} active={active}>{children}</StagePanelContent><ManualFixSidebarOpener setSidebarOpen={setSidebarOpen} /></>;
+  return <StagePanelContent stage={stage} active={active}>{children}</StagePanelContent>;
 }

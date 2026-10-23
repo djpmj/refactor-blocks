@@ -90,6 +90,8 @@ test('フィールドとクラスの移動候補を表示する', async ({ page 
   await expect(page.locator('.class-node--can-drop, .class-node--cannot-drop')).toHaveCount(0);
   await expect(page.locator('.drag-overlay')).toHaveCount(0);
   await expect(field).toHaveCSS('opacity', '1');
+  await field.click();
+  await expect(field).toBeVisible();
 
   // Act: Escape cleanup後に同じfieldでpointer dragを開始する
   await startPointerDrag(page, field);

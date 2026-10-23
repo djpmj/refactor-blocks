@@ -151,8 +151,7 @@ function ImpactReviewButton() {
 
 function manualFixButtonVisible(canFixByHand: boolean, pain: ChangePain | undefined, step: ReturnType<typeof stageStep>, tourNeedsManualFix: boolean): boolean {
   if (!canFixByHand || pain === undefined) return false;
-  if (step === 'opening-fix' && !tourNeedsManualFix) return false;
-  return tourNeedsManualFix || needsManualFix(step, pain.current.siteIds.length);
+  return step === 'opening-fix' || tourNeedsManualFix || needsManualFix(step, pain.current.siteIds.length);
 }
 
 export function ChangePainCard({ stage, codebase, score }: Readonly<{ stage: Stage; codebase: Codebase; score: number }>) {
