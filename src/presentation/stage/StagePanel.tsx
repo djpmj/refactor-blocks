@@ -37,13 +37,14 @@ import type { StageStep } from '../../domain/change/stageStep';
 /** ステージ一覧のダイアログを開くボタン。 */
 function RoadmapButton() {
   const [open, setOpen] = useState(false);
+  const openerRef = useRef<HTMLButtonElement>(null);
   const investigating = useGameStore((state) => state.changeSession !== null);
   return (
     <>
-      <button type="button" data-testid="roadmap-open" disabled={investigating} onClick={() => setOpen(true)}>
+      <button ref={openerRef} type="button" data-testid="roadmap-open" disabled={investigating} onClick={() => setOpen(true)}>
         ステージ一覧
       </button>
-      <StageRoadmapDialog open={open} onClose={() => setOpen(false)} />
+      <StageRoadmapDialog open={open} onClose={() => { setOpen(false); openerRef.current?.focus(); }} />
     </>
   );
 }

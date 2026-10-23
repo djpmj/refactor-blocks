@@ -1,4 +1,4 @@
-import { createContext, useContext, type Context } from 'react';
+﻿import { createContext, useContext, type Context } from 'react';
 import { createStore, useStore, type StoreApi } from 'zustand';
 import { evaluateImplementationUseCase, type ChangeOutcome } from '../../application/ChangeRequestUseCases';
 import { describeCritiqueError, requestCritiqueUseCase } from '../../application/CritiqueUseCases';
@@ -705,7 +705,8 @@ function moveActions(
         return null;
       }
       const notice = publicizedMoveNotice(result.value.codebase, result.value.changed);
-      set({ ...applyResult(state, { ok: true, value: result.value.codebase }, describeMoveOutError), notice });
+      const codebase = autoNameClasses(result.value.codebase, state.stage.classNames);
+      set({ ...applyResult(state, { ok: true, value: codebase }, describeMoveOutError), notice });
       return result.value.fileId;
     },
     moveMethodToNewClassInFile: moveMethodToNewClassInFileAction(set, get, newId),
