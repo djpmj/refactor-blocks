@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { isCritiqueRequestBody, MAX_BODY_LENGTH, type CritiqueRequestBody } from './validate';
+import { CRITIQUE_CONTRACT_VERSION, isCritiqueRequestBody, MAX_BODY_LENGTH, type CritiqueRequestBody } from './validate';
 
 export interface Env {
   readonly ANTHROPIC_API_KEY: string;
@@ -56,11 +56,15 @@ export default {
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type',
+          'Access-Control-Allow-Headers': 'Content-Type, X-Critique-Contract',
         },
       });
     }
     if (request.method !== 'POST') return jsonResponse({ error: 'method-not-allowed' }, 405);
+    const contractVersion = request.headers.get('X-Critique-Contract');
+    if (contractVersion !== null && contractVersion !== String(CRITIQUE_CONTRACT_VERSION)) {
+      return jsonResponse({ error: 'version-mismatch', expected: CRITIQUE_CONTRACT_VERSION }, 409);
+    }
     // 認証なしで誰でも呼べるプロキシなので、IPごとにレート制限してAPI費用の乱用を防ぐ
     const clientIp = request.headers.get('CF-Connecting-IP') ?? 'unknown';
     const { success } = await env.CRITIQUE_RATE_LIMITER.limit({ key: clientIp });

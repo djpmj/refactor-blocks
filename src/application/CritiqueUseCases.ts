@@ -7,11 +7,17 @@ import type { Stage } from '../domain/stage/Stage';
 /** AI講評APIへの実際の通信。infrastructure層が実装を注入する。 */
 export type RequestCritique = (request: CritiqueRequest) => Promise<string>;
 
-export type CritiqueError = 'request-failed' | 'invalid-request';
+export type CritiqueError = 'request-failed' | 'invalid-request' | 'version-mismatch';
 
 export class CritiqueRequestError extends Error {
   constructor() {
     super('invalid-request');
+  }
+}
+
+export class CritiqueVersionMismatchError extends Error {
+  constructor() {
+    super('version-mismatch');
   }
 }
 
@@ -27,13 +33,15 @@ export async function requestCritiqueUseCase(
     return ok(await requestCritique(request));
   } catch (error) {
     if (error instanceof CritiqueRequestError) return err('invalid-request');
+    if (error instanceof CritiqueVersionMismatchError) return err('version-mismatch');
     return err('request-failed');
   }
 }
 
 const CRITIQUE_ERROR_MESSAGES: Record<CritiqueError, string> = {
   'request-failed': 'AI講評を取得できませんでした。しばらくしてからもう一度お試しください',
-  'invalid-request': 'AI講評のリクエストの形が合いませんでした(不具合です)。ゲームを最新にして、もう一度お試しください',
+  'invalid-request': 'AI講評のリクエストの形が合いませんでした(不具合です)。時間をおいてもう一度お試しください',
+  'version-mismatch': 'AI講評のサーバーが、このゲームの版にまだ対応していません。サーバーの更新をお待ちください(ゲーム側の操作は不要です)',
 };
 
 export function describeCritiqueError(error: CritiqueError): string {

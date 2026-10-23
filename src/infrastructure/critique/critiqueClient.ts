@@ -1,4 +1,5 @@
-import { CritiqueRequestError, type RequestCritique } from '../../application/CritiqueUseCases';
+import { CritiqueRequestError, CritiqueVersionMismatchError, type RequestCritique } from '../../application/CritiqueUseCases';
+import { CRITIQUE_CONTRACT_VERSION } from '../../domain/critique/critiqueContract';
 
 type CritiqueResponseBody = { readonly critique: string };
 
@@ -21,10 +22,11 @@ export const fetchCritique: RequestCritique = async (request) => {
   }
   const response = await fetch(endpoint, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'X-Critique-Contract': String(CRITIQUE_CONTRACT_VERSION) },
     body: JSON.stringify(request),
   });
   if (response.status === 400) throw new CritiqueRequestError();
+  if (response.status === 409) throw new CritiqueVersionMismatchError();
   if (!response.ok) throw new Error(`AI講評の取得に失敗しました(status: ${response.status})`);
   const body: unknown = await response.json();
   if (!isCritiqueResponseBody(body)) throw new Error('AI講評の応答が不正です');
