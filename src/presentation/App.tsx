@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useNarrowScreen } from './useNarrowScreen';
 import { BlankDesignView } from './blank/BlankDesignView';
 import { CodebaseCanvas } from './canvas/CodebaseCanvas';
 import { ErrorToast } from './canvas/ErrorToast';
@@ -100,6 +101,7 @@ function RefactorView({ active }: Readonly<{ active: boolean }>) {
   const store = useGameStoreApi();
   const { emptyEditorOpen, setEmptyEditorOpen } = useEmptyEditor(store);
   const { mobileEditorOpen, close: closeMobileEditor } = useMobileEditor(store);
+  const narrowScreen = useNarrowScreen();
   const changeSession = useGameStore((state) => state.changeSession);
   const manualFix = useGameStore((state) => state.manualFix);
   const selectedMethodId = useGameStore((state) => state.selectedMethodId);
@@ -113,7 +115,7 @@ function RefactorView({ active }: Readonly<{ active: boolean }>) {
   );
   const rail = shouldRail && !emptyEditorOpen;
   const mobileDrawerOpen = mobileEditorOpen && !shouldRail;
-  const mobileDrawerActive = mobileDrawerOpen && window.matchMedia('(max-width: 700px)').matches;
+  const mobileDrawerActive = mobileDrawerOpen && narrowScreen;
   useUndoRedoShortcut(active);
   const editorContent = <RightSidebarContent />;
   return (
@@ -123,7 +125,7 @@ function RefactorView({ active }: Readonly<{ active: boolean }>) {
           <CodebaseCanvas active={active} />
           <ErrorToast />
         </section>
-        {!mobileDrawerOpen && !(mobileEditorOpen && !mobileDrawerActive) && <EditorPanel rail={rail} emptyOpen={shouldRail && emptyEditorOpen} width={width} handleProps={handleProps} content={editorContent} onOpenGuide={() => setEmptyEditorOpen(true)} onCloseGuide={() => setEmptyEditorOpen(false)} />}
+        {!mobileDrawerActive && <EditorPanel rail={rail} emptyOpen={shouldRail && emptyEditorOpen} width={width} handleProps={handleProps} content={editorContent} onOpenGuide={() => setEmptyEditorOpen(true)} onCloseGuide={() => setEmptyEditorOpen(false)} />}
         <MobileEditorDrawer open={mobileDrawerActive} onClose={closeMobileEditor}>{editorContent}</MobileEditorDrawer>
       </main>
     </StagePanel>

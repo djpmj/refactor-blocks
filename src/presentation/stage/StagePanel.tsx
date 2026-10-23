@@ -33,6 +33,7 @@ import { ProblemHint } from './ProblemHint';
 import { painRequestsOf } from '../../domain/change/changePain';
 import { stageStep } from '../../domain/change/stageStep';
 import type { StageStep } from '../../domain/change/stageStep';
+import { useNarrowScreen } from '../useNarrowScreen';
 
 /** ステージ一覧のダイアログを開くボタン。 */
 function RoadmapButton() {
@@ -378,6 +379,7 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
   // 狭い画面ではキャンバスを優先して、最初は閉じておく(描画は残し、hiddenで隠すだけ)
   const [sidebarOpen, toggleSidebar, setSidebarOpen] = useStageSidebar(stage.id, score.total >= 100);
   const sidebarToggleRef = useRef<HTMLButtonElement>(null);
+  const narrowScreen = useNarrowScreen();
   useSidebarDrawer(sidebarOpen, setSidebarOpen, sidebarToggleRef);
   const { handleProps, style: sidebarStyle } = useStageSidebarWidth();
   const { count: revealedCount } = stageHints;
@@ -393,13 +395,13 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
       <CritiqueResult />
       <ManualFixSidebarOpener setSidebarOpen={setSidebarOpen} />
       <div className={`app__body${sidebarOpen ? ' app__body--sidebar-open' : ''}`} style={sidebarStyle}>
-        <SidebarBackdrop open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <StageSidebarDrawer open={sidebarOpen} stage={stage} codebase={codebase} score={score} initialScore={initialScore} investigating={investigating}
           revealedCount={stageHints.count} problemRevealed={stageHints.problemRevealed} onRevealProblem={stageHints.revealProblem} hints={hints}
           total={total} onReveal={stageHints.revealStep} sidebarRef={sidebarRef} />
+        <SidebarBackdrop open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         {sidebarOpen && <div className="sidebar-resizable__handle sidebar-resizable__handle--left" {...handleProps} />}
         <StageSidebarToggle ref={sidebarToggleRef} open={sidebarOpen} onToggle={toggleSidebar} />
-        <div className="workspace" inert={sidebarOpen && window.matchMedia('(max-width: 700px)').matches}>
+        <div className="workspace" inert={sidebarOpen && narrowScreen}>
           <ActionToolbar
             stage={stage}
             isPerfect={score.total >= 100}
