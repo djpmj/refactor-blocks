@@ -38,6 +38,24 @@
 
 ## ログ一覧
 
+## 2026-10-20 10:40 UTC PR #262 基底へ移したメソッドをprotectedにし統合候補を保つ (#229)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test(1816件)✅ / npm run lint ✅ / npm run typecheck ✅。子孫からだけ呼ばれるメソッドはprotected・それ以外はpublic、private/protected間の統合(結果は広い可視性)、changed型と呼び出し元・通知文の更新を差分で確認。E2Eはこの環境で実行許可が無く未実行(PR本文では256/257件成功、残り1件は単独再実行で成功)
+- マージ: squash & delete-branch
+
+## 2026-10-20 10:30 UTC PR #261 メソッドの読み上げ名と選択状態を明確にする (#227)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test(1813件)✅ / npm run lint ✅ / npm run typecheck ✅。読み上げ名の規則・aria-pressed・記号のaria-hiddenが仕様どおりであることを差分で確認。E2Eはこの環境にブラウザが無く未実行(PR本文では全257件成功)
+- マージ: squash & delete-branch
+
+## 2026-10-20 03:50 UTC PR #260 新しく作ったクラスを表示領域へ収める (#223)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint・typecheck・Vitest 1809件)✅。panToRevealが仕様(収まっていれば0・余白24px・大きい箱は左上優先)どおり、既存クラスへのドロップでは動かさないことを差分で確認。E2Eはこの環境で実行許可が無く未実行(PR本文では全260件成功)
+- マージ: squash & delete-branch
+
 ## 2026-10-19 21:10 UTC PR #258 chore(deps): bump the development-dependencies group with 6 updates
 
 - 判定: 合格(blocker無し)
@@ -198,35 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅ 1722件 / npm run lint ✅ / npm run typecheck ✅。E2Eはこの環境にChromiumが無く実行できなかったため、PR本文の報告(227件PASS)に依拠
-- マージ: squash & delete-branch
-
-## 2026-10-14 09:15 UTC PR #195 chore(deps): bump the production-dependencies group with 2 updates
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅ 1720件 / npm run lint ✅ / npm run typecheck ✅。package.json・lockのパッチ更新のみ(PR #196 は同時に承認したが、#195 マージ後にlock競合したためDependabotの再作成待ち)
-- マージ: squash & delete-branch
-
-## 2026-10-13 15:10 UTC PR #194 feat: 循環依存を輪の組で表示
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅ 1720件 / npm run lint ✅ / npm run typecheck ✅。E2Eはこの実行環境で225件すべて起動失敗のため未検証(E2E差分は目視確認、PR本文では225件PASS)
-- マージ: squash & delete-branch
-
-## 2026-10-13 14:40 UTC PR #193 refactor: compute pain trend once
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅ 1715件 / npm run lint ✅ / npm run typecheck ✅。ChangePainCard.tsxの1ファイルで describePainTrend を1回だけ計算する変更を差分で確認(表示ロジック不変のためE2Eは未実行)
-- マージ: squash & delete-branch
-
-## 2026-10-13 14:30 UTC PR #192 抽出行数の説明とエディタレール
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(1715件) / npm run lint ✅ / npm run typecheck ✅。Issue #172の受け入れ基準1〜7をdiffで確認。E2Eはこの環境でブラウザを入れられず実行できなかった(PR本文の225件成功を参照)。suggestion: ChangePainCardでdescribePainTrendを2回呼んでいる
-- マージ: squash & delete-branch
-
-## 2026-10-13 11:45 UTC PR #191 Add change impact review dialog
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(1701件) / npm run lint ✅ / npm run typecheck ✅ / npm run test:e2e(215 passed。hint-highlight・score-jumpの2件はmasterでも同様に失敗する既存問題でPR無関係)
 - マージ: squash & delete-branch
 

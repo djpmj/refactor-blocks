@@ -93,15 +93,16 @@ test('フィールドとクラスの移動候補を表示する', async ({ page 
   await expect(page.locator('.drag-overlay')).toHaveCount(0);
   await expect(field).toHaveCSS('opacity', '1');
 
-  // Act: フィールドをドラッグする
-  await startPointerDrag(page, sourceClass.getByTestId('field-status'));
+  // Act: Escape cleanup後に同じfieldでpointer dragを開始する
+  await startPointerDrag(page, field);
 
   // Assert
+  await expect(field).toHaveCSS('opacity', '0.3');
+  await expect(field).toHaveCSS('opacity', '0.3');
   await expect(sourceClass).toHaveClass(/class-node--cannot-drop/);
   await expect(targetClass).toHaveClass(/class-node--can-drop/);
   await page.mouse.up();
   await expect(page.locator('.class-node--can-drop, .class-node--cannot-drop')).toHaveCount(0);
-
   // Act: 2ファイルあるステージでクラスをドラッグする
   await page.goto('/');
   await selectStage(page, 'チュートリアル2: 太った placeOrder');

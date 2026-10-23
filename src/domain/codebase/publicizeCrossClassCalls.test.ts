@@ -28,7 +28,7 @@ describe('publicizeCrossClassCalls', () => {
     const result = publicizeCrossClassCalls(codebase);
 
     // Assert
-    expect(result.publicized).toEqual(['tax', 'save']);
+    expect(result.changed).toEqual([{ methodId: 'tax', visibility: 'public' }, { methodId: 'save', visibility: 'public' }]);
     expect(findMethod(result.codebase, 'tax')?.visibility).toBe('public');
     expect(findMethod(result.codebase, 'save')?.visibility).toBe('public');
     expect(findMethod(result.codebase, 'run')?.visibility).toBe('public');
@@ -49,7 +49,7 @@ describe('publicizeCrossClassCalls', () => {
     // Assert
     expect(findVisibilityViolations(codebase)).toEqual([]);
     expect(result.codebase).toBe(codebase);
-    expect(result.publicized).toEqual([]);
+    expect(result.changed).toEqual([]);
   });
 
   it('違反に出るメソッドだけを変更し、元を変更しない', () => {
@@ -73,6 +73,39 @@ describe('publicizeCrossClassCalls', () => {
     const result = publicizeCrossClassCalls(codebase);
 
     expect(findVisibilityViolations(codebase).filter(({ methodId }) => methodId === 'tax')).toHaveLength(2);
-    expect(result.publicized.filter((id) => id === 'tax')).toHaveLength(1);
+    expect(result.changed.filter(({ methodId }) => methodId === 'tax')).toHaveLength(1);
+  });
+
+  it('子クラスと孫クラスだけから呼ばれるprivateメソッドはprotectedにする', () => {
+    // Arrange
+    const codebase: Codebase = { files: [{ id: 'file', path: 'sample.ts', classes: [
+      { id: 'parent', name: 'Parent', methods: [{ id: 'hidden', name: 'hidden', visibility: 'private', fragments: [] }] },
+      { id: 'child', name: 'Child', superclassId: 'parent', methods: [{ id: 'child-call', name: 'call', visibility: 'public', fragments: [fragment('child-use', ['hidden'])] }] },
+      { id: 'grandchild', name: 'Grandchild', superclassId: 'child', methods: [{ id: 'grandchild-call', name: 'call', visibility: 'public', fragments: [fragment('grandchild-use', ['hidden'])] }] },
+    ] }] };
+
+    // Act
+    const result = publicizeCrossClassCalls(codebase);
+
+    // Assert
+    expect(findMethod(result.codebase, 'hidden')?.visibility).toBe('protected');
+    expect(result.changed).toEqual([{ methodId: 'hidden', visibility: 'protected' }]);
+  });
+
+  it('継承関係のないクラスからも呼ばれる場合はpublicにする', () => {
+    // Arrange
+    const base = sample();
+    const codebase: Codebase = { files: [{ ...base.files[0], classes: [
+      { id: 'parent', name: 'Parent', methods: [{ id: 'hidden', name: 'hidden', visibility: 'private', fragments: [] }] },
+      { id: 'child', name: 'Child', superclassId: 'parent', methods: [{ id: 'child-call', name: 'call', visibility: 'public', fragments: [fragment('child-use', ['hidden'])] }] },
+      { id: 'other', name: 'Other', methods: [{ id: 'other-call', name: 'call', visibility: 'public', fragments: [fragment('other-use', ['hidden'])] }] },
+    ] }] };
+
+    // Act
+    const result = publicizeCrossClassCalls(codebase);
+
+    // Assert
+    expect(findMethod(result.codebase, 'hidden')?.visibility).toBe('public');
+    expect(result.changed).toEqual([{ methodId: 'hidden', visibility: 'public' }]);
   });
 });
