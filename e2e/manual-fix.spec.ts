@@ -23,7 +23,7 @@ test('一部にしか印を付けずにリリースすると、直し忘れが�
   await panel.getByRole('button', { name: 'リリースする' }).click();
   await expect(panel).toContainText('⚠ 直し忘れ 1 か所');
   await expect(panel).toContainText('QuoteService.create');
-  await expect(panel).toContainText('3 か所を直す必要があります');
+  await expect(panel).toContainText('3 か所(3 クラス)を直す必要があります');
 
   await page.getByTestId('method-create').click();
   await expect(page.getByTestId('fixed-mark')).toHaveCount(2);

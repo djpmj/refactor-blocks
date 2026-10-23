@@ -1631,9 +1631,11 @@ test('ファイルの箱をドラッグして位置をずらせる', async ({ pa
   const before = await stableDropSnapshot(page, file);
   if (before === null) throw new Error('ファイルの位置を取得できません');
 
-  // Act: ファイルの箱の余白(クラスの外)をつかんで下へ動かす
-  const grabX = before.file.x + 8;
-  const grabY = before.file.y + 8;
+  // Act: ファイルのヘッダーをつかんで下へ動かす
+  const header = await file.locator('.file-node__header').boundingBox();
+  if (header === null) throw new Error('ファイルのヘッダーの位置を取得できません');
+  const grabX = header.x + header.width / 2;
+  const grabY = header.y + header.height / 2;
   await page.mouse.move(grabX, grabY);
   await page.mouse.down();
   await page.mouse.move(grabX + 20, grabY + 120, { steps: 5 });

@@ -21,12 +21,21 @@ async function extract(page: Page, fragmentLabel: string, name?: string) {
 test('開始時に変更の痛みが見え、責務を寄せると直すクラス数が減る', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/');
-  await selectStage(page, '中級1: 循環依存を断ち切る');
+  await selectStage(page, '中級1: 循環依存を断ち切る', { completeOpeningFix: false });
 
   const card = page.getByRole('region', { name: 'もし、この変更が来たら?' });
   await card.locator('summary').click();
   await expect(card).toContainText('価格の計算ルールを変えて');
+  await expect(card).toContainText('まず手で直してみよう');
+  await expect(card).not.toContainText('直す場所は今 3 か所');
+  await expect(card).not.toContainText('Order.checkout');
+  await expect(page.getByTestId('opening-fix-banner')).toBeVisible();
+  await page.getByTestId('opening-fix-banner').getByRole('button', { name: '実際に直してみる' }).click();
+  await releaseAllManualFixSites(page);
+  await page.getByRole('button', { name: '組み替えを始める' }).click();
+  await expect(page.getByTestId('opening-fix-banner')).toHaveCount(0);
   await expect(card).toContainText('直す場所は今 3 か所');
+  await expect(card).toContainText('Order.checkout');
   await expect(card).toContainText('2 クラス');
 
   await dragMethodToClass(page, 'method-calculateOrderTotal', 'class-Order');
@@ -103,6 +112,22 @@ test('チュートリアル1の読む行数は実コードと一致する', asyn
   await expect(card).toContainText('目を通す行数は今 38 行');
   await expect(card).toContainText('最初は 39 行でした');
   await expect(card).toContainText('ReportService.printMonthlyReport(38行)');
+});
+
+test('冒頭の手直し結果に読み行数を示し、画面内へ操作ボタンを移動する', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 700 });
+  await page.goto('/');
+  await selectStage(page, 'チュートリアル1: 長いメソッドを分ける', { completeOpeningFix: false });
+  const banner = page.getByTestId('opening-fix-banner');
+  await expect(banner).toBeVisible();
+  await banner.getByRole('button', { name: '実際に直してみる' }).click();
+  const release = page.getByRole('button', { name: 'リリースする' });
+  await expect(release).toBeInViewport();
+  await page.getByTestId('method-printMonthlyReport').click();
+  await page.getByRole('button', { name: 'リリースする' }).click();
+  await expect(page.getByRole('button', { name: '組み替えを始める' })).toBeInViewport();
+  await page.getByRole('button', { name: '組み替えを始める' }).click();
+  await expect(banner).toHaveCount(0);
 });
 
 test('種類を足すときに書き換えるクラス数が見え、ランクごとのクラスに組み替えると0になる', async ({ page }) => {

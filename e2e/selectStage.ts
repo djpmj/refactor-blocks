@@ -78,6 +78,8 @@ export async function completeOpeningFix(page: Page): Promise<void> {
   const tour = page.getByTestId('first-visit-tour');
   if (await tour.count() > 0 && await tour.isVisible()) await tour.getByRole('button', { name: '次へ' }).click();
   if (wasSidebarClosed) await page.getByRole('button', { name: 'サイドバーを開く' }).evaluate((element) => (element as { click(): void }).click());
+  const bannerStart = page.getByTestId('opening-fix-banner').getByRole('button', { name: '実際に直してみる' });
+  if (await bannerStart.count() > 0) await bannerStart.click();
   await releaseAllManualFixSites(page, { restoreSidebar: false });
   if (await tour.count() > 0 && await tour.isVisible()) await tour.getByRole('button', { name: 'ガイドを終了' }).click();
   const panel = page.getByRole('region', { name: '手で直すシミュレーション' });

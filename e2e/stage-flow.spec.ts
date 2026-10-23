@@ -45,7 +45,7 @@ test('冒頭の手直しを終えるまで編集を止め、仕上げを正解�
   await expect(page.locator('.error-toast')).toContainText('まず「もし、この変更が来たら?」');
   await expect(page.getByTestId('method-calculateTax')).toHaveCount(0);
 
-  await page.getByRole('button', { name: '実際に直してみる' }).click();
+  await page.getByTestId('opening-fix-banner').getByRole('button', { name: '実際に直してみる' }).click();
   const opening = page.getByRole('region', { name: '手で直すシミュレーション' });
   await opening.getByRole('button', { name: 'リリースする' }).click();
   await expect(opening).toContainText('直し忘れ');

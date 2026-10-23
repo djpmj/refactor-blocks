@@ -93,7 +93,7 @@ test('ステージ切り替え直後は計測済みの図が収まり、メソ�
 test('手直し中も画面幅の変化に合わせて倍率を更新する', async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 1000 });
   await openFirstStage(page, false);
-  await page.locator('.change-pain').getByRole('button', { name: '実際に直してみる' }).click();
+  await page.getByTestId('opening-fix-banner').getByRole('button', { name: '実際に直してみる' }).click();
   await expect(page.getByRole('region', { name: '手で直すシミュレーション' })).toBeVisible();
 
   await page.setViewportSize({ width: 600, height: 1000 });
