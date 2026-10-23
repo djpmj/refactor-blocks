@@ -31,7 +31,7 @@ describe('checkManualFix', () => {
     const result = checkManualFix(codebase, taxRequest, ['method-a', 'method-b', 'method-c']);
 
     // Assert
-    expect(result).toEqual({ missed: [], extra: [], sites: 3 });
+    expect(result).toEqual({ missed: [], extra: [], sites: 3, siteClassIds: ['class-x'] });
   });
 
   it('一部にしか印が無ければ、印の無い変更箇所を出現順に missed へ入れる', () => {
@@ -43,6 +43,23 @@ describe('checkManualFix', () => {
 
     // Assert
     expect(result.missed).toEqual(['method-a', 'method-c']);
+  });
+
+  it('変更箇所が複数クラスにまたがると、クラスIDを最初の出現順で重複なく返す', () => {
+    // Arrange
+    const codebase = taxCodebase();
+    const [file] = codebase.files;
+    const [codeClass] = file.classes;
+    const split: Codebase = { files: [{ ...file, classes: [
+      { ...codeClass, id: 'class-x', name: 'X', methods: [codeClass.methods[0], codeClass.methods[2]] },
+      { ...codeClass, id: 'class-y', name: 'Y', methods: [codeClass.methods[1]] },
+    ] }] };
+
+    // Act
+    const result = checkManualFix(split, taxRequest, []);
+
+    // Assert
+    expect(result.siteClassIds).toEqual(['class-x', 'class-y']);
   });
 
   it('印が1つも無ければ、missed が全変更箇所になる', () => {
@@ -76,7 +93,7 @@ describe('checkManualFix', () => {
     const result = checkManualFix(codebase, taxRequest, ['method-gone', 'method-a', 'method-b', 'method-c']);
 
     // Assert
-    expect(result).toEqual({ missed: [], extra: [], sites: 3 });
+    expect(result).toEqual({ missed: [], extra: [], sites: 3, siteClassIds: ['class-x'] });
   });
 
   it('同じIDが重複していても1つとして扱う', () => {
@@ -100,7 +117,7 @@ describe('checkManualFix', () => {
     const result = checkManualFix(codebase, request, []);
 
     // Assert
-    expect(result).toEqual({ missed: [], extra: [], sites: 0 });
+    expect(result).toEqual({ missed: [], extra: [], sites: 0, siteClassIds: [] });
   });
 
   it('変更箇所が減ったコードでは、そのときの変更箇所で照合する', () => {
@@ -113,7 +130,7 @@ describe('checkManualFix', () => {
     const result = checkManualFix(merged, taxRequest, ['method-a']);
 
     // Assert
-    expect(result).toEqual({ missed: [], extra: [], sites: 1 });
+    expect(result).toEqual({ missed: [], extra: [], sites: 1, siteClassIds: ['class-x'] });
   });
 });
 

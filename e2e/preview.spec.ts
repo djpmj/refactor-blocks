@@ -92,10 +92,15 @@ async function openBlankDesignResult(page: Page) {
   await page.goto('/');
   await page.getByTestId('mode-blank').click();
   const view = page.getByTestId('blank-view');
-  await dragToEmptyCanvas(page, view.getByTestId(`method-${BLANK_PARTS[0]}`), view.locator('.react-flow__pane'));
+  const initialPart = 'placeOrder';
+  await dragToEmptyCanvas(page, view.getByTestId(`method-${initialPart}`), view.locator('.react-flow__pane'));
   await page.getByRole('button', { name: 'Fit View' }).click();
   for (const part of BLANK_PARTS.slice(1)) {
-    await dragToTarget(page, view.getByTestId(`method-${part}`), view.getByTestId('class-NewClass'));
+    const destinationClass = view.locator('.class-node').filter({ has: page.getByTestId(`method-${initialPart}`) });
+    const destinationTestId = await destinationClass.getAttribute('data-testid');
+    if (destinationTestId === null) throw new Error('配置先クラスが見つかりません');
+    const destination = view.getByTestId(destinationTestId);
+    await dragToTarget(page, view.getByTestId(`method-${part}`), destination);
   }
   await expect(view.getByTestId('blank-unplaced')).toContainText('全部品を配置しました');
   await view.getByTestId('blank-review').click();
