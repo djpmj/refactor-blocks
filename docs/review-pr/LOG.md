@@ -38,6 +38,54 @@
 
 ## ログ一覧
 
+## 2026-10-20 10:40 UTC PR #262 基底へ移したメソッドをprotectedにし統合候補を保つ (#229)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test(1816件)✅ / npm run lint ✅ / npm run typecheck ✅。子孫からだけ呼ばれるメソッドはprotected・それ以外はpublic、private/protected間の統合(結果は広い可視性)、changed型と呼び出し元・通知文の更新を差分で確認。E2Eはこの環境で実行許可が無く未実行(PR本文では256/257件成功、残り1件は単独再実行で成功)
+- マージ: squash & delete-branch
+
+## 2026-10-20 10:30 UTC PR #261 メソッドの読み上げ名と選択状態を明確にする (#227)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test(1813件)✅ / npm run lint ✅ / npm run typecheck ✅。読み上げ名の規則・aria-pressed・記号のaria-hiddenが仕様どおりであることを差分で確認。E2Eはこの環境にブラウザが無く未実行(PR本文では全257件成功)
+- マージ: squash & delete-branch
+
+## 2026-10-20 03:50 UTC PR #260 新しく作ったクラスを表示領域へ収める (#223)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint・typecheck・Vitest 1809件)✅。panToRevealが仕様(収まっていれば0・余白24px・大きい箱は左上優先)どおり、既存クラスへのドロップでは動かさないことを差分で確認。E2Eはこの環境で実行許可が無く未実行(PR本文では全260件成功)
+- マージ: squash & delete-branch
+
+## 2026-10-19 21:10 UTC PR #258 chore(deps): bump the development-dependencies group with 6 updates
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test(1811件)✅ / npm run lint ✅ / npm run typecheck ✅。package.json/lockのみの開発依存更新。E2Eはレビュー環境でmasterも全件失敗するため判断対象外
+- マージ: squash & delete-branch
+
+## 2026-10-19 21:10 UTC PR #257 chore(deps): bump the production-dependencies group with 3 updates
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test(1811件)✅ / npm run lint ✅ / npm run typecheck ✅。package.json/lockのみ(react 19.3.1等)。E2Eはレビュー環境でmasterも全件失敗するため判断対象外
+- マージ: squash & delete-branch
+
+## 2026-10-19 13:45 UTC PR #256 変更するクラスに同居する別責務も巻き込みとして採点する (#221)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint・typecheck・Vitest 1808件)✅。E2Eはレビュー環境で未実行(PR本文では256件成功)。Issue #221の classMixedResponsibilities・entangled-class(5点)・表示文言・模範解答調整を差分で確認
+- マージ: squash & delete-branch
+
+## 2026-10-18 10:55 UTC PR #255 行数違反の理由をメソッド・クラス・ファイルごとに説明する (#224)
+
+- 判定: 合格(blocker無し。suggestion: 中級2・チュートリアル1の出し分けを直接検証するE2Eの追加)
+- 確認した内容: npm run check(lint・typecheck・Vitest 1805件)✅。E2Eはレビュー環境で未実行(PR本文では256件成功)。Issue #224・docs/specs/line-limit-why-by-kind.mdの、種類別の説明・種類不明時のメソッド説明への既定・ヒント/減点内訳/ファイル印への反映を差分で確認。domain変更なし
+- マージ: squash & delete-branch
+
+## 2026-10-18 08:40 UTC PR #253 行数バッジのE2E検証から環境依存の固定高さを除く
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅(E2Eはブラウザを導入できず未実行。差分はe2eの1アサーションのみ)
+- マージ: squash & delete-branch
+
 ## 2026-10-17 23:35 UTC PR #252 左パネルの段階遷移とスクロールを改善する (#217)
 
 - 判定: 合格(blocker無し)
@@ -170,56 +218,3 @@
 - 確認した内容: npm test ✅ 1722件 / npm run lint ✅ / npm run typecheck ✅。E2Eはこの環境にChromiumが無く実行できなかったため、PR本文の報告(227件PASS)に依拠
 - マージ: squash & delete-branch
 
-## 2026-10-14 09:15 UTC PR #195 chore(deps): bump the production-dependencies group with 2 updates
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅ 1720件 / npm run lint ✅ / npm run typecheck ✅。package.json・lockのパッチ更新のみ(PR #196 は同時に承認したが、#195 マージ後にlock競合したためDependabotの再作成待ち)
-- マージ: squash & delete-branch
-
-## 2026-10-13 15:10 UTC PR #194 feat: 循環依存を輪の組で表示
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅ 1720件 / npm run lint ✅ / npm run typecheck ✅。E2Eはこの実行環境で225件すべて起動失敗のため未検証(E2E差分は目視確認、PR本文では225件PASS)
-- マージ: squash & delete-branch
-
-## 2026-10-13 14:40 UTC PR #193 refactor: compute pain trend once
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅ 1715件 / npm run lint ✅ / npm run typecheck ✅。ChangePainCard.tsxの1ファイルで describePainTrend を1回だけ計算する変更を差分で確認(表示ロジック不変のためE2Eは未実行)
-- マージ: squash & delete-branch
-
-## 2026-10-13 14:30 UTC PR #192 抽出行数の説明とエディタレール
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(1715件) / npm run lint ✅ / npm run typecheck ✅。Issue #172の受け入れ基準1〜7をdiffで確認。E2Eはこの環境でブラウザを入れられず実行できなかった(PR本文の225件成功を参照)。suggestion: ChangePainCardでdescribePainTrendを2回呼んでいる
-- マージ: squash & delete-branch
-
-## 2026-10-13 11:45 UTC PR #191 Add change impact review dialog
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(1701件) / npm run lint ✅ / npm run typecheck ✅ / npm run test:e2e(215 passed。hint-highlight・score-jumpの2件はmasterでも同様に失敗する既存問題でPR無関係)
-- マージ: squash & delete-branch
-
-## 2026-10-12 19:41 UTC PR #169 feat: surface change request rumors
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(1702件) ✅ / npm run lint ✅ / npm run typecheck ✅。docs/specs/change-rumors.mdの変更対象ファイル一覧とrumoredRequests・describeRumorPayoff・RumorListの差分を確認。E2Eはこの環境で実行できず未実行(PR本文の219件成功を参照)
-- マージ: squash & delete-branch
-
-## 2026-10-12 13:25 UTC PR #190 feat: add toolbar answer menu
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(lint/typecheck/test 1693件) ✅。docs/specs/toolbar-answer-menu.mdの受け入れ基準をReferenceMenu.tsx・StagePanel.tsx・stageCatalog.testの差分で確認(ヒント総数はuseHintsのtotalと一致)。E2Eはブラウザ未導入のため未実行(CIのe2eジョブ成功を参照)
-- マージ: squash & delete-branch
-
-## 2026-10-12 12:50 UTC PR #166 手直しと変更依頼を段階的に進める
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(lint/typecheck/test 1692件) ✅。前回承認(5e6b525)以降はmasterのマージコミットのみ。docs/specs/post-perfect-flow.mdの段階制御・編集ロック・結果画面でのコード保持を確認。E2Eはブラウザ未導入のため未実行(PR本文の207件成功を参照)
-- マージ: squash & delete-branch
-
-## 2026-10-12 08:10 UTC PR #168 feat: clarify clear condition status (#162)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(lint/typecheck/test 1674件) ✅ / E2E 205件 ✅。Issue #162・docs/specs/clear-condition-badges.mdの、goal/current分離、達成数表示、達成瞬間の演出と初期化・リセット・undo/redo時の抑止、reduced-motionを確認。domain/application変更なし
-- マージ: squash & delete-branch

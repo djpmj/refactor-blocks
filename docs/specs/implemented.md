@@ -116,3 +116,8 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [detail-zoom-floor](detail-zoom-floor.md) | 自動の全体表示でメソッドが隠れる倍率まで縮めず、収まらない分は左上から見せる |
 | [sample-answer-publicize](sample-answer-publicize.md) | 解答例の各手順で、可視性を採点しないステージでは別クラスから呼ばれる private を自動で public にする |
 | [sidebar-flow-visibility](sidebar-flow-visibility.md) | 左パネルをステージ切替で先頭へ戻し、段階が進んだら次のカードを見せ、章の結びの依頼タイトルは受ける段階だけ出す |
+| [new-class-into-view](new-class-into-view.md) | 余白へのドロップで作ったクラスが画面外にはみ出したら、ズームを変えずに見える位置へパンする |
+| [line-limit-why-by-kind](line-limit-why-by-kind.md) | 行数減点の説明をメソッド・クラス・ファイルのどれが超えているかで出し分ける |
+| [change-cost-class-entanglement](change-cost-class-entanglement.md) | 変更のしやすさで、変更クラスに同居する別責務も「巻き込み(クラス)」として減点する |
+| [pull-up-protected-merge](pull-up-protected-merge.md) | 基底へ移したメソッドを子孫からだけ呼ばれるなら protected にし、private/protected 間の統合候補を保つ |
+| [method-chip-accessible-name](method-chip-accessible-name.md) | メソッドのボタンの読み上げ名に可視性・行数・警告・「直した」印を入れ、選択中を aria-pressed で伝える |

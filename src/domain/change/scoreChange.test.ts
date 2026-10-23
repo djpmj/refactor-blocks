@@ -9,6 +9,7 @@ const cleanImpact: ChangeImpact = {
   linesAdded: 8,
   rippleClasses: [],
   mixedResponsibilities: 0,
+  classMixedResponsibilities: 0,
   overLimitTouched: 0,
 };
 
@@ -23,8 +24,21 @@ describe('scoreChange', () => {
       'shotgun',
       'ripple',
       'entangled',
+      'entangled-class',
       'limit-break',
     ]);
+  });
+
+  it('クラス内に同居する別責務を1種類につき5点減点する', () => {
+    // Arrange
+    const impact: ChangeImpact = { ...cleanImpact, classMixedResponsibilities: 1 };
+
+    // Act
+    const score = scoreChange(impact);
+
+    // Assert
+    expect(score.total).toBe(95);
+    expect(score.deductions.find((deduction) => deduction.rule === 'entangled-class')?.points).toBe(5);
   });
 
   it('散らばり・波及・巻き込み・上限超えを、表のとおりに減点する', () => {
@@ -43,7 +57,7 @@ describe('scoreChange', () => {
     // Assert
     // 散らばり(3-1)*10 + 波及2*5 + 巻き込み2*5 + 上限超え10 = 50
     expect(score.total).toBe(50);
-    expect(score.deductions.map((deduction) => deduction.points)).toEqual([20, 10, 10, 10]);
+    expect(score.deductions.map((deduction) => deduction.points)).toEqual([20, 10, 10, 0, 10]);
   });
 
   it('0点より下にはしない', () => {

@@ -1,6 +1,6 @@
 import type { ChangeImpact } from './measureChange';
 
-export type ChangeRule = 'shotgun' | 'ripple' | 'entangled' | 'limit-break';
+export type ChangeRule = 'shotgun' | 'ripple' | 'entangled' | 'entangled-class' | 'limit-break';
 
 export type ChangeDeduction = {
   readonly rule: ChangeRule;
@@ -22,6 +22,7 @@ const POINTS: Record<ChangeRule, number> = {
   shotgun: 10,
   ripple: 5,
   entangled: 5,
+  'entangled-class': 5,
   'limit-break': 10,
 };
 
@@ -33,9 +34,10 @@ export function scoreChange(impact: ChangeImpact): ChangeScore {
     shotgun: Math.max(0, impact.classesTouched - 1),
     ripple: impact.rippleClasses.length,
     entangled: impact.mixedResponsibilities,
+    'entangled-class': impact.classMixedResponsibilities,
     'limit-break': impact.overLimitTouched,
   };
-  const deductions = (['shotgun', 'ripple', 'entangled', 'limit-break'] as const).map(
+  const deductions = (['shotgun', 'ripple', 'entangled', 'entangled-class', 'limit-break'] as const).map(
     (rule): ChangeDeduction => ({ rule, count: counts[rule], points: counts[rule] * POINTS[rule] }),
   );
   const deducted = deductions.reduce((sum, deduction) => sum + deduction.points, 0);
