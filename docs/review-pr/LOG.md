@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-23 15:00 UTC PR #267 理解度チェックの正誤と解説を区別して表示する (#234)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test(1857件)✅ / npm run lint ✅ / npm run typecheck ✅。ConceptCheckPanelの見出し、ステージ解説から「正解です」除去、全ステージ検査テストを差分で確認。E2Eはこの環境にブラウザが無く未実行(PR本文では268件成功)
+- マージ: squash & delete-branch
+
 ## 2026-10-23 14:50 UTC PR #266 AI講評の契約版の不一致を見分けて伝える (#231)
 
 - 判定: 合格(blocker無し)
@@ -210,11 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(1721件) / npm run lint ✅ / npm run typecheck ✅ / E2Eはレビュー環境にChromiumが無く未実行のためPR記載の226件成功を前提とした。Issue #173 の受け入れ基準(印の色と英字・呼び出し行に印なし・クラスの責務種類数・番号の安定)を差分で確認
-- マージ: squash & delete-branch
-
-## 2026-10-15 14:45 UTC PR #199 Clarify change request result scores
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(1729件) / npm run lint ✅ / npm run typecheck ✅ / E2Eはこの環境で実行不可のためPR記載の227/227成功を前提とした。Issue #177 の受け入れ基準を差分で確認
 - マージ: squash & delete-branch
 

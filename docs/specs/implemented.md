@@ -125,4 +125,5 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [blank-design-class-names](blank-design-class-names.md) | 白紙設計のクラスを責務に応じて自動命名し、手動改名は維持する |
 | [manual-fix-clarity](manual-fix-clarity.md) | 冒頭の手直しの答えを隠し、結果文を変更箇所のクラス単位で説明する |
 | [dark-mode-canvas-controls](dark-mode-canvas-controls.md) | ダークモードでキャンバスのズームボタン等をゲームの配色に合わせる |
+| [concept-check-feedback-labels](concept-check-feedback-labels.md) | 理解度チェックの解説に見出しを付け、解説本文から正誤の文言を外す |
 | [critique-contract-version](critique-contract-version.md) | AI講評のサーバーとゲームの契約版の食い違いを見分けて伝える |
