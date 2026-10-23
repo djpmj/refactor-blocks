@@ -21,7 +21,7 @@ export type MergeMethodsError =
   | 'method-not-found'
   | 'same-method'
   | 'same-class'
-  | 'not-private'
+  | 'not-mergeable-visibility'
   | 'shape-mismatch'
   | 'empty-method-name'
   | 'duplicate-method-name';
@@ -53,8 +53,8 @@ function sameShape(codebase: Codebase, methodA: Method, methodB: Method): boolea
 }
 
 function mergeableVisibility(methodA: Method, methodB: Method): boolean {
+  if (methodA.visibility !== 'public' && methodB.visibility !== 'public') return true;
   if (methodA.visibility !== methodB.visibility) return false;
-  if (methodA.visibility === 'private') return true;
   return [methodA, methodB].every((method) => method.fragments.length > 0
     && method.fragments.every((fragment) => fragment.responsibility === 'call'));
 }
@@ -74,7 +74,7 @@ function validate(codebase: Codebase, request: MergeMethodsRequest): Result<Vali
   if (methodA === undefined || ownerA === undefined || methodB === undefined || ownerB === undefined) return err('method-not-found');
   if (request.methodAId === request.methodBId) return err('same-method');
   if (ownerA.id === ownerB.id) return err('same-class');
-  if (!mergeableVisibility(methodA, methodB)) return err('not-private');
+  if (!mergeableVisibility(methodA, methodB)) return err('not-mergeable-visibility');
   if (!sameShape(codebase, methodA, methodB)) return err('shape-mismatch');
   const name = request.newMethodName.trim();
   if (name === '') return err('empty-method-name');
@@ -138,7 +138,7 @@ function replaceMethods(codebase: Codebase, validated: Validated, merged: Method
 }
 
 /**
- * Merge Methods: 別クラスにある、形が一致するprivateメソッド、または同じ可視性の呼び出し行だけの骨組みを1つに統合する。
+ * Merge Methods: 別クラスにある、形が一致するprivate/protectedメソッド、または同じ可視性の呼び出し行だけの骨組みを1つに統合する。
  * 統合結果は常にメソッドAの所属クラスに、Aがあった位置で置き換わる(統合先クラスは選ばせない)。
  */
 export function mergeMethods(codebase: Codebase, request: MergeMethodsRequest): Result<Codebase, MergeMethodsError> {
@@ -148,7 +148,7 @@ export function mergeMethods(codebase: Codebase, request: MergeMethodsRequest): 
   const merged: Method = {
     id: request.newMethodId,
     name: request.newMethodName.trim(),
-    visibility: methodA.visibility,
+    visibility: methodA.visibility === 'protected' || methodB.visibility === 'protected' ? 'protected' : methodA.visibility,
     fragments: methodA.fragments.map((fragmentA, index) => mergeFragment(request.newMethodId, index, fragmentA, methodB.fragments[index])),
   };
   const replaced = replaceMethods(codebase, validated.value, merged);

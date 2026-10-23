@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+﻿import { describe, expect, it } from 'vitest';
 import { modelAnswerCodebase, reviewBlankDesign } from '../../domain/blank/reviewBlankDesign';
 import { applySolutionSteps } from '../../domain/stage/sampleAnswer';
 import { findUnplacedParts, TRAY_FILE_ID } from '../../domain/blank/tray';

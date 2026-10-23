@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
+﻿import { expect, test, type Locator, type Page } from '@playwright/test';
 import { selectStage, startChangeRequests } from './selectStage.js';
 
 test('右サイドバーの幅をドラッグとキーボードで調整し、白紙設計でも使える', async ({ page }) => {
@@ -142,6 +142,44 @@ async function emptyPanePoint(page: Page) {
   const point = await page.evaluate<{ x: number; y: number } | null>(FIND_EMPTY_PANE_POINT);
   if (point === null) throw new Error('キャンバスに空いている場所がありません');
   return point;
+}
+
+async function viewportTranslation(page: Page) {
+  const style = await page.locator('.react-flow__viewport').last().getAttribute('style');
+  const match = style?.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/);
+  if (match === undefined || match === null) throw new Error('React Flow viewport transform を取得できません');
+  return { x: Number(match[1]), y: Number(match[2]) };
+}
+
+async function stableDropSnapshot(page: Page, file: Locator) {
+  const snapshot = async () => file.evaluate((fileElement) => {
+    const node = fileElement.getBoundingClientRect();
+    const header = fileElement.querySelector('.file-node__header')?.getBoundingClientRect();
+    const panes = fileElement.ownerDocument.querySelectorAll('.react-flow__pane');
+    const viewports = fileElement.ownerDocument.querySelectorAll('.react-flow__viewport');
+    const pane = panes.item(panes.length - 1);
+    const viewport = viewports.item(viewports.length - 1);
+    if (header === undefined || pane === null || viewport === null) return null;
+    const transform = viewport.getAttribute('style')?.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\) scale\(([-\d.]+)\)/);
+    if (transform === undefined || transform === null) return null;
+    const paneBounds = pane.getBoundingClientRect();
+    const translateX = Number(transform[1]);
+    const translateY = Number(transform[2]);
+    const zoom = Number(transform[3]);
+    return { file: { x: node.x, y: node.y, width: node.width, worldX: (node.x - paneBounds.x - translateX) / zoom, worldY: (node.y - paneBounds.y - translateY) / zoom }, headerY: header.y + header.height / 2, pane: { x: paneBounds.x, y: paneBounds.y }, translateX, translateY, zoom };
+  });
+  let previous = await snapshot();
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    await page.waitForTimeout(25);
+    const current = await snapshot();
+    if (previous !== null && current !== null
+      && Math.abs(current.translateX - previous.translateX) < 0.1
+      && Math.abs(current.translateY - previous.translateY) < 0.1
+      && Math.abs(current.file.x - previous.file.x) < 0.1
+      && Math.abs(current.file.y - previous.file.y) < 0.1) return current;
+    previous = current;
+  }
+  throw new Error('viewport とファイル bounds が安定しません');
 }
 
 /**
@@ -1522,23 +1560,21 @@ test('ファイルの箱をドラッグして位置をずらせる', async ({ pa
   // Arrange
   await openOrderStage(page);
   const file = page.locator('.react-flow__node[data-id="file-tax-calculator"]');
-  const before = await file.boundingBox();
+  const before = await stableDropSnapshot(page, file);
   if (before === null) throw new Error('ファイルの位置を取得できません');
 
   // Act: ファイルの箱の余白(クラスの外)をつかんで下へ動かす
-  const header = file.locator('.file-node__header');
-  const headerBox = await header.boundingBox();
-  if (headerBox === null) throw new Error('ファイル見出しが見つかりません');
-  const grabX = headerBox.x + headerBox.width / 2;
-  const grabY = headerBox.y + headerBox.height / 2;
+  const grabX = before.file.x + 8;
+  const grabY = before.file.y + 8;
   await page.mouse.move(grabX, grabY);
   await page.mouse.down();
   await page.mouse.move(grabX + 20, grabY + 120, { steps: 5 });
   await page.mouse.up();
 
   // Assert
-  const after = await file.boundingBox();
-  expect(after?.y).toBeGreaterThan(before.y + 50);
+  const after = await stableDropSnapshot(page, file);
+  expect(after).not.toBeNull();
+  expect(after!.file.worldY).toBeGreaterThan(before.file.worldY + 50);
 });
 
 /** 要素をつかんで、キャンバスの右下の余白(どのファイルの枠外)へドラッグして離す。testIdの文字列か、絞り込み済みのLocatorを渡せる。 */
@@ -1599,13 +1635,6 @@ test('メソッドをファイルの枠外へドラッグすると、新しい�
   await expect(page.getByTestId('file-src/NewClass.ts')).toBeVisible();
 });
 
-/** ファイルの箱のヘッダーの縦の中心。ズーム倍率に依らず、ドロップした位置との差を測れる。 */
-async function headerCenterY(file: Locator): Promise<number> {
-  const header = await file.locator('.file-node__header').boundingBox();
-  if (header === null) throw new Error('ファイルのヘッダーの位置を取得できません');
-  return header.y + header.height / 2;
-}
-
 test('メソッドを余白の指定位置へドロップすると、その位置にファイルが現れる', async ({ page }) => {
   // Arrange
   await openOrderStage(page);
@@ -1618,6 +1647,7 @@ test('メソッドを余白の指定位置へドロップすると、その位�
   const pane = await page.locator('.react-flow__pane').boundingBox();
   if (pane === null) throw new Error('キャンバスの位置を取得できません');
   const drop = { x: pane.x + pane.width - 20, y: pane.y + pane.height - 20 };
+  const translationBeforeDrop = await viewportTranslation(page);
 
   // Act
   await dragToCanvasPoint(page, 'method-placeOrder', drop.x, drop.y);
@@ -1625,10 +1655,11 @@ test('メソッドを余白の指定位置へドロップすると、その位�
   // Assert
   const file = page.getByTestId('file-src/NewClass.ts');
   await expect(file).toBeVisible();
-  const bounds = await file.boundingBox();
-  expect(bounds).not.toBeNull();
-  expect(Math.abs(bounds!.x + bounds!.width / 2 - drop.x)).toBeLessThanOrEqual(60);
-  expect(Math.abs(await headerCenterY(file) - drop.y)).toBeLessThanOrEqual(12);
+  const snapshot = await stableDropSnapshot(page, file);
+  expect(snapshot).not.toBeNull();
+  const panDelta = { x: snapshot!.translateX - translationBeforeDrop.x, y: snapshot!.translateY - translationBeforeDrop.y };
+  expect(Math.abs(snapshot!.file.x + snapshot!.file.width / 2 - drop.x - panDelta.x)).toBeLessThanOrEqual(60);
+  expect(Math.abs(snapshot!.headerY - drop.y - panDelta.y)).toBeLessThanOrEqual(12);
 
   // Act: UndoしてからRedoする
   await page.keyboard.press('Control+z');
@@ -1637,10 +1668,10 @@ test('メソッドを余白の指定位置へドロップすると、その位�
 
   // Assert: 同じ位置に戻る
   await expect(file).toBeVisible();
-  const restored = await file.boundingBox();
+  const restored = await stableDropSnapshot(page, file);
   expect(restored).not.toBeNull();
-  expect(Math.abs(restored!.x + restored!.width / 2 - drop.x)).toBeLessThanOrEqual(60);
-  expect(Math.abs(await headerCenterY(file) - drop.y)).toBeLessThanOrEqual(12);
+  expect(Math.abs(restored!.file.worldX - snapshot!.file.worldX)).toBeLessThanOrEqual(1);
+  expect(Math.abs(restored!.file.worldY - snapshot!.file.worldY)).toBeLessThanOrEqual(1);
 });
 
 test('クラスを余白の指定位置へドロップすると、新しいファイルがその位置に現れる', async ({ page }) => {
@@ -1754,7 +1785,7 @@ test('中級3: renderTemplate を public にするとアクセス制御の減点
   await expect(score).toContainText('アクセス制御 -10');
 
   // Act: 抽象メソッドを実装していない一般メソッドでも抽象の説明は出さない
-  await page.getByRole('button', { name: /notifyShipment\(\)/ }).click();
+  await page.getByTestId('method-notifyShipment').click();
 
   // Assert
   await expect(page.locator('.method-editor__visibility-hint')).not.toContainText('親クラスの抽象メソッド');

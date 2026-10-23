@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { RULE_LABEL } from './describeScore';
-import { RULE_WHY } from './ruleWhy';
+import { lineLimitWhy, RULE_WHY } from './ruleWhy';
 import type { Score, ScoreRule } from '../../domain/scoring/score';
 import { findClass, type Codebase } from '../../domain/codebase/Codebase';
 import { findMisplacedResponsibilities } from '../../domain/scoring/misplacedResponsibilities';
 import { classDependencies, findCycles } from '../../domain/codebase/dependencies';
+import { findLineLimitViolations } from '../../domain/scoring/lineLimits';
 
 function MisplacedViolationDetails({ codebase }: Readonly<{ codebase: Codebase }>) {
   const violations = findMisplacedResponsibilities(codebase);
@@ -31,16 +32,33 @@ function deductionLabel(rule: ScoreRule, count: number, codebase: Codebase): str
   return `${RULE_LABEL[rule]} ${findCycles(classDependencies(codebase)).length}組(矢印${count}本)`;
 }
 
+function WhyText({ rule, lineWhy }: Readonly<{ rule: ScoreRule; lineWhy: ReturnType<typeof lineLimitWhy> }>) {
+  if (rule === 'line-limit') {
+    return <>{lineWhy.map((why) => (
+      <div key={why.trouble}>
+        <p><strong>こう困ります:</strong>{why.trouble}</p>
+        <p><strong>だから:</strong>{why.because}</p>
+      </div>
+    ))}</>;
+  }
+  return <>
+    <p><strong>こう困ります:</strong>{RULE_WHY[rule].trouble}</p>
+    <p><strong>だから:</strong>{RULE_WHY[rule].because}</p>
+  </>;
+}
+
 export function ScoreBreakdown({ score, disabled }: Readonly<{
   score: Score;
   disabled: boolean;
 }>) {
   const [openRules, setOpenRules] = useState<ReadonlySet<ScoreRule>>(new Set());
   const codebase = useGameStore((state) => state.codebase);
+  const stage = useGameStore((state) => state.stage);
   const focusedRule = useGameStore((state) => state.focusedRule);
   const focusRule = useGameStore((state) => state.focusRule);
   const previewRuleFor = useGameStore((state) => state.previewRuleFor);
   const deductions = score.deductions.filter((deduction) => deduction.points > 0);
+  const lineWhy = lineLimitWhy(findLineLimitViolations(codebase, stage.limits).map((violation) => violation.kind));
   if (deductions.length === 0) return null;
   const toggleWhy = (rule: ScoreRule) => setOpenRules((current) => {
     const next = new Set(current);
@@ -80,8 +98,7 @@ export function ScoreBreakdown({ score, disabled }: Readonly<{
               </div>
               {rule === 'misplaced' ? <MisplacedViolationDetails codebase={codebase} /> : null}
               <div id={whyId} className="score-breakdown__why" hidden={!open}>
-                <p><strong>こう困ります:</strong>{RULE_WHY[rule].trouble}</p>
-                <p><strong>だから:</strong>{RULE_WHY[rule].because}</p>
+                <WhyText rule={rule} lineWhy={lineWhy} />
               </div>
             </div>
           );

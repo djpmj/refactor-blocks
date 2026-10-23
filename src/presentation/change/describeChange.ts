@@ -8,6 +8,7 @@ export const CHANGE_RULE_LABEL: Record<ChangeRule, string> = {
   shotgun: '散らばり',
   ripple: '波及',
   entangled: '巻き込み',
+  'entangled-class': '巻き込み(クラス)',
   'limit-break': '上限超え',
 };
 
@@ -25,6 +26,7 @@ export function describeDeductions({ impact, score }: ChangeAssessment, codebase
     shotgun: `変更が${String(impact.classesTouched)}つのクラスに散らばっていて、それぞれを直す必要があった`,
     ripple: `変更したクラスを呼んでいる ${names(codebase, impact.rippleClasses, 'class')} も影響を受け、動作確認が必要になる`,
     entangled: `変更するメソッドに、依頼と関係ない責務が${String(impact.mixedResponsibilities)}種類同居していて、巻き込んで壊すおそれがある`,
+    'entangled-class': '直すクラスに、この変更と関係のない処理が同居している。直すときに読む量が増え、巻き込んで壊すおそれもある',
     'limit-break': `変更を入れると行数の上限を超えるメソッド・クラス・ファイルが${String(impact.overLimitTouched)}個ある`,
   };
   return score.deductions.filter((deduction) => deduction.points > 0).map((deduction) => `${CHANGE_RULE_LABEL[deduction.rule]}: ${reasons[deduction.rule]}`);

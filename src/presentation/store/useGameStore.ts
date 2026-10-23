@@ -1,4 +1,4 @@
-import { createContext, useContext, type Context } from 'react';
+﻿import { createContext, useContext, type Context } from 'react';
 import { createStore, useStore, type StoreApi } from 'zustand';
 import { evaluateImplementationUseCase, type ChangeOutcome } from '../../application/ChangeRequestUseCases';
 import { describeCritiqueError, requestCritiqueUseCase } from '../../application/CritiqueUseCases';
@@ -273,20 +273,21 @@ function commit(state: GameState, codebase: Codebase, celebrate = true): Partial
   };
 }
 
-function publicizedMoveNotice(after: Codebase, publicizedIds: readonly string[]): string | null {
-  const publicized = publicizedIds.flatMap((id) => {
-    const method = findMethod(after, id);
-    const owner = method === undefined ? undefined : findClassOfMethod(after, id);
-    return method === undefined || owner === undefined ? [] : [{ method, owner }];
+function publicizedMoveNotice(after: Codebase, changes: readonly { readonly methodId: string; readonly visibility: 'public' | 'protected' }[]): string | null {
+  const changed = changes.flatMap(({ methodId, visibility }) => {
+    const method = findMethod(after, methodId);
+    const owner = method === undefined ? undefined : findClassOfMethod(after, methodId);
+    return method === undefined || owner === undefined ? [] : [{ method, owner, visibility }];
   });
-  if (publicized.length === 0) return null;
-  if (publicized.length > 1) {
-    const names = publicized.map(({ method }) => `${method.name}()`).join('・');
-    return `外のクラスから呼ばれるようになったので、${names} を public にしました`;
+  if (changed.length === 0) return null;
+  if (changed.length > 1) {
+    const names = changed.map(({ method }) => `${method.name}()`).join('・');
+    const visibility = changed.every((item) => item.visibility === changed[0].visibility) ? changed[0].visibility : '可視性';
+    return `外のクラスから呼ばれるようになったので、${names} を ${visibility} にしました`;
   }
-  const { method, owner } = publicized[0];
+  const { method, owner, visibility } = changed[0];
   const caller = allClasses(after).find((codeClass) => codeClass.id !== owner.id && codeClass.methods.some((candidate) => candidate.fragments.some((fragment) => (fragment.uses ?? []).includes(method.id))));
-  return caller === undefined ? null : `${method.name}() は ${owner.name} の外(${caller.name})から呼ばれるようになったので、public にしました`;
+  return caller === undefined ? null : `${method.name}() は ${owner.name} の外(${caller.name})から呼ばれるようになったので、${visibility} にしました`;
 }
 
 /** 操作の結果を状態の更新にする。成功したらコードベースを差し替え、失敗したら理由を出す。 */
@@ -640,7 +641,7 @@ function moveMethodAction(set: (partial: Partial<GameState>) => void, get: () =>
     }
     const enforced = state.stage.visibilityEnforced === true;
     const result = moveMethodUseCase(state.codebase, methodId, targetClassId, { visibilityEnforced: enforced });
-    const notice = result.ok ? publicizedMoveNotice(result.value.codebase, result.value.publicized) : null;
+    const notice = result.ok ? publicizedMoveNotice(result.value.codebase, result.value.changed) : null;
     set({ ...applyResult(state, result.ok ? { ok: true, value: result.value.codebase } : result, describeMoveError), ...(result.ok ? { notice } : {}) });
   };
 }
@@ -654,7 +655,7 @@ function moveMethodToNewClassInFileAction(set: (partial: Partial<GameState>) => 
       return;
     }
     const result = moveMethodToNewClassInFileUseCase(state.codebase, methodId, fileId, { generateId: newId, visibilityEnforced: state.stage.visibilityEnforced === true });
-    const notice = result.ok ? publicizedMoveNotice(result.value.codebase, result.value.publicized) : null;
+    const notice = result.ok ? publicizedMoveNotice(result.value.codebase, result.value.changed) : null;
     set({ ...applyResult(state, result.ok ? { ok: true, value: result.value.codebase } : result, describeMoveOutError), ...(result.ok ? { notice } : {}) });
   };
 }
@@ -703,8 +704,9 @@ function moveActions(
         apply(result, describeMoveOutError);
         return null;
       }
-      const notice = publicizedMoveNotice(result.value.codebase, result.value.publicized);
-      set({ ...applyResult(state, { ok: true, value: autoNameClasses(result.value.codebase, state.stage.classNames) }, describeMoveOutError), notice });
+      const notice = publicizedMoveNotice(result.value.codebase, result.value.changed);
+      const codebase = autoNameClasses(result.value.codebase, state.stage.classNames);
+      set({ ...applyResult(state, { ok: true, value: codebase }, describeMoveOutError), notice });
       return result.value.fileId;
     },
     moveMethodToNewClassInFile: moveMethodToNewClassInFileAction(set, get, newId),

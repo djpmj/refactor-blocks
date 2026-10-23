@@ -105,8 +105,8 @@ describe('中級8: 給与と住所を抱えた社員クラス', () => {
     // Assert
     expect(buildingNameRequest.id).toBe('req-building-name');
     expect(lateNightOvertimeRequest.id).toBe('req-late-night-overtime');
-    expect(scoresBefore.map((score) => score.total)).toEqual([80, 80]);
-    // 実測: 深夜残業の依頼は模範解答のあとも calculateMonthlyPay に8行足すと60行を超え、上限超え1件が残る(仕様書は95点の見込みだったが85点に修正)
-    expect(scoresAfter.map((score) => score.total)).toEqual([90, 85]);
+    expect(scoresBefore.map((score) => score.total)).toEqual([65, 75]);
+    // 実測: 深夜残業の依頼は模範解答のあとも calculateMonthlyPay に8行足すと上限を超え、クラス内の別責務も残る。
+    expect(scoresAfter.map((score) => score.total)).toEqual([90, 80]);
   });
 });

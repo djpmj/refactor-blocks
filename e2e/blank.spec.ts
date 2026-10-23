@@ -122,7 +122,24 @@ test('白紙設計の新しいクラスは部品の責務で命名し、同数�
   // Act: 注文フローを配置し、別の余白へ保存4行を配置する
   await dragToEmptyCanvas(page, view, 'method-placeOrder');
   await expect(view.getByTestId('class-OrderService')).toBeVisible();
-  await dragToEmptyCanvas(page, view, 'method-saveOrder');
+  await expect(view.locator('.drag-overlay')).toHaveCount(0);
+  await expect(view.getByTestId('method-saveOrder')).toHaveCSS('opacity', '1');
+  await page.getByRole('button', { name: 'Fit View' }).click();
+  const methodLocator = view.getByTestId('method-saveOrder');
+  await expect(methodLocator).toHaveCSS('opacity', '1');
+  const method = await stableBoundingBox(page, methodLocator);
+  const pane = await stableBoundingBox(page, view.locator('.react-flow__pane'));
+  const emptyPoint = { x: pane.x + pane.width - 30, y: pane.y + pane.height - 30 };
+  const hitTarget = await page.evaluate(`(({ x, y }) => {
+    const fileNode = document.elementFromPoint(x, y)?.closest('.file-node');
+    return fileNode?.getAttribute('data-testid') ?? null;
+  })(${JSON.stringify(emptyPoint)})`);
+  if (hitTarget !== null) throw new Error(`ドロップ先が余白ではありません: ${hitTarget}`);
+  await page.mouse.move(method.x + method.width / 2, method.y + method.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(method.x + method.width / 2 + 20, method.y + method.height / 2, { steps: 5 });
+  await page.mouse.move(emptyPoint.x, emptyPoint.y, { steps: 15 });
+  await page.mouse.up();
 
   // Assert
   await expect(view.getByTestId('class-OrderRepository').getByTestId('method-saveOrder')).toBeVisible();

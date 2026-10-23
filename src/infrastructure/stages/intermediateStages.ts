@@ -1288,18 +1288,16 @@ const copyPasteTaxStage: Stage = {
 const memberRankBranchingStage: Stage = {
   classNames: {
     "price-regular": "RegularRank",
-    "price-premium": "PremiumRank",
+    "premium-rank": "PremiumRank",
     "shipping-regular": "RegularRank",
-    "shipping-premium": "PremiumRank",
     "validation": "Validator",
     "pricing": "MemberPriceCalculator",
     "ordering": "OrderingHandler",
   },
   methodNames: {
     "price-regular": "calculatePrice",
-    "price-premium": "calculatePrice",
+    "premium-rank": "calculatePremiumBehavior",
     "shipping-regular": "calculateShipping",
-    "shipping-premium": "calculateShipping",
     "validation": "validateOrder",
     "pricing": "priceOrder",
     "ordering": "saveOrder",
@@ -1346,7 +1344,7 @@ const memberRankBranchingStage: Stage = {
   responsibilityLimit: 3,
   changeRequests: [
     { id: 'req-add-gold-rank', title: 'ゴールド会員を追加して', description: '新しい会員ランク「ゴールド」を追加したい。価格も送料もゴールド用の計算にする。', responsibility: 'rank-gold', linesPerSite: 12, kind: 'extend', partName: 'applyGoldRank' },
-    { id: 'req-premium-shipping', title: 'プレミアムの送料を変えて', description: 'プレミアム会員の送料を、一律500円に変えたい。', responsibility: 'shipping-premium', linesPerSite: 4, partName: 'revisePremiumShipping' },
+    { id: 'req-premium-shipping', title: 'プレミアム会員の計算を変えて', description: 'プレミアム会員向けの価格と送料の計算を変更したい。', responsibility: 'premium-rank', linesPerSite: 4, partName: 'revisePremiumCalculation' },
   ],
   codebase: {
     files: [
@@ -1364,7 +1362,7 @@ const memberRankBranchingStage: Stage = {
                 visibility: 'public',
                 fragments: [
                   { id: 'frag-price-regular', label: '会員ランクが「通常」なら、定価で計算する', lines: 6, responsibility: 'price-regular', suggestedName: 'calculatePrice' , code: { csharp: "if (items.Count == 0) return 0;\nvar regularAmount = items.Sum(item =>\n    item.UnitPrice * item.Quantity);\nvar regularTotal = decimal.Round(regularAmount,\n    2);\nif (rank == MemberRank.Regular) return regularTotal;" }},
-                  { id: 'frag-price-premium', label: '会員ランクが「プレミアム」なら、10%引きで計算する', lines: 6, responsibility: 'price-premium', suggestedName: 'calculatePrice' , code: { csharp: "if (items.Count == 0) return 0;\nvar premiumAmount = items.Sum(item =>\n    item.UnitPrice * item.Quantity);\nvar discountedTotal = premiumAmount * 0.90m;\nreturn rank == MemberRank.Premium ? decimal.Round(discountedTotal,\n    2) : throw new ArgumentOutOfRangeException(nameof(rank));" }},
+                  { id: 'frag-price-premium', label: '会員ランクが「プレミアム」なら、10%引きで計算する', lines: 6, responsibility: 'premium-rank', suggestedName: 'calculatePrice' , code: { csharp: "if (items.Count == 0) return 0;\nvar premiumAmount = items.Sum(item =>\n    item.UnitPrice * item.Quantity);\nvar discountedTotal = premiumAmount * 0.90m;\nreturn rank == MemberRank.Premium ? decimal.Round(discountedTotal,\n    2) : throw new ArgumentOutOfRangeException(nameof(rank));" }},
                 ],
               },
             ],
@@ -1385,7 +1383,7 @@ const memberRankBranchingStage: Stage = {
                 visibility: 'public',
                 fragments: [
                   { id: 'frag-shipping-regular', label: '会員ランクが「通常」なら、送料を全額かける', lines: 6, responsibility: 'shipping-regular', suggestedName: 'calculateShipping' , code: { csharp: "if (weight <= 0) throw new ArgumentOutOfRangeException(nameof(weight));\nvar regularZone = _zoneResolver.Resolve(\n    address);\nvar regularShippingFee = _shippingRates.Calculate(\n    regularZone, weight);\nif (rank == MemberRank.Regular) return regularShippingFee;" }},
-                  { id: 'frag-shipping-premium', label: '会員ランクが「プレミアム」なら、送料を半額にする', lines: 6, responsibility: 'shipping-premium', suggestedName: 'calculateShipping' , code: { csharp: "if (weight <= 0) throw new ArgumentOutOfRangeException(nameof(weight));\nvar premiumZone = _zoneResolver.Resolve(\n    address);\nvar premiumShippingFee = _shippingRates.Calculate(\n    premiumZone, weight);\nreturn rank == MemberRank.Premium ? premiumShippingFee * 0.5m : throw new ArgumentOutOfRangeException(nameof(rank));" }},
+                  { id: 'frag-shipping-premium', label: '会員ランクが「プレミアム」なら、送料を半額にする', lines: 6, responsibility: 'premium-rank', suggestedName: 'calculateShipping' , code: { csharp: "if (weight <= 0) throw new ArgumentOutOfRangeException(nameof(weight));\nvar premiumZone = _zoneResolver.Resolve(\n    address);\nvar premiumShippingFee = _shippingRates.Calculate(\n    premiumZone, weight);\nreturn rank == MemberRank.Premium ? premiumShippingFee * 0.5m : throw new ArgumentOutOfRangeException(nameof(rank));" }},
                 ],
               },
             ],

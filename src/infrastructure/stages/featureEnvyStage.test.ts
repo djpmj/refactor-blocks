@@ -90,7 +90,7 @@ describe('中級6: 他人のデータばかり触るメソッド', () => {
     expect(result).toEqual({ ok: false, error: 'has-fields' });
   });
 
-  it('変更依頼2件は、初期75点・模範解答のあと95点で、classesTouched は増えない', () => {
+  it('変更依頼2件は、初期65点・模範解答のあと85点で、classesTouched は増えない', () => {
     // Arrange
     const solved = applySolutionSteps(stage.codebase, solution);
 
@@ -99,8 +99,8 @@ describe('中級6: 他人のデータばかり触るメソッド', () => {
       const before = measureChange(stage.codebase, request, stage.limits);
       const after = measureChange(solved, request, stage.limits);
       if (!before.ok || !after.ok) throw new Error('measureChange に失敗しました');
-      expect(scoreChange(before.value).total).toBe(75);
-      expect(scoreChange(after.value).total).toBe(95);
+      expect(scoreChange(before.value).total).toBe(65);
+      expect(scoreChange(after.value).total).toBe(85);
       expect(before.value.classesTouched).toBe(1);
       expect(after.value.classesTouched).toBe(1);
     }
