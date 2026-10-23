@@ -24,6 +24,8 @@ test('操作ガイドはボタンと ? キーで開閉し、Esc・閉じるボ�
   await expect(dialog.getByText('同じ処理を持つメソッドが別の場所にあると、エディタに候補が出ます。統合すると1つのメソッドになり、呼び出し元はすべてそれを呼ぶようになります。')).toBeVisible();
   await expect(dialog.getByText('抽出したメソッドや横流しするだけのメソッドの中身を、呼び出し元へ書き戻して消します(Inline Method)。')).toBeVisible();
   await expect(dialog.getByText('public / protected / private を選べます。可視性を扱うステージでだけ表示されます。')).toBeVisible();
+  const keyboardSection = dialog.locator('.operation-guide__section').filter({ has: dialog.getByRole('heading', { name: 'キーボードで操作する' }) });
+  await expect(keyboardSection.locator('kbd')).toHaveCount(10);
 
   await page.keyboard.press('Escape');
   await expect(dialog).not.toBeVisible();
@@ -42,6 +44,22 @@ test('操作ガイドはボタンと ? キーで開閉し、Esc・閉じるボ�
   await page.keyboard.press('Enter');
   await expect(dialog).not.toBeVisible();
   await expect(openButton).toBeFocused();
+});
+
+test('キーボード操作でメソッドエディタと右クリックメニューを開ける', async ({ page }) => {
+  await page.goto('/');
+  await completeOpeningFix(page);
+  const method = page.getByTestId('method-printMonthlyReport');
+  await method.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.method-editor__title')).toContainText('printMonthlyReport');
+  await page.keyboard.press('Escape');
+
+  await method.focus();
+  await page.keyboard.press('Shift+F10');
+  await expect(page.getByTestId('context-menu')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('context-menu')).toHaveCount(0);
 });
 
 test('? は編集入力中は文字として入力でき、編集外でガイドを開く', async ({ page }) => {

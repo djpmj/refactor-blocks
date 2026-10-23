@@ -2,8 +2,8 @@ import { Fragment, useEffect, useRef } from 'react';
 import { OPERATION_GUIDE } from './operationGuide';
 
 const TITLE_ID = 'operation-guide-title';
-const KEY_PATTERN = /(Ctrl\+Shift\+Z|Ctrl\+Z|Cmd\+Shift\+Z|Cmd\+Z|Ctrl\+Y|Cmd\+Y|Enter|Esc|←|→|\?)/g;
-const KEY_MATCH = /^(Ctrl\+Shift\+Z|Ctrl\+Z|Cmd\+Shift\+Z|Cmd\+Z|Ctrl\+Y|Cmd\+Y|Enter|Esc|←|→|\?)$/;
+const KEY_PATTERN = /(Shift\+Tab|Shift\+F10|Ctrl\+Shift\+Z|Ctrl\+Z|Cmd\+Shift\+Z|Cmd\+Z|Ctrl\+Y|Cmd\+Y|Tab|Enter|Esc|Space|↑|↓|←|→|\?)/g;
+const KEY_MATCH = /^(Shift\+Tab|Shift\+F10|Ctrl\+Shift\+Z|Ctrl\+Z|Cmd\+Shift\+Z|Cmd\+Z|Ctrl\+Y|Cmd\+Y|Tab|Enter|Esc|Space|↑|↓|←|→|\?)$/;
 
 function OperationText({ text }: Readonly<{ text: string }>) {
   return text.split(KEY_PATTERN).map((part, index) =>
