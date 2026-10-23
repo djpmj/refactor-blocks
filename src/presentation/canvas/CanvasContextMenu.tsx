@@ -316,18 +316,44 @@ function focusSubmenuItem(activeItem: Element | null): boolean {
   return true;
 }
 
+function focusAdjacentMenuItem(menuRef: RefObject<HTMLDivElement | null>, backward: boolean): void {
+  const menu = menuRef.current;
+  const activeItem = document.activeElement;
+  if (activeItem === null) return;
+  const activeWrapper = activeItem.closest('.context-menu__submenu-wrapper');
+  const openedSubmenu = activeItem.getAttribute('aria-expanded') === 'true'
+    ? activeWrapper?.querySelector<HTMLElement>('.context-menu__submenu') ?? null
+    : null;
+  const activeSubmenu = activeItem.closest('.context-menu__submenu');
+  const menuRoot = openedSubmenu ?? activeSubmenu ?? menu;
+  const menuItems = [...(menuRoot?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [])]
+    .filter((item) => item.closest('.context-menu__submenu') === (openedSubmenu ?? activeSubmenu));
+  if (menuItems.length === 0) return;
+  const index = menuItems.findIndex((item) => item === activeItem);
+  const next = backward ? (index - 1 + menuItems.length) % menuItems.length : (index + 1) % menuItems.length;
+  menuItems[next]?.focus();
+}
+
 function handleMenuKeyDown(event: ReactKeyboardEvent<HTMLDivElement>, menuRef: RefObject<HTMLDivElement | null>): void {
   if (event.key === 'ArrowRight') {
     if (focusSubmenuItem(document.activeElement)) event.preventDefault();
     return;
   }
   if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
-  const menuItems = [...(menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [])];
-  if (menuItems.length === 0) return;
   event.preventDefault();
-  const index = menuItems.findIndex((item) => item === document.activeElement);
-  const next = event.key === 'ArrowDown' ? (index + 1) % menuItems.length : (index - 1 + menuItems.length) % menuItems.length;
-  menuItems[next]?.focus();
+  focusAdjacentMenuItem(menuRef, event.key === 'ArrowUp');
+}
+
+function useTabNavigation(menuRef: RefObject<HTMLDivElement | null>): void {
+  useEffect(() => {
+    const moveFocusWithTab = (event: KeyboardEvent) => {
+      if (event.key !== 'Tab') return;
+      event.preventDefault();
+      focusAdjacentMenuItem(menuRef, event.shiftKey);
+    };
+    document.addEventListener('keydown', moveFocusWithTab, true);
+    return () => document.removeEventListener('keydown', moveFocusWithTab, true);
+  }, [menuRef]);
 }
 
 function MenuGroupItems({ group, target, onSelectForm, onClose, api }: MenuItemsProps & { group: MenuGroup }) {
@@ -340,6 +366,14 @@ function MenuGroupItems({ group, target, onSelectForm, onClose, api }: MenuItems
       if (item.kind === 'implements-submenu') return <ImplementsMenuItem key={item.kind} target={target} label={item.label} />;
       if (item.kind === 'action') return <button key={item.action} type="button" role="menuitem" className={item.action.startsWith('delete') ? 'context-menu__danger' : undefined} onClick={() => {
         if (item.action === 'addFile') api.getState().addFile();
+        if (item.action === 'moveClassToNewFile' && target.classId !== null) {
+          const classId = target.classId;
+          onClose();
+          if (api.getState().moveClassToNewFile(classId) !== null) {
+            requestAnimationFrame(() => document.querySelector<HTMLElement>(`[data-testid="class-header-${CSS.escape(findClass(api.getState().codebase, classId)?.name ?? '')}"]`)?.focus());
+          }
+          return;
+        }
         if (item.action === 'deleteClass' && target.classId !== null) api.getState().deleteClass(target.classId);
         if (item.action === 'deleteFile' && target.fileId !== null) api.getState().deleteFile(target.fileId);
         onClose();
@@ -351,20 +385,28 @@ function MenuGroupItems({ group, target, onSelectForm, onClose, api }: MenuItems
 
 function MenuItems({ target, onSelectForm, onClose, api }: Readonly<MenuItemsProps>) {
   const menuRef = useRef<HTMLDivElement>(null);
+  useTabNavigation(menuRef);
   const codebase = useGameStore((state) => state.codebase);
+  const canMoveClassToNewFile = target.classId !== null && codebase.files.some((file) =>
+    file.classes.some((codeClass) => codeClass.id === target.classId) && file.classes.length > 1,
+  );
   const member = memberName(target, codebase);
   const className = target.classId === null ? undefined : findClass(codebase, target.classId)?.name;
   const groups = contextMenuGroups(target, { member, className }).filter((group) => {
     if (group.kind !== 'member' || target.member === null) return true;
     return target.member.kind === 'method' || moveFieldTargets(codebase, target.member.id).length > 0;
   });
+  const visibleGroups = groups.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => item.kind !== 'action' || item.action !== 'moveClassToNewFile' || canMoveClassToNewFile),
+  }));
   useLayoutEffect(() => {
     // nullを返す項目を飛ばし、実際に描画された先頭項目にフォーカスする。
     menuRef.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
   }, [target]);
   return (
     <div ref={menuRef} role="menu" aria-label="キャンバスのメニュー" onKeyDown={(event) => handleMenuKeyDown(event, menuRef)}>
-      {groups.map((group, groupIndex) => (
+      {visibleGroups.map((group, groupIndex) => (
         <Fragment key={group.kind}>
         {groupIndex > 0 ? <div role="separator" className="context-menu__separator" /> : null}
         <MenuGroupItems group={group} target={target} onSelectForm={onSelectForm} onClose={onClose} api={api} />
