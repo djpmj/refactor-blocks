@@ -81,6 +81,18 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 :where(button:not(.react-flow__controls-button):hover:not(:disabled)) { border-color: var(--accent); }
 :where(button:not(.react-flow__controls-button):focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
 :where(button:not(.react-flow__controls-button):disabled) { opacity: 0.4; cursor: default; }
+/* ダークモード: React Flow の既定の暗色ではなく、ゲームの配色の変数につなぐ(ライトモードは React Flow の既定のまま) */
+.react-flow.dark {
+  --xy-background-color: var(--bg);
+  --xy-background-pattern-color: var(--border);
+  --xy-controls-button-background-color: var(--surface);
+  --xy-controls-button-background-color-hover: var(--bg);
+  --xy-controls-button-color: var(--text);
+  --xy-controls-button-color-hover: var(--text);
+  --xy-controls-button-border-color: var(--border);
+  --xy-attribution-background-color: rgba(31, 34, 44, 0.7);
+}
+.react-flow.dark .react-flow__attribution a { color: var(--muted); }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
 .app { display: flex; flex-direction: column; height: 100vh; }
