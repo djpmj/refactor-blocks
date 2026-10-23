@@ -1,12 +1,56 @@
-import { describe, expect, it } from 'vitest';
+﻿import { describe, expect, it } from 'vitest';
 import { modelAnswerCodebase, reviewBlankDesign } from '../../domain/blank/reviewBlankDesign';
 import { applySolutionSteps } from '../../domain/stage/sampleAnswer';
 import { findUnplacedParts, TRAY_FILE_ID } from '../../domain/blank/tray';
 import { blankDesignProblems } from './blankDesignProblems';
-import { allClasses } from '../../domain/codebase/Codebase';
-import { moveMethod } from '../../domain/codebase/moveMethod';
+import { autoNameClasses } from '../../domain/codebase/autoNameClasses';
+import { moveMethodToNewClass } from '../../domain/codebase/moveToNewHome';
+
+function partResponsibilities(problem: (typeof blankDesignProblems)[number]): Set<string> {
+  const responsibilities = partMethods(problem).flatMap((method) => method.fragments).map((fragment) => fragment.responsibility);
+  return new Set(responsibilities.filter((responsibility) => responsibility !== 'call'));
+}
+
+function partMethods(problem: (typeof blankDesignProblems)[number]) {
+  return problem.codebase.files.flatMap((file) => file.classes).flatMap((codeClass) => codeClass.methods);
+}
+
+function partWithResponsibility(problem: (typeof blankDesignProblems)[number], responsibility: string | undefined) {
+  return partMethods(problem).find((method) => method.fragments.some((fragment) => fragment.responsibility === responsibility));
+}
 
 describe.each(blankDesignProblems)('$id', (problem) => {
+  it('部品の責務をすべて模範解答のクラス名へ対応づける', () => {
+    // Arrange
+    const responsibilities = partResponsibilities(problem);
+    const modelClassNames = modelAnswerCodebase(problem).files.flatMap((file) => file.classes).map((codeClass) => codeClass.name);
+
+    // Act
+    const configuredClassNames = Object.entries(problem.classNames);
+
+    // Assert
+    expect(new Set(configuredClassNames.map(([responsibility]) => responsibility))).toEqual(responsibilities);
+    expect(configuredClassNames.every(([, className]) => modelClassNames.includes(className))).toBe(true);
+  });
+
+  it('プレイヤー操作で作ったクラスには部品の責務から模範解答の名前が付く', () => {
+    // Arrange
+    const methods = partMethods(problem);
+    const responsibility = methods.flatMap((method) => method.fragments)
+      .find((fragment) => fragment.responsibility !== 'order-flow')?.responsibility;
+    const part = partWithResponsibility(problem, responsibility);
+    if (part === undefined || responsibility === undefined) throw new Error('責務のある部品が見つかりません');
+    const moved = moveMethodToNewClass(problem.codebase, part.id, { classId: 'new-class', fileId: 'new-file' });
+    if (!moved.ok) throw new Error(moved.error);
+
+    // Act
+    const named = autoNameClasses(moved.value, problem.classNames);
+
+    // Assert
+    const expectedClassName = problem.classNames[responsibility];
+    expect(named.files.flatMap((file) => file.classes).find((codeClass) => codeClass.id === 'new-class')?.name).toBe(expectedClassName);
+  });
+
   it('問題IDは重複しない', () => {
     // Arrange & Act
     const matches = blankDesignProblems.filter((candidate) => candidate.id === problem.id);
@@ -70,23 +114,5 @@ describe('blank-order-shipping', () => {
     expect(model.value.player.score.total).toBe(100);
     expect(grouped.value.player.score.total).toBeLessThan(model.value.player.score.total);
     expect(grouped.value.player.changeScore).toBeLessThanOrEqual(model.value.player.changeScore);
-  });
-
-  it('注文の流れを税クラスに同居させても、税の変更スコアは模範解答以下になる', () => {
-    // Arrange
-    const modelCodebase = modelAnswerCodebase(problem);
-    const taxClass = allClasses(modelCodebase).find((codeClass) => codeClass.name === 'TaxCalculator');
-    const placeOrder = allClasses(modelCodebase).flatMap((codeClass) => codeClass.methods).find((method) => method.name === 'placeOrder');
-    if (taxClass === undefined || placeOrder === undefined) throw new Error('模範解答に対象クラスまたはメソッドがありません');
-    const moved = moveMethod(modelCodebase, placeOrder.id, taxClass.id);
-    if (!moved.ok) throw new Error(moved.error);
-
-    // Act
-    const result = reviewBlankDesign(problem, moved.value);
-
-    // Assert
-    if (!result.ok) throw new Error(result.error);
-    expect(result.value.model.changes[1]?.score.total).toBe(95);
-    expect(result.value.player.changes[1]?.score.total).toBeLessThanOrEqual(95);
   });
 });

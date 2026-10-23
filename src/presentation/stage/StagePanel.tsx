@@ -37,13 +37,14 @@ import type { StageStep } from '../../domain/change/stageStep';
 /** ステージ一覧のダイアログを開くボタン。 */
 function RoadmapButton() {
   const [open, setOpen] = useState(false);
+  const openerRef = useRef<HTMLButtonElement>(null);
   const investigating = useGameStore((state) => state.changeSession !== null);
   return (
     <>
-      <button type="button" data-testid="roadmap-open" disabled={investigating} onClick={() => setOpen(true)}>
+      <button ref={openerRef} type="button" data-testid="roadmap-open" disabled={investigating} onClick={() => setOpen(true)}>
         ステージ一覧
       </button>
-      <StageRoadmapDialog open={open} onClose={() => setOpen(false)} />
+      <StageRoadmapDialog open={open} onClose={() => { setOpen(false); openerRef.current?.focus(); }} />
     </>
   );
 }
@@ -75,6 +76,20 @@ function useStageSidebarWidth() {
   });
   const style: CSSProperties & { readonly '--sidebar-width': string } = { '--sidebar-width': `${width}px` };
   return { handleProps, style };
+}
+
+function useOpenSidebarForManualFix(active: boolean, setSidebarOpen: (open: boolean) => void): void {
+  const wasActive = useRef(active);
+  useEffect(() => {
+    if (!wasActive.current && active && window.innerWidth < 1400) setSidebarOpen(true);
+    wasActive.current = active;
+  }, [active, setSidebarOpen]);
+}
+
+function ManualFixSidebarOpener({ setSidebarOpen }: Readonly<{ setSidebarOpen: (open: boolean) => void }>) {
+  const manualFix = useGameStore((state) => state.manualFix);
+  useOpenSidebarForManualFix(manualFix !== null, setSidebarOpen);
+  return null;
 }
 
 const StageSidebarToggle = forwardRef<HTMLButtonElement, Readonly<{ open: boolean; onToggle: () => void }>>(function StageSidebarToggle({ open, onToggle }, ref) {
@@ -337,6 +352,18 @@ function useStageHintState(stageId: string, score: Score) {
   };
 }
 
+function StageHeader({ stage, codebase, score, investigating }: Readonly<{ stage: Stage; codebase: Codebase; score: Score; investigating: boolean }>) {
+  return (
+    <header className="stage-panel">
+      <h1 className="stage-panel__title">{stage.title}</h1>
+      <StageNavigation />
+      <div className="stage-panel__spacer" />
+      <CritiqueButton disabled={investigating} />
+      <ScoreArea stage={stage} codebase={codebase} score={score} disabled={investigating} />
+    </header>
+  );
+}
+
 /** ステージの目標と、行数・結合度・循環依存・責務の混在から出した点数を表示する。責務の中身(responsibility の値)は見せない。 */
 function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage; children: ReactNode; active: boolean }>) {
   // 実装中は部品置き場入りのコードなので、点数と進捗は挑戦前のコードで数える
@@ -353,21 +380,18 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
   const sidebarToggleRef = useRef<HTMLButtonElement>(null);
   useSidebarDrawer(sidebarOpen, setSidebarOpen, sidebarToggleRef);
   const { handleProps, style: sidebarStyle } = useStageSidebarWidth();
+  const { count: revealedCount } = stageHints;
   const { sidebarRef } = useStageFlow(stage, score.total);
-  const { hints, total } = useHints(stage, stageHints.count);
+
+  const { hints, total } = useHints(stage, revealedCount);
   const stagePanelActions = useMemo(() => ({ recordProgress, startTour, setSidebarOpen }), [recordProgress, startTour, setSidebarOpen]);
   useStagePanelEffects(stage.id, score.total, stagePanelActions, tourStep);
   return (
     <>
       <SpotlightTour />
-      <header className="stage-panel">
-        <h1 className="stage-panel__title">{stage.title}</h1>
-        <StageNavigation />
-        <div className="stage-panel__spacer" />
-        <CritiqueButton disabled={investigating} />
-        <ScoreArea stage={stage} codebase={codebase} score={score} disabled={investigating} />
-      </header>
+      <StageHeader stage={stage} codebase={codebase} score={score} investigating={investigating} />
       <CritiqueResult />
+      <ManualFixSidebarOpener setSidebarOpen={setSidebarOpen} />
       <div className={`app__body${sidebarOpen ? ' app__body--sidebar-open' : ''}`} style={sidebarStyle}>
         <SidebarBackdrop open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <StageSidebarDrawer open={sidebarOpen} stage={stage} codebase={codebase} score={score} initialScore={initialScore} investigating={investigating}
@@ -380,7 +404,7 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
             stage={stage}
             isPerfect={score.total >= 100}
             active={active}
-            revealedCount={stageHints.count}
+            revealedCount={revealedCount}
             onRevealHint={stageHints.problemRevealed ? stageHints.revealStep : stageHints.revealProblem}
             onOpenHints={() => setSidebarOpen(true)}
           />
