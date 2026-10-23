@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { sampleCodebase } from '../domain/codebase/testFixtures';
 import { scoreCodebase } from '../domain/scoring/score';
-import { CritiqueRequestError, describeCritiqueError, requestCritiqueUseCase } from './CritiqueUseCases';
+import { CritiqueRequestError, CritiqueVersionMismatchError, describeCritiqueError, requestCritiqueUseCase } from './CritiqueUseCases';
 
 const STAGE = {
   codebase: sampleCodebase(),
@@ -50,6 +50,19 @@ describe('requestCritiqueUseCase', () => {
     // Assert
     expect(result).toEqual({ ok: false, error: 'invalid-request' });
   });
+
+  it('契約版の食い違いなら専用のエラーを返す', async () => {
+    // Arrange
+    const codebase = sampleCodebase();
+    const score = scoreCodebase(codebase, STAGE);
+    const requestCritique = () => Promise.reject(new CritiqueVersionMismatchError());
+
+    // Act
+    const result = await requestCritiqueUseCase(codebase, STAGE, score, requestCritique);
+
+    // Assert
+    expect(result).toEqual({ ok: false, error: 'version-mismatch' });
+  });
 });
 
 describe('describeCritiqueError', () => {
@@ -63,7 +76,15 @@ describe('describeCritiqueError', () => {
   it('invalid-requestのメッセージを返す', () => {
     // Act & Assert
     expect(describeCritiqueError('invalid-request')).toBe(
-      'AI講評のリクエストの形が合いませんでした(不具合です)。ゲームを最新にして、もう一度お試しください',
+      'AI講評のリクエストの形が合いませんでした(不具合です)。時間をおいてもう一度お試しください',
+    );
+    expect(describeCritiqueError('invalid-request')).not.toContain('ゲームを最新にして');
+  });
+
+  it('version-mismatchのメッセージを返す', () => {
+    // Act & Assert
+    expect(describeCritiqueError('version-mismatch')).toBe(
+      'AI講評のサーバーが、このゲームの版にまだ対応していません。サーバーの更新をお待ちください(ゲーム側の操作は不要です)',
     );
   });
 });

@@ -61,6 +61,22 @@ test('400が返ったら、リクエスト形式の不具合を知らせる', as
 
   // Assert
   await expect(page.locator('.critique-panel__error')).toHaveText(
-    'AI講評のリクエストの形が合いませんでした(不具合です)。ゲームを最新にして、もう一度お試しください',
+    'AI講評のリクエストの形が合いませんでした(不具合です)。時間をおいてもう一度お試しください',
+  );
+});
+
+test('409が返ったら、サーバーの更新待ちを知らせる', async ({ page }) => {
+  // Arrange
+  await page.route(CRITIQUE_ENDPOINT, async (route) => {
+    await route.fulfill({ status: 409, json: { error: 'version-mismatch', expected: 2 } });
+  });
+  await page.goto('/');
+
+  // Act
+  await page.getByRole('button', { name: 'AIの講評をもらう' }).click();
+
+  // Assert
+  await expect(page.locator('.critique-panel__error')).toHaveText(
+    'AI講評のサーバーが、このゲームの版にまだ対応していません。サーバーの更新をお待ちください(ゲーム側の操作は不要です)',
   );
 });
