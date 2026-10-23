@@ -3,7 +3,7 @@ import type { ContextMenuTarget } from './useCanvasContextMenu';
 export type MenuGroupKind = 'member' | 'class' | 'file' | 'canvas';
 export type MenuItem =
   | { readonly kind: 'form'; readonly mode: 'class' | 'renameClass'; readonly label: string }
-  | { readonly kind: 'action'; readonly action: 'addFile' | 'deleteClass' | 'deleteFile'; readonly label: string }
+  | { readonly kind: 'action'; readonly action: 'addFile' | 'deleteClass' | 'deleteFile' | 'moveClassToNewFile'; readonly label: string }
   | { readonly kind: 'move-class-submenu'; readonly label: string }
   | { readonly kind: 'move-submenu'; readonly label: string }
   | { readonly kind: 'extends-submenu'; readonly label: string }
@@ -21,7 +21,10 @@ export function contextMenuGroups(target: ContextMenuTarget, names: Readonly<{ m
     groups.push({
       kind: 'class', heading: `クラス ${className}`,
       items: [
-        ...(target.member === null ? [{ kind: 'move-class-submenu' as const, label: '別のファイルへ移動' }] : []),
+        ...(target.member === null ? [
+          { kind: 'move-class-submenu' as const, label: '別のファイルへ移動' },
+          { kind: 'action' as const, action: 'moveClassToNewFile' as const, label: '新しいファイルへ移動' },
+        ] : []),
         { kind: 'form', mode: 'renameClass', label: '名前を変更' },
         { kind: 'extends-submenu', label: '継承元を設定' },
         { kind: 'implements-submenu', label: '実装するインターフェースを設定' },

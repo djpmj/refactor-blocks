@@ -62,7 +62,7 @@ test('既存クラスへのドロップではviewportを動かさない', async 
   await expect(view.getByTestId('file-src/NewClass.ts')).toBeVisible();
   await page.waitForTimeout(250);
   const beforeExistingDrop = await viewport.getAttribute('style');
-  const target = view.getByTestId('class-header-NewClass');
+  const target = view.getByTestId('class-header-OrderService');
   const methodBox = await method.boundingBox();
   const targetBox = await target.boundingBox();
   if (methodBox === null || targetBox === null) throw new Error('ドラッグ対象の座標を取得できません');

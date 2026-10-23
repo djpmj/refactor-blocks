@@ -11,7 +11,7 @@ test('手直し中もメソッド行数のバッジは一行で表示する', as
   // Act
   const openSidebar = page.getByRole('button', { name: 'サイドバーを開く' });
   if (await openSidebar.count() > 0) await openSidebar.click();
-  await page.getByRole('button', { name: '実際に直してみる' }).click();
+  await page.getByTestId('opening-fix-banner').getByRole('button', { name: '実際に直してみる' }).click();
   await method.click();
 
   // Assert

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { releaseAllManualFixSites, selectStage } from './selectStage.js';
+import { completeOpeningFix, releaseAllManualFixSites, selectStage } from './selectStage.js';
 
 async function clearTourSeenOnce(page: import('@playwright/test').Page): Promise<void> {
   await page.addInitScript(() => {
@@ -24,7 +24,7 @@ test('first visit guides a player through Extract Method using the actual action
   await expect(page.locator('.spotlight-tour__hole')).toBeVisible();
   await tour.getByRole('button', { name: '次へ' }).click();
   await expect(tour).toContainText('2/6');
-  await page.getByRole('button', { name: '\u5b9f\u969b\u306b\u76f4\u3057\u3066\u307f\u308b' }).click();
+  await page.locator('[data-tour="manual-fix-start"]').click();
   const markedMethod = page.getByTestId('method-printMonthlyReport');
   await markedMethod.click();
   await expect(markedMethod).toHaveAttribute('aria-pressed', 'true');
@@ -56,7 +56,7 @@ test('step 2 spotlight includes the manual-fix release action', async ({ page })
 
   // Assert: the workspace spotlight contains both the sidebar and canvas actions.
   const target = page.locator('.app__body--sidebar-open');
-  const release = page.getByRole('button', { name: '\u5b9f\u969b\u306b\u76f4\u3057\u3066\u307f\u308b' });
+  const release = page.locator('[data-tour="manual-fix-start"]');
   await expect(target).toBeVisible();
   await expect.poll(async () => target.evaluate((element) => {
     const targetRect = element.getBoundingClientRect();
@@ -114,11 +114,15 @@ test('Escape and the exit button work from interactive steps 2 through 4', async
   await page.keyboard.press('Escape');
   await expect(tour).toHaveCount(0);
 
+  // Act / Assert: finish the opening fix before replaying the interactive tour.
+  await completeOpeningFix(page);
+
   // Act / Assert: step 3
   await page.getByTestId('operation-guide-open').click();
   await page.getByTestId('repeat-first-visit-tour').click();
   tour = page.getByTestId('first-visit-tour');
   await tour.getByRole('button', { name: '次へ' }).click();
+  await page.locator('[data-tour="manual-fix-start"]').click();
   await releaseAllManualFixSites(page);
   await expect(tour).toContainText('3/6');
   await page.getByTestId('method-printMonthlyReport').click();
@@ -131,6 +135,7 @@ test('Escape and the exit button work from interactive steps 2 through 4', async
   await page.getByTestId('repeat-first-visit-tour').click();
   tour = page.getByTestId('first-visit-tour');
   await tour.getByRole('button', { name: '次へ' }).click();
+  await page.locator('[data-tour="manual-fix-start"]').click();
   await releaseAllManualFixSites(page);
   await expect(tour).toContainText('3/6');
   await page.getByTestId('method-printMonthlyReport').click();
