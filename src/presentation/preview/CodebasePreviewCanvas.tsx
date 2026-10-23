@@ -34,7 +34,7 @@ export function CodebasePreviewCanvas({ codebase, methodLimit, wheelZoom = true,
   return (
     <CodebasePreviewProvider value={{ codebase, methodLimit, selectedMethodId, onSelectMethod, highlights }}>
       <WarningEdgeStateProvider>
-        <ReactFlow
+        <ReactFlow colorMode="system"
           nodes={nodes}
           edges={edges}
           nodeTypes={nodeTypes}

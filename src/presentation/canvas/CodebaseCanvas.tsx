@@ -356,7 +356,7 @@ type CanvasFlowProps = {
 function CanvasFlow({ nodes, edges, onNodesChange, setFlow, contextMenu, selectMethod, stageId, visibleFileCount, codebase, layoutResetCount, arrangeVersion, arrange, autoFitStateRef, onMoveStart, onManualFit, onControlZoom, dragInteractionActive, revealFileId }: CanvasFlowProps & { readonly layoutResetCount: number; readonly arrangeVersion: number; readonly arrange: () => void }) {
   return (
     <WarningEdgeStateProvider>
-      <ReactFlow
+      <ReactFlow colorMode="system"
         nodes={nodes} edges={edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes}
         onNodesChange={onNodesChange} onInit={setFlow} nodesConnectable={false} minZoom={CANVAS_MIN_ZOOM}
         onMoveStart={onMoveStart}
