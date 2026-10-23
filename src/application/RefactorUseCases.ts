@@ -114,14 +114,14 @@ export function moveMethodUseCase(
   methodId: string,
   targetClassId: string,
   options: MoveMethodOptions = {},
-): Result<{ codebase: Codebase; publicized: readonly string[] }, Exclude<MoveMethodError, 'same-class'>> {
+): Result<{ codebase: Codebase; changed: readonly { readonly methodId: string; readonly visibility: 'public' | 'protected' }[] }, Exclude<MoveMethodError, 'same-class'>> {
   const result = moveMethod(codebase, methodId, targetClassId);
   if (result.ok) {
-    const publicized = options.visibilityEnforced === true ? { codebase: result.value, publicized: [] } : publicizeCrossClassCalls(result.value);
-    return ok(publicized);
+    const visibilityChanges = options.visibilityEnforced === true ? { codebase: result.value, changed: [] } : publicizeCrossClassCalls(result.value);
+    return ok(visibilityChanges);
   }
   const { error } = result;
-  return error === 'same-class' ? ok({ codebase, publicized: [] }) : err(error);
+  return error === 'same-class' ? ok({ codebase, changed: [] }) : err(error);
 }
 
 /** プレイヤーの「フィールドを別クラスへドロップ」操作。同じクラスへのドロップは何もしない操作として成功扱いにする。 */
@@ -205,13 +205,13 @@ export function moveMethodToNewClassUseCase(
   codebase: Codebase,
   methodId: string,
   options: { readonly generateId: IdGenerator; readonly visibilityEnforced?: boolean },
-): Result<{ codebase: Codebase; fileId: string; publicized: readonly string[] }, MoveMethodToNewClassError> {
+): Result<{ codebase: Codebase; fileId: string; changed: readonly { readonly methodId: string; readonly visibility: 'public' | 'protected' }[] }, MoveMethodToNewClassError> {
   const classId = options.generateId();
   const fileId = options.generateId();
   const result = moveMethodToNewClass(codebase, methodId, { classId, fileId });
   if (!result.ok) return result;
-  const publicized = options.visibilityEnforced === true ? { codebase: result.value, publicized: [] } : publicizeCrossClassCalls(result.value);
-  return ok({ ...publicized, fileId });
+  const visibilityChanges = options.visibilityEnforced === true ? { codebase: result.value, changed: [] } : publicizeCrossClassCalls(result.value);
+  return ok({ ...visibilityChanges, fileId });
 }
 
 /** プレイヤーの「メソッドを空のファイルへドロップ」操作。新しいクラスをそのファイル内に作る。 */
@@ -220,11 +220,11 @@ export function moveMethodToNewClassInFileUseCase(
   methodId: string,
   fileId: string,
   options: { readonly generateId: IdGenerator; readonly visibilityEnforced?: boolean },
-): Result<{ codebase: Codebase; publicized: readonly string[] }, MoveMethodToNewClassInFileError> {
+): Result<{ codebase: Codebase; changed: readonly { readonly methodId: string; readonly visibility: 'public' | 'protected' }[] }, MoveMethodToNewClassInFileError> {
   const result = moveMethodToNewClassInFile(codebase, methodId, fileId, options.generateId());
   if (!result.ok) return result;
-  const publicized = options.visibilityEnforced === true ? { codebase: result.value, publicized: [] } : publicizeCrossClassCalls(result.value);
-  return ok(publicized);
+  const visibilityChanges = options.visibilityEnforced === true ? { codebase: result.value, changed: [] } : publicizeCrossClassCalls(result.value);
+  return ok(visibilityChanges);
 }
 
 /** プレイヤーの「クラス名を変更」操作。 */
@@ -292,7 +292,7 @@ const MERGE_ERROR_MESSAGES: Record<MergeMethodsError, string> = {
   'method-not-found': 'メソッドが見つかりません',
   'same-method': '同じメソッド同士は統合できません',
   'same-class': '同じクラスの中のメソッド同士は統合できません',
-  'not-private': 'privateメソッド同士でないと統合できません',
+  'not-mergeable-visibility': '可視性の条件が合わないため統合できません',
   'shape-mismatch': '処理の形が一致しないため統合できません',
   'empty-method-name': '統合後のメソッド名を入力してください',
   'duplicate-method-name': '統合先のクラスに同じ名前のメソッドがあります',

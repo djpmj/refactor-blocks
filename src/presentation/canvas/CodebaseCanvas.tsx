@@ -39,6 +39,7 @@ import { placeFiles } from './keepFilePositions';
 import { autoViewport } from './autoViewport';
 import { DETAIL_ZOOM, useShowDetails } from './semanticZoom';
 import { shouldRefit, type AutoFitState } from './autoFit';
+import { panToReveal } from './panToReveal';
 
 const CANVAS_MIN_ZOOM = 0.3;
 const nodeTypes: NodeTypes = { fileNode: FileNode, classNode: ClassNode };
@@ -232,6 +233,57 @@ function FitViewForRule({ codebase, nodes }: Readonly<{ codebase: Codebase; node
 type Measured = { width: number; height: number };
 type FlowOverrides = { stageId: string; layoutResetCount: number; positions: Record<string, XYPosition>; measured: Record<string, Measured>; dropPositionFileIds: readonly string[] };
 
+const REVEAL_MARGIN = 24;
+
+function revealDuration(): number {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 200;
+}
+
+/** 新規ファイルだけ、計測後に箱全体が見えるようズームを保ってパンする。 */
+function RevealDroppedFile({ fileId }: Readonly<{ fileId: string | null }>) {
+  const { getNode, getViewport, setViewport } = useReactFlow<CodebaseFlowNode>();
+  const handledFileId = useRef<string | null>(null);
+  useEffect(() => {
+    if (fileId === null || handledFileId.current === fileId) return;
+    let frame = 0;
+    let timeout = 0;
+    const reveal = () => {
+      const node = getNode(fileId);
+      const canvas = document.querySelector('.app__canvas:not([hidden])');
+      const pane = canvas?.querySelector('.react-flow__pane');
+      if (node === undefined || node.measured?.width === undefined || node.measured.height === undefined || !(pane instanceof HTMLElement)) {
+        frame = requestAnimationFrame(reveal);
+        return;
+      }
+      timeout = window.setTimeout(() => {
+        const currentNode = getNode(fileId);
+        if (currentNode === undefined || currentNode.measured?.width === undefined || currentNode.measured.height === undefined) return;
+        const bounds = pane.getBoundingClientRect();
+        const viewport = getViewport();
+        const box = {
+          x: bounds.left + currentNode.position.x * viewport.zoom + viewport.x,
+          y: bounds.top + currentNode.position.y * viewport.zoom + viewport.y,
+          width: currentNode.measured.width * viewport.zoom,
+          height: currentNode.measured.height * viewport.zoom,
+        };
+        const movement = panToReveal(box, bounds, REVEAL_MARGIN);
+        handledFileId.current = fileId;
+        if (movement.dx !== 0 || movement.dy !== 0) {
+          void setViewport({ x: viewport.x + movement.dx, y: viewport.y + movement.dy, zoom: viewport.zoom }, { duration: revealDuration() });
+        }
+      }, 50);
+    };
+    frame = requestAnimationFrame(reveal);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.clearTimeout(timeout);
+    };
+    // React Flow API は安定している。対象IDと計測完了時だけ実行する。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fileId]);
+  return null;
+}
+
 function isMousePosition(event: Event): event is MouseEvent {
   return 'clientX' in event && typeof event.clientX === 'number'
     && 'clientY' in event && typeof event.clientY === 'number';
@@ -297,9 +349,10 @@ type CanvasFlowProps = {
   readonly onManualFit: () => void;
   readonly onControlZoom: () => void;
   readonly dragInteractionActive: boolean;
+  readonly revealFileId: string | null;
 };
 
-function CanvasFlow({ nodes, edges, onNodesChange, setFlow, contextMenu, selectMethod, stageId, visibleFileCount, codebase, layoutResetCount, arrangeVersion, arrange, autoFitStateRef, onMoveStart, onManualFit, onControlZoom, dragInteractionActive }: CanvasFlowProps & { readonly layoutResetCount: number; readonly arrangeVersion: number; readonly arrange: () => void }) {
+function CanvasFlow({ nodes, edges, onNodesChange, setFlow, contextMenu, selectMethod, stageId, visibleFileCount, codebase, layoutResetCount, arrangeVersion, arrange, autoFitStateRef, onMoveStart, onManualFit, onControlZoom, dragInteractionActive, revealFileId }: CanvasFlowProps & { readonly layoutResetCount: number; readonly arrangeVersion: number; readonly arrange: () => void }) {
   return (
     <WarningEdgeStateProvider>
       <ReactFlow
@@ -317,6 +370,7 @@ function CanvasFlow({ nodes, edges, onNodesChange, setFlow, contextMenu, selectM
         <GhostAnimation nodes={nodes} />
         <FitViewOnLayoutChange stageId={stageId} fileCount={visibleFileCount} layoutResetCount={layoutResetCount} arrangeVersion={arrangeVersion} autoFitStateRef={autoFitStateRef} />
         <FitViewOnResize autoFitStateRef={autoFitStateRef} dragInteractionActive={dragInteractionActive} />
+        <RevealDroppedFile fileId={revealFileId} />
         <FitViewForRule codebase={codebase} nodes={nodes} />
       </ReactFlow>
     </WarningEdgeStateProvider>
@@ -367,7 +421,7 @@ function useFlowOverrides(stageId: string, layoutResetCount: number) {
 }
 
 /** ドロップ先に応じた移動を行う。ファイルの枠外に落としたら、新しいファイル(メソッドなら新しいクラスも)を自動で作って置く。 */
-function useDropHandler(codebase: Codebase, onEnd: () => void, flow: ReactFlowInstance<CodebaseFlowNode> | null, setPosition: (fileId: string, position: XYPosition) => void) {
+function useDropHandler(codebase: Codebase, onEnd: () => void, flow: ReactFlowInstance<CodebaseFlowNode> | null, callbacks: { setPosition: (fileId: string, position: XYPosition) => void; setRevealFileId: (fileId: string) => void }) {
   const moveMethod = useGameStore((state) => state.moveMethod);
   const moveClass = useGameStore((state) => state.moveClass);
   const moveClassToNewFile = useGameStore((state) => state.moveClassToNewFile);
@@ -381,7 +435,8 @@ function useDropHandler(codebase: Codebase, onEnd: () => void, flow: ReactFlowIn
     else if (classId !== null) fileId = moveClassToNewFile(classId);
     if (fileId === null || flow === null || !isMousePosition(pointer)) return;
     const drop = flow.screenToFlowPosition({ x: pointer.clientX + event.delta.x, y: pointer.clientY + event.delta.y });
-    setPosition(fileId, fileTopLeftAtDrop(drop, NEW_CLASS_FILE_SIZE));
+    callbacks.setPosition(fileId, fileTopLeftAtDrop(drop, NEW_CLASS_FILE_SIZE));
+    callbacks.setRevealFileId(fileId);
   };
   return (event: DragEndEvent) => {
     onEnd();
@@ -448,6 +503,7 @@ export function CodebaseCanvas({ active }: Readonly<{ active: boolean }>) {
     dragging === null ? null : { dragging, targets: dropTargetIds(codebase, dragging) }
   ), [codebase, dragging]);
   const [flow, setFlow] = useState<ReactFlowInstance<CodebaseFlowNode> | null>(null);
+  const [revealFileId, setRevealFileId] = useState<string | null>(null);
   const { autoFitStateRef, onMoveStart, onManualFit, onControlZoom } = useAutoFitActions();
   const sensors = useSensors(useSensor(PointerSensor, POINTER_ACTIVATION), useSensor(KeyboardSensor));
   const contextMenu = useCanvasContextMenu();
@@ -455,7 +511,7 @@ export function CodebaseCanvas({ active }: Readonly<{ active: boolean }>) {
   useDismissContextMenuWhenInactive(active, contextMenu.close);
 
 
-  const handleDragEnd = useDropHandler(codebase, handleDragFinish, flow, setPosition);
+  const handleDragEnd = useDropHandler(codebase, handleDragFinish, flow, { setPosition, setRevealFileId });
 
   return (
     <DndContext
@@ -469,7 +525,7 @@ export function CodebaseCanvas({ active }: Readonly<{ active: boolean }>) {
           nodes={nodes} edges={edges} onNodesChange={handleNodesChange} setFlow={setFlow} contextMenu={contextMenu}
           selectMethod={selectMethod} stageId={stageId} visibleFileCount={visibleFileCount} codebase={codebase}
           layoutResetCount={layoutResetCount} arrangeVersion={arrangeVersion} arrange={arrange}
-          autoFitStateRef={autoFitStateRef} onMoveStart={onMoveStart} onManualFit={onManualFit} onControlZoom={onControlZoom} dragInteractionActive={dragInteractionActive}
+          autoFitStateRef={autoFitStateRef} onMoveStart={onMoveStart} onManualFit={onManualFit} onControlZoom={onControlZoom} dragInteractionActive={dragInteractionActive} revealFileId={revealFileId}
         />
       </DropTargetsContext.Provider>
       <DraggingOverlay activeId={activeId} />

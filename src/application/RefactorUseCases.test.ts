@@ -190,7 +190,7 @@ describe('moveMethodUseCase', () => {
     const result = moveMethodUseCase(codebase, 'method-place', 'class-order');
 
     // Assert
-    expect(result).toEqual({ ok: true, value: { codebase, publicized: [] } });
+    expect(result).toEqual({ ok: true, value: { codebase, changed: [] } });
   });
 
   it('別クラスへのドロップでメソッドを移動する', () => {
@@ -234,7 +234,7 @@ describe('moveMethodUseCase', () => {
     if (!result.ok) throw new Error(result.error);
     expect(findMethod(result.value.codebase, 'moved')?.visibility).toBe('public');
     expect(findMethod(result.value.codebase, 'left')?.visibility).toBe('public');
-    expect(result.value.publicized).toEqual(['left', 'moved']);
+    expect(result.value.changed).toEqual([{ methodId: 'left', visibility: 'public' }, { methodId: 'moved', visibility: 'public' }]);
     expect(findMethod(codebase, 'moved')?.visibility).toBe('private');
   });
 
@@ -252,7 +252,7 @@ describe('moveMethodUseCase', () => {
     // Assert
     if (!result.ok) throw new Error(result.error);
     expect(findMethod(result.value.codebase, 'method-place')?.visibility).toBe('private');
-    expect(result.value.publicized).toEqual([]);
+    expect(result.value.changed).toEqual([]);
   });
 });
 
@@ -701,7 +701,7 @@ describe('moveClassToNewFileUseCase / moveMethodToNewClassUseCase', () => {
     expect(findClassOfMethod(result.value.codebase, 'method-place')?.id).toBe('generated-class');
     expect(findFileOfClass(result.value.codebase, 'generated-class')?.id).toBe(result.value.fileId);
     expect(result.value.fileId).toBe('generated-file');
-    expect(result.value.publicized).toEqual([]);
+    expect(result.value.changed).toEqual([]);
   });
 
   it('メソッドを指定されたファイルに注入されたIDのクラスを作って移す', () => {
@@ -716,6 +716,6 @@ describe('moveClassToNewFileUseCase / moveMethodToNewClassUseCase', () => {
     if (!result.ok) throw new Error(result.error);
     expect(findClassOfMethod(result.value.codebase, 'method-place')?.id).toBe('generated-class');
     expect(findFileOfClass(result.value.codebase, 'generated-class')?.id).toBe('target-file');
-    expect(result.value.publicized).toEqual([]);
+    expect(result.value.changed).toEqual([]);
   });
 });
