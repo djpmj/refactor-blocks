@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-23 09:25 UTC PR #254 冒頭の手直しの答え表示と結果説明を改善する (#215)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test(1832件)✅ / npm run lint ✅ / npm run typecheck ✅。答え非表示、describeManualFixのクラス単位文言、OpeningFixBanner、siteClassIdsを差分で確認。E2Eはこの環境にブラウザが無く未実行(PR本文では268件成功)
+- マージ: squash & delete-branch
+
 ## 2026-10-23 08:50 UTC PR #259 白紙設計のクラスを責務に応じて命名する (#220)
 
 - 判定: 合格(blocker無し。suggestion: useGameStore.ts 先頭にBOMが混入)
@@ -211,10 +217,3 @@
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(1733件) / npm run lint ✅ / npm run typecheck ✅ / E2Eはこの環境で実行不可のためPR記載の結果を前提とした
 - マージ: squash & delete-branch
-
-## 2026-10-14 15:00 UTC PR #196 chore(deps): bump the development-dependencies group across 1 directory with 8 updates
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm ci ✅ / npm test ✅ 1720件 / npm run lint ✅ / npm run typecheck ✅。package.json・lockの開発依存更新のみ。E2Eはこの環境にChromiumが無く未実行、CIのe2e/check/knip/jscpdのpassで代替
-- マージ: squash & delete-branch
-
