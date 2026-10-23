@@ -124,3 +124,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [move-class-to-new-file-menu](move-class-to-new-file-menu.md) | クラスのメニューから、そのクラスを新しいファイルへ移動する(唯一のクラスでは非表示) |
 | [blank-design-class-names](blank-design-class-names.md) | 白紙設計のクラスを責務に応じて自動命名し、手動改名は維持する |
 | [manual-fix-clarity](manual-fix-clarity.md) | 冒頭の手直しの答えを隠し、結果文を変更箇所のクラス単位で説明する |
+| [dark-mode-canvas-controls](dark-mode-canvas-controls.md) | ダークモードでキャンバスのズームボタン等をゲームの配色に合わせる |

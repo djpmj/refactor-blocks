@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-23 14:40 UTC PR #265 ダークモードのキャンバス操作ボタンを見やすくする (#233)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test(1832件)✅ / npm run lint ✅ / npm run typecheck ✅。colorMode="system" と .react-flow.dark の変数上書き(参照するCSS変数は全て定義済み)をIssue #233の受け入れ基準と照合。E2Eはこの環境にブラウザが無く未実行(PR本文では271件成功)
+- マージ: squash & delete-branch
+
 ## 2026-10-23 09:25 UTC PR #254 冒頭の手直しの答え表示と結果説明を改善する (#215)
 
 - 判定: 合格(blocker無し)
@@ -212,8 +218,3 @@
 - 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅ / E2E 232件中230件成功(hint-highlight・score-jump の2件はmasterでも同一に失敗する既存事象)。Issue #179 の受け入れ基準を差分で確認
 - マージ: squash & delete-branch
 
-## 2026-10-15 13:55 UTC PR #200 Publicize inaccessible methods after moves
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(1733件) / npm run lint ✅ / npm run typecheck ✅ / E2Eはこの環境で実行不可のためPR記載の結果を前提とした
-- マージ: squash & delete-branch
