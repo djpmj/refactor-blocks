@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-23 08:50 UTC PR #259 白紙設計のクラスを責務に応じて命名する (#220)
+
+- 判定: 合格(blocker無し。suggestion: useGameStore.ts 先頭にBOMが混入)
+- 確認した内容: npm test(1826件)✅ / npm run lint ✅ / npm run typecheck ✅。白紙設計のclassNames設定、moveActionsでのautoNameClasses適用、回帰テストを差分で確認。E2Eはこの環境にブラウザが無く未実行(PR本文では263件成功)
+- マージ: squash & delete-branch
+
 ## 2026-10-23 08:40 UTC PR #263 クラスを新しいファイルへ移すメニューを追加する (#225)
 
 - 判定: 合格(blocker無し)
@@ -210,11 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm ci ✅ / npm test ✅ 1720件 / npm run lint ✅ / npm run typecheck ✅。package.json・lockの開発依存更新のみ。E2Eはこの環境にChromiumが無く未実行、CIのe2e/check/knip/jscpdのpassで代替
-- マージ: squash & delete-branch
-
-## 2026-10-14 14:40 UTC PR #198 Improve change request sample fairness
-
-- 判定: 合格(blocker無し。suggestion: stacked base の配置点と store での厳密な100点確認のテスト追加)
-- 確認した内容: npm run check(lint/typecheck/vitest 1725件)✅。Issue #176 の原因1・2(変更コストの比較条件、解答例ステップ追加)を差分で確認。E2Eはレビュー環境にChromiumが無く未実行(PR本文の227件成功を参照)
 - マージ: squash & delete-branch
 
