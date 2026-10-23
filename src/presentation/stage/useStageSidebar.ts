@@ -6,7 +6,7 @@ type SidebarState = { readonly stageId: string; readonly open: boolean; readonly
 export function useStageSidebar(stageId: string, perfect: boolean): readonly [boolean, () => void, (open: boolean) => void] {
   const [sidebar, setSidebar] = useState<SidebarState>(() => ({
     stageId,
-    open: window.matchMedia('(min-width: 1400px)').matches,
+    open: window.matchMedia('(min-width: 1400px)').matches && !window.matchMedia('(max-width: 700px)').matches,
     openedOnPerfect: false,
   }));
   if (sidebar.stageId !== stageId) setSidebar({ ...sidebar, stageId, openedOnPerfect: false });

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
+import { forwardRef, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import type { Codebase } from '../../domain/codebase/Codebase';
 import { scoreCodebase, type Score } from '../../domain/scoring/score';
 import { biggestProblem } from '../../domain/scoring/biggestProblem';
@@ -77,9 +77,23 @@ function useStageSidebarWidth() {
   return { handleProps, style };
 }
 
-function StageSidebarToggle({ open, onToggle }: Readonly<{ open: boolean; onToggle: () => void }>) {
+const StageSidebarToggle = forwardRef<HTMLButtonElement, Readonly<{ open: boolean; onToggle: () => void }>>(function StageSidebarToggle({ open, onToggle }, ref) {
   const label = open ? 'サイドバーを閉じる' : 'サイドバーを開く';
-  return <button type="button" className="sidebar-toggle" aria-expanded={open} aria-controls="stage-sidebar" aria-label={label} title={label} onClick={onToggle}>{open ? '«' : '»'}</button>;
+  return <button ref={ref} type="button" className="sidebar-toggle" aria-expanded={open} aria-controls="stage-sidebar" aria-label={label} title={label} onClick={onToggle}>{open ? '«' : '»'}</button>;
+});
+
+function useSidebarDrawer(open: boolean, setOpen: (open: boolean) => void, toggleRef: RefObject<HTMLButtonElement | null>) {
+  useEffect(() => {
+    if (!open && window.matchMedia('(max-width: 700px)').matches) toggleRef.current?.focus();
+  }, [open, toggleRef]);
+  useEffect(() => {
+    if (!open) return;
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape' && window.matchMedia('(max-width: 700px)').matches) setOpen(false);
+    }
+    document.addEventListener('keydown', closeOnEscape);
+    return () => document.removeEventListener('keydown', closeOnEscape);
+  }, [open, setOpen]);
 }
 
 type ScoreCelebration = { readonly scoreAfter: number; readonly deductedBefore: number; readonly deductedAfter: number } | null;
@@ -281,6 +295,21 @@ function StageSidebar({ stage, codebase, score, initialScore, investigating, rev
   );
 }
 
+function SidebarBackdrop({ open, onClose }: Readonly<{ open: boolean; onClose: () => void }>) {
+  if (!open) return null;
+  return <button type="button" className="sidebar-backdrop" aria-label="課題とヒントの外側をタップして閉じる" onClick={onClose} />;
+}
+
+function StageSidebarDrawer({ open, stage, codebase, score, initialScore, investigating, revealedCount, hints, total, problemRevealed, onRevealProblem, onReveal, sidebarRef }: Readonly<{
+  open: boolean; stage: Stage; codebase: Codebase; score: Score; initialScore: Score; investigating: boolean;
+  revealedCount: number; hints: readonly { text: string; step: SolutionStep }[]; total: number; problemRevealed: boolean;
+  onRevealProblem: () => void; onReveal: () => void; sidebarRef: RefObject<HTMLElement | null>;
+}>) {
+  return <StageSidebar key={stage.id} stage={stage} codebase={codebase} score={score} initialScore={initialScore} investigating={investigating}
+    revealedCount={revealedCount} problemRevealed={problemRevealed} onRevealProblem={onRevealProblem} hints={hints} total={total}
+    onReveal={onReveal} hidden={!open} sidebarRef={sidebarRef} />;
+}
+
 function useStagePanelEffects(stageId: string, score: number, actions: Readonly<{ recordProgress: (stageId: string, score: number) => void; startTour: () => void; setSidebarOpen: (open: boolean) => void }>, tourStep: number | null) {
   const { recordProgress, startTour, setSidebarOpen } = actions;
   useEffect(() => recordProgress(stageId, score), [stageId, score, recordProgress]);
@@ -321,6 +350,8 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
   const initialScore = useMemo(() => scoreCodebase(stage.codebase, stage), [stage]);
   // 狭い画面ではキャンバスを優先して、最初は閉じておく(描画は残し、hiddenで隠すだけ)
   const [sidebarOpen, toggleSidebar, setSidebarOpen] = useStageSidebar(stage.id, score.total >= 100);
+  const sidebarToggleRef = useRef<HTMLButtonElement>(null);
+  useSidebarDrawer(sidebarOpen, setSidebarOpen, sidebarToggleRef);
   const { handleProps, style: sidebarStyle } = useStageSidebarWidth();
   const { sidebarRef } = useStageFlow(stage, score.total);
   const { hints, total } = useHints(stage, stageHints.count);
@@ -338,24 +369,13 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
       </header>
       <CritiqueResult />
       <div className={`app__body${sidebarOpen ? ' app__body--sidebar-open' : ''}`} style={sidebarStyle}>
-        <StageSidebar
-          key={stage.id}
-          stage={stage}
-          codebase={codebase}
-          score={score} initialScore={initialScore}
-          investigating={investigating}
-          revealedCount={stageHints.count}
-          problemRevealed={stageHints.problemRevealed}
-          onRevealProblem={stageHints.revealProblem}
-          hints={hints}
-          total={total}
-          onReveal={stageHints.revealStep}
-          hidden={!sidebarOpen}
-          sidebarRef={sidebarRef}
-        />
+        <SidebarBackdrop open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <StageSidebarDrawer open={sidebarOpen} stage={stage} codebase={codebase} score={score} initialScore={initialScore} investigating={investigating}
+          revealedCount={stageHints.count} problemRevealed={stageHints.problemRevealed} onRevealProblem={stageHints.revealProblem} hints={hints}
+          total={total} onReveal={stageHints.revealStep} sidebarRef={sidebarRef} />
         {sidebarOpen && <div className="sidebar-resizable__handle sidebar-resizable__handle--left" {...handleProps} />}
-        <StageSidebarToggle open={sidebarOpen} onToggle={toggleSidebar} />
-        <div className="workspace">
+        <StageSidebarToggle ref={sidebarToggleRef} open={sidebarOpen} onToggle={toggleSidebar} />
+        <div className="workspace" inert={sidebarOpen && window.matchMedia('(max-width: 700px)').matches}>
           <ActionToolbar
             stage={stage}
             isPerfect={score.total >= 100}
