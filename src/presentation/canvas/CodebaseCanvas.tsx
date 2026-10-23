@@ -39,11 +39,8 @@ import { placeFiles } from './keepFilePositions';
 import { autoViewport } from './autoViewport';
 import { DETAIL_ZOOM, useShowDetails } from './semanticZoom';
 import { shouldRefit, type AutoFitState } from './autoFit';
-<<<<<<< HEAD
 import { OpeningFixBanner } from './OpeningFixBanner';
-=======
 import { panToReveal } from './panToReveal';
->>>>>>> 39ca5b2
 
 const CANVAS_MIN_ZOOM = 0.3;
 const nodeTypes: NodeTypes = { fileNode: FileNode, classNode: ClassNode };
