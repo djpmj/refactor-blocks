@@ -34,7 +34,7 @@ describe('中級7: getter/setter だけの口座クラス', () => {
 
   it('模範解答の1手目のあとに debit を public にしようとすると widening-not-needed', () => {
     // Arrange
-    const afterExtract = applySolutionSteps(stage.codebase, solution.slice(0, 1));
+    const afterExtract = applySolutionSteps(stage.codebase, solution.slice(0, 1), { visibilityEnforced: stage.visibilityEnforced });
     const debitId = findClass(afterExtract, 'class-account-service')?.methods.find((method) => method.name === 'debit')?.id;
     if (debitId === undefined) throw new Error('debit が見つかりません');
 
@@ -47,8 +47,8 @@ describe('中級7: getter/setter だけの口座クラス', () => {
 
   it('模範解答の2手目のあとにアクセス制御の違反が1件出て、3手目で消える', () => {
     // Arrange
-    const afterMove = applySolutionSteps(stage.codebase, solution.slice(0, 2));
-    const afterPublic = applySolutionSteps(stage.codebase, solution.slice(0, 3));
+    const afterMove = applySolutionSteps(stage.codebase, solution.slice(0, 2), { visibilityEnforced: stage.visibilityEnforced });
+    const afterPublic = applySolutionSteps(stage.codebase, solution.slice(0, 3), { visibilityEnforced: stage.visibilityEnforced });
 
     // Act
     const scoreAfterMove = scoreCodebase(afterMove, stage);
@@ -61,7 +61,7 @@ describe('中級7: getter/setter だけの口座クラス', () => {
 
   it('模範解答のあと: withdraw は Feature Envy にならず、AccountService の依存先は Account だけ。setBalance・setDailyWithdrawn は private', () => {
     // Arrange
-    const solved = applySolutionSteps(stage.codebase, solution);
+    const solved = applySolutionSteps(stage.codebase, solution, { visibilityEnforced: stage.visibilityEnforced });
 
     // Act
     const score = scoreCodebase(solved, stage);
@@ -80,7 +80,7 @@ describe('中級7: getter/setter だけの口座クラス', () => {
   it('変更依頼2件は、初期・模範解答のあとで表どおりの点数になる', () => {
     // Arrange
     const { codebase, limits, changeRequests } = stage;
-    const solved = applySolutionSteps(codebase, solution);
+    const solved = applySolutionSteps(codebase, solution, { visibilityEnforced: stage.visibilityEnforced });
     const [premiumLimitRequest, depositWhileFrozenRequest] = changeRequests;
 
     // Act

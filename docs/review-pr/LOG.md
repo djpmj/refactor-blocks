@@ -38,6 +38,30 @@
 
 ## ログ一覧
 
+## 2026-10-17 23:35 UTC PR #252 左パネルの段階遷移とスクロールを改善する (#217)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(npm test ✅ 1797件 / lint ✅ / typecheck ✅)。E2Eはレビュー環境にPlaywrightブラウザが無く未実行(PR本文では全254件成功)。Issue #217・docs/specs/sidebar-flow-visibility.mdの、ステージ切替で先頭へ戻す/段階進行でカードへスクロール/依頼タイトルを change-request のみ表示、を差分で確認。domain/application変更なし
+- マージ: squash & delete-branch
+
+## 2026-10-17 23:25 UTC PR #251 解答例の各手順にステージの可視性設定を反映する (#219)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(npm test ✅ / lint ✅ / typecheck ✅)。UI操作の変更なしのためE2Eは省略
+- マージ: squash & delete-branch
+
+## 2026-10-17 23:10 UTC PR #250 ボス結果の文言と比較欄の表示を改善する (#218)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(1797件) / npm run lint ✅ / npm run typecheck ✅。E2Eはレビュー環境にPlaywrightブラウザが無く未実行(PR本文では全件成功)。Issue #218・docs/specs/boss-result-and-layout-fixes.mdの文言・CSS・引用符変更と一致
+- マージ: squash & delete-branch
+
+## 2026-10-17 12:00 UTC PR #239 implementをOrca管理の5件並列バッチに変更
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅。変更は .agents/skills/implement/SKILL.md と .codex/agents/implementation-orchestrator.toml のみ(src/ と .github/workflows/ は未変更)。最大5件並列・E2E_PORT分離・評価最大3回・独立評価の維持を差分で確認
+- マージ: squash & delete-branch
+
 ## 2026-10-17 10:50 UTC PR #214 feat: refit the canvas on resize without hiding method details
 
 - 判定: 合格(blocker無し)
@@ -198,22 +222,4 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm run check(lint/typecheck/test 1674件) ✅ / E2E 205件 ✅。Issue #162・docs/specs/clear-condition-badges.mdの、goal/current分離、達成数表示、達成瞬間の演出と初期化・リセット・undo/redo時の抑止、reduced-motionを確認。domain/application変更なし
-- マージ: squash & delete-branch
-
-## 2026-10-12 07:11 UTC PR #167 ファイルの減点理由をアイコンから表示
-
-- 判定: 合格(blocker無し。suggestion: FileNodeでfileDeductionReasonsを毎レンダー計算しているのでselector化を検討)
-- 確認した内容: npm run check(lint/typecheck/test 1676件) ✅。E2Eはレビュー環境で実行許可が得られず未実行(PR本文では204件通過)。Issue #161・docs/specs/file-mark-reasons.mdのfileDeductionsがfileDeductionReasonsの合計から導出されること、AC1の-5点と既存定数10点の矛盾は既存採点との整合を優先した判断として妥当と確認
-- マージ: squash & delete-branch
-
-## 2026-10-12 04:46 UTC PR #163 正解・不正解の色分けとアニメーション演出
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(1674件) / npm run lint ✅ / npm run typecheck ✅。E2Eはレビュー環境で実行不可(ブラウザ未導入。PR本文では203件通過)。Issue #159・docs/specs/answer-feedback-animation.mdのAnswerVerdict共通化、reduced-motion対応、ライト/ダークの文字色トークンを確認
-- マージ: squash & delete-branch
-
-## 2026-10-12 01:30 UTC PR #158 feat: explain inlined methods when deleting classes
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(1674件) / npm run lint ✅ / npm run typecheck ✅。E2Eはレビュー環境で実行できず未確認(PR本文では201件通過)。Issue #151・docs/specs/delete-inline-notice.mdの、deleteClass/deleteFileが{codebase, inlined}を返すこと、noticeとmessageの排他、ErrorToastの情報表示(role=status)を確認
 - マージ: squash & delete-branch

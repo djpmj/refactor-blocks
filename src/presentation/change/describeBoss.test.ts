@@ -26,7 +26,7 @@ describe('describeBoss', () => {
     const result = describeBoss(outcome(100, 60), '軽減税率の対象を増やして');
 
     // Assert
-    expect(result).toBe('冒頭の「軽減税率の対象を増やして」の処理を切り出しておいたおかげで、鬼の変更も 100点で入れられた(組み替える前なら最善でも 60点)');
+    expect(result).toBe('冒頭の「軽減税率の対象を増やして」の処理を切り出しておいたおかげで、鬼の変更も置き方 100点で入れられた(組み替える前なら最善の置き方でも 60点)');
   });
 
   it('openingTitle が無ければ「組み替えておいたおかげで」', () => {
@@ -34,7 +34,7 @@ describe('describeBoss', () => {
     const result = describeBoss(outcome(100, 60), undefined);
 
     // Assert
-    expect(result).toBe('組み替えておいたおかげで、鬼の変更も 100点で入れられた(組み替える前なら最善でも 60点)');
+    expect(result).toBe('組み替えておいたおかげで、鬼の変更も置き方 100点で入れられた(組み替える前なら最善の置き方でも 60点)');
   });
 
   it('前と同じ点なら見直しを促す', () => {

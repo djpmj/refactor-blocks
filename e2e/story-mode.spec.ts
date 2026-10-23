@@ -69,11 +69,12 @@ test('100点で結びが出て、依頼を受けると変更依頼が始まる',
   await expect(page.getByTestId('story-outro')).toBeHidden();
   await page.getByTestId('story-toggle').click();
   await expect(page.getByTestId('story-outro')).toBeVisible();
-  await expect(page.getByTestId('story-request-title')).toHaveText('軽減税率の対象を増やして');
+  await expect(page.getByTestId('story-request-title')).toHaveCount(0);
   await expect(page.getByTestId('story-accept')).toHaveCount(0);
 
   await releaseAllManualFixSites(page);
   await expect(page.getByTestId('story-accept')).toBeVisible();
+  await expect(page.getByTestId('story-request-title')).toHaveText('軽減税率の対象を増やして');
 
   await page.getByTestId('story-accept').click();
   await expect(page.getByTestId('story-outro')).toBeHidden();

@@ -112,4 +112,7 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [e2e-port-isolation](e2e-port-isolation.md) | E2Eのポートを E2E_PORT で変えられるようにし、別worktreeのサーバーを黙って再利用しない |
 | [boss-change-request](boss-change-request.md) | 組み替えの効果が出る11ステージの変更依頼の最後に鬼の変更を置き、組み替える前との比較を見せる |
 | [canvas-refit-on-resize](canvas-refit-on-resize.md) | キャンバスの大きさが変わったとき、プレイヤーが動かしていなければ図を自動で合わせ直す |
+| [boss-result-and-layout-fixes](boss-result-and-layout-fixes.md) | 鬼の変更の比較欄に指標名を付け、行数の折り返し・クラス見出し・うわさ引用の表示崩れを直す |
 | [detail-zoom-floor](detail-zoom-floor.md) | 自動の全体表示でメソッドが隠れる倍率まで縮めず、収まらない分は左上から見せる |
+| [sample-answer-publicize](sample-answer-publicize.md) | 解答例の各手順で、可視性を採点しないステージでは別クラスから呼ばれる private を自動で public にする |
+| [sidebar-flow-visibility](sidebar-flow-visibility.md) | 左パネルをステージ切替で先頭へ戻し、段階が進んだら次のカードを見せ、章の結びの依頼タイトルは受ける段階だけ出す |

@@ -219,7 +219,7 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .class-node--cyclic { border-color: var(--danger); box-shadow: 0 0 0 4px color-mix(in srgb, var(--danger) 25%, transparent); }
 .class-node--drop-target { border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent); }
 .cyclic-mark { font-size: 14px; margin-right: 6px; }
-.class-node__header { display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid var(--border); font-weight: 700; }
+.class-node__header { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); font-weight: 700; }
 .class-node__name-group { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
 .class-node__layer { font-size: 11px; font-weight: 600; padding: 1px 6px; border: 1px solid var(--border); border-radius: 8px; margin-left: 6px; }
 .class-node__superclass { font-weight: 400; font-size: 12px; }
@@ -267,8 +267,8 @@ input.class-node__name { width: 14ch; }
 .manual-fix__actions { display: flex; gap: 8px; margin-top: 8px; }
 .manual-fix { scroll-margin-block: 12px; }
 .method-chip__visibility { font-weight: 700; }
-.method-chip__name { flex: 1; }
-.method-chip__lines { color: var(--muted); font-size: 12px; }
+.method-chip__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.method-chip__lines { flex: none; color: var(--muted); font-size: 12px; white-space: nowrap; }
 .method-chip__lines-after { color: #287a45; font-weight: 700; }
 .method-chip__lines-after--over { color: var(--danger); }
 .method-chip-row { display: contents; }

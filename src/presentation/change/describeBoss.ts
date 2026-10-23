@@ -7,5 +7,5 @@ export function describeBoss(outcome: ChangeOutcome, openingTitle: string | unde
   const now = outcome.placement.score.total;
   if (now <= bossCounterfactual.score) return 'この設計では、鬼の変更は組み替える前と同じくらい大変だった。変わる場所を切り出せているか、見直してみよう';
   const thanks = openingTitle === undefined ? '組み替えておいたおかげで' : `冒頭の「${openingTitle}」の処理を切り出しておいたおかげで`;
-  return `${thanks}、鬼の変更も ${now}点で入れられた(組み替える前なら最善でも ${bossCounterfactual.score}点)`;
+  return `${thanks}、鬼の変更も置き方 ${now}点で入れられた(組み替える前なら最善の置き方でも ${bossCounterfactual.score}点)`;
 }

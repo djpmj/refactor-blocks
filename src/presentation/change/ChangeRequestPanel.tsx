@@ -59,6 +59,7 @@ function BossComparison({ outcome }: Readonly<{ outcome: ChangeOutcome }>) {
   const modifiedCount = placement.placement.modifiedClassIds.length;
   return (
     <div data-testid="boss-comparison">
+      <p>鬼の変更の置き方の点数で比べています</p>
       <div className="boss-comparison">
         <div className="boss-comparison__side">
           <strong>組み替える前のコードなら</strong>
@@ -68,7 +69,7 @@ function BossComparison({ outcome }: Readonly<{ outcome: ChangeOutcome }>) {
         </div>
         <div className="boss-comparison__side">
           <strong>あなたの設計では</strong>
-          <p>{placement.score.total}点</p>
+          <p>置き方 {placement.score.total}点</p>
           <p>{modifiedCount === 0 ? '既存のクラスを書き換えずに済んだ' : `既存の ${modifiedCount} クラスを書き換え`}</p>
         </div>
       </div>
@@ -219,7 +220,7 @@ export function ChangeRequestPanel() {
             依頼 {session.index + 1} / {stage.changeRequests.length}
             <span data-testid="change-request-kind"> {KIND_LABEL[changeKindOf(request)]}</span>
           </p>
-          {isRumored && request.rumor !== undefined && <p className="rumor-came-true" data-testid="rumor-came-true">うわさが本当になりました: 「{request.rumor.text}」</p>}
+          {isRumored && request.rumor !== undefined && <p className="rumor-came-true" data-testid="rumor-came-true">うわさが本当になりました: 『{request.rumor.text}』</p>}
           <h2 className="method-editor__title" data-testid="change-request-title">
             {request.title}
           </h2>
