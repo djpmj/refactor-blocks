@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-24 14:00 UTC PR #293 ブラウザのタブ名を今のモードとステージに合わせる (#291)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(1958件) / npm run lint ✅ / npm run typecheck ✅。E2Eはレビュー環境で実行できず未実行(PR本文では全件成功)。Issue #291・docs/specs/page-title-by-view.mdの受け入れ基準1〜3を差分とE2E spec で確認。domain/application変更なし
+- マージ: squash & delete-branch
+
 ## 2026-10-24 UTC PR #264 インターフェースと抽象クラスの役割を表示する (#228)
 
 - 判定: 合格(blocker無し)
@@ -210,18 +216,6 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅(E2Eはブラウザを導入できず未実行。差分はe2eの1アサーションのみ)
-- マージ: squash & delete-branch
-
-## 2026-10-17 23:35 UTC PR #252 左パネルの段階遷移とスクロールを改善する (#217)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(npm test ✅ 1797件 / lint ✅ / typecheck ✅)。E2Eはレビュー環境にPlaywrightブラウザが無く未実行(PR本文では全254件成功)。Issue #217・docs/specs/sidebar-flow-visibility.mdの、ステージ切替で先頭へ戻す/段階進行でカードへスクロール/依頼タイトルを change-request のみ表示、を差分で確認。domain/application変更なし
-- マージ: squash & delete-branch
-
-## 2026-10-17 23:25 UTC PR #251 解答例の各手順にステージの可視性設定を反映する (#219)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(npm test ✅ / lint ✅ / typecheck ✅)。UI操作の変更なしのためE2Eは省略
 - マージ: squash & delete-branch
 
 

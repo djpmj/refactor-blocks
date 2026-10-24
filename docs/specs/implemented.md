@@ -141,3 +141,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [hint-strategy-phases](hint-strategy-phases.md) | ヒント「次の一手」を方針のまとまりごとに見せる |
 | [answer-comparison-view](answer-comparison-view.md) | 解答例の図を、自分の設計と並べて違いが分かるように見せる |
 | [interface-abstract-marker](interface-abstract-marker.md) | インターフェース役・抽象クラス役のクラスに印と破線枠・「中身なし」表示を付ける |
+| [page-title-by-view](page-title-by-view.md) | ブラウザのタブ名を今のモード・ステージに合わせて切り替える |
