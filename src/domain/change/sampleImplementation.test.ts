@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { allClasses, type CodeClass, type Codebase } from '../codebase/Codebase';
 import { fragment, sampleCodebase } from '../codebase/testFixtures';
 import type { ChangeRequest } from './ChangeRequest';
-import { sampleCarried, sampleImplementation } from './sampleImplementation';
+import type { Placement } from './measurePlacement';
+import { placedLikeSample, sampleCarried, sampleImplementation } from './sampleImplementation';
 
 const taxRequest: ChangeRequest = { id: 'req-1', title: '軽減税率', description: '', responsibility: 'tax', linesPerSite: 8, partName: 'addReducedTax' };
 const gatewayRequest: ChangeRequest = { ...taxRequest, responsibility: 'gateway', kind: 'extend', partName: 'chargeWithPaypay' };
@@ -110,5 +111,91 @@ describe('sampleCarried', () => {
 
     // Assert
     expect(base).toEqual(sampleCodebase());
+  });
+});
+
+describe('sampleCarried: 新しいクラスの解答例を続けて当てる', () => {
+  const firstGateway: ChangeRequest = { ...gatewayRequest, id: 'req-g1', partName: 'chargeWithPaypay' };
+  const secondGateway: ChangeRequest = { ...gatewayRequest, id: 'req-g2', partName: 'chargeWithLine' };
+
+  it('2件とも、別々の新しいクラスに置かれる(IDが重複しない)', () => {
+    // Arrange
+    const base = gatewayCodebase();
+
+    // Act
+    const carried = sampleCarried(base, [firstGateway, secondGateway]);
+
+    // Assert
+    const classes = allClasses(carried);
+    const holders = classes.filter((codeClass) => hasMethodNamed(codeClass, 'chargeWithPaypay') || hasMethodNamed(codeClass, 'chargeWithLine'));
+    expect(holders.map((codeClass) => codeClass.interfaceIds)).toEqual([['class-gateway'], ['class-gateway']]);
+    expect(new Set(classes.map((codeClass) => codeClass.id)).size).toBe(classes.length);
+    expect(new Set(carried.files.map((file) => file.id)).size).toBe(carried.files.length);
+  });
+
+  it('元の base を変更しない', () => {
+    // Arrange
+    const base = gatewayCodebase();
+
+    // Act
+    sampleCarried(base, [firstGateway, secondGateway]);
+
+    // Assert
+    expect(base).toEqual(gatewayCodebase());
+  });
+});
+
+describe('placedLikeSample', () => {
+  const placement: Placement = {
+    partClassId: 'class-x',
+    partClassName: 'X',
+    modifiedClassIds: [],
+    otherResponsibilities: 0,
+    addedResponsibilityClasses: 0,
+    attachment: 'abstract',
+    attachedClassId: 'class-gateway',
+  };
+  const sample = sampleImplementation(gatewayCodebase(), gatewayRequest);
+
+  it('新しいクラスの解答例: 同じインターフェースを実装する新クラスなら、名前が違っても同じ置き方', () => {
+    // Arrange / Act
+    const result = sample !== undefined && placedLikeSample(sample, placement);
+
+    // Assert
+    expect(result).toBe(true);
+  });
+
+  it('新しいクラスの解答例: 既存クラスに置いたなら違う置き方', () => {
+    // Arrange
+    const existing: Placement = { ...placement, partClassId: 'class-service', partClassName: 'Service', attachment: 'existing-class', attachedClassId: undefined };
+
+    // Act
+    const result = sample !== undefined && placedLikeSample(sample, existing);
+
+    // Assert
+    expect(result).toBe(false);
+  });
+
+  it('新しいクラスの解答例: 別のインターフェースにつなげたなら違う置き方', () => {
+    // Arrange
+    const other: Placement = { ...placement, attachedClassId: 'class-other' };
+
+    // Act
+    const result = sample !== undefined && placedLikeSample(sample, other);
+
+    // Assert
+    expect(result).toBe(false);
+  });
+
+  it('既存クラスの解答例: 同じクラスなら同じ、別のクラスなら違う', () => {
+    // Arrange
+    const taxSample = sampleImplementation(sampleCodebase(), taxRequest);
+    if (taxSample === undefined) throw new Error('解答例があるはず');
+    const same: Placement = { ...placement, ...taxSample.placement };
+    const other: Placement = { ...same, partClassId: 'class-elsewhere', partClassName: 'Elsewhere' };
+
+    // Act / Assert
+    expect(placedLikeSample(taxSample, same)).toBe(true);
+    expect(placedLikeSample(taxSample, other)).toBe(false);
   });
 });

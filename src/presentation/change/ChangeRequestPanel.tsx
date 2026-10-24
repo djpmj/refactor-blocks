@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { ChangeOutcome } from '../../application/ChangeRequestUseCases';
 import { changeKindOf, type ChangeKind, type ChangeRequest } from '../../domain/change/ChangeRequest';
 import { changePart, isChangePartPlaced } from '../../domain/change/changePart';
-import type { SampleImplementation } from '../../domain/change/sampleImplementation';
+import { placedLikeSample, type SampleImplementation } from '../../domain/change/sampleImplementation';
 import { averageScore, type ChangeAssessment } from '../../domain/change/scoreChange';
 import { findClassOfMethod, findMethod, type Codebase, type Method } from '../../domain/codebase/Codebase';
 import { fragmentLines, methodLines } from '../../domain/codebase/lineCount';
@@ -34,9 +34,8 @@ function CostRows({ current, initial, codebase, previous }: Readonly<{ current: 
 const SAMPLE_ON_IDEAL_BASE_NOTE = '解答例は、前の依頼もすべて解答例どおりに置いた場合の置き場所です';
 
 /** 前の依頼で、解答例と違うクラスに置いていたか。 */
-// ponytail: 解答例が新しいクラスの依頼は、新クラス名がプレイヤーの命名と一致しないので判定しない。ズレを案内したくなったら、置き先のクラスIDを outcome に持たせる
 function placedOffSample({ sample, placement }: ChangeOutcome): boolean {
-  return sample?.target.kind === 'existing-class' && sample.target.className !== placement.placement.partClassName;
+  return sample !== undefined && !placedLikeSample(sample, placement.placement);
 }
 
 /** 解答例: どこに置くのが最も点が高いか。 */

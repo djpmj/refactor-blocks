@@ -67,7 +67,6 @@ import { loadDrafts, saveDrafts } from '../../infrastructure/progress/draftStora
 import { loadProgress, saveProgress } from '../../infrastructure/progress/progressStorage';
 import { loadStoryEnabled, saveStoryEnabled } from '../../infrastructure/story/storyPreference';
 import { loadTourSeen, saveTourSeen } from '../../infrastructure/tour/tourPreference';
-import { sampleCarried } from '../../domain/change/sampleImplementation';
 import { nextTourStep, TOUR_STEPS, TOUR_STAGE_ID, type TourEvent } from '../tour/tourSteps';
 import { describeInlinedBeforeDelete } from '../canvas/describeInlinedBeforeDelete';
 import type { DeleteResult } from '../../domain/codebase/deleteClass';
@@ -342,9 +341,8 @@ function finishImplementation(state: GameState): Partial<GameState> {
   if (!result.ok) return { message: result.error === 'unplaced-part' ? UNPLACED_MESSAGE : 'この依頼で変更が必要な場所が見つかりません', notice: null };
   const next = state.stage.changeRequests.at(session.index + 1);
   const carried = withoutTray(state.codebase);
-  const nextSampleCarried = sampleCarried(session.sampleCarried, [request]);
   return {
-    changeSession: { ...session, index: session.index + 1, inspected: null, outcomes: [...session.outcomes, result.value], carried, sampleCarried: nextSampleCarried },
+    changeSession: { ...session, index: session.index + 1, inspected: null, outcomes: [...session.outcomes, result.value], carried, sampleCarried: result.value.sample?.codebase ?? session.sampleCarried },
     codebase: next === undefined ? carried : withChangePart(carried, next),
     history: emptyHistory(),
     selectedMethodId: null,
