@@ -73,7 +73,7 @@ describe('上級7: 金額と通貨を Money にまとめる', () => {
 
     // Act
     const classesWithArithmetic = allClasses(solved)
-      .filter((codeClass) => codeClass.methods.some((method) => method.fragments.some((fragment) => fragment.responsibility === 'money-arithmetic')))
+      .filter((codeClass) => codeClass.methods.flatMap((method) => method.fragments).some((fragment) => fragment.responsibility === 'money-arithmetic'))
       .map((codeClass) => codeClass.name);
 
     // Assert
