@@ -91,8 +91,13 @@ function moveMethodToDropTarget(
   if (targetFileId !== null) moveIntoFile(methodId, targetFileId);
 }
 
+/** 切り替えで隠れている画面(リファクタリング・白紙設計)のキャンバスは除き、いま見えているものを返す。 */
+function visibleCanvas(): Element | null {
+  return document.querySelector('.app__view:not([hidden]) .app__canvas');
+}
+
 function canvasSize(): { width: number; height: number } | null {
-  const canvas = document.querySelector('.app__canvas');
+  const canvas = visibleCanvas();
   if (!(canvas instanceof HTMLElement)) return null;
   const { width, height } = canvas.getBoundingClientRect();
   return width > 0 && height > 0 ? { width, height } : null;
@@ -151,7 +156,7 @@ function FitViewOnResize({ autoFitStateRef, dragInteractionActive }: Readonly<{ 
     latest.current.fit();
   }, [autoFitStateRef]);
   useEffect(() => {
-    const canvas = document.querySelector('.app__canvas');
+    const canvas = visibleCanvas();
     if (!(canvas instanceof HTMLElement)) return;
     const observer = new ResizeObserver((entries) => {
       const { width, height } = entries[0].contentRect;

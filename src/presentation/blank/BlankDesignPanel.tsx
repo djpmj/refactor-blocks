@@ -23,7 +23,7 @@ export function BlankDesignPanel({ problem, reviewButtonRef, onReview }: Readonl
       <div className="stage-panel__heading">
         <h1 className="stage-panel__title">{problem.title}</h1>
         <p className="stage-panel__goal">{problem.goal}</p>
-        <p className="stage-panel__description" data-testid="blank-requirement">
+        <p className="stage-panel__description stage-panel__description--blank" data-testid="blank-requirement">
           {problem.description}
         </p>
         <p className="method-editor__hint">

@@ -2,7 +2,7 @@ import { allClasses, type Codebase, type Method } from '../codebase/Codebase';
 
 /** 部品置き場のファイルのID。白紙設計の問題データも、答え合わせもこのIDで判定する。 */
 export const TRAY_FILE_ID = 'file-blank-tray';
-const TRAY_CLASS_ID = 'class-blank-tray';
+export const TRAY_CLASS_ID = 'class-blank-tray';
 
 /** 全部品を1つのクラスに入れた、部品置き場だけのコードベースを作る。 */
 export function trayCodebase(parts: readonly Method[]): Codebase {

@@ -169,6 +169,7 @@ body { margin: 0; background: var(--bg); color: var(--text); }
   .clear-condition--just-met .clear-condition__badge { animation: none; }
 }
 .stage-panel__description { margin-top: 12px; font-size: 12px; }
+.stage-panel__description--blank { font-size: inherit; }
 .stage-panel__description summary { cursor: pointer; color: var(--accent); width: fit-content; }
 .stage-panel__description p { margin: 4px 0 0; line-height: 1.5; overflow-y: auto; }
 .toolbar { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; padding: 6px 12px; background: var(--surface); border-bottom: 1px solid var(--border); }
@@ -247,6 +248,7 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .class-node { width: 100%; height: 100%; background: var(--surface); border: 2px solid var(--border); border-radius: 10px; transition: border-color 0.15s, box-shadow 0.15s; }
 .class-node--can-drop { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); background: color-mix(in srgb, var(--accent) 5%, var(--surface)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 12%, transparent); }
 .class-node--cannot-drop { opacity: 0.45; }
+.class-node--tray { border-style: dashed; }
 .class-node--cyclic { border-color: var(--danger); box-shadow: 0 0 0 4px color-mix(in srgb, var(--danger) 25%, transparent); }
 .class-node--drop-target { border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent); }
 .cyclic-mark { font-size: 14px; margin-right: 6px; }

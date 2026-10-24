@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Codebase, Fragment } from "../../domain/codebase/Codebase";
 import { advancedStages } from "../../infrastructure/stages/advancedStages";
-import { dependencyEdges, handleSidesForFiles, inheritanceEdges, inheritanceKind, layoutCodebase, spreadOffsets, type FileRect } from "./layoutCodebase";
+import { dependenciesWithoutTray, dependencyEdges, handleSidesForFiles, inheritanceEdges, inheritanceKind, layoutCodebase, spreadOffsets, type FileRect } from "./layoutCodebase";
 
 function callFragment(id: string, uses: readonly string[]): Fragment {
   return { id, label: id, lines: 1, responsibility: "call", uses };
@@ -136,6 +136,22 @@ describe("handleSidesForFiles", () => {
     // Assert
     expect(blocked).toEqual(["skip", "skip"]);
     expect(clear).toEqual(["right", "left"]);
+  });
+});
+
+describe("dependenciesWithoutTray", () => {
+  it("部品置き場のクラスが端になる依存は除き、クラス同士の依存は残す", () => {
+    // Arrange
+    const codebase = codebaseOf([["a", "A", ["method-B"]], ["b", "B", []], ["tray", "Tray", ["method-A"]]]);
+    const trayId = "class-blank-tray";
+    const renameTray = (codeClass: Codebase["files"][number]["classes"][number]) => codeClass.id === "class-Tray" ? { ...codeClass, id: trayId } : codeClass;
+    const withTray: Codebase = { files: codebase.files.map((file) => ({ ...file, classes: file.classes.map(renameTray) })) };
+
+    // Act
+    const dependencies = dependenciesWithoutTray(withTray);
+
+    // Assert
+    expect(dependencies.map(({ from, to }) => `${from}->${to}`)).toEqual(["class-A->class-B"]);
   });
 });
 

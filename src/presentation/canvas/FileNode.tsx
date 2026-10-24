@@ -74,7 +74,7 @@ export function FileNode({ data }: Readonly<NodeProps<FileFlowNode>>) {
           📄
         </span>
         <FileMark severity={fileSeverity(points)} points={points} reasons={reasons} codebase={codebase} fileId={data.fileId} />
-        {showDetails ? (
+        {showDetails && !isTray ? (
           <span className={lines > limit ? 'line-badge line-badge--over' : 'line-badge'}>{lines}行</span>
         ) : null}
       </div>

@@ -22,6 +22,7 @@ import { SuperclassLabel } from "./SuperclassLabel";
 import { BLOCK_OPERATION_TITLES } from "../guide/operationGuide";
 import { useDropTargetClassNames } from "./DropTargetsContext";
 import { useResolvedCelebration } from "./useResolvedCelebration";
+import { findUnplacedParts, TRAY_CLASS_ID } from "../../domain/blank/tray";
 import { classRoleName, classStereotype } from "./classStereotype";
 
 /** 循環依存に関与しているクラスの印。色だけに頼らずアイコンとラベルでも伝える。ズームで詳細を隠していても出す。 */
@@ -164,6 +165,28 @@ function ClassResponsibilityBadge({ codeClass, limit }: Readonly<{ codeClass: Co
   );
 }
 
+/** ヘッダー右側の印と数値。部品置き場は採点されないので、責務・行数は出さない。 */
+function ClassHeaderBadges({ codeClass, layerName, isCyclic, isTray }: Readonly<{ codeClass: CodeClass; layerName: string | undefined; isCyclic: boolean; isTray: boolean }>) {
+  const showDetails = useShowDetails();
+  const limit = useGameStore((state) => state.stage.limits.class);
+  const responsibilityLimit = useGameStore((state) => state.stage.responsibilityLimit);
+  const showCounts = showDetails && !isTray;
+  return (
+    <>
+      {layerName === undefined ? null : <LayerTag name={layerName} className={codeClass.name} />}
+      {isCyclic ? <CyclicMark /> : null}
+      {showCounts ? <ClassResponsibilityBadge codeClass={codeClass} limit={responsibilityLimit} /> : null}
+      {showCounts ? <ClassLineBadge codeClass={codeClass} limit={limit} /> : null}
+    </>
+  );
+}
+
+/** 部品置き場の見出し。採点されない置き場なので、責務・行数ではなく残りの部品数だけを出す。 */
+function TrayHeaderLabel() {
+  const remaining = useGameStore((state) => findUnplacedParts(state.stage.codebase, state.codebase).length);
+  return <span className="class-node__name" data-testid="tray-label">部品置き場(あと {remaining} 個)</span>;
+}
+
 export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
   const resolved = useResolvedCelebration('classIds', data.classId);
   const codeClass = useGameStore((state) =>
@@ -172,8 +195,6 @@ export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
   const isCyclic = useGameStore((state) =>
     cyclicClassIds(classDependencies(state.codebase)).has(data.classId),
   );
-  const limit = useGameStore((state) => state.stage.limits.class);
-  const responsibilityLimit = useGameStore((state) => state.stage.responsibilityLimit);
   const layerName = useGameStore((state) => {
     const { layers } = state.stage;
     const index = layers === undefined ? undefined : classLayers(state.codebase, layers).get(data.classId);
@@ -198,8 +219,9 @@ export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
     isDragging,
   } = useDraggable({ id: classDragId(data.classId) });
   if (codeClass === undefined) return null;
+  const isTray = data.classId === TRAY_CLASS_ID;
   return (
-    <div ref={setNodeRef} className={[classNodeClassName({ isOver, isCyclic }), dropTargetClasses, flagged ? 'class-node--flagged' : '', resolved ? 'class-node--resolved' : ''].filter(Boolean).join(' ')} data-testid={`class-${codeClass.name}`}>
+    <div ref={setNodeRef} className={[classNodeClassName({ isOver, isCyclic }), isTray ? 'class-node--tray' : '', dropTargetClasses, flagged ? 'class-node--flagged' : '', resolved ? 'class-node--resolved' : ''].filter(Boolean).join(' ')} data-testid={`class-${codeClass.name}`}>
       {/* 依存の矢印の接続点。つなぐ操作はさせないので見た目には出さない。 */}
       <DependencyHandles />
       <div
@@ -214,12 +236,9 @@ export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
       >
         <span className={classNameGroupClass(classStereotype(codeClass))}>
           <ClassStereotypeMark stereotype={classStereotype(codeClass)} />
-          <ClassNameLabel classId={data.classId} name={codeClass.name} />
+          {isTray ? <TrayHeaderLabel /> : <ClassNameLabel classId={data.classId} name={codeClass.name} />}
         </span>
-        {layerName === undefined ? null : <LayerTag name={layerName} className={codeClass.name} />}
-        {isCyclic ? <CyclicMark /> : null}
-        {showDetails ? <ClassResponsibilityBadge codeClass={codeClass} limit={responsibilityLimit} /> : null}
-        {showDetails ? <ClassLineBadge codeClass={codeClass} limit={limit} /> : null}
+        <ClassHeaderBadges codeClass={codeClass} layerName={layerName} isCyclic={isCyclic} isTray={isTray} />
       </div>
       {showDetails ? <ClassBody codeClass={codeClass} /> : null}
     </div>
