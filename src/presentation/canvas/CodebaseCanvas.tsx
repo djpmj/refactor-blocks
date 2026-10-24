@@ -20,6 +20,7 @@ import { visibilityViolationDependencies } from '../../domain/scoring/visibility
 import { useGameStore } from '../store/useGameStore';
 import { CanvasContextMenu } from './CanvasContextMenu';
 import { ClassNode } from './ClassNode';
+import { createAnnouncements, SCREEN_READER_INSTRUCTIONS } from './dndAnnouncements';
 import { parseClassDragId, parseClassDropId, parseFieldDragId, parseFileDropId, parseMethodDragId } from './dndIds';
 import { FieldChipView } from './FieldChip';
 import { FileNode } from './FileNode';
@@ -508,6 +509,7 @@ export function CodebaseCanvas({ active }: Readonly<{ active: boolean }>) {
   const [revealFileId, setRevealFileId] = useState<string | null>(null);
   const { autoFitStateRef, onMoveStart, onManualFit, onControlZoom } = useAutoFitActions();
   const sensors = useSensors(useSensor(PointerSensor, POINTER_ACTIVATION), useSensor(KeyboardSensor));
+  const announcements = useMemo(() => createAnnouncements(codebase), [codebase]);
   const contextMenu = useCanvasContextMenu();
   // メニューは document.body へのポータルなので、画面を隠しただけでは消えない(隠れたコードベースを操作できてしまう)
   useDismissContextMenuWhenInactive(active, contextMenu.close);
@@ -518,6 +520,7 @@ export function CodebaseCanvas({ active }: Readonly<{ active: boolean }>) {
   return (
     <DndContext
       sensors={sensors}
+      accessibility={{ announcements, screenReaderInstructions: SCREEN_READER_INSTRUCTIONS }}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragFinish}
