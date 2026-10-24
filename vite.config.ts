@@ -12,7 +12,7 @@ export default defineConfig({
     globals: false,
     // feature-harnessのimplementerがリポジトリ内(.claude/worktrees/)に作るgit worktreeと、
     // PlaywrightのE2Eテスト(e2e/)をVitestで実行しないよう除外する(デフォルトの除外設定は維持する)。
-    exclude: [...configDefaults.exclude, '.claude/worktrees/**', 'e2e/**'],
+    exclude: [...configDefaults.exclude, '.claude/worktrees/**', 'e2e/**', 'explore/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],
