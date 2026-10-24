@@ -37,7 +37,7 @@ test('組み替えたチュートリアル2では、ボスが最後に出て、1
   await extract(page, 'method-placeOrder', ['注文をDBに保存する'], 'saveOrder');
   await extract(page, 'method-placeOrder', ['確認メールを送る'], 'sendConfirmationMail');
   await extract(page, 'method-placeOrder', ['在庫があるか検証する'], 'validateStock');
-  await expect(page.getByTestId('score')).toContainText('100');
+  await expect(page.getByTestId('score-value')).toContainText('100');
   await releaseAllManualFixSites(page);
   await startChangeRequests(page);
 
@@ -67,7 +67,7 @@ test('組み替えていないと、ボスの比較にも行数の上限を超�
   await page.goto('/');
   await selectStage(page, 'チュートリアル1: 長いメソッドを分ける');
   await extract(page, 'method-printMonthlyReport', ['今月の売上を集計する', '前月比を計算する'], 'aggregateSales');
-  await expect(page.getByTestId('score')).toContainText('100');
+  await expect(page.getByTestId('score-value')).toContainText('100');
   await releaseAllManualFixSites(page);
   await startChangeRequests(page);
 

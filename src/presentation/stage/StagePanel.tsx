@@ -9,7 +9,7 @@ import { ReferenceMenu } from './ReferenceMenu';
 import { OperationGuideDialog } from '../guide/OperationGuideDialog';
 import { useGuideShortcut } from '../guide/useGuideShortcut';
 import { useGameStore } from '../store/useGameStore';
-import { describeScore } from './describeScore';
+import { describeScoreShort } from './describeScore';
 import { ScoreBreakdown } from './ScoreBreakdown';
 import { HintList } from './HintList';
 import { HintButton } from './HintPanel';
@@ -161,8 +161,8 @@ function isFloorProgress(score: Score, celebration: ScoreCelebration): boolean {
   return celebration !== null && celebration.scoreAfter === 0 && score.total === 0 && score.deducted === celebration.deductedAfter && celebration.deductedAfter < celebration.deductedBefore;
 }
 
-/** 点数を丸いゲージで見せる。詳細(減点の内訳)は隣のテキストに出す。 */
-function ScoreBadge({ score, codebase }: Readonly<{ score: Score; codebase: Codebase }>) {
+/** 点数を丸いゲージで見せる。隣のテキストは減点の件数だけで、内訳は「減点の内訳」に出す。 */
+function ScoreBadge({ score }: Readonly<{ score: Score }>) {
   const celebration = useGameStore((state) => state.celebration);
   const rising = celebration !== null && celebration.scoreAfter === score.total && celebration.scoreAfter > celebration.scoreBefore;
   const floorProgress = isFloorProgress(score, celebration);
@@ -177,7 +177,7 @@ function ScoreBadge({ score, codebase }: Readonly<{ score: Score; codebase: Code
       </div>
       <span className="sr-only" aria-live="polite" data-testid="score-announcement">{floorProgress && celebration !== null ? `減点の合計が -${celebration.deductedBefore} から -${celebration.deductedAfter} に減りました` : `${score.total}点`}</span>
       <span className="score-badge__detail" data-testid="score">
-        {describeScore(score, codebase)}
+        {describeScoreShort(score)}
       </span>
     </div>
   );
@@ -187,7 +187,7 @@ function ScoreBadge({ score, codebase }: Readonly<{ score: Score; codebase: Code
 function ScoreArea({ stage, codebase, score, disabled }: Readonly<{ stage: Stage; codebase: Codebase; score: Score; disabled: boolean }>) {
   return (
     <>
-      <ScoreBadge score={score} codebase={codebase} />
+      <ScoreBadge score={score} />
       <TestStatus stage={stage} codebase={codebase} />
       <ScoreBreakdown key={`${stage.id}-${String(disabled)}`} score={score} disabled={disabled} />
     </>

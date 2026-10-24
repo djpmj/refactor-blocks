@@ -106,7 +106,7 @@ test('操作でクリア条件が更新され、100点では全件達成にな�
   await extract(page, '確認メールを送る', 'sendConfirmationMail');
   await extract(page, '在庫があるか検証する', 'validateStock');
 
-  await expect(page.getByTestId('score')).toContainText('100点');
+  await expect(page.getByTestId('score-value')).toContainText('100点');
   await expect(conditions.locator('li[aria-label^="達成:"]')).toHaveCount(await conditions.locator('li').count());
   const changePain = page.locator('.change-pain');
   await expect(changePain.getByRole('heading', { name: /\u3082\u3046\u4e00\u5ea6/ })).toBeVisible();

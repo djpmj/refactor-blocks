@@ -57,7 +57,7 @@ test('変更依頼中はうわさ欄を隠す', async ({ page }) => {
   await page.getByLabel('前月比を計算する').check();
   await page.getByLabel('新しいメソッド名').fill('aggregateSales');
   await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
-  await expect(page.getByTestId('score')).toContainText('100');
+  await expect(page.getByTestId('score-value')).toContainText('100');
   await releaseAllManualFixSites(page);
   await startChangeRequests(page);
   await expect(page.getByTestId('change-panel')).toBeVisible();
@@ -91,7 +91,7 @@ test('100点の置き方では、噂のpayoffに備えていた✓文を出す',
   await dragMethodToClass(page, 'method-saveCancellation', 'class-OrderRepository');
   await dragMethodToClass(page, 'method-processOrder', 'class-OrderService');
   await dragMethodToClass(page, 'method-processCancel', 'class-OrderService');
-  await expect(page.getByTestId('score')).toContainText('100');
+  await expect(page.getByTestId('score-value')).toContainText('100');
   await releaseAllManualFixSites(page);
   await startChangeRequests(page);
 

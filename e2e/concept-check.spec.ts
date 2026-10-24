@@ -27,7 +27,7 @@ async function clearTutorial2(page: Page) {
   await extract(page, '注文をDBに保存する', 'saveOrder');
   await extract(page, '確認メールを送る', 'sendConfirmationMail');
   await extract(page, '在庫があるか検証する', 'validateStock');
-  await expect(page.getByTestId('score')).toContainText('100');
+  await expect(page.getByTestId('score-value')).toContainText('100');
 }
 
 test('100点未満では出ず、100点で出る。キーボードで答えると解説が出て、もう一度で戻る', async ({ page }) => {
