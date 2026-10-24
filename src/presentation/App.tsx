@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useNarrowScreen } from './useNarrowScreen';
 import { BlankDesignView } from './blank/BlankDesignView';
 import { CodebaseCanvas } from './canvas/CodebaseCanvas';
 import { ErrorToast } from './canvas/ErrorToast';
@@ -28,10 +29,79 @@ function canCollapseEditor(hasChangeSession: boolean, hasManualFix: boolean, has
   return !hasChangeSession && !hasManualFix && !hasSelection && !hasChangeReport;
 }
 
+function useMobileEditor(store: ReturnType<typeof useGameStoreApi>) {
+  const [mobileEditorOpen, setMobileEditorOpen] = useState(false);
+  const editorTrigger = useRef<HTMLElement | null>(null);
+  const dismissedSelection = useRef<string | null>(null);
+  useEffect(() => store.subscribe((state, previous) => {
+    if (state.selectedMethodId !== null || state.selectedFieldId !== null) {
+      const selected = document.querySelector<HTMLButtonElement>('[data-method-id][aria-pressed="true"], [data-field-id][aria-pressed="true"]');
+      if (selected !== null) editorTrigger.current = selected;
+      const selection = state.selectedMethodId ?? state.selectedFieldId;
+      if (selection !== dismissedSelection.current
+        && (state.selectedMethodId !== previous.selectedMethodId || state.selectedFieldId !== previous.selectedFieldId)) setMobileEditorOpen(true);
+    }
+    if (state.selectedMethodId === null && state.selectedFieldId === null) {
+      dismissedSelection.current = null;
+      setMobileEditorOpen(false);
+    }
+  }), [store]);
+  useEffect(() => {
+    if (!mobileEditorOpen) return;
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') setMobileEditorOpen(false);
+    }
+    document.addEventListener('keydown', closeOnEscape);
+    return () => document.removeEventListener('keydown', closeOnEscape);
+  }, [mobileEditorOpen]);
+  useEffect(() => {
+    if (!mobileEditorOpen && window.matchMedia('(max-width: 700px)').matches) editorTrigger.current?.focus();
+  }, [mobileEditorOpen]);
+  const close = useCallback(() => {
+    const state = store.getState();
+    dismissedSelection.current = state.selectedMethodId ?? state.selectedFieldId;
+    setMobileEditorOpen(false);
+  }, [store]);
+  return { mobileEditorOpen, close };
+}
+
+function useEmptyEditor(store: ReturnType<typeof useGameStoreApi>) {
+  const [emptyEditorOpen, setEmptyEditorOpen] = useState(false);
+  useEffect(() => store.subscribe((state, previous) => {
+    if (state.selectedMethodId !== previous.selectedMethodId || state.selectedFieldId !== previous.selectedFieldId
+      || state.stage.id !== previous.stage.id || state.changeSession !== previous.changeSession
+      || state.manualFix !== previous.manualFix || state.lastChangeReport !== previous.lastChangeReport) setEmptyEditorOpen(false);
+  }), [store]);
+  return { emptyEditorOpen, setEmptyEditorOpen };
+}
+
+function EditorRail({ onOpen }: Readonly<{ onOpen: () => void }>) {
+  return <button type="button" className="editor-rail" data-testid="editor-rail" aria-label="メソッドエディタの案内を開く" onClick={onOpen}><span aria-hidden="true">👈</span><span className="editor-rail__label">メソッドをクリック</span></button>;
+}
+
+function MobileEditorDrawer({ open, onClose, children }: Readonly<{ open: boolean; onClose: () => void; children: ReactNode }>) {
+  if (!open) return null;
+  return <><button type="button" className="mobile-drawer-backdrop" aria-label="エディタを閉じる" onClick={onClose} /><div className="sidebar-resizable sidebar-resizable--mobile-open">{children}<button type="button" className="mobile-drawer-close" aria-label="メソッドエディタを閉じる" onClick={onClose}>閉じる</button></div></>;
+}
+
+function EditorPanel({ rail, emptyOpen, width, handleProps, content, onOpenGuide, onCloseGuide }: Readonly<{
+  rail: boolean; emptyOpen: boolean; width: number; handleProps: ReturnType<typeof useResizableSidebarWidth>['handleProps'];
+  content: ReactNode; onOpenGuide: () => void; onCloseGuide: () => void;
+}>) {
+  return <div className={`sidebar-resizable${rail ? ' sidebar-resizable--rail' : ''}${emptyOpen ? ' sidebar-resizable--empty-open' : ''}`} style={{ width: rail ? 48 : width }}>
+    {rail ? null : <div className="sidebar-resizable__handle" {...handleProps} />}
+    {content}
+    {rail && <EditorRail onOpen={onOpenGuide} />}
+    {!rail && emptyOpen && <button className="editor-empty-close" aria-label="案内を閉じる" onClick={onCloseGuide}>»</button>}
+  </div>;
+}
+
 function RefactorView({ active }: Readonly<{ active: boolean }>) {
   const { width, handleProps } = useResizableSidebarWidth({ side: 'right', defaultWidth: 360, minWidth: 280, maxWidth: 640 });
   const store = useGameStoreApi();
-  const [emptyEditorOpen, setEmptyEditorOpen] = useState(false);
+  const { emptyEditorOpen, setEmptyEditorOpen } = useEmptyEditor(store);
+  const { mobileEditorOpen, close: closeMobileEditor } = useMobileEditor(store);
+  const narrowScreen = useNarrowScreen();
   const changeSession = useGameStore((state) => state.changeSession);
   const manualFix = useGameStore((state) => state.manualFix);
   const selectedMethodId = useGameStore((state) => state.selectedMethodId);
@@ -44,43 +114,19 @@ function RefactorView({ active }: Readonly<{ active: boolean }>) {
     lastChangeReport !== null,
   );
   const rail = shouldRail && !emptyEditorOpen;
-  useEffect(() => {
-    const previous = store.getState();
-    let previousStageId = previous.stage.id;
-    let hadChangeSession = previous.changeSession !== null;
-    let hadManualFix = previous.manualFix !== null;
-    let hadChangeReport = previous.lastChangeReport !== null;
-    return store.subscribe((state) => {
-      const stageChanged = state.stage.id !== previousStageId;
-      const changeSessionChanged = (state.changeSession !== null) !== hadChangeSession;
-      const manualFixChanged = (state.manualFix !== null) !== hadManualFix;
-      const changeReportChanged = (state.lastChangeReport !== null) !== hadChangeReport;
-      if (state.selectedMethodId !== null || state.selectedFieldId !== null || stageChanged || changeSessionChanged || manualFixChanged || changeReportChanged) {
-        setEmptyEditorOpen(false);
-      }
-      previousStageId = state.stage.id;
-      hadChangeSession = state.changeSession !== null;
-      hadManualFix = state.manualFix !== null;
-      hadChangeReport = state.lastChangeReport !== null;
-    });
-  }, [store]);
+  const mobileDrawerOpen = mobileEditorOpen && !shouldRail;
+  const mobileDrawerActive = mobileDrawerOpen && narrowScreen;
   useUndoRedoShortcut(active);
+  const editorContent = <RightSidebarContent />;
   return (
     <StagePanel active={active}>
       <main className="app__body">
-        <section className="app__canvas" aria-label="コードベース">
+        <section className="app__canvas" aria-label="コードベース" inert={mobileDrawerActive}>
           <CodebaseCanvas active={active} />
           <ErrorToast />
         </section>
-        <div className={`sidebar-resizable${rail ? ' sidebar-resizable--rail' : ''}${shouldRail && emptyEditorOpen ? ' sidebar-resizable--empty-open' : ''}`} style={{ width: rail ? 48 : width }}>
-          {rail ? (
-            <button type="button" className="editor-rail" data-testid="editor-rail" aria-label="メソッドエディタの案内を開く" onClick={() => setEmptyEditorOpen(true)}>
-              <span aria-hidden="true">👈</span><span className="editor-rail__label">メソッドをクリック</span>
-            </button>
-          ) : <div className="sidebar-resizable__handle" {...handleProps} />}
-          <RightSidebarContent />
-          {!rail && shouldRail && emptyEditorOpen && <button type="button" className="editor-empty-close" aria-label="案内を閉じる" onClick={() => setEmptyEditorOpen(false)}>»</button>}
-        </div>
+        {!mobileDrawerActive && <EditorPanel rail={rail} emptyOpen={shouldRail && emptyEditorOpen} width={width} handleProps={handleProps} content={editorContent} onOpenGuide={() => setEmptyEditorOpen(true)} onCloseGuide={() => setEmptyEditorOpen(false)} />}
+        <MobileEditorDrawer open={mobileDrawerActive} onClose={closeMobileEditor}>{editorContent}</MobileEditorDrawer>
       </main>
     </StagePanel>
   );
