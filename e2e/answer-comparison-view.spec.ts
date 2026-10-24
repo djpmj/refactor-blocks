@@ -57,6 +57,16 @@ async function arrangeInvoiceStage(page: Page) {
   await dragToEmptyCanvas(page, page.getByTestId('method-mailInvoice'));
 }
 
+/** 送信履歴の記録を、メソッドとして抽出する(クラスへの移動は arrangeInvoiceStage のあとに moveRecordHistoryToStorage で行う)。 */
+async function extractRecordHistory(page: Page) {
+  await extract(page, 'method-sendInvoice', ['送信履歴を記録する'], 'recordHistory');
+}
+
+/** 抽出した送信履歴の記録を、解答例と同じく保存のクラスへ移す。 */
+async function moveRecordHistoryToStorage(page: Page) {
+  await dragMethodToClass(page, page.getByTestId('method-recordHistory'), page.getByTestId('class-InvoiceStorage'));
+}
+
 async function openSampleDiagram(page: Page) {
   await page.getByTestId('reference-menu-button').click();
   await page.getByTestId('reference-sample').click();
@@ -69,14 +79,12 @@ async function openSampleDiagram(page: Page) {
   return dialog;
 }
 
-test('送信履歴の記録を保存と同じクラスに入れた設計は、解答例との違いが左右の図と一覧で分かる', async ({ page }) => {
-  // Arrange: PDF の保存と送信履歴の記録を同じ新しいクラスに入れて100点にする
+test('送信履歴の記録を InvoiceService に残した設計は、解答例との違いが左右の図と一覧で分かる', async ({ page }) => {
+  // Arrange: 送信履歴の記録だけを InvoiceService に残して100点にする(解答例は保存のクラスへ移している)
   await page.setViewportSize({ width: 1800, height: 1400 });
   await page.goto('/');
   await selectStage(page, '初級2: クラスを自分で作る');
-  await extract(page, 'method-sendInvoice', ['送信履歴を記録する'], 'recordHistory');
   await arrangeInvoiceStage(page);
-  await dragMethodToClass(page, page.getByTestId('method-recordHistory'), page.getByTestId('class-InvoiceStorage'));
   await expect(page.getByTestId('score-value')).toHaveText('100点');
 
   // Act: 答えを見る確認を経て、解答例の図を開く
@@ -94,14 +102,15 @@ test('送信履歴の記録を保存と同じクラスに入れた設計は、�
   const scaleOf = async (pane: Locator) => (await pane.locator('.react-flow__viewport').getAttribute('style'))?.match(/scale\(([\d.]+)\)/)?.[1];
   await expect.poll(async () => scaleOf(player)).toBeTruthy();
   expect(await scaleOf(answer)).toBe(await scaleOf(player));
-  await expect(player.getByTestId('preview-class-InvoiceStorage')).toContainText('recordHistory');
-  await expect(answer.getByTestId('preview-class-InvoiceService')).toContainText('sendInvoice');
-  await expect(answer.getByTestId('preview-class-InvoiceStorage')).not.toContainText('recordHistory');
+  await expect(player.getByTestId('preview-class-InvoiceService')).toContainText('sendInvoice');
+  await expect(player.getByTestId('preview-class-InvoiceStorage')).not.toContainText('recordHistory');
+  await expect(answer.getByTestId('preview-class-InvoiceStorage')).toContainText('recordHistory');
+  await expect(answer.getByTestId('preview-class-InvoiceService')).not.toContainText('sendInvoice');
 
   // Assert: 違いの一覧にその処理だけが出て、点数の事実は添えない(どちらも100点)
   const diff = dialog.getByTestId('design-diff');
   await expect(diff.getByRole('button')).toHaveCount(1);
-  await expect(diff.getByRole('button')).toHaveText('「送信履歴を記録する」: あなた InvoiceStorage / 解答例 InvoiceService');
+  await expect(diff.getByRole('button')).toHaveText('「送信履歴を記録する」: あなた InvoiceService / 解答例 InvoiceStorage');
   await expect(diff).not.toContainText('解答例と同じ置き方です');
   await expect(dialog.getByTestId('design-diff-score')).toHaveCount(0);
 
@@ -109,15 +118,15 @@ test('送信履歴の記録を保存と同じクラスに入れた設計は、�
   await diff.getByRole('button').click();
 
   // Assert: 両方の図で、その処理を持つクラスが光る
-  await expect(player.getByTestId('preview-class-InvoiceStorage')).toHaveAttribute('data-glow', 'true');
-  await expect(answer.getByTestId('preview-class-InvoiceService')).toHaveAttribute('data-glow', 'true');
+  await expect(player.getByTestId('preview-class-InvoiceService')).toHaveAttribute('data-glow', 'true');
+  await expect(answer.getByTestId('preview-class-InvoiceStorage')).toHaveAttribute('data-glow', 'true');
   await expect(player.getByTestId('preview-class-InvoicePricing')).not.toHaveAttribute('data-glow', 'true');
 
   // Act: もう一度押す
   await diff.getByRole('button').click();
 
   // Assert: 光が消える
-  await expect(player.getByTestId('preview-class-InvoiceStorage')).not.toHaveAttribute('data-glow', 'true');
+  await expect(player.getByTestId('preview-class-InvoiceService')).not.toHaveAttribute('data-glow', 'true');
 });
 
 test('解答例と同じ置き方で100点にしたステージでは「解答例と同じ置き方です」が出る', async ({ page }) => {
@@ -125,7 +134,9 @@ test('解答例と同じ置き方で100点にしたステージでは「解答�
   await page.setViewportSize({ width: 1800, height: 1400 });
   await page.goto('/');
   await selectStage(page, '初級2: クラスを自分で作る');
+  await extractRecordHistory(page);
   await arrangeInvoiceStage(page);
+  await moveRecordHistoryToStorage(page);
   await expect(page.getByTestId('score-value')).toHaveText('100点');
 
   // Act

@@ -20,6 +20,7 @@ import type { Result } from '../../domain/shared/Result';
 import { applySolutionSteps, sampleAnswerCodebase, sampleAnswerSteps, solutionSnapshots, type SolutionStep } from '../../domain/stage/sampleAnswer';
 import { sampleImplementation } from '../../domain/change/sampleImplementation';
 import type { Stage } from '../../domain/stage/Stage';
+import { findScatteredResponsibilities } from '../../domain/stage/scatteredResponsibilities';
 import { methodNamingOf } from '../../domain/stage/methodNaming';
 import { blankDesignProblems } from '../blankDesigns/blankDesignProblems';
 import { validateCheck } from '../../domain/stage/conceptCheck';
@@ -193,6 +194,62 @@ describe('依存上限の理由', () => {
     // Assert
     expect(noDependencyStages.length).toBeGreaterThan(0);
     expect(missingNotes).toEqual([]);
+  });
+});
+
+/** 解答例で、同じ責務を複数のクラスに意図して散らしているステージ。ここに書いたものだけ許す。 */
+const ALLOWED_SCATTER: readonly { stageId: string; responsibility: string; reason: string }[] = [
+  {
+    stageId: 'intermediate-cyclic-dependency',
+    responsibility: 'inventory',
+    reason: 'Order.checkout の「在庫を引き当てる」は Inventory.reserve を呼ぶ注文の流れの1手で、在庫を減らす実処理は Inventory に集まっている。流れを組み立てる checkout の行は他クラスを呼ぶ形のまま残すのがこのステージの題材(責務の上限4種類もこの形で決めている)',
+  },
+  {
+    stageId: 'advanced-report-factory',
+    responsibility: 'data-aggregation',
+    reason: 'このステージが教えるのは「組み立て(生成)」の集約だけ。集計は週次・月次の Controller が持つ設計で、責務の上限2種類と目標文にも明記している(集計まで集約する再設計は Factory 教材の見直し時)',
+  },
+  {
+    stageId: 'advanced-report-factory',
+    responsibility: 'report-delivery',
+    reason: '送信も Controller に残す設計(上と同じ)。「Factory が解決するのは生成だけで、送信の変更は両 Controller に及ぶ」ことを依頼の点数でも見せている',
+  },
+  {
+    stageId: 'advanced-value-object',
+    responsibility: 'money-arithmetic',
+    reason: 'ApprovalService に残る「計算した金額を返す」return 1行(frag-approve-return-money)は重複グループを持たず、抽出して Money.add へ統合すると形が合わず統合できない。ステージ定義の見直し時に解消する',
+  },
+];
+
+/** 全ステージの解答例で散らばっている責務を「ステージID/責務: クラスID…」の形で列挙する。 */
+function scatteredInSampleAnswers(): { key: string; text: string }[] {
+  return stages.flatMap((stage) => findScatteredResponsibilities(sampleAnswerCodebase(stage)).map(({ responsibility, classIds }) => ({
+    key: `${stage.id}/${responsibility}`,
+    text: `${stage.id}/${responsibility}: ${classIds.join(', ')}`,
+  })));
+}
+
+describe('解答例の責務の散らばり', () => {
+  it('全ステージの解答例で、同じ責務の処理が継承関係にない複数のクラスに散らばっていない(例外の表に書いたものを除く)', () => {
+    // Arrange
+    const allowed = new Set(ALLOWED_SCATTER.map(({ stageId, responsibility }) => `${stageId}/${responsibility}`));
+
+    // Act
+    const scattered = scatteredInSampleAnswers().filter(({ key }) => !allowed.has(key)).map(({ text }) => text);
+
+    // Assert
+    expect(scattered).toEqual([]);
+  });
+
+  it('例外の表は、実際に散らばっているステージ・責務だけを理由つきで書いている', () => {
+    // Arrange
+    const actual = new Set(scatteredInSampleAnswers().map(({ key }) => key));
+
+    // Act
+    const stale = ALLOWED_SCATTER.filter(({ stageId, responsibility, reason }) => !actual.has(`${stageId}/${responsibility}`) || reason.trim() === '');
+
+    // Assert
+    expect(stale).toEqual([]);
   });
 });
 
