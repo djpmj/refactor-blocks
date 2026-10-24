@@ -60,7 +60,7 @@ test('コードタブにチュートリアル1のクラスソースを表示す�
   await expect(page.getByRole('tabpanel', { name: 'コード' }).locator('.code-preview__line').last()).toHaveAttribute('data-line-number', '54');
   await page.getByTestId('method-compareWithLastMonth').click();
   await expect(page.locator('.method-editor__title .line-badge')).toHaveText('11行');
-  await expect(page.getByTestId('score')).toContainText('100');
+  await expect(page.getByTestId('score-value')).toContainText('100');
 });
 
 test('コードタブはサイドバー幅に合わせて折り返し、横スクロールを出さない', async ({ page }) => {

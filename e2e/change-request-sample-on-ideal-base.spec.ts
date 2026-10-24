@@ -72,7 +72,7 @@ test('前の依頼で部品を置き間違えても、鬼の変更の解答例�
   await page.goto('/');
   await selectStage(page, '初級2: クラスを自分で作る');
   await solveInvoiceStage(page);
-  await expect(page.getByTestId('score')).toContainText('100');
+  await expect(page.getByTestId('score-value')).toHaveText('100点');
   await releaseAllManualFixSites(page);
   await startChangeRequests(page);
 

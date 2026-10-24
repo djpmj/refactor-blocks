@@ -7,7 +7,7 @@ async function refactorTutorial1(page: Page) {
   await page.getByLabel('前月比を計算する').check();
   await page.getByLabel('新しいメソッド名').fill('aggregateSales');
   await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
-  await expect(page.getByTestId('score')).toContainText('100');
+  await expect(page.getByTestId('score-value')).toContainText('100');
 }
 
 async function extractTutorial2(page: Page) {
@@ -28,7 +28,7 @@ async function extractTutorial2(page: Page) {
     await page.getByLabel('新しいメソッド名').fill(name);
     await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
   }
-  await expect(page.getByTestId('score')).toContainText('100');
+  await expect(page.getByTestId('score-value')).toContainText('100');
 }
 
 test('ステージ切替と同じステージの段階進行で左パネルが次のカードを見せる', async ({ page }) => {
