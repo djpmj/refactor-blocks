@@ -1182,7 +1182,7 @@ const valueObjectStage: Stage = {
                     duplicateGroup: 'money-sum',
                     suggestedName: 'sumMoney',
                    code: { csharp: "if (currency != other.currency) throw new InvalidOperationException(\"通貨が一致しません\");\nvar sum = amount + other.amount;\nvar result = new Money(sum, currency);" }},
-                  { id: 'frag-approve-return-money', label: '計算した金額を返す', lines: 1, responsibility: 'money-arithmetic', code: { csharp: 'return result;' } },
+                  { id: 'frag-approve-record-total', label: '承認した合計を部署の承認結果として保存する', lines: 1, responsibility: 'aggregation', suggestedName: 'recordApprovedTotal', code: { csharp: 'await _expenseRepository.SaveApprovedTotalAsync(departmentId, result, cancellationToken);' } },
                 ],
               },
             ],

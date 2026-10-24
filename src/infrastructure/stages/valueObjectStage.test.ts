@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { measureChange } from '../../domain/change/measureChange';
 import { scoreChange } from '../../domain/change/scoreChange';
-import { allClasses } from '../../domain/codebase/Codebase';
+import { allClasses, type CodeClass } from '../../domain/codebase/Codebase';
 import { findLowCohesionClasses } from '../../domain/scoring/cohesion';
 import { scoreCodebase } from '../../domain/scoring/score';
 import { applySolutionSteps, sampleAnswerSteps } from '../../domain/stage/sampleAnswer';
@@ -11,6 +11,10 @@ const stage = stages.find((candidate) => candidate.id === 'advanced-value-object
 if (stage === undefined) throw new Error('上級7 (advanced-value-object) がありません');
 const solution = sampleAnswerSteps[stage.id];
 if (solution === undefined) throw new Error('上級7の模範解答がありません');
+
+function hasMoneyArithmetic(codeClass: CodeClass): boolean {
+  return codeClass.methods.flatMap((method) => method.fragments).some((fragment) => fragment.responsibility === 'money-arithmetic');
+}
 
 describe('上級7: 金額と通貨を Money にまとめる', () => {
   it('初期状態は50点(行数1・責務の混在1・Feature Envy 3)で、凝集度は0', () => {
@@ -28,6 +32,47 @@ describe('上級7: 金額と通貨を Money にまとめる', () => {
     expect(score.deductions.find((d) => d.rule === 'cohesion')?.count).toBe(0);
     expect(score.deductions.find((d) => d.rule === 'encapsulation')?.count).toBe(0);
     expect(score.deductions.find((d) => d.rule === 'coupling')?.count).toBe(0);
+  });
+
+  it('payOut のコード例は合計→整形→振込の順で、振込は合計の結果を使い true を返す', () => {
+    // Arrange
+    const payOut = allClasses(stage.codebase).flatMap((codeClass) => codeClass.methods).find((method) => method.name === 'payOut');
+
+    // Act
+    const ids = payOut?.fragments.map((fragment) => fragment.id);
+    const transferCode = payOut?.fragments.find((fragment) => fragment.id === 'frag-payout-transfer')?.code?.csharp;
+
+    // Assert
+    expect(ids).toEqual(['frag-payout-sum-money', 'frag-payout-format-money', 'frag-payout-transfer']);
+    expect(transferCode).toContain('result.Amount');
+    expect(transferCode).toMatch(/return true;$/);
+  });
+
+  it('approveMonthlyExpenses は合計を return せず、合計 result を使う記録の文で終わり、その文は金額計算ではない', () => {
+    // Arrange
+    const approve = allClasses(stage.codebase).flatMap((codeClass) => codeClass.methods).find((method) => method.name === 'approveMonthlyExpenses');
+
+    // Act
+    const ids = approve?.fragments.map((fragment) => fragment.id);
+    const last = approve?.fragments.at(-1);
+
+    // Assert
+    expect(ids).toEqual(['frag-approve-collect', 'frag-approve-validate-money', 'frag-approve-sum-money', 'frag-approve-record-total']);
+    expect(approve?.fragments.some((fragment) => /return result;/.test(fragment.code?.csharp ?? ''))).toBe(false);
+    expect(last?.code?.csharp).toContain('result');
+    expect(last?.responsibility).not.toBe('money-arithmetic');
+  });
+
+  it('合計の処理(money-sum)は approve と payOut でコードが完全一致する', () => {
+    // Arrange
+    const fragments = allClasses(stage.codebase).flatMap((codeClass) => codeClass.methods).flatMap((method) => method.fragments);
+
+    // Act
+    const codes = fragments.filter((fragment) => fragment.duplicateGroup === 'money-sum').map((fragment) => fragment.code?.csharp);
+
+    // Assert
+    expect(codes).toHaveLength(2);
+    expect(codes[0]).toBe(codes[1]);
   });
 
   it('各 duplicateGroup がちょうど2つの処理に付いている', () => {
@@ -67,6 +112,19 @@ describe('上級7: 金額と通貨を Money にまとめる', () => {
     expect(expenseCohesion).toBeUndefined();
   });
 
+  it('模範解答のあと: 金額の計算(money-arithmetic)は Money だけに残り、ApprovalService・PayoutService には残らない', () => {
+    // Arrange
+    const solved = applySolutionSteps(stage.codebase, solution);
+
+    // Act
+    const classesWithArithmetic = allClasses(solved)
+      .filter(hasMoneyArithmetic)
+      .map((codeClass) => codeClass.name);
+
+    // Assert
+    expect(classesWithArithmetic).toEqual(['Money']);
+  });
+
   it('変更依頼2件は、初期・模範解答のあとで表どおりの点数になる', () => {
     // Arrange
     const { codebase, limits, changeRequests } = stage;
@@ -89,7 +147,7 @@ describe('上級7: 金額と通貨を Money にまとめる', () => {
     expect(acceptEuroRequest.id).toBe('req-accept-euro');
     expect(hideYenDecimalsRequest.id).toBe('req-hide-yen-decimals');
     // 実測: accept-euroはPayoutServiceを触らない(money-validationはPayoutServiceに存在しない)ため
-    // 上限超えの件数がhide-yen-decimalsと異なる(仕様書は両方35点の見込みだったが、処理名コメントを行数に数えるようになった今は15点・5点)
+    // 上限超えの件数がhide-yen-decimalsと異なる(仕様書は両方35点の見込みだったが、処理名コメントを行数に数えるようになった今は15点・5点。ApprovalService の合計を記録する文と PayoutService の振込の return true を残したので、処理名コメントの行が増えて触る処理の上限超えが各1件増えた)
     expect(scoresBefore.map((score) => score.total)).toEqual([15, 5]);
     expect(scoresAfter.map((score) => score.total)).toEqual([55, 55]);
   });

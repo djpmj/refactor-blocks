@@ -173,7 +173,7 @@ test('中級1の模範解答は混在メソッドを作らず、再生・図の�
   await replay.getByRole('button', { name: '最後へ' }).click();
 
   // Assert
-  await expect(replay.getByTestId('sample-replay-position')).toHaveText('3 / 3 手');
+  await expect(replay.getByTestId('sample-replay-position')).toHaveText('5 / 5 手');
   await expect(replay.getByTestId('sample-replay-score')).toContainText('100点');
   await expect(replay).not.toContainText('prepareOrder');
   await page.keyboard.press('Escape');
@@ -186,6 +186,8 @@ test('中級1の模範解答は混在メソッドを作らず、再生・図の�
   await expect(preview).not.toContainText('prepareOrder');
   await expect(preview.getByTestId('preview-class-Order')).toContainText('pay');
   await expect(preview.getByTestId('preview-class-Order')).toContainText('calculateOrderTotal');
+  await expect(preview.getByTestId('preview-class-Inventory')).toContainText('reserveStock');
+  await expect(preview.getByTestId('preview-class-Order')).not.toContainText('reserveStock');
 });
 
 test('再生中のメソッドパネルは手順に追従し、プレイヤーの選択を変更しない', async ({ page }) => {

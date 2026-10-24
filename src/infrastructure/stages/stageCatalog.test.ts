@@ -20,6 +20,7 @@ import type { Result } from '../../domain/shared/Result';
 import { applySolutionSteps, sampleAnswerCodebase, sampleAnswerSteps, solutionSnapshots, type SolutionStep } from '../../domain/stage/sampleAnswer';
 import { sampleImplementation } from '../../domain/change/sampleImplementation';
 import type { Stage } from '../../domain/stage/Stage';
+import { findScatteredResponsibilities } from '../../domain/stage/scatteredResponsibilities';
 import { methodNamingOf } from '../../domain/stage/methodNaming';
 import { blankDesignProblems } from '../blankDesigns/blankDesignProblems';
 import { validateCheck } from '../../domain/stage/conceptCheck';
@@ -196,6 +197,52 @@ describe('依存上限の理由', () => {
   });
 });
 
+/** 解答例で、同じ責務を複数のクラスに意図して散らしているステージ。ここに書いたものだけ許す。 */
+const ALLOWED_SCATTER: readonly { stageId: string; responsibility: string; reason: string }[] = [
+  {
+    stageId: 'advanced-report-factory',
+    responsibility: 'data-aggregation',
+    reason: '週次・月次の集計は中身が違う別の処理(duplicateGroup を持たない)で、期間ごとの Controller が持つのが自然。ステージの目標文は「重複した組み立てを ReportFactory へ委譲する」ことだけを求めており、docs/specs/advanced-report-factory.md も集計・送信は集約対象にしないと定めている',
+  },
+  {
+    stageId: 'advanced-report-factory',
+    responsibility: 'report-delivery',
+    reason: '送信は集約対象にしない設計(仕様書の受け入れ条件)。依頼 req-report-delivery は「Factory が解決するのは組み立てだけで、再送処理の追加は集約前後とも両 Controller に及ぶ」ことを見せる役で、ここを集約すると依頼の意味が消える',
+  },
+];
+
+/** 全ステージの解答例で散らばっている責務を「ステージID/責務: クラスID…」の形で列挙する。 */
+function scatteredInSampleAnswers(): { key: string; text: string }[] {
+  return stages.flatMap((stage) => findScatteredResponsibilities(sampleAnswerCodebase(stage)).map(({ responsibility, classIds }) => ({
+    key: `${stage.id}/${responsibility}`,
+    text: `${stage.id}/${responsibility}: ${classIds.join(', ')}`,
+  })));
+}
+
+describe('解答例の責務の散らばり', () => {
+  it('全ステージの解答例で、同じ責務の処理が継承関係にない複数のクラスに散らばっていない(例外の表に書いたものを除く)', () => {
+    // Arrange
+    const allowed = new Set(ALLOWED_SCATTER.map(({ stageId, responsibility }) => `${stageId}/${responsibility}`));
+
+    // Act
+    const scattered = scatteredInSampleAnswers().filter(({ key }) => !allowed.has(key)).map(({ text }) => text);
+
+    // Assert
+    expect(scattered).toEqual([]);
+  });
+
+  it('例外の表は、実際に散らばっているステージ・責務だけを理由つきで書いている', () => {
+    // Arrange
+    const actual = new Set(scatteredInSampleAnswers().map(({ key }) => key));
+
+    // Act
+    const stale = ALLOWED_SCATTER.filter(({ stageId, responsibility, reason }) => !actual.has(`${stageId}/${responsibility}`) || reason.trim() === '');
+
+    // Assert
+    expect(stale).toEqual([]);
+  });
+});
+
 describe('責務の混ざったメソッド', () => {
   it('中級1の模範解答は混在抽出をせず、最後に100点になる', () => {
     // Arrange
@@ -211,9 +258,9 @@ describe('責務の混ざったメソッド', () => {
 
     // Assert
     expect(extractedNames).not.toContain('prepareOrder');
-    expect(extractedNames).toEqual(['pay']);
+    expect(extractedNames).toEqual(['pay', 'reserveStock']);
     expect(checkout).toBeDefined();
-    expect(checkoutLineCount).toBe(19);
+    expect(checkoutLineCount).toBe(16);
     expect(checkoutLineCount).toBeLessThanOrEqual(stage.limits.method);
     expect(findMixedMethods(solved, stage.codebase, stage.cohesiveResponsibilities)).toEqual([]);
     expect(scoreCodebase(solved, stage).total).toBe(100);
@@ -782,8 +829,8 @@ function danglingFieldRefs(stage: Stage): string[] {
 
 describe('stageCatalog', () => {
   const knownChangeRequestExceptions: Readonly<Record<string, string>> = {
-    'intermediate-cyclic-dependency/req-price-rule': '置き先の Order に依頼外の責務が3種類残るため混在の減点がある。循環依存ステージを再設計するときに解消する。',
-    'intermediate-cyclic-dependency/req-member-discount': '置き先の Order に依頼外の責務が3種類残るため混在の減点がある。循環依存ステージを再設計するときに解消する。',
+    'intermediate-cyclic-dependency/req-price-rule': '置き先の Order に依頼外の責務が2種類残るため混在の減点がある。循環依存ステージを再設計するときに解消する。',
+    'intermediate-cyclic-dependency/req-member-discount': '置き先の Order に依頼外の責務が2種類残るため混在の減点がある。循環依存ステージを再設計するときに解消する。',
     'intermediate-misplaced-private/req-sms': '置き先の NotificationService に依頼外の責務が3種類残るため混在の減点がある。可視性ステージの教材を再構成するときに解消する。',
     'intermediate-misplaced-private/req-log-format': '置き先の NotificationService に依頼外の責務が3種類残るため混在の減点がある。可視性ステージの教材を再構成するときに解消する。',
     'intermediate-feature-envy/req-free-admin-seat': '置き先の UserService に依頼外の責務が2種類残るため混在の減点がある。Feature Envyの題材を再設計するときに解消する。',
