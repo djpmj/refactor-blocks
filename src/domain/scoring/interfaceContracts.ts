@@ -67,7 +67,7 @@ function findContractMethodsOutsideInterfaces(codebase: Codebase): string[] {
 }
 
 /** classId から parentIds(継承元→実装先)を辿って届く先祖ID(classId自身は含まない)。輪になっていても訪問済みで止まる。 */
-function reachableParentIds(codebase: Codebase, classId: string): Set<string> {
+export function reachableParentIds(codebase: Codebase, classId: string): Set<string> {
   const visited = new Set<string>([classId]);
   const start = findClass(codebase, classId);
   const stack = start === undefined ? [] : [...parentIds(start)];
