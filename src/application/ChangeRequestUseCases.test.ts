@@ -6,6 +6,7 @@ import { scoreChange } from '../domain/change/scoreChange';
 import { moveMethod } from '../domain/codebase/moveMethod';
 import { sampleCodebase } from '../domain/codebase/testFixtures';
 import type { CodeClass, Codebase, Method } from '../domain/codebase/Codebase';
+import { sampleImplementation } from '../domain/change/sampleImplementation';
 import { evaluateImplementationUseCase } from './ChangeRequestUseCases';
 
 const taxRequest: ChangeRequest = { id: 'req-tax', title: '軽減税率', description: '', responsibility: 'tax', linesPerSite: 8 };
@@ -40,7 +41,7 @@ function addPreviousPartToFile(file: Codebase['files'][number]): Codebase['files
     if (!implemented.ok) throw new Error('成功するはず');
 
     // Act
-    const result = evaluateImplementationUseCase(stage, { design: sampleCodebase(), base: sampleCodebase(), implemented: implemented.value }, request);
+    const result = evaluateImplementationUseCase(stage, { design: sampleCodebase(), base: sampleCodebase(), sampleBase: sampleCodebase(), implemented: implemented.value }, request);
 
     // Assert
     if (!result.ok) throw new Error('成功するはず');
@@ -55,7 +56,7 @@ function addPreviousPartToFile(file: Codebase['files'][number]): Codebase['files
     const boss: ChangeRequest = { ...request, boss: true };
     const implemented = placedIn('class-tax');
     if (!implemented.ok) throw new Error('成功するはず');
-    const codebases = { design: sampleCodebase(), base: sampleCodebase(), implemented: implemented.value };
+    const codebases = { design: sampleCodebase(), base: sampleCodebase(), sampleBase: sampleCodebase(), implemented: implemented.value };
 
     // Act
     const bossResult = evaluateImplementationUseCase(stage, codebases, boss);
@@ -74,7 +75,7 @@ function addPreviousPartToFile(file: Codebase['files'][number]): Codebase['files
     if (!moved.ok) throw new Error('成功するはず');
 
     // Act
-    const result = evaluateImplementationUseCase(stage, { design: sampleCodebase(), base: sampleCodebase(), implemented: moved.value }, extend);
+    const result = evaluateImplementationUseCase(stage, { design: sampleCodebase(), base: sampleCodebase(), sampleBase: sampleCodebase(), implemented: moved.value }, extend);
 
     // Assert
     if (!result.ok) throw new Error('成功するはず');
@@ -87,7 +88,7 @@ function addPreviousPartToFile(file: Codebase['files'][number]): Codebase['files
     const implemented = withChangePart(sampleCodebase(), request);
 
     // Act
-    const result = evaluateImplementationUseCase(stage, { design: sampleCodebase(), base: sampleCodebase(), implemented }, request);
+    const result = evaluateImplementationUseCase(stage, { design: sampleCodebase(), base: sampleCodebase(), sampleBase: sampleCodebase(), implemented }, request);
 
     // Assert
     expect(result).toEqual({ ok: false, error: 'unplaced-part' });
@@ -100,7 +101,7 @@ function addPreviousPartToFile(file: Codebase['files'][number]): Codebase['files
     if (!implemented.ok) throw new Error('成功するはず');
 
     // Act
-    const result = evaluateImplementationUseCase(stage, { design: sampleCodebase(), base: sampleCodebase(), implemented: implemented.value }, noSites);
+    const result = evaluateImplementationUseCase(stage, { design: sampleCodebase(), base: sampleCodebase(), sampleBase: sampleCodebase(), implemented: implemented.value }, noSites);
 
     // Assert
     expect(result).toEqual({ ok: false, error: 'no-sites' });
@@ -115,12 +116,29 @@ function addPreviousPartToFile(file: Codebase['files'][number]): Codebase['files
     const permissiveStage = { ...stage, limits: { ...stage.limits, method: 40 } };
 
     // Act
-    const result = evaluateImplementationUseCase(permissiveStage, { design, base, implemented: implemented.value }, request);
+    const result = evaluateImplementationUseCase(permissiveStage, { design, base, sampleBase: base, implemented: implemented.value }, request);
 
     // Assert
     if (!result.ok) throw new Error('成功するはず');
     const designCost = measureChange(design, request, permissiveStage.limits);
     if (!designCost.ok) throw new Error('designのコストを測れるはず');
     expect(result.value.current?.score).toEqual(scoreChange(designCost.value));
+  });
+
+  it('解答例は、プレイヤーの積み重ねたコードではなく sampleBase の上で求める', () => {
+    // Arrange
+    const design = sampleCodebase();
+    const base = { ...design, files: design.files.map(addPreviousPartToFile) };
+    const implemented = placedIn('class-tax');
+    if (!implemented.ok) throw new Error('成功するはず');
+    const sampleBase = design;
+
+    // Act
+    const result = evaluateImplementationUseCase(stage, { design, base, sampleBase, implemented: implemented.value }, request);
+
+    // Assert
+    if (!result.ok) throw new Error('成功するはず');
+    expect(result.value.sample).toEqual(sampleImplementation(sampleBase, request));
+    expect(result.value.sample).not.toEqual(sampleImplementation(base, request));
   });
 });
