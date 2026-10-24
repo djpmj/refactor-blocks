@@ -48,6 +48,33 @@ describe('上級7: 金額と通貨を Money にまとめる', () => {
     expect(transferCode).toMatch(/return true;$/);
   });
 
+  it('approveMonthlyExpenses は合計を return せず、合計 result を使う記録の文で終わり、その文は金額計算ではない', () => {
+    // Arrange
+    const approve = allClasses(stage.codebase).flatMap((codeClass) => codeClass.methods).find((method) => method.name === 'approveMonthlyExpenses');
+
+    // Act
+    const ids = approve?.fragments.map((fragment) => fragment.id);
+    const last = approve?.fragments.at(-1);
+
+    // Assert
+    expect(ids).toEqual(['frag-approve-collect', 'frag-approve-validate-money', 'frag-approve-sum-money', 'frag-approve-record-total']);
+    expect(approve?.fragments.some((fragment) => /return result;/.test(fragment.code?.csharp ?? ''))).toBe(false);
+    expect(last?.code?.csharp).toContain('result');
+    expect(last?.responsibility).not.toBe('money-arithmetic');
+  });
+
+  it('合計の処理(money-sum)は approve と payOut でコードが完全一致する', () => {
+    // Arrange
+    const fragments = allClasses(stage.codebase).flatMap((codeClass) => codeClass.methods).flatMap((method) => method.fragments);
+
+    // Act
+    const codes = fragments.filter((fragment) => fragment.duplicateGroup === 'money-sum').map((fragment) => fragment.code?.csharp);
+
+    // Assert
+    expect(codes).toHaveLength(2);
+    expect(codes[0]).toBe(codes[1]);
+  });
+
   it('各 duplicateGroup がちょうど2つの処理に付いている', () => {
     // Arrange
     const fragments = allClasses(stage.codebase).flatMap((codeClass) => codeClass.methods).flatMap((method) => method.fragments);
@@ -120,7 +147,7 @@ describe('上級7: 金額と通貨を Money にまとめる', () => {
     expect(acceptEuroRequest.id).toBe('req-accept-euro');
     expect(hideYenDecimalsRequest.id).toBe('req-hide-yen-decimals');
     // 実測: accept-euroはPayoutServiceを触らない(money-validationはPayoutServiceに存在しない)ため
-    // 上限超えの件数がhide-yen-decimalsと異なる(仕様書は両方35点の見込みだったが、処理名コメントを行数に数えるようになった今は15点・5点。ApprovalService の戻り値 return と PayoutService の振込の return true を元の処理のまま残したので、処理名コメントの行が増えて触る処理の上限超えが各1件増えた)
+    // 上限超えの件数がhide-yen-decimalsと異なる(仕様書は両方35点の見込みだったが、処理名コメントを行数に数えるようになった今は15点・5点。ApprovalService の合計を記録する文と PayoutService の振込の return true を残したので、処理名コメントの行が増えて触る処理の上限超えが各1件増えた)
     expect(scoresBefore.map((score) => score.total)).toEqual([15, 5]);
     expect(scoresAfter.map((score) => score.total)).toEqual([55, 55]);
   });
