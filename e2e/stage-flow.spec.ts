@@ -13,7 +13,7 @@ async function perfectOrderRefactor(page: import('@playwright/test').Page) {
     await page.getByLabel('新しいメソッド名').fill(name);
     await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
   }
-  await expect(page.getByTestId('score')).toContainText('100');
+  await expect(page.getByTestId('score-value')).toContainText('100');
 }
 
 async function extract(page: import('@playwright/test').Page, fragment: string, name: string) {
@@ -56,7 +56,7 @@ test('冒頭の手直しを終えるまで編集を止め、仕上げを正解�
   await extract(page, '注文をDBに保存する', 'saveOrder');
   await extract(page, '確認メールを送る', 'sendConfirmationMail');
   await extract(page, '在庫があるか検証する', 'validateStock');
-  await expect(page.getByTestId('score')).toContainText('100');
+  await expect(page.getByTestId('score-value')).toContainText('100');
   await expect(page.getByTestId('change-request-start')).toBeDisabled();
   const card = page.locator('.change-pain');
   await expect(card).toContainText('もし、この変更が来たら?(もう一度)');
@@ -102,7 +102,7 @@ test('draft再開後はopening fixを省略し、比較に冒頭結果がない�
   await perfectOrderRefactor(page);
   await page.reload();
   await selectStage(page, 'チュートリアル2: 太った placeOrder', { completeOpeningFix: false });
-  await expect(page.getByTestId('score')).toContainText('100');
+  await expect(page.getByTestId('score-value')).toContainText('100');
   await expect(page.getByTestId('change-request-start')).toBeDisabled();
 
   await page.locator('.change-pain').getByRole('button', { name: '実際に直してみる' }).click();
