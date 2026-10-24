@@ -1,4 +1,4 @@
-﻿import { findClassOfField, findClassOfMethod, type Codebase } from '../codebase/Codebase';
+﻿import { findClassOfField, type Codebase } from '../codebase/Codebase';
 import { classDependencies } from '../codebase/dependencies';
 import type { Stage } from '../stage/Stage';
 import { findLowCohesionClasses } from './cohesion';
@@ -104,10 +104,7 @@ export function violationTargets(
     const owner = findClassOfField(codebase, violation.fieldId);
     if (owner !== undefined) targets.encapsulation.classIds.add(owner.id);
   }
-  for (const methodId of findOpenSetters(codebase)) {
-    const owner = findClassOfMethod(codebase, methodId);
-    if (owner !== undefined) targets.encapsulation.classIds.add(owner.id);
-  }
+  addMethods(targets.encapsulation, findOpenSetters(codebase));
   addClasses(targets.cohesion, findLowCohesionClasses(codebase).map(({ classId }) => classId));
   addMethods(targets['trivial-method'], findTrivialMethods(codebase));
   addClasses(targets['thin-class'], findThinClasses(codebase));

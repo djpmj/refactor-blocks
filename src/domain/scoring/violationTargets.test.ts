@@ -91,6 +91,21 @@ describe('violationTargets', () => {
     expect(targets.misplaced).toEqual({ fileIds: [], classIds: ['tax'], methodIds: [] });
   });
 
+  it('公開されたままの setter はクラスではなくメソッドを対象にする', () => {
+    // Arrange
+    const codebase = { files: [{ id: 'file', path: 'account.ts', classes: [{
+      id: 'account', name: 'Account', fields: [{ id: 'balance', name: 'balance', visibility: 'private' as const }],
+      methods: [{ id: 'set-balance', name: 'setBalance', visibility: 'public' as const,
+        fragments: [{ id: 'f', label: '残高を書き換える', lines: 1, responsibility: 'accessor', accessor: true, writes: ['balance'] }] }],
+    }] }] };
+
+    // Act
+    const targets = violationTargets(codebase, EMPTY);
+
+    // Assert
+    expect(targets.encapsulation).toEqual({ fileIds: [], classIds: [], methodIds: ['set-balance'] });
+  });
+
   it('複数の違反が同じブロックに集約されてもIDを重複させず、違反の有無を保つ', () => {
     // Arrange
     const codebase = { files: [{ id: 'file', path: 'all.ts', classes: [

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { selectStage } from './selectStage.js';
-import { expectDeduction, expectNoDeduction } from './scoreBreakdown.js';
+import { expectDeduction, expectNoDeduction, openBreakdown } from './scoreBreakdown.js';
 
 const STAGE = '中級11: Controller に全部書いてある注文API';
 
@@ -66,4 +66,22 @@ test('保存の処理だけを Repository へ移すと、タグが付き、層�
   // Assert
   await expect(page.getByTestId('layer-OrderRepository')).toHaveText('Repository');
   await expectDeduction(page, '層の依存の向き ×1');
+});
+
+test('層を飛ばして減点されると、減点の内訳に依存の向きが矢印で出る', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await selectStage(page, STAGE);
+  await page.getByTestId('method-placeOrder').click();
+  await page.getByLabel('注文を保存して在庫を減らす').check();
+  await page.getByLabel('新しいメソッド名').fill('saveOrder');
+  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+  await dragMethodToClass(page, 'method-saveOrder', 'class-OrderRepository');
+
+  // Act
+  await openBreakdown(page);
+
+  // Assert
+  await expectDeduction(page, '層の依存の向き ×1');
+  await expect(page.getByTestId('score-targets-layer')).toHaveText('対象: OrderController → OrderRepository');
 });

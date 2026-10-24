@@ -7,6 +7,10 @@ import { findClass, type Codebase } from '../../domain/codebase/Codebase';
 import { findMisplacedResponsibilities } from '../../domain/scoring/misplacedResponsibilities';
 import { classDependencies, findCycles } from '../../domain/codebase/dependencies';
 import { findLineLimitViolations } from '../../domain/scoring/lineLimits';
+import { violationDependencies } from '../../domain/scoring/violationDependencies';
+import { violationTargets } from '../../domain/scoring/violationTargets';
+import type { Stage } from '../../domain/stage/Stage';
+import { describeDependencies, describeTargets, type DescribedTargets } from './describeTargets';
 
 function MisplacedViolationDetails({ codebase }: Readonly<{ codebase: Codebase }>) {
   const violations = findMisplacedResponsibilities(codebase);
@@ -30,6 +34,48 @@ function clearPreviewRules(previewRuleFor: (rule: ScoreRule | null, source: 'hov
 function deductionLabel(rule: ScoreRule, count: number, codebase: Codebase): string {
   if (rule !== 'cycle') return `${RULE_LABEL[rule]} ×${count}`;
   return `${RULE_LABEL[rule]} ${findCycles(classDependencies(codebase)).length}組(矢印${count}本)`;
+}
+
+function describeRule(rule: ScoreRule, codebase: Codebase, stage: Stage): DescribedTargets {
+  if (rule === 'coupling' || rule === 'cycle' || rule === 'layer') return describeDependencies(codebase, violationDependencies(codebase, stage)[rule]);
+  return describeTargets(codebase, violationTargets(codebase, stage)[rule]);
+}
+
+/** 減点の原因になっているクラス・メソッド(依存なら矢印)を名前で並べる。押すとキャンバスでその場所を選んで寄せる。 */
+function TargetNames({ rule, codebase, stage, disabled }: Readonly<{ rule: ScoreRule; codebase: Codebase; stage: Stage; disabled: boolean }>) {
+  const selectMethod = useGameStore((state) => state.selectMethod);
+  const focusHint = useGameStore((state) => state.focusHint);
+  const { names, rest } = describeRule(rule, codebase, stage);
+  if (names.length === 0) return null;
+  return (
+    <p className="score-breakdown__targets" data-testid={`score-targets-${rule}`}>
+      対象:{' '}
+      {names.map(({ label, target }, index) => (
+        <span key={label}>
+          {index > 0 ? '、' : null}
+          <button
+            type="button"
+            className="score-breakdown__target"
+            disabled={disabled}
+            onClick={() => {
+              if (target.methodIds.length === 1) selectMethod(target.methodIds[0]);
+              focusHint(target, `score-target-${rule}-${label}`);
+            }}
+          >
+            {label}
+          </button>
+        </span>
+      ))}
+      {rest > 0 ? `、ほか ${rest} 件` : null}
+    </p>
+  );
+}
+
+function RuleDetails({ rule, codebase, stage, disabled }: Readonly<{ rule: ScoreRule; codebase: Codebase; stage: Stage; disabled: boolean }>) {
+  return <>
+    <TargetNames rule={rule} codebase={codebase} stage={stage} disabled={disabled} />
+    {rule === 'misplaced' ? <MisplacedViolationDetails codebase={codebase} /> : null}
+  </>;
 }
 
 function WhyText({ rule, lineWhy }: Readonly<{ rule: ScoreRule; lineWhy: ReturnType<typeof lineLimitWhy> }>) {
@@ -96,7 +142,7 @@ export function ScoreBreakdown({ score, disabled }: Readonly<{
                   なぜ?
                 </button>
               </div>
-              {rule === 'misplaced' ? <MisplacedViolationDetails codebase={codebase} /> : null}
+              <RuleDetails rule={rule} codebase={codebase} stage={stage} disabled={disabled} />
               <div id={whyId} className="score-breakdown__why" hidden={!open}>
                 <WhyText rule={rule} lineWhy={lineWhy} />
               </div>

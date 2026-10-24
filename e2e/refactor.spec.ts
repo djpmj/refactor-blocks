@@ -2204,6 +2204,17 @@ test('中級7: setter 越しの書き換えが見え、ルールを移して可�
   await creditSelect.focus();
   await creditSelect.press('ArrowUp');
 
+  // Assert: 減点の内訳に、原因のメソッドが名前で出る
+  await expectDeduction(page, 'カプセル化の破れ ×2');
+  const targets = page.getByTestId('score-targets-encapsulation');
+  await expect(targets).toHaveText('対象: Account.setBalance()、Account.setDailyWithdrawn()');
+
+  // Act: 名前を押すと、キャンバスでそのメソッドが選ばれる
+  await targets.getByRole('button', { name: 'Account.setBalance()' }).click();
+
+  // Assert
+  await expect(page.getByTestId('method-setBalance').locator('.method-chip--selected')).toBeVisible();
+
   // Act: setBalance・setDailyWithdrawn を private にする
   await clickMethodInView(page, 'method-setBalance');
   await page.getByLabel('メソッド setBalance の可視性').selectOption('private');
