@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-24 00:45 UTC PR #268 狭い画面のパネルをドロワー表示にする (#232)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test(1832件)✅ / npm run lint ✅ / npm run typecheck ✅。Issue #232 の受け入れ基準(375pxでキャンバス340px以上、左右ドロワーの開閉・フォーカス復帰・inert、未選択レール非表示)を差分とE2Eコードで確認。E2Eはこの環境にブラウザが無く未実行(PR本文では271件成功)
+- マージ: squash & delete-branch
+
 ## 2026-10-23 15:00 UTC PR #267 理解度チェックの正誤と解説を区別して表示する (#234)
 
 - 判定: 合格(blocker無し)
@@ -210,11 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(1744件) / npm run lint ✅ / npm run typecheck ✅ / E2Eはレビュー環境にChromiumが無く未実行のためPR記載の233件成功を前提とした。Issue #182 の受け入れ基準(ガイド3項目・統合欄の見出し/ボタン/ラベル・インライン説明)を差分で確認
-- マージ: squash & delete-branch
-
-## 2026-10-16 19:30 UTC PR #202 feat: show responsibility colors and counts
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(1721件) / npm run lint ✅ / npm run typecheck ✅ / E2Eはレビュー環境にChromiumが無く未実行のためPR記載の226件成功を前提とした。Issue #173 の受け入れ基準(印の色と英字・呼び出し行に印なし・クラスの責務種類数・番号の安定)を差分で確認
 - マージ: squash & delete-branch
 
