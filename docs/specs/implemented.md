@@ -121,3 +121,5 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [change-cost-class-entanglement](change-cost-class-entanglement.md) | 変更のしやすさで、変更クラスに同居する別責務も「巻き込み(クラス)」として減点する |
 | [pull-up-protected-merge](pull-up-protected-merge.md) | 基底へ移したメソッドを子孫からだけ呼ばれるなら protected にし、private/protected 間の統合候補を保つ |
 | [method-chip-accessible-name](method-chip-accessible-name.md) | メソッドのボタンの読み上げ名に可視性・行数・警告・「直した」印を入れ、選択中を aria-pressed で伝える |
+| [move-class-to-new-file-menu](move-class-to-new-file-menu.md) | クラスのメニューから、そのクラスを新しいファイルへ移動する(唯一のクラスでは非表示) |
+| [blank-design-class-names](blank-design-class-names.md) | 白紙設計のクラスを責務に応じて自動命名し、手動改名は維持する |

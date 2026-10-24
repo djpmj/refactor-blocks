@@ -40,11 +40,18 @@ export function OperationGuideDialog({ open, onClose, onRepeatTour, repeatTourDi
   repeatTourDisabled: boolean;
 }>) {
   const ref = useRef<HTMLDialogElement>(null);
+  const openerRef = useRef<HTMLElement | null>(null);
   useEffect(() => {
     const dialog = ref.current;
     if (dialog === null) return;
-    if (open && !dialog.open) dialog.showModal();
-    if (!open && dialog.open) dialog.close();
+    if (open && !dialog.open) {
+      openerRef.current = dialog.ownerDocument.activeElement instanceof HTMLElement ? dialog.ownerDocument.activeElement : null;
+      dialog.showModal();
+    }
+    if (!open && dialog.open) {
+      dialog.close();
+      openerRef.current?.focus();
+    }
   }, [open]);
   return (
     <dialog ref={ref} className="operation-guide" aria-labelledby={TITLE_ID} onClose={onClose} data-testid="operation-guide">
