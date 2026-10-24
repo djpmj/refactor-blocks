@@ -939,13 +939,12 @@ const anemicDomainModelStage: Stage = {
                    code: { csharp: "if (input is null) throw new ArgumentNullException(nameof(input));\nawait _transactionLog.AppendAsync(accountId, amount, DateTimeOffset.UtcNow);" }},
                   {
                     id: 'frag-withdraw-notify',
-                    label: '引き出し後の残高をメールで知らせる',
+                    label: '引き出したことをメールで知らせる',
                     lines: 3,
                     responsibility: 'notification',
                     reads: ['field-notifier'],
-                    uses: ['method-get-balance'],
                     suggestedName: 'notifyWithdrawal',
-                   code: { csharp: "var balance = getBalance();\nawait notifier.SendBalanceAsync(customerId, balance, cancellationToken);\nawait notifier.RecordDeliveryAsync(customerId, DateTimeOffset.UtcNow);" }},
+                   code: { csharp: "var message = $\"{amount}円を引き出しました\";\nawait notifier.SendAsync(customerId, message, cancellationToken);\nawait notifier.RecordDeliveryAsync(customerId, DateTimeOffset.UtcNow);" }},
                 ],
               },
               {
