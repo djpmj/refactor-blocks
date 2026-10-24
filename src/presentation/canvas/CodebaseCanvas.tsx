@@ -9,7 +9,7 @@ import {
   type DragStartEvent,
   type UniqueIdentifier,
 } from '@dnd-kit/core';
-import { Background, Controls, Panel, ReactFlow, useNodesInitialized, useReactFlow, type EdgeTypes, type NodeChange, type NodeTypes, type ReactFlowInstance, type XYPosition } from '@xyflow/react';
+import { Background, Controls, Panel, ReactFlow, useNodesInitialized, useReactFlow, ViewportPortal, type EdgeTypes, type NodeChange, type NodeTypes, type ReactFlowInstance, type XYPosition } from '@xyflow/react';
 import { useCallback, useEffect, useMemo, useRef, useState, type Dispatch, type RefObject, type SetStateAction } from 'react';
 import { DropTargetsContext, type DropTargetsState } from './DropTargetsContext';
 import { createPortal } from 'react-dom';
@@ -25,7 +25,8 @@ import { parseClassDragId, parseClassDropId, parseFieldDragId, parseFileDropId, 
 import { FieldChipView } from './FieldChip';
 import { FileNode } from './FileNode';
 import { InheritanceMarker } from './InheritanceMarker';
-import { dependencyEdges, fileRectsFromNodes, inheritanceEdges, layoutCodebase, NEW_CLASS_FILE_SIZE, type CodebaseFlowNode } from './layoutCodebase';
+import { dependencyEdges, fileRectsFromNodes, inheritanceEdges, laneBands, layoutCodebase, NEW_CLASS_FILE_SIZE, type CodebaseFlowNode } from './layoutCodebase';
+import type { Stage, StageLayer } from '../../domain/stage/Stage';
 import { MethodChipView } from './MethodChip';
 import { OffsetEdge } from './OffsetEdge';
 import { TopRouteEdge } from './TopRouteEdge';
@@ -305,12 +306,28 @@ function arrangeNodes(nodes: CodebaseFlowNode[], overrides: FlowOverrides): Code
   });
 }
 
-function useCanvasEdges(codebase: Codebase, nodes: CodebaseFlowNode[], visibilityEnforced: boolean | undefined) {
+function useCanvasEdges(codebase: Codebase, nodes: CodebaseFlowNode[], rules: Pick<Stage, 'visibilityEnforced' | 'layers'>) {
+  const { visibilityEnforced, layers } = rules;
   return useMemo(() => {
     const fileRects = fileRectsFromNodes(nodes);
     const violations = visibilityViolationDependencies(codebase, visibilityEnforced);
-    return [...dependencyEdges(codebase, fileRects, violations), ...inheritanceEdges(codebase, fileRects)];
-  }, [codebase, nodes, visibilityEnforced]);
+    return [...dependencyEdges(codebase, fileRects, violations, layers), ...inheritanceEdges(codebase, fileRects, layers)];
+  }, [codebase, nodes, visibilityEnforced, layers]);
+}
+
+/** 層を扱うステージで、層ごとの段の背景に薄い帯と層の名前を描く。帯はクリック・ドラッグの邪魔をしない。 */
+function LaneBands({ codebase, layers }: Readonly<{ codebase: Codebase; layers: readonly StageLayer[] | undefined }>) {
+  const bands = useMemo(() => laneBands(codebase, layers), [codebase, layers]);
+  return (
+    <ViewportPortal>
+      {bands.map((band) => (
+        <div key={band.name} className="lane-band" data-testid="lane-band"
+          style={{ transform: `translate(${String(band.x)}px, ${String(band.y)}px)`, width: band.width, height: band.height }}>
+          <span className="lane-band__name">{band.name}</span>
+        </div>
+      ))}
+    </ViewportPortal>
+  );
 }
 
 function fitFileCount(codebase: Codebase, overrides: FlowOverrides): number {
@@ -319,8 +336,8 @@ function fitFileCount(codebase: Codebase, overrides: FlowOverrides): number {
   return codebase.files.length - manuallyPlacedFileCount;
 }
 
-function usePlacedCanvasNodes(codebase: Codebase, overrides: FlowOverrides, rememberPositions: (nodes: readonly CodebaseFlowNode[]) => void): CodebaseFlowNode[] {
-  const layoutNodes = useMemo(() => layoutCodebase(codebase), [codebase]);
+function usePlacedCanvasNodes(codebase: Codebase, layers: readonly StageLayer[] | undefined, overrides: FlowOverrides, rememberPositions: (nodes: readonly CodebaseFlowNode[]) => void): CodebaseFlowNode[] {
+  const layoutNodes = useMemo(() => layoutCodebase(codebase, layers), [codebase, layers]);
   const positionedNodes = useMemo(() => {
     const currentNodes = arrangeNodes(layoutNodes, overrides);
     const allRects = fileRectsFromNodes(currentNodes);
@@ -351,6 +368,7 @@ type CanvasFlowProps = {
   readonly stageId: string;
   readonly visibleFileCount: number;
   readonly codebase: Codebase;
+  readonly layers: readonly StageLayer[] | undefined;
   readonly autoFitStateRef: RefObject<AutoFitState>;
   readonly onMoveStart: (event: MouseEvent | TouchEvent | null) => void;
   readonly onManualFit: () => void;
@@ -359,7 +377,7 @@ type CanvasFlowProps = {
   readonly revealFileId: string | null;
 };
 
-function CanvasFlow({ nodes, edges, onNodesChange, setFlow, contextMenu, selectMethod, stageId, visibleFileCount, codebase, layoutResetCount, arrangeVersion, arrange, autoFitStateRef, onMoveStart, onManualFit, onControlZoom, dragInteractionActive, revealFileId }: CanvasFlowProps & { readonly layoutResetCount: number; readonly arrangeVersion: number; readonly arrange: () => void }) {
+function CanvasFlow({ nodes, edges, onNodesChange, setFlow, contextMenu, selectMethod, stageId, visibleFileCount, codebase, layers, layoutResetCount, arrangeVersion, arrange, autoFitStateRef, onMoveStart, onManualFit, onControlZoom, dragInteractionActive, revealFileId }: CanvasFlowProps & { readonly layoutResetCount: number; readonly arrangeVersion: number; readonly arrange: () => void }) {
   return (
     <WarningEdgeStateProvider>
       <ReactFlow colorMode="system"
@@ -369,6 +387,7 @@ function CanvasFlow({ nodes, edges, onNodesChange, setFlow, contextMenu, selectM
         onNodeContextMenu={contextMenu.onNodeContextMenu} onPaneContextMenu={contextMenu.onPaneContextMenu}
         onPaneClick={() => selectMethod(null)}
       >
+        <LaneBands codebase={codebase} layers={layers} />
         <InheritanceMarker /><Background gap={24} /><Controls showInteractive={false} onFitView={onManualFit} onZoomIn={onControlZoom} onZoomOut={onControlZoom} />
         <Panel position="top-right">
           <button type="button" className="nodrag nopan" data-testid="canvas-arrange" aria-label="依存の向きに沿って並べ直す" onClick={arrange}>整列</button>
@@ -489,13 +508,13 @@ function useDragInteraction() {
 export function CodebaseCanvas({ active }: Readonly<{ active: boolean }>) {
   const codebase = useGameStore((state) => state.codebase);
   const selectMethod = useGameStore((state) => state.selectMethod);
-  const stageId = useGameStore((state) => state.stage.id);
+  const stage = useGameStore((state) => state.stage);
+  const { id: stageId, layers } = stage;
   const layoutResetCount = useGameStore((state) => state.layoutResetCount);
-  const visibilityEnforced = useGameStore((state) => state.stage.visibilityEnforced);
   const { overrides, handleNodesChange, setPosition, rememberPositions, arrange, arrangeVersion } = useFlowOverrides(stageId, layoutResetCount);
-  const nodes = usePlacedCanvasNodes(codebase, overrides, rememberPositions);
+  const nodes = usePlacedCanvasNodes(codebase, layers, overrides, rememberPositions);
   const visibleFileCount = fitFileCount(codebase, overrides);
-  const edges = useCanvasEdges(codebase, nodes, visibilityEnforced);
+  const edges = useCanvasEdges(codebase, nodes, stage);
   const { activeId, start: handleDragStart, finish: handleDragFinish } = useDragInteraction();
   const dragInteractionActive = activeId !== null;
   const dragging = useMemo<Dragging | null>(() => {
@@ -533,7 +552,7 @@ export function CodebaseCanvas({ active }: Readonly<{ active: boolean }>) {
       <DropTargetsContext.Provider value={dropTargets}>
         <CanvasFlow
           nodes={nodes} edges={edges} onNodesChange={handleNodesChange} setFlow={setFlow} contextMenu={contextMenu}
-          selectMethod={selectMethod} stageId={stageId} visibleFileCount={visibleFileCount} codebase={codebase}
+          selectMethod={selectMethod} stageId={stageId} visibleFileCount={visibleFileCount} codebase={codebase} layers={layers}
           layoutResetCount={layoutResetCount} arrangeVersion={arrangeVersion} arrange={arrange}
           autoFitStateRef={autoFitStateRef} onMoveStart={onMoveStart} onManualFit={onManualFit} onControlZoom={onControlZoom} dragInteractionActive={dragInteractionActive} revealFileId={revealFileId}
         />

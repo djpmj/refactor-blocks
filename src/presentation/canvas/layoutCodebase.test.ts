@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Codebase, Fragment } from "../../domain/codebase/Codebase";
 import { advancedStages } from "../../infrastructure/stages/advancedStages";
-import { dependenciesWithoutTray, dependencyEdges, handleSidesForFiles, inheritanceEdges, inheritanceKind, layoutCodebase, spreadOffsets, type FileRect } from "./layoutCodebase";
+import { dependenciesWithoutTray, dependencyEdges, fileRectsFromNodes, handleSidesForFiles, inheritanceEdges, inheritanceKind, laneBands, layoutCodebase, spreadOffsets, type FileRect } from "./layoutCodebase";
 
 function callFragment(id: string, uses: readonly string[]): Fragment {
   return { id, label: id, lines: 1, responsibility: "call", uses };
@@ -605,5 +605,95 @@ describe("inheritanceEdges", () => {
     expect(depEdge).toMatchObject({ type: "warning", data: { route: "topRoute" } });
     expect(inheritEdge).toMatchObject({ type: "topRoute" });
     expect(depEdge?.data).not.toEqual(inheritEdge.data);
+  });
+});
+
+describe("層を扱うステージの段", () => {
+  const layers = [
+    { name: "Controller", responsibilities: ["http"] },
+    { name: "Service", responsibilities: ["rule"] },
+    { name: "Repository", responsibilities: ["persistence"] },
+  ];
+
+  /** 並びを元の順と変えるため、わざと Repository → Controller → Service の順で作る。`uses` は呼ぶメソッドID。 */
+  function layeredCodebase(controllerUses: readonly string[]): Codebase {
+    const fileOf = (name: string, responsibility: string, uses: readonly string[]) => ({
+      id: `file-${name}`,
+      path: name,
+      classes: [{
+        id: `class-${name}`,
+        name,
+        methods: [{
+          id: `method-${name}`,
+          name: "run",
+          visibility: "public" as const,
+          fragments: [
+            { id: `f-${name}`, label: name, lines: 1, responsibility },
+            ...(uses.length === 0 ? [] : [callFragment(`call-${name}`, uses)]),
+          ],
+        }],
+      }],
+    });
+    return {
+      files: [
+        fileOf("Repository", "persistence", []),
+        fileOf("Controller", "http", controllerUses),
+        fileOf("Service", "rule", []),
+      ],
+    };
+  }
+
+  it("layers があると、依存がなくても層の順(上から Controller・Service・Repository)に段を分ける", () => {
+    // Arrange
+    const codebase = layeredCodebase([]);
+
+    // Act
+    const nodes = layoutCodebase(codebase, layers);
+
+    // Assert
+    const [controller, service, repository] = ["file-Controller", "file-Service", "file-Repository"].map((id) => fileNodeY(nodes, id));
+    expect(controller).toBeLessThan(service);
+    expect(service).toBeLessThan(repository);
+  });
+
+  it("layers が無いと、依存がないファイルは同じ段に並ぶ(今までどおり)", () => {
+    // Arrange
+    const codebase = layeredCodebase([]);
+
+    // Act
+    const nodes = layoutCodebase(codebase);
+
+    // Assert
+    expect(fileNodeY(nodes, "file-Controller")).toBe(fileNodeY(nodes, "file-Repository"));
+  });
+
+  it("層ごとの帯に層の名前が付き、層が決まらないファイルがあるときだけ「未分類」が加わる", () => {
+    // Arrange
+    const codebase = layeredCodebase([]);
+    const withUnclassified: Codebase = { files: [...codebase.files, { id: "file-X", path: "X", classes: [] }] };
+
+    // Act
+    const names = laneBands(codebase, layers).map((band) => band.name);
+    const namesWithUnclassified = laneBands(withUnclassified, layers).map((band) => band.name);
+
+    // Assert
+    expect(names).toEqual(["Controller", "Service", "Repository"]);
+    expect(namesWithUnclassified).toEqual(["Controller", "Service", "Repository", "未分類"]);
+    expect(laneBands(codebase, undefined)).toEqual([]);
+  });
+
+  it("Controller → Repository の依存は層を飛ばす印(edge--layer・layer: skip)が付き、Controller → Service には付かない", () => {
+    // Arrange
+    const codebase = layeredCodebase(["method-Repository", "method-Service"]);
+    const fileRects = fileRectsFromNodes(layoutCodebase(codebase, layers));
+
+    // Act
+    const edges = dependencyEdges(codebase, fileRects, [], layers);
+
+    // Assert
+    const toRepository = edges.find((edge) => edge.target === "class-Repository");
+    const toService = edges.find((edge) => edge.target === "class-Service");
+    expect(toRepository).toMatchObject({ type: "warning", className: "edge--layer", data: { layer: "skip" } });
+    expect(toService?.className).toBeUndefined();
   });
 });
