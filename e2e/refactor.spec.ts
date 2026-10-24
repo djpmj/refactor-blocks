@@ -2207,9 +2207,7 @@ test('中級7: setter 越しの書き換えが見え、ルールを移して可�
   await creditSelect.press('ArrowUp');
 
   // Assert: 減点の内訳に、原因のメソッドが名前で出る
-  const breakdown = page.locator('.score-breakdown');
-  await breakdown.locator('summary').click();
-  await expect(breakdown).toContainText('カプセル化の破れ ×2');
+  await expectDeduction(page, 'カプセル化の破れ ×2');
   const targets = page.getByTestId('score-targets-encapsulation');
   await expect(targets).toHaveText('対象: Account.setBalance()、Account.setDailyWithdrawn()');
 

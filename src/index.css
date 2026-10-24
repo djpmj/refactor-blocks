@@ -515,7 +515,7 @@ input.class-node__name { width: 14ch; }
 .score-breakdown__item { display: flex; flex-direction: column; gap: 4px; }
 .score-breakdown__row { display: flex; gap: 4px; }
 .score-breakdown__violation-details { margin: 0; padding-left: 24px; line-height: 1.5; }
-.score-breakdown__targets { margin: 0; line-height: 1.8; }
+.score-breakdown__targets { margin: 0; max-width: 210px; line-height: 1.8; overflow-wrap: anywhere; }
 .score-breakdown__row > button:first-child { flex: 1; }
 .score-breakdown__why { padding: 6px 8px; border-left: 3px solid var(--border); }
 .score-breakdown__why[hidden] { display: none; }

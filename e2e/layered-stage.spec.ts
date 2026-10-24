@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { selectStage } from './selectStage.js';
-import { expectDeduction, expectNoDeduction } from './scoreBreakdown.js';
+import { expectDeduction, expectNoDeduction, openBreakdown } from './scoreBreakdown.js';
 
 const STAGE = '中級11: Controller に全部書いてある注文API';
 
@@ -79,10 +79,9 @@ test('層を飛ばして減点されると、減点の内訳に依存の向き�
   await dragMethodToClass(page, 'method-saveOrder', 'class-OrderRepository');
 
   // Act
-  const breakdown = page.locator('.score-breakdown');
-  await breakdown.locator('summary').click();
+  await openBreakdown(page);
 
   // Assert
-  await expect(breakdown).toContainText('層の依存の向き ×1');
+  await expectDeduction(page, '層の依存の向き ×1');
   await expect(page.getByTestId('score-targets-layer')).toHaveText('対象: OrderController → OrderRepository');
 });
