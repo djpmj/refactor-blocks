@@ -23,8 +23,8 @@ function usageByClass(codebase: Codebase): Map<string, Usage> {
 }
 
 /** 持ち主とその子孫(extends)以外のクラスに、メンバーを触っているものがあるか。 */
-function usedFromOutside(codebase: Codebase, usage: ReadonlyMap<string, Usage>, ownerId: string, kind: keyof Usage, memberId: string): boolean {
-  return [...usage].some(([classId, used]) => !extendsChainIds(codebase, classId).has(ownerId) && used[kind].has(memberId));
+function usedFromOutside(codebase: Codebase, usage: ReadonlyMap<string, Usage>, ownerId: string, member: { readonly kind: keyof Usage; readonly id: string }): boolean {
+  return [...usage].some(([classId, used]) => !extendsChainIds(codebase, classId).has(ownerId) && used[member.kind].has(member.id));
 }
 
 /** 自分か先祖がインターフェース役・抽象クラス役で、その役が同名のメソッドを持つか。 */
@@ -43,11 +43,11 @@ export function findUnusedPublicMembers(codebase: Codebase, options: { readonly 
   const unused: UnusedPublicMember[] = [];
   for (const file of codebase.files.filter((candidate) => candidate.id !== TRAY_FILE_ID)) {
     for (const codeClass of file.classes) {
-      const fields = fieldsOf(codeClass).filter((field) => field.visibility === 'public' && !usedFromOutside(codebase, usage, codeClass.id, 'fieldIds', field.id));
+      const fields = fieldsOf(codeClass).filter((field) => field.visibility === 'public' && !usedFromOutside(codebase, usage, codeClass.id, { kind: 'fieldIds', id: field.id }));
       const methods = codeClass.methods.filter((method) => method.visibility === 'public'
         && !options.entryPointIds.includes(method.id)
         && !isContractMethod(codebase, codeClass, method.name)
-        && !usedFromOutside(codebase, usage, codeClass.id, 'methodIds', method.id));
+        && !usedFromOutside(codebase, usage, codeClass.id, { kind: 'methodIds', id: method.id }));
       unused.push(
         ...fields.map((field) => ({ kind: 'field' as const, id: field.id, classId: codeClass.id })),
         ...methods.map((method) => ({ kind: 'method' as const, id: method.id, classId: codeClass.id })),
