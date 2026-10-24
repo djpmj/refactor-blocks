@@ -20,7 +20,7 @@ test('上級3の解答例プレビューでStrategyにinterface印を出す', as
   await page.goto('/');
   await selectStage(page, '上級3: 会員ランクの割引をStrategyパターンへ組み替える');
   await openReferenceItem(page, 'reference-sample');
-  await expect(page.getByTestId('codebase-preview').getByTestId('preview-class-DiscountStrategy').getByText('«interface»')).toBeVisible();
+  await expect(page.getByTestId('codebase-preview').getByTestId('answer-diagram').getByTestId('preview-class-DiscountStrategy').getByText('«interface»')).toBeVisible();
 });
 
 test('抽象クラスは名前の上に印を置き、枠を破線にしない', async ({ page }) => {
