@@ -34,6 +34,20 @@ describe('上級7: 金額と通貨を Money にまとめる', () => {
     expect(score.deductions.find((d) => d.rule === 'coupling')?.count).toBe(0);
   });
 
+  it('payOut のコード例は合計→整形→振込の順で、振込は合計の結果を使い true を返す', () => {
+    // Arrange
+    const payOut = allClasses(stage.codebase).flatMap((codeClass) => codeClass.methods).find((method) => method.name === 'payOut');
+
+    // Act
+    const ids = payOut?.fragments.map((fragment) => fragment.id);
+    const transferCode = payOut?.fragments.find((fragment) => fragment.id === 'frag-payout-transfer')?.code?.csharp;
+
+    // Assert
+    expect(ids).toEqual(['frag-payout-sum-money', 'frag-payout-format-money', 'frag-payout-transfer']);
+    expect(transferCode).toContain('result.Amount');
+    expect(transferCode).toMatch(/return true;$/);
+  });
+
   it('各 duplicateGroup がちょうど2つの処理に付いている', () => {
     // Arrange
     const fragments = allClasses(stage.codebase).flatMap((codeClass) => codeClass.methods).flatMap((method) => method.fragments);
@@ -106,8 +120,8 @@ describe('上級7: 金額と通貨を Money にまとめる', () => {
     expect(acceptEuroRequest.id).toBe('req-accept-euro');
     expect(hideYenDecimalsRequest.id).toBe('req-hide-yen-decimals');
     // 実測: accept-euroはPayoutServiceを触らない(money-validationはPayoutServiceに存在しない)ため
-    // 上限超えの件数がhide-yen-decimalsと異なる(仕様書は両方35点の見込みだったが、処理名コメントを行数に数えるようになった今は25点・15点。ApprovalService の戻り値の1行を合計の処理に含め、処理名コメントが1行減って触る処理の上限超えが各1件減った)
-    expect(scoresBefore.map((score) => score.total)).toEqual([25, 15]);
+    // 上限超えの件数がhide-yen-decimalsと異なる(仕様書は両方35点の見込みだったが、処理名コメントを行数に数えるようになった今は15点・5点。ApprovalService の戻り値 return と PayoutService の振込の return true を元の処理のまま残したので、処理名コメントの行が増えて触る処理の上限超えが各1件増えた)
+    expect(scoresBefore.map((score) => score.total)).toEqual([15, 5]);
     expect(scoresAfter.map((score) => score.total)).toEqual([55, 55]);
   });
 });
