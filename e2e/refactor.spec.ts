@@ -1084,6 +1084,34 @@ test('実装するインターフェースの候補は、インターフェー�
   await expect(submenu.getByRole('menuitem')).toHaveCount(0);
 });
 
+test('実装済みの相手が後から具象クラスになっても、候補にチェック付きで残り、外せる', async ({ page }) => {
+  // Arrange: StripeGateway が PaymentGateway を実装したあと、PaymentGateway へ中身のあるメソッドを移して具象にする
+  await page.goto('/');
+  await selectStage(page, '上級2: 決済ゲートウェイをインターフェース越しに呼ぶ');
+  await page.getByTestId('class-header-StripeGateway').click({ button: 'right' });
+  let menu = page.getByTestId('context-menu');
+  await menu.getByRole('menuitem', { name: '実装するインターフェースを設定' }).click();
+  await menu.getByRole('menuitemcheckbox', { name: 'PaymentGateway' }).click();
+  await page.keyboard.press('Escape');
+  await expect(menu).toHaveCount(0);
+  await dragMethodToClass(page, 'method-checkout', 'class-PaymentGateway');
+  await expect(page.getByTestId('class-PaymentGateway').getByTestId('method-checkout')).toBeVisible();
+
+  // Act
+  await page.getByTestId('class-header-StripeGateway').click({ button: 'right' });
+  menu = page.getByTestId('context-menu');
+  await menu.getByRole('menuitem', { name: '実装するインターフェースを設定' }).click();
+  const submenu = menu.getByRole('menu', { name: '実装するインターフェースを設定' });
+
+  // Assert: 具象になった PaymentGateway が、チェック付きで残る
+  const checkbox = submenu.getByRole('menuitemcheckbox', { name: 'PaymentGateway' });
+  await expect(submenu.getByRole('menuitemcheckbox')).toHaveCount(1);
+  await expect(checkbox).toHaveAttribute('aria-checked', 'true');
+  await checkbox.click();
+  await expect(page.getByTestId('class-StripeGateway')).not.toContainText('implements PaymentGateway');
+  await expect(submenu.getByRole('menuitem', { name: 'インターフェース役のクラスがありません(中身の無い public メソッドだけのクラス)' })).toBeDisabled();
+});
+
 test('インターフェース役のクラスが無いステージでは、実装するインターフェースの候補に押せない説明の項目が出る', async ({ page }) => {
   // Arrange
   await openCyclicStage(page);

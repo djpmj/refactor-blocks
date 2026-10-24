@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { findMethod, type CodeClass, type Codebase } from './Codebase';
-import { addInterface, availableInterfaces, availableParents, removeInterface, setSuperclass } from './setSuperclass';
+import { findMethod, mapClasses, type CodeClass, type Codebase } from './Codebase';
+import { addInterface, availableInterfaces, availableParents, implementableInterfaces, removeInterface, setSuperclass } from './setSuperclass';
 import { fragment, sampleCodebase } from './testFixtures';
 
 /** 継承・実装の関係を一切持たない3つのインターフェース役のクラス(X・Y・Z)。実装先(implements)だけの輪を組み立てるテストに使う。 */
@@ -500,5 +500,36 @@ describe('availableInterfaces', () => {
 
     // Assert
     expect(result).toEqual([]);
+  });
+});
+
+describe('implementableInterfaces', () => {
+  it('すでに実装している相手が後から具象化しても、候補に残る(外せる)', () => {
+    // Arrange
+    const withInterface = addInterface(interfaceAndConcreteCodebase(), 'class-impl', 'Runnable');
+    if (!withInterface.ok) throw new Error(withInterface.error);
+    const concretized = mapClasses(withInterface.value, (codeClass) =>
+      codeClass.id === 'class-iface' ? { ...codeClass, methods: [...codeClass.methods, { id: 'method-body', name: 'body', visibility: 'public', fragments: [fragment('f-body', 2)] }] } : codeClass,
+    );
+
+    // Act
+    const result = implementableInterfaces(concretized, 'class-impl');
+    const removed = removeInterface(concretized, 'class-impl', 'Runnable');
+
+    // Assert
+    expect(availableInterfaces(concretized, 'class-impl')).toEqual([]);
+    expect(result.map((codeClass) => codeClass.name)).toEqual(['Runnable']);
+    expect(removed.ok).toBe(true);
+  });
+
+  it('実装していない具象クラスは候補に出さない', () => {
+    // Arrange
+    const codebase = interfaceAndConcreteCodebase();
+
+    // Act
+    const result = implementableInterfaces(codebase, 'class-impl');
+
+    // Assert
+    expect(result.map((codeClass) => codeClass.name)).toEqual(['Runnable']);
   });
 });

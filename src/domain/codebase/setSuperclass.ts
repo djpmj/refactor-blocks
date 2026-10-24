@@ -112,3 +112,9 @@ export function availableParents(codebase: Codebase, classId: string): CodeClass
 export function availableInterfaces(codebase: Codebase, classId: string): CodeClass[] {
   return availableParents(codebase, classId).filter(isInterfaceLike);
 }
+
+/** 「実装するインターフェース」メニューに並べるクラス。availableInterfaces に加え、すでに実装している相手は(後から具象化していても)外せるよう残す。 */
+export function implementableInterfaces(codebase: Codebase, classId: string): CodeClass[] {
+  const implementedIds = new Set(findClass(codebase, classId)?.interfaceIds ?? []);
+  return availableParents(codebase, classId).filter((codeClass) => isInterfaceLike(codeClass) || implementedIds.has(codeClass.id));
+}

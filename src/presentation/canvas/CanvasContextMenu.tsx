@@ -5,7 +5,7 @@ import { moveMethodTargets } from '../../domain/codebase/moveMethod';
 import { moveFieldTargets } from '../../domain/codebase/moveField';
 import { moveClassTargets } from '../../domain/codebase/moveClass';
 import { fileLabels } from './fileLabels';
-import { availableInterfaces, availableParents } from '../../domain/codebase/setSuperclass';
+import { availableParents, implementableInterfaces } from '../../domain/codebase/setSuperclass';
 import { useGameStore, useGameStoreApi, type GameStore } from '../store/useGameStore';
 import { clampMenuPosition, type Point } from './clampMenuPosition';
 import type { ContextMenuTarget } from './useCanvasContextMenu';
@@ -270,7 +270,7 @@ function ImplementsMenuItem({ target, label }: Readonly<ImplementsMenuItemProps>
   if (codeClass === undefined) return null;
 
   const implementedIds = new Set(codeClass.interfaceIds ?? []);
-  const candidates = availableInterfaces(codebase, codeClass.id).filter((candidate) => candidate.id !== codeClass.superclassId);
+  const candidates = implementableInterfaces(codebase, codeClass.id).filter((candidate) => candidate.id !== codeClass.superclassId);
 
   return (
     <SubmenuTrigger label={label} open={open} setOpen={setOpen} wrapperRef={wrapperRef} triggerRef={triggerRef}>
