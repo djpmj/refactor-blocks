@@ -1,8 +1,17 @@
 import { describe, expect, it } from 'vitest';
+import type { Active, Over } from '@dnd-kit/core';
 import type { Codebase } from '../../domain/codebase/Codebase';
 import { sampleCodebase } from '../../domain/codebase/testFixtures';
 import { createAnnouncements, describeDraggable, describeDroppable, SCREEN_READER_INSTRUCTIONS } from './dndAnnouncements';
 import { classDragId, classDropId, fieldDragId, fileDropId, methodDragId } from './dndIds';
+
+function activeOf(id: string): Active {
+  return { id, data: { current: undefined }, rect: { current: { initial: null, translated: null } } };
+}
+
+function overOf(id: string): Over {
+  return { id, data: { current: undefined }, disabled: false, rect: { width: 0, height: 0, top: 0, left: 0, right: 0, bottom: 0 } };
+}
 
 function codebaseWithField(): Codebase {
   const base = sampleCodebase();
@@ -101,8 +110,8 @@ describe('describeDroppable', () => {
 describe('createAnnouncements', () => {
   const codebase = sampleCodebase();
   const announcements = createAnnouncements(codebase);
-  const active = { id: methodDragId('method-place') };
-  const over = { id: classDropId('class-tax') };
+  const active = activeOf(methodDragId('method-place'));
+  const over = overOf(classDropId('class-tax'));
 
   it('操作説明は日本語', () => {
     // Arrange
@@ -160,7 +169,7 @@ describe('createAnnouncements', () => {
     const withField = createAnnouncements(codebaseWithField());
 
     // Act
-    const text = withField.onDragEnd({ active: { id: fieldDragId('field-lines') }, over: null });
+    const text = withField.onDragEnd({ active: activeOf(fieldDragId('field-lines')), over: null });
 
     // Assert
     expect(text).toBe('OrderService.lines は元の場所に戻りました。');
