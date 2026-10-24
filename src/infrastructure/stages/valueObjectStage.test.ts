@@ -12,6 +12,10 @@ if (stage === undefined) throw new Error('上級7 (advanced-value-object) があ
 const solution = sampleAnswerSteps[stage.id];
 if (solution === undefined) throw new Error('上級7の模範解答がありません');
 
+function hasMoneyArithmetic(fragments: readonly { readonly responsibility: string }[]): boolean {
+  return fragments.some((fragment) => fragment.responsibility === 'money-arithmetic');
+}
+
 describe('上級7: 金額と通貨を Money にまとめる', () => {
   it('初期状態は50点(行数1・責務の混在1・Feature Envy 3)で、凝集度は0', () => {
     // Arrange
@@ -73,7 +77,7 @@ describe('上級7: 金額と通貨を Money にまとめる', () => {
 
     // Act
     const classesWithArithmetic = allClasses(solved)
-      .filter((codeClass) => codeClass.methods.flatMap((method) => method.fragments).some((fragment) => fragment.responsibility === 'money-arithmetic'))
+      .filter((codeClass) => hasMoneyArithmetic(codeClass.methods.flatMap((method) => method.fragments)))
       .map((codeClass) => codeClass.name);
 
     // Assert
