@@ -25,6 +25,7 @@ test('first visit guides a player through Extract Method using the actual action
   await tour.getByRole('button', { name: '次へ' }).click();
   await expect(tour).toContainText('2/6');
   await page.locator('[data-tour="manual-fix-start"]').click();
+  await expect(tour).toContainText('3/6');
   const markedMethod = page.getByTestId('method-printMonthlyReport');
   await markedMethod.click();
   await expect(markedMethod).toHaveAttribute('aria-pressed', 'true');
@@ -32,53 +33,54 @@ test('first visit guides a player through Extract Method using the actual action
   await expect(page.locator('.manual-fix [role=\"status\"]')).toContainText('\u76f4\u3057\u5fd8\u308c');
   await expect(page.getByRole('button', { name: '\u7d44\u307f\u66ff\u3048\u3092\u59cb\u3081\u308b' })).toBeVisible();
   await page.getByRole('button', { name: '\u7d44\u307f\u66ff\u3048\u3092\u59cb\u3081\u308b' }).click();
-  await expect(tour).toContainText('3/6');
+  await expect(tour).toContainText('4/6');
 
   await page.getByTestId('method-printMonthlyReport').click();
-  await expect(tour).toContainText('4/6');
+  await expect(tour).toContainText('5/6');
   const fragments = page.locator('[data-tour="fragment-list"]');
   await expect(fragments).toBeVisible();
-  await fragments.locator('input[type="checkbox"]').first().check();
+  await fragments.getByLabel('今月の売上を集計する').check();
+  await fragments.getByLabel('前月比を計算する').check();
   await expect(tour).toContainText('5/6');
   await page.locator('[data-tour="extract-button"]').click();
   await expect(tour).toContainText('6/6');
+  await expect(tour).not.toContainText('50行');
   await tour.getByRole('button', { name: '次へ' }).click();
   await expect(tour).toHaveCount(0);
 });
 
-test('step 2 spotlight includes the manual-fix release action', async ({ page }) => {
+test('step 2 spotlights the start button inside the viewport and pressing it advances', async ({ page }) => {
   // Arrange
+  await page.setViewportSize({ width: 1280, height: 700 });
   await clearTourSeenOnce(page);
   await page.goto('/');
   const tour = page.getByTestId('first-visit-tour');
-  await tour.getByRole('button', { name: '\u6b21\u3078' }).click();
+  await tour.getByRole('button', { name: '次へ' }).click();
   await expect(tour).toContainText('2/6');
 
-  // Assert: the workspace spotlight contains both the sidebar and canvas actions.
-  const target = page.locator('.app__body--sidebar-open');
-  const release = page.locator('[data-tour="manual-fix-start"]');
-  await expect(target).toBeVisible();
-  await expect.poll(async () => target.evaluate((element) => {
-    const targetRect = element.getBoundingClientRect();
-    const button = element.querySelector('button');
-    if (button === null) return false;
-    const buttonRect = button.getBoundingClientRect();
-    return targetRect.left <= buttonRect.left && targetRect.right >= buttonRect.right
-      && targetRect.top <= buttonRect.top && targetRect.bottom >= buttonRect.bottom;
-  })).toBe(true);
+  // Assert: the start button is inside the viewport and the spotlight hole covers it.
+  const start = page.locator('[data-tour="manual-fix-start"]').first();
+  await expect(start).toBeInViewport();
+  await expect.poll(async () => {
+    const button = await start.boundingBox();
+    const hole = await page.locator('.spotlight-tour__hole').boundingBox();
+    if (button === null || hole === null) return false;
+    const tolerance = 1; // 画面端にぴったりのときの端数の誤差
+    return hole.x <= button.x && hole.y <= button.y
+      && hole.x + hole.width + tolerance >= button.x + button.width && hole.y + hole.height + tolerance >= button.y + button.height;
+  }).toBe(true);
 
-  // Act: marking a canvas method and releasing works under the shade.
-  await release.click();
+  // Act
+  await start.click();
+
+  // Assert
+  await expect(tour).toContainText('3/6');
   const method = page.getByTestId('method-printMonthlyReport');
   await method.click();
-  await expect(method).toHaveAttribute('aria-pressed', 'true');
-  await page.getByRole('button', { name: '\u30ea\u30ea\u30fc\u30b9\u3059\u308b' }).click();
-
-  // Assert: the opening result remains visible until its CTA advances the tour.
-  await expect(page.locator('.manual-fix [role="status"]')).toContainText('\u76f4\u3057\u5fd8\u308c');
-  await expect(page.getByRole('button', { name: '\u7d44\u307f\u66ff\u3048\u3092\u59cb\u3081\u308b' })).toBeVisible();
-  await page.getByRole('button', { name: '\u7d44\u307f\u66ff\u3048\u3092\u59cb\u3081\u308b' }).click();
-  await expect(tour).toContainText('3/6');
+  await page.getByRole('button', { name: 'リリースする' }).click();
+  await expect(page.locator('.manual-fix [role="status"]')).toContainText('直し忘れ');
+  await page.getByRole('button', { name: '組み替えを始める' }).click();
+  await expect(tour).toContainText('4/6');
 });
 
 test('shade blocks clicks outside the spotlight while the tour can be exited with Escape', async ({ page }) => {
@@ -102,7 +104,7 @@ test('shade blocks clicks outside the spotlight while the tour can be exited wit
   await expect.poll(() => page.evaluate(() => localStorage.getItem('refactor-blocks:tour-seen'))).toBe('true');
 });
 
-test('Escape and the exit button work from interactive steps 2 through 4', async ({ page }) => {
+test('Escape and the exit button work from interactive steps 2 through 5', async ({ page }) => {
   // Arrange
   await clearTourSeenOnce(page);
   await page.goto('/');
@@ -124,9 +126,9 @@ test('Escape and the exit button work from interactive steps 2 through 4', async
   await tour.getByRole('button', { name: '次へ' }).click();
   await page.locator('[data-tour="manual-fix-start"]').click();
   await releaseAllManualFixSites(page);
-  await expect(tour).toContainText('3/6');
-  await page.getByTestId('method-printMonthlyReport').click();
   await expect(tour).toContainText('4/6');
+  await page.getByTestId('method-printMonthlyReport').click();
+  await expect(tour).toContainText('5/6');
   await page.keyboard.press('Escape');
   await expect(tour).toHaveCount(0);
 
@@ -137,9 +139,9 @@ test('Escape and the exit button work from interactive steps 2 through 4', async
   await tour.getByRole('button', { name: '次へ' }).click();
   await page.locator('[data-tour="manual-fix-start"]').click();
   await releaseAllManualFixSites(page);
-  await expect(tour).toContainText('3/6');
-  await page.getByTestId('method-printMonthlyReport').click();
   await expect(tour).toContainText('4/6');
+  await page.getByTestId('method-printMonthlyReport').click();
+  await expect(tour).toContainText('5/6');
   await page.locator('[data-tour="fragment-list"] input[type="checkbox"]').first().check();
   await expect(tour).toContainText('5/6');
   await tour.getByRole('button', { name: 'ガイドを終了' }).click();

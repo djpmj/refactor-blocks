@@ -497,7 +497,9 @@ function manualFixActions(
   return {
     startManualFix: () => {
       const state = get();
-      if (state.changeSession === null) set({ manualFix: { ...NEW_MANUAL_FIX, step: currentStep(state) }, extractDraft: null });
+      if (state.changeSession !== null) return;
+      set({ manualFix: { ...NEW_MANUAL_FIX, step: currentStep(state) }, extractDraft: null });
+      if (state.tourStep !== null && TOUR_STEPS[state.tourStep]?.advance.kind === 'manual-fix-started') get().advanceTour({ kind: 'manual-fix-started' });
     },
     toggleFixed: (methodId) => {
       const { manualFix } = get();
