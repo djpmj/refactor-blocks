@@ -32,8 +32,8 @@ async function stableBoundingBox(page: Page, locator: Locator) {
 /** 直前に作ったファイルへ表示が寄っていることがあるので、全体を表示し、メソッドが見える大きさに戻す。 */
 async function showAllWithDetails(page: Page, view: Locator) {
   await page.getByRole('button', { name: 'Fit View' }).click();
-  const showDetails = view.getByRole('button', { name: '中身が見える大きさにする' });
-  if (await showDetails.isVisible()) await showDetails.click();
+  // 倍率の更新は少し遅れて案内に反映されるので、出るのを待つ(出なければ、すでにメソッドが見える大きさ)
+  await view.getByRole('button', { name: '中身が見える大きさにする' }).click({ timeout: 700 }).catch(() => undefined);
 }
 
 /** キャンバスの四隅のうち、どのファイルの枠にも覆われていない所を返す(自動で全体が収まるので、どの隅が空くかは配置で変わる)。 */
