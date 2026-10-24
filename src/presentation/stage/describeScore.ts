@@ -36,3 +36,9 @@ export function describeScore(score: Score, codebase?: Codebase): string {
   const deductionSummary = score.total === 0 ? [`減点の合計 -${score.deducted}`, ...details].join(' / ') : details.join(' / ');
   return details.length === 0 ? `✅ ${score.total}点` : `${score.total}点(${deductionSummary})`;
 }
+
+/** ヘッダー用の1行。点数はリング、ルールごとの内訳は「減点の内訳」に任せる。 */
+export function describeScoreShort(score: Score): string {
+  const ruleCount = score.deductions.filter((deduction) => deduction.points > 0).length;
+  return ruleCount === 0 ? '✅ 減点なし' : `減点 ${ruleCount}項目(-${score.deducted})`;
+}
