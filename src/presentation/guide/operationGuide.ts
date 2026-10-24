@@ -19,7 +19,7 @@ export const OPERATION_GUIDE: readonly GuideSection[] = [
   {
     heading: '右クリックメニュー',
     items: [
-      { operation: '右クリック', description: 'ファイルでは追加・削除、クラスでは別のファイルや新しいファイルへの移動・追加・名前変更・継承元や実装先の設定・削除、メソッドやフィールドでは別のクラスへの移動ができます。' },
+      { operation: '右クリック', description: 'ファイルでは追加・削除、クラスでは別のファイルや新しいファイルへの移動・追加・名前変更・継承元や実装先の設定・削除、メソッドやフィールドでは別のクラスへの移動ができます。キーボードでは Shift+F10 で開けます。' },
     ],
   },
   {
@@ -46,6 +46,15 @@ export const OPERATION_GUIDE: readonly GuideSection[] = [
     items: [
       { operation: 'キャンバスをドラッグ', description: 'キャンバスを移動します。ホイールでズームできます。' },
       { operation: 'サイドバーの境界をドラッグ / ← →', description: '右サイドバーの幅を変更します。矢印キーは境界にフォーカスして使います。' },
+    ],
+  },
+  {
+    heading: 'キーボードで操作する',
+    items: [
+      { operation: 'Tab / Shift+Tab', description: 'クラス・メソッド・フィールドのブロックへ順に移ります。' },
+      { operation: 'Shift+F10 / メニューキー', description: '選んだブロックの右クリックメニューを開きます。メニューの中は ↑ ↓ と Enter で選び、Esc で閉じます。別のクラス・ファイルへの移動もここからできます。' },
+      { operation: 'Space、矢印キー、Space', description: 'ブロックを持ち上げて動かし、置きます。Esc で取り消します。' },
+      { operation: '?', description: 'このガイドを開閉します。' },
     ],
   },
   {
