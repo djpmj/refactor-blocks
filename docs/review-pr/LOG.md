@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-24 UTC PR #269 操作ガイドにキーボード操作を追加する (#230)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test(1832件)✅ / npm run lint ✅ / npm run typecheck ✅。キーボード節・Shift+F10追記・Esc再表示競合修正(onCancel)を差分で確認。Enterでエディタが開かない行はIssueの例外条項どおり除外されE2Eで現挙動を記録。E2Eはこの環境にブラウザが無く未実行(同一コミットのCI push側E2Eは成功)
+- マージ: squash & delete-branch
+
 ## 2026-10-24 00:45 UTC PR #268 狭い画面のパネルをドロワー表示にする (#232)
 
 - 判定: 合格(blocker無し)
@@ -198,23 +204,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(1755件) / npm run lint ✅ / npm run typecheck ✅(E2Eはこの環境で実行できず未実行。差分はステージ定義とテストのみ)
-- マージ: squash & delete-branch
-
-## 2026-10-17 UTC PR #205 feat: group context menu actions
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(lint/typecheck/vitest 1751件) ✅ / E2EはCI環境にPlaywrightブラウザが無く再実行できず、PR本文の成功報告(237件)に依拠
-- マージ: squash & delete-branch
-
-## 2026-10-17 01:00 UTC PR #204 feat: show progress below the score floor
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(1748件) / npm run lint ✅ / npm run typecheck ✅ / E2Eはレビュー環境にChromiumが無く未実行のためPR記載の235件成功を前提とした。Issue #183 の受け入れ基準(0点時の減点合計表示・減点減少時のゲージ発光と読み上げ・1点以上は従来表示)を差分で確認
-- マージ: squash & delete-branch
-
-## 2026-10-17 00:30 UTC PR #203 feat: improve operation discoverability
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(1744件) / npm run lint ✅ / npm run typecheck ✅ / E2Eはレビュー環境にChromiumが無く未実行のためPR記載の233件成功を前提とした。Issue #182 の受け入れ基準(ガイド3項目・統合欄の見出し/ボタン/ラベル・インライン説明)を差分で確認
 - マージ: squash & delete-branch
 
