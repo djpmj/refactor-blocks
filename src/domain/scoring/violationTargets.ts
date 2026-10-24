@@ -4,7 +4,7 @@ import type { Stage } from '../stage/Stage';
 import { findLowCohesionClasses } from './cohesion';
 import { findMiddleManClasses } from './middleMan';
 import { findEncapsulationViolations, findFeatureEnvy, findOpenSetters } from './fieldAccess';
-import { findContractViolations, findStubMethods } from './interfaceContracts';
+import { countedNarrowedOverrides, findContractViolations, findStubMethods } from './interfaceContracts';
 import { findEmptyContainers, findUnusedPrivateMethods } from './leftovers';
 import { findLineLimitViolations } from './lineLimits';
 import { findLayerViolations } from './layers';
@@ -99,6 +99,7 @@ export function violationTargets(
   addClasses(targets['lone-superclass'], findLoneSuperclasses(codebase));
   addMethods(targets.stub, findStubMethods(codebase));
   addClasses(targets.contract, findContractViolations(codebase));
+  addMethods(targets.contract, countedNarrowedOverrides(codebase, stage));
   addMethods(targets['feature-envy'], findFeatureEnvy(codebase).map(({ methodId }) => methodId));
   for (const violation of findEncapsulationViolations(codebase)) {
     const owner = findClassOfField(codebase, violation.fieldId);

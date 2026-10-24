@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { CodeClass, Codebase, Method } from '../codebase/Codebase';
-import { findContractViolations, findStubMethods } from './interfaceContracts';
+import { countedNarrowedOverrides, findContractViolations, findNarrowedOverrides, findStubMethods } from './interfaceContracts';
 
 function contractMethod(id: string, name: string, visibility: Method['visibility'] = 'public'): Method {
   return { id, name, visibility, fragments: [] };
@@ -364,5 +364,106 @@ describe('findContractViolations', () => {
     // Assert
     expect(act).not.toThrow();
     expect(act()).toEqual([]);
+  });
+});
+
+describe('findNarrowedOverrides', () => {
+  const parent: CodeClass = { id: 'class-p', name: 'P', methods: [contractMethod('p-parse', 'parse', 'protected')] };
+
+  it('親のprotectedを子がprivateで上書きしたら、子のメソッドIDを返す', () => {
+    // Arrange
+    const child: CodeClass = { id: 'class-c', name: 'C', superclassId: 'class-p', methods: [realMethod('c-parse', 'parse', { visibility: 'private' })] };
+
+    // Act
+    const result = findNarrowedOverrides(codebaseOf([parent, child]));
+
+    // Assert
+    expect(result).toEqual(['c-parse']);
+  });
+
+  it.each(['protected', 'public'] as const)('子が%sで上書きしたら返さない', (visibility) => {
+    // Arrange
+    const child: CodeClass = { id: 'class-c', name: 'C', superclassId: 'class-p', methods: [realMethod('c-parse', 'parse', { visibility })] };
+
+    // Act
+    const result = findNarrowedOverrides(codebaseOf([parent, child]));
+
+    // Assert
+    expect(result).toEqual([]);
+  });
+
+  it('インターフェース役のpublicを実装クラスがprivateで持つなら返す', () => {
+    // Arrange
+    const iface: CodeClass = { id: 'class-i', name: 'I', methods: [contractMethod('i-charge', 'charge')] };
+    const impl: CodeClass = { id: 'class-impl', name: 'Impl', interfaceIds: ['class-i'], methods: [realMethod('impl-charge', 'charge', { visibility: 'private' })] };
+
+    // Act
+    const result = findNarrowedOverrides(codebaseOf([iface, impl]));
+
+    // Assert
+    expect(result).toEqual(['impl-charge']);
+  });
+
+  it('同名でも継承関係の無いクラスは返さない', () => {
+    // Arrange
+    const other: CodeClass = { id: 'class-o', name: 'O', methods: [realMethod('o-parse', 'parse', { visibility: 'private' })] };
+
+    // Act
+    const result = findNarrowedOverrides(codebaseOf([parent, other]));
+
+    // Assert
+    expect(result).toEqual([]);
+  });
+
+  it('孫クラスが祖父のprotectedをprivateで上書きしたら返す', () => {
+    // Arrange
+    const middle: CodeClass = { id: 'class-m', name: 'M', superclassId: 'class-p', methods: [] };
+    const grandchild: CodeClass = { id: 'class-g', name: 'G', superclassId: 'class-m', methods: [realMethod('g-parse', 'parse', { visibility: 'private' })] };
+
+    // Act
+    const result = findNarrowedOverrides(codebaseOf([parent, middle, grandchild]));
+
+    // Assert
+    expect(result).toEqual(['g-parse']);
+  });
+
+  it('削除済みの親IDがあっても落ちない', () => {
+    // Arrange
+    const child: CodeClass = { id: 'class-c', name: 'C', superclassId: 'gone', methods: [realMethod('c-parse', 'parse', { visibility: 'private' })] };
+
+    // Act
+    const result = findNarrowedOverrides(codebaseOf([child]));
+
+    // Assert
+    expect(result).toEqual([]);
+  });
+});
+
+describe('countedNarrowedOverrides', () => {
+  const codebase = codebaseOf([
+    { id: 'class-p', name: 'P', methods: [contractMethod('p-parse', 'parse', 'protected')] },
+    { id: 'class-c', name: 'C', superclassId: 'class-p', methods: [realMethod('c-parse', 'parse', { visibility: 'private' })] },
+  ]);
+
+  it('可視性の欄を出さないステージでは数えない', () => {
+    // Arrange
+    const stage = { visibilityEnforced: undefined, codebase: codebaseOf([{ id: 'class-x', name: 'X', methods: [realMethod('x', 'run')] }]) };
+
+    // Act
+    const result = countedNarrowedOverrides(codebase, stage);
+
+    // Assert
+    expect(result).toEqual([]);
+  });
+
+  it('可視性の欄を出すステージでは数える', () => {
+    // Arrange
+    const stage = { visibilityEnforced: true, codebase };
+
+    // Act
+    const result = countedNarrowedOverrides(codebase, stage);
+
+    // Assert
+    expect(result).toEqual(['c-parse']);
   });
 });

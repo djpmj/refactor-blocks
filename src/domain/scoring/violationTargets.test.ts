@@ -131,4 +131,20 @@ describe('violationTargets', () => {
       expect(ids.length).toBeGreaterThan(0);
     }
   });
+
+  it('狭めた上書きのメソッドを約束違反の対象に入れる(可視性の欄を出すステージだけ)', () => {
+    // Arrange
+    const codebase = { files: [{ id: 'file', path: 'src/all.ts', classes: [
+      { id: 'base', name: 'Base', methods: [{ id: 'base-parse', name: 'parse', visibility: 'protected' as const, fragments: [] }] },
+      { id: 'csv', name: 'Csv', superclassId: 'base', methods: [{ id: 'csv-parse', name: 'parse', visibility: 'private' as const, fragments: [{ id: 'f', label: 'x', lines: 3, responsibility: 'x' }] }] },
+    ] }] };
+
+    // Act
+    const shown = violationTargets(codebase, { ...EMPTY, codebase, visibilityEnforced: true });
+    const hidden = violationTargets(codebase, EMPTY);
+
+    // Assert
+    expect(shown.contract.methodIds).toEqual(['csv-parse']);
+    expect(hidden.contract.methodIds).toEqual([]);
+  });
 });

@@ -65,7 +65,7 @@ function enviedClassNameByMethodId(codebase: Codebase): Map<string, string> {
 /** ファイル・クラス・メソッドの構成と採点結果を、AI講評に渡せる形にまとめる。 */
 export function buildCritiqueRequest(
   codebase: Codebase,
-  stage: Pick<Stage, 'goal' | 'limits' | 'dependencyLimit' | 'responsibilityLimit'>,
+  stage: Pick<Stage, 'goal' | 'limits' | 'dependencyLimit' | 'responsibilityLimit' | 'visibilityEnforced' | 'codebase'>,
   score: Score,
 ): CritiqueRequest {
   const deductionsByFile = fileDeductions(codebase, stage);
