@@ -1,5 +1,6 @@
 ﻿import { expect, test, type Locator, type Page } from '@playwright/test';
 import { selectStage, startChangeRequests } from './selectStage.js';
+import { expectDeduction, expectDeductions, expectNoDeduction } from './scoreBreakdown.js';
 
 test('右サイドバーの幅をドラッグとキーボードで調整し、白紙設計でも使える', async ({ page }) => {
   // Arrange
@@ -308,7 +309,7 @@ test('中級12: 横流しメソッドを呼び出し元へ戻してOrderManager�
   await expect(page.getByRole('button', { name: '呼び出し元へ戻す' })).toHaveCount(0);
   await selectStage(page, '中級12: 横流しするだけの OrderManager');
   await expect(page.getByTestId('score-value')).toContainText('90点');
-  await expect(page.locator('.score-breakdown')).toContainText('横流しするだけのクラス');
+  await expectDeduction(page, '横流しするだけのクラス ×1');
   const managerPlaceOrder = page.getByTestId('method-placeOrder').nth(1);
   await expect(managerPlaceOrder).toBeVisible();
   await clickExposedTarget(page, managerPlaceOrder);
@@ -332,7 +333,7 @@ test('中級12: 横流しメソッドを呼び出し元へ戻してOrderManager�
   // Assert
   await expect(page.getByTestId('file-src/order/OrderManager.ts')).toHaveCount(0);
   await expect(page.getByTestId('score-value')).toContainText('100点');
-  await expect(page.locator('.score-breakdown button', { hasText: '横流しするだけのクラス' })).toHaveCount(0);
+  await expectNoDeduction(page, '横流しするだけのクラス');
   await expect(page.getByTestId('score')).toHaveText('✅ 減点なし');
 });
 
@@ -657,9 +658,7 @@ test('初期状態の点数は、行数の上限を超えた placeOrder・責務
 
   // Assert
   await expect(page.getByTestId('score-value')).toContainText('70点');
-  await expect(page.locator('.score-breakdown')).toContainText('行数');
-  await expect(page.locator('.score-breakdown')).toContainText('責務の混在');
-  await expect(page.locator('.score-breakdown')).toContainText('空のクラス・ファイル');
+  await expectDeductions(page, [['行数 ×1', 10], ['責務の混在 ×1', 10], ['空のクラス・ファイル ×1', 10]]);
   await expect(page.getByTestId('file-src/order/OrderService.ts').getByTestId('file-mark')).toHaveAttribute('aria-label', /-20点/);
   await expect(page.getByTestId('file-src/tax/TaxCalculator.ts').getByTestId('file-mark')).toHaveAttribute('aria-label', /-10点/);
 });
@@ -671,7 +670,7 @@ test('税の計算を抽出して TaxCalculator へ移すと、責務の混在�
   await page.getByLabel('消費税を計算する(軽減税率あり)').check();
   await page.getByLabel('新しいメソッド名').fill('calculateTax');
   await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
-  await expect(page.locator('.score-breakdown')).toContainText('責務の混在');
+  await expectDeduction(page, '責務の混在 ×1');
   const mark = page.getByTestId('file-src/order/OrderService.ts').getByTestId('file-mark');
   await expect(mark).toHaveAttribute('aria-label', /-20点/);
   const source = page.getByTestId('method-calculateTax');
@@ -689,7 +688,7 @@ test('税の計算を抽出して TaxCalculator へ移すと、責務の混在�
 
   // Assert
   await expect(target.getByTestId('method-calculateTax')).toBeVisible();
-  await expect(page.locator('.score-breakdown button', { hasText: '責務の混在' })).toHaveCount(0);
+  await expectNoDeduction(page, '責務の混在');
   await expect(mark).not.toHaveAttribute('aria-label', /-20点/);
 });
 
@@ -795,12 +794,10 @@ test('ステージを選ぶと、そのステージのコードベースと目�
   await expect(page.getByTestId('class-ReportService')).toHaveCount(0);
   await expect(page.getByTestId('class-Customer')).toBeVisible();
   await expect(page.getByTestId('score-value')).toContainText('60点');
-  await expect(page.locator('.score-breakdown')).toContainText('循環依存 1組');
+  await expectDeduction(page, '循環依存 1組(矢印2本)');
   await page.getByRole('button', { name: 'サイドバーを開く' }).click();
   await expect(page.locator('.clear-condition__goal', { hasText: '循環依存: 輪を0組にする' })).toBeVisible();
   await expect(page.locator('.clear-condition__current', { hasText: '今: 1組(Order ⇄ Customer)' })).toBeVisible();
-  await page.locator('.score-breakdown summary').click();
-  await expect(page.getByRole('button', { name: '循環依存 1組(矢印2本)' })).toBeVisible();
   await expect(page.getByTestId('class-Order').getByTestId('cyclic-mark')).toBeVisible();
   await expect(page.getByTestId('class-Customer').getByTestId('cyclic-mark')).toBeVisible();
   await expect(page.getByTestId('class-Inventory').getByTestId('cyclic-mark')).toHaveCount(0);
@@ -809,7 +806,7 @@ test('ステージを選ぶと、そのステージのコードベースと目�
 test('循環依存を断ち切ると、循環依存の減点とクラスの印が消える', async ({ page }) => {
   // Arrange
   await openCyclicStage(page);
-  await expect(page.locator('.score-breakdown')).toContainText('循環依存 1組');
+  await expectDeduction(page, '循環依存 1組(矢印2本)');
   await expect(page.getByTestId('class-Order').getByTestId('cyclic-mark')).toBeVisible();
   await expect(page.getByTestId('class-Customer').getByTestId('cyclic-mark')).toBeVisible();
 
@@ -820,7 +817,7 @@ test('循環依存を断ち切ると、循環依存の減点とクラスの印�
   await expect(page.getByTestId('class-Order').getByTestId('method-calculateOrderTotal')).toBeVisible();
 
   // Assert
-  await expect(page.locator('.score-breakdown button', { hasText: '循環依存' })).toHaveCount(0);
+  await expectNoDeduction(page, '循環依存');
   await expect(page.getByRole('button', { name: /循環依存/ })).toHaveCount(0);
   await page.getByRole('button', { name: 'サイドバーを開く' }).click();
   const cycleCondition = page.locator('li.clear-condition--met', { has: page.locator('.clear-condition__goal', { hasText: '循環依存: 輪を0組にする' }) });
@@ -843,10 +840,8 @@ test('新しく抽出した複数責務のメソッドが減点され、違反�
   await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
 
   // Assert: 新しいルールの10点減点が内訳に出る
-  await expect(page.locator('.score-breakdown')).toContainText('責務の混ざったメソッド');
-  const breakdown = page.locator('.score-breakdown');
-  await breakdown.locator('summary').click();
-  const rule = breakdown.locator('.score-breakdown__items button[aria-pressed]').filter({ hasText: '責務の混ざったメソッド ×1' });
+  await expectDeduction(page, '責務の混ざったメソッド ×1');
+  const rule = page.locator('.score-breakdown__items button[aria-pressed]').filter({ hasText: '責務の混ざったメソッド ×1' });
   await rule.click();
   await expect(page.getByTestId('method-orderTotalAndPay').locator('.method-chip--flagged')).toBeVisible();
 });
@@ -864,7 +859,7 @@ test('決済だけを抽出したメソッドは責務の混在で減点され�
   await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
 
   // Assert
-  await expect(page.locator('.score-breakdown button', { hasText: '責務の混ざったメソッド' })).toHaveCount(0);
+  await expectNoDeduction(page, '責務の混ざったメソッド');
 });
 
 test('メソッドを右クリックしてメニューから、そのクラスのファイルにクラスを追加できる', async ({ page }) => {
@@ -1766,9 +1761,7 @@ test('越境した private メソッドの呼び出しは減点され、呼び�
   await selectStage(page, '中級3: 越境する private メソッド');
   await expect(page.getByRole('heading', { name: '中級3: 越境する private メソッド' })).toBeVisible();
   await expect(page.getByTestId('score-value')).toContainText('70点');
-  await expect(page.locator('.score-breakdown')).toContainText('行数');
-  await expect(page.locator('.score-breakdown')).toContainText('アクセス制御');
-  await expect(page.locator('.score-breakdown')).toContainText('結合度');
+  await expectDeductions(page, [['行数 ×1', 10], ['アクセス制御 ×1', 10], ['結合度 ×1', 10]]);
 
   // Act: notifyShipment からメール送信・ログ記録を抽出する
   await page.getByTestId('method-notifyShipment').click();
@@ -1800,7 +1793,7 @@ test('越境した private メソッドの呼び出しは減点され、呼び�
   // Assert: 移し終えた TemplateEngine は空のクラスとして減点される
   await expect(target.getByTestId('method-renderTemplate')).toBeVisible();
   await expect(page.getByTestId('score-value')).toContainText('90点');
-  await expect(page.locator('.score-breakdown')).toContainText('空のクラス・ファイル');
+  await expectDeduction(page, '空のクラス・ファイル ×1');
 
   // Act: 空になった TemplateEngine.ts を右クリックで削除する
   await page.getByTestId('file-src/notification/TemplateEngine.ts').click({ button: 'right', position: { x: 10, y: 10 } });
@@ -1819,8 +1812,7 @@ test('中級3: renderTemplate を public にするとアクセス制御の減点
   await expect(couplingCondition).toBeVisible();
   await expect(couplingCondition.locator('..')).toContainText('理由: private を public にして呼べるようにするのではなく、処理を使う側のクラスへ移して、ほかのクラスを呼ばずに済む形を目指すため');
   await expect(page.getByTestId('score-value')).toContainText('70点');
-  await expect(page.locator('.score-breakdown')).toContainText('アクセス制御');
-  await expect(page.locator('.score-breakdown')).toContainText('結合度');
+  await expectDeductions(page, [['行数 ×1', 10], ['アクセス制御 ×1', 10], ['結合度 ×1', 10]]);
 
   // Act: renderTemplate の可視性の選択欄を開き、protected は選べないことを確かめる
   await page.getByTestId('method-renderTemplate').click();
@@ -1841,8 +1833,8 @@ test('中級3: renderTemplate を public にするとアクセス制御の減点
 
   // Assert
   await expect(select).toHaveValue('public');
-  await expect(page.locator('.score-breakdown button', { hasText: 'アクセス制御' })).toHaveCount(0);
-  await expect(page.locator('.score-breakdown')).toContainText('結合度');
+  await expectNoDeduction(page, 'アクセス制御');
+  await expectDeduction(page, '結合度 ×1');
   await expect(page.getByTestId('score-value')).not.toContainText('100点');
 
   // Act: 選択欄からフォーカスを外してCtrl+Z(選択欄にフォーカスがあるとCtrl+Zはブラウザ標準が優先される)
@@ -1850,7 +1842,7 @@ test('中級3: renderTemplate を public にするとアクセス制御の減点
   await page.keyboard.press('Control+z');
 
   // Assert
-  await expect(page.locator('.score-breakdown')).toContainText('アクセス制御');
+  await expectDeduction(page, 'アクセス制御 ×1');
 
   // Act: 抽象メソッドを実装していない一般メソッドでも抽象の説明は出さない
   await page.getByTestId('method-notifyShipment').click();
@@ -1958,7 +1950,7 @@ test('上級5: 子が1つだけの継承は減点され、右クリックメニ�
   // Arrange
   await page.goto('/');
   await selectStage(page, '上級5: 子が1つしかない継承を畳む');
-  await expect(page.locator('.score-breakdown')).toContainText('子が1つだけの継承');
+  await expectDeduction(page, '子が1つだけの継承 ×1');
   await page.getByTestId('class-header-CsvExporter').click({ button: 'right' });
   const menu = page.getByTestId('context-menu');
   await menu.getByRole('menuitem', { name: '継承元を設定' }).click();
@@ -1968,14 +1960,14 @@ test('上級5: 子が1つだけの継承は減点され、右クリックメニ�
 
   // Assert
   await expect(page.getByTestId('class-CsvExporter')).not.toContainText('extends BaseExporter');
-  await expect(page.locator('.score-breakdown button', { hasText: '子が1つだけの継承' })).toHaveCount(0);
+  await expectNoDeduction(page, '子が1つだけの継承');
 });
 
 test('上級6: 空実装を削除するとまだ要求しているインターフェースへの約束違反になり、取り消すと戻る。実装の宣言を外すと宣言漏れになる', async ({ page }) => {
   // Arrange
   await page.goto('/');
   await selectStage(page, '上級6: 太ったインターフェースを役割ごとに分ける');
-  await expect(page.locator('.score-breakdown')).toContainText('使わないメソッドの空実装');
+  await expectDeduction(page, '使わないメソッドの空実装 ×5');
   // クラスが多くfitViewの倍率が小さいので、メソッドが見える倍率までズームインする(回数はレイアウトしだいなので決め打ちしない)
   const slackPostMessage = page.getByTestId('class-SlackClient').getByTestId('method-postMessage');
   await expect(async () => {
@@ -1995,16 +1987,16 @@ test('上級6: 空実装を削除するとまだ要求しているインター�
 
   // Assert
   await expect(page.getByTestId('class-BacklogClient').getByTestId('method-postMessage')).toHaveCount(0);
-  await expect(page.locator('.score-breakdown')).toContainText('使わないメソッドの空実装');
-  await expect(page.locator('.score-breakdown')).toContainText('インターフェースの約束違反');
+  await expectDeduction(page, '使わないメソッドの空実装 ×4');
+  await expectDeduction(page, 'インターフェースの約束違反 ×1');
 
   // Act: Ctrl+Zで削除前に戻す
   await page.keyboard.press('Control+z');
 
   // Assert
   await expect(page.getByTestId('class-BacklogClient').getByTestId('method-postMessage')).toBeVisible();
-  await expect(page.locator('.score-breakdown')).toContainText('使わないメソッドの空実装');
-  await expect(page.locator('.score-breakdown button', { hasText: 'インターフェースの約束違反' })).toHaveCount(0);
+  await expectDeduction(page, '使わないメソッドの空実装 ×5');
+  await expectNoDeduction(page, 'インターフェースの約束違反');
 
   // Act: BacklogClientの実装の宣言を外す(宣言漏れになる)
   await page.getByTestId('class-header-BacklogClient').click({ button: 'right' });
@@ -2017,14 +2009,14 @@ test('上級6: 空実装を削除するとまだ要求しているインター�
 
   // Assert
   await expect(page.getByTestId('class-BacklogClient')).not.toContainText('implements CollaborationTool');
-  await expect(page.locator('.score-breakdown')).toContainText('インターフェースの約束違反');
+  await expectDeduction(page, 'インターフェースの約束違反 ×1');
 });
 
 test('中級6: フィールドをドラッグで別クラスへ移すと移り、Ctrl+Zで戻る', async ({ page }) => {
   // Arrange
   await openFeatureEnvyStage(page);
-  await expect(page.locator('.score-breakdown')).toContainText('他クラスのデータを触りすぎ(Feature Envy)');
-  await expect(page.locator('.score-breakdown')).toContainText('カプセル化の破れ');
+  await expectDeduction(page, '他クラスのデータを触りすぎ(Feature Envy) ×2');
+  await expectDeduction(page, 'カプセル化の破れ ×2');
   const source = page.getByTestId('field-trialDays');
   const target = page.getByTestId('class-Subscription');
   await expect(source).toBeVisible();
@@ -2168,7 +2160,7 @@ test('中級6: フィールドを持つクラスは削除できない', async ({
 test('中級7: setter 越しの書き換えが見え、ルールを移して可視性を直すと減点が消える', async ({ page }) => {
   // Arrange
   await openAnemicDomainModelStage(page);
-  await expect(page.locator('.score-breakdown')).toContainText('カプセル化の破れ');
+  await expectDeduction(page, 'カプセル化の破れ ×2');
   const withdraw = page.getByTestId('method-withdraw');
   await expect(async () => {
     await page.getByRole('button', { name: 'Zoom In' }).click();
@@ -2188,7 +2180,7 @@ test('中級7: setter 越しの書き換えが見え、ルールを移して可�
   await dragMethodToClass(page, 'method-debit', 'class-Account');
 
   // Assert: 移した直後は private のままなのでアクセス制御の違反が出る
-  await expect(page.locator('.score-breakdown')).toContainText('アクセス制御');
+  await expectDeduction(page, 'アクセス制御 ×1');
 
   // Act: debit をキーボードで public にする
   const debitSelect = page.getByLabel('メソッド debit の可視性');
@@ -2199,7 +2191,7 @@ test('中級7: setter 越しの書き換えが見え、ルールを移して可�
 
   // Assert
   await expect(debitSelect).toHaveValue('public');
-  await expect(page.locator('.score-breakdown button', { hasText: 'アクセス制御' })).toHaveCount(0);
+  await expectNoDeduction(page, 'アクセス制御');
 
   // Act: deposit からも credit を抽出して Account へ移し、public にする
   await clickMethodInView(page, 'method-deposit');
@@ -2221,13 +2213,13 @@ test('中級7: setter 越しの書き換えが見え、ルールを移して可�
   await page.getByLabel('メソッド setDailyWithdrawn の可視性').selectOption('private');
 
   // Assert
-  await expect(page.locator('.score-breakdown button', { hasText: 'カプセル化の破れ' })).toHaveCount(0);
+  await expectNoDeduction(page, 'カプセル化の破れ');
 });
 
 test('中級8: 住所のフィールドとメソッドを新しいクラスへ移すと、凝集度の減点が消える', async ({ page }) => {
   // Arrange
   await openExtractClassStage(page);
-  await expect(page.locator('.score-breakdown')).toContainText('無関係なデータの塊が同居(凝集度が低い)');
+  await expectDeduction(page, '無関係なデータの塊が同居(凝集度が低い) ×1');
 
   // Act: Employeeの右クリックメニューからAddressクラスを追加する
   await page.getByTestId('class-header-Employee').click({ button: 'right' });
@@ -2246,7 +2238,7 @@ test('中級8: 住所のフィールドとメソッドを新しいクラスへ�
   await dragMethodToClass(page, 'method-changeAddress', addressClass);
 
   // Assert
-  await expect(page.locator('.score-breakdown button', { hasText: '無関係なデータの塊が同居(凝集度が低い)' })).toHaveCount(0);
+  await expectNoDeduction(page, '無関係なデータの塊が同居(凝集度が低い)');
 });
 
 for (const kind of ['method', 'field']) {
