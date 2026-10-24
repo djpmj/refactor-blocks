@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { changePart, withChangePart } from '../../domain/change/changePart';
 import { withoutTray } from '../../domain/blank/tray';
 import { allClasses, findMethod } from '../../domain/codebase/Codebase';
@@ -13,6 +13,7 @@ import { sampleAnswerCodebase } from '../../domain/stage/sampleAnswer';
 import { putDraft } from '../../domain/progress/drafts';
 import { blankDesignProblems } from '../../infrastructure/blankDesigns/blankDesignProblems';
 import { saveDrafts } from '../../infrastructure/progress/draftStorage';
+import { saveLastStageId } from '../../infrastructure/progress/lastStageStorage';
 
 const ghost = { kind: 'method' as const, methodId: 'method-example', toClassId: 'class-example' };
 
@@ -637,5 +638,57 @@ describe('manual fix method viewer state', () => {
     expect(store.getState().moveMethodToNewClass(methodId)).toBeNull();
     expect(store.getState().codebase).toBe(initial);
     expect(store.getState().message).toContain('まず「もし、この変更が来たら?」');
+  });
+});
+
+describe('最後に開いたステージから始める', () => {
+  const [first, second] = stages;
+
+  afterEach(() => {
+    localStorage.clear();
+  });
+
+  it('保存IDが2番目のステージのとき、stage は2番目のステージになる', () => {
+    // Arrange
+    saveLastStageId(second.id);
+
+    // Act
+    const store = createGameStore(stages, true, false);
+
+    // Assert
+    expect(store.getState().stage.id).toBe(second.id);
+  });
+
+  it('保存IDが stages に無いとき、先頭のステージになる', () => {
+    // Arrange
+    saveLastStageId('no-such-stage');
+
+    // Act
+    const store = createGameStore(stages, true, false);
+
+    // Assert
+    expect(store.getState().stage.id).toBe(first.id);
+  });
+
+  it('saveDraftsOn = false のときは、保存IDがあっても先頭のステージになる', () => {
+    // Arrange
+    saveLastStageId(second.id);
+
+    // Act
+    const store = createGameStore(stages, false, false);
+
+    // Assert
+    expect(store.getState().stage.id).toBe(first.id);
+  });
+
+  it('selectStage で切り替えたステージのIDが保存される', () => {
+    // Arrange
+    const store = createGameStore(stages, true, false);
+
+    // Act
+    store.getState().selectStage(second.id);
+
+    // Assert
+    expect(createGameStore(stages, true, false).getState().stage.id).toBe(second.id);
   });
 });
