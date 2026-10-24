@@ -135,3 +135,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [change-request-sample-on-ideal-base](change-request-sample-on-ideal-base.md) | 変更依頼の解答例を、前の依頼を解答例どおりに置いた理想の土台から生成する |
 | [header-score-summary](header-score-summary.md) | ヘッダーの点数の説明を短くし、減点の内訳との重複をなくす |
 | [change-request-step-feedback](change-request-step-feedback.md) | 変更依頼を1件ごとに答え合わせし、その場で置き直せるようにする |
+| [deduction-targets-named](deduction-targets-named.md) | 減点の内訳に、原因のクラス・メソッド・依存を名前で出す |
