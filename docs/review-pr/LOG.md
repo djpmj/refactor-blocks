@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-24 15:45 UTC PR #299 層を扱うステージで、層ごとに段を分けて並べ、層を飛ばす・逆らう矢印を目立たせる (#245)
+
+- 判定: 合格(blocker無し。suggestion: 帯幅が仕様の「キャンバス幅いっぱい」より狭い / E2Eが赤色表示と層なしステージの従来配置を直接断言していない)
+- 確認した内容: npm test ✅(2005件) / npm run lint ✅ / npm run typecheck ✅。E2Eはレビュー環境にChromiumが無く未実行(PR本文では全316件成功)。Issue #245・docs/specs/layered-stage-lanes.mdの、層ごとの段分け・帯と層名・層違反の赤い破線とラベル・層なしステージ不変を差分で確認。domain変更なし
+- マージ: squash & delete-branch
+
 ## 2026-10-24 15:10 UTC PR #298 上級7のapproveの戻り値を、合計を使う記録の文に置き換える (#247)
 
 - 判定: 合格(blocker無し)
@@ -210,12 +216,6 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm run check(lint・typecheck・Vitest 1809件)✅。panToRevealが仕様(収まっていれば0・余白24px・大きい箱は左上優先)どおり、既存クラスへのドロップでは動かさないことを差分で確認。E2Eはこの環境で実行許可が無く未実行(PR本文では全260件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-19 21:10 UTC PR #258 chore(deps): bump the development-dependencies group with 6 updates
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(1811件)✅ / npm run lint ✅ / npm run typecheck ✅。package.json/lockのみの開発依存更新。E2Eはレビュー環境でmasterも全件失敗するため判断対象外
 - マージ: squash & delete-branch
 
 
