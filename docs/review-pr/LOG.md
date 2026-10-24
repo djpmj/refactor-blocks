@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-24 07:15 UTC PR #277 実装するインターフェースの候補をインターフェース役のクラスに絞る (#244)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test(1899件)✅ / npm run lint ✅ / npm run typecheck ✅。候補の絞り込み・実装済みの相手を残す・説明項目を仕様と照合。E2Eはこの環境にChromiumが無く未実行(PR記載の293件成功を参照)
+- マージ: squash & delete-branch
+
 ## 2026-10-24 07:10 UTC PR #276 減点の内訳に原因のクラス・メソッド・依存を名前で出す (#242)
 
 - 判定: 合格(blocker無し)
@@ -212,9 +218,4 @@
 - 確認した内容: npm run check(lint / typecheck / test 1789件)✅ / E2E 243件中240通過(hint-highlight・score-jump の2件はmasterでも同様に失敗する既存問題、operation-guide はflaky)。Issue #170 の受け入れ基準を差分で確認(boss フラグ・痛みカードからの除外・bossCounterfactual・比較表示・11ステージのボス・カタログテスト)
 - マージ: squash & delete-branch
 
-## 2026-10-17 10:10 UTC PR #212 test: make the E2E port configurable
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(lint / typecheck / test 1777件)✅ / E2Eはこの環境でChromiumが無く実行できず未実行(PR記載の238件成功を前提とした)。Issue #211 の受け入れ基準を差分で確認(E2E_PORT検証・E2E_REUSE_SERVER・storageState内包・相対パスのcritique endpoint・storage-state.json削除)。e2e側のモックは `**/__critique-test__` で相対パスでも一致
-- マージ: squash & delete-branch
 
