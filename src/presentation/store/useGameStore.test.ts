@@ -249,7 +249,7 @@ describe('change-request lifecycle and ghost state', () => {
     const base = store.getState().codebase;
     store.setState({
       codebase: placed.value,
-      changeSession: { index, inspected: null, outcomes: [], base, carried: base, baseHistory: store.getState().history },
+      changeSession: { index, inspected: null, outcomes: [], base, carried: base, sampleCarried: base, baseHistory: store.getState().history },
     });
 
     store.getState().finishImplementation();
