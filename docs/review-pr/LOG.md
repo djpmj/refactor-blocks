@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-24 15:10 UTC PR #298 上級7のapproveの戻り値を、合計を使う記録の文に置き換える (#247)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint・typecheck・Vitest 1988件)✅。E2Eはレビュー環境にChromiumが無く実行できず未実行(PR本文では全301件成功)。Issue #247の、解答例で同じ責務が継承関係にない複数クラスに散らばらないこと(findScatteredResponsibilitiesと例外表のテスト)、中級1のreserveStock抽出・移動、上級7のreturn置き換え、E2E期待値の更新を差分で確認。UIコードの変更なし
+- マージ: squash & delete-branch
+
 ## 2026-10-24 15:05 UTC PR #297 100点のあとに、外から使われていない公開メンバーを知らせる (#243)
 
 - 判定: 合格(blocker無し)
@@ -210,12 +216,6 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test(1811件)✅ / npm run lint ✅ / npm run typecheck ✅。package.json/lockのみの開発依存更新。E2Eはレビュー環境でmasterも全件失敗するため判断対象外
-- マージ: squash & delete-branch
-
-## 2026-10-19 21:10 UTC PR #257 chore(deps): bump the production-dependencies group with 3 updates
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(1811件)✅ / npm run lint ✅ / npm run typecheck ✅。package.json/lockのみ(react 19.3.1等)。E2Eはレビュー環境でmasterも全件失敗するため判断対象外
 - マージ: squash & delete-branch
 
 
