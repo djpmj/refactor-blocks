@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { releaseAllManualFixSites, selectStage, startChangeRequests } from './selectStage.js';
+import { finishAndAdvance, releaseAllManualFixSites, selectStage, startChangeRequests } from './selectStage.js';
 
 async function dragMethodToClass(page: Page, methodId: string, classId: string) {
   const source = await page.getByTestId(methodId).boundingBox();
@@ -24,10 +24,8 @@ async function extract(page: Page, method: string, fragmentLabels: string[], nam
 /** 部品を置いて「実装を終える」。次の依頼か結果に進むまで繰り返し押す。 */
 async function implement(page: Page, partId: string, classId: string, next: ReturnType<Page['getByTestId']>) {
   await dragMethodToClass(page, partId, classId);
-  await expect(async () => {
-    await page.getByTestId('change-request-finish').click({ timeout: 1000 });
-    await expect(next).toBeVisible({ timeout: 1000 });
-  }).toPass();
+  await finishAndAdvance(page);
+  await expect(next).toBeVisible();
 }
 
 test('組み替えたチュートリアル2では、ボスが最後に出て、100点で入れられて組み替える前と比べられる', async ({ page }) => {
@@ -39,7 +37,7 @@ test('組み替えたチュートリアル2では、ボスが最後に出て、1
   await extract(page, 'method-placeOrder', ['注文をDBに保存する'], 'saveOrder');
   await extract(page, 'method-placeOrder', ['確認メールを送る'], 'sendConfirmationMail');
   await extract(page, 'method-placeOrder', ['在庫があるか検証する'], 'validateStock');
-  await expect(page.getByTestId('score')).toContainText('100');
+  await expect(page.getByTestId('score-value')).toContainText('100');
   await releaseAllManualFixSites(page);
   await startChangeRequests(page);
 
@@ -69,7 +67,7 @@ test('組み替えていないと、ボスの比較にも行数の上限を超�
   await page.goto('/');
   await selectStage(page, 'チュートリアル1: 長いメソッドを分ける');
   await extract(page, 'method-printMonthlyReport', ['今月の売上を集計する', '前月比を計算する'], 'aggregateSales');
-  await expect(page.getByTestId('score')).toContainText('100');
+  await expect(page.getByTestId('score-value')).toContainText('100');
   await releaseAllManualFixSites(page);
   await startChangeRequests(page);
 

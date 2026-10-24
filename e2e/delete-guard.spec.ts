@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { selectStage } from './selectStage.js';
+import { expectDeduction } from './scoreBreakdown.js';
 
 async function openStage(page: Page, label: string) {
   await page.goto('/');
@@ -99,7 +100,7 @@ test('処理のあるファイルは削除できず、循環依存の減点が�
   await expect(page.getByRole('alert')).toHaveCount(1);
   await expect(file).toBeVisible();
   await expect(page.getByTestId('class-Order')).toBeVisible();
-  await expect(page.getByTestId('score')).toContainText('循環依存 1組 -20');
+  await expectDeduction(page, '循環依存 1組(矢印2本)');
   const sidebarToggle = page.getByRole('button', { name: /サイドバーを(開く|閉じる)/ });
   await sidebarToggle.click();
   await expect(sidebarToggle).toHaveAttribute('aria-expanded', 'true');

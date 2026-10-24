@@ -17,6 +17,7 @@ export type CritiqueRequestBody = {
 
 /** リクエストの文字数の上限。想定より大きい・壊れた入力をここで弾く。 */
 export const MAX_BODY_LENGTH = 20_000;
+export const CRITIQUE_CONTRACT_VERSION = 1;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;

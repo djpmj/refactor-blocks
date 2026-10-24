@@ -25,6 +25,7 @@ import { blankDesignProblems } from '../blankDesigns/blankDesignProblems';
 import { validateCheck } from '../../domain/stage/conceptCheck';
 import { stages } from './stageCatalog';
 import { storyChapters } from '../story/storyChapters';
+import { solutionPhaseTable } from './solutionPhaseTable';
 
 function rumorViolations(stage: Stage, speakers: ReadonlySet<string>): string[] {
   const rumored = new Set(rumoredRequests(stage).map((request) => request.id));
@@ -358,15 +359,6 @@ const shortcuts: ReadonlyArray<{ readonly stageId: string; readonly description:
     steps: [
       { move: { method: 'prepareExport', toClass: 'CsvExporter' } },
       { setSuperclass: { class: 'CsvExporter', superclass: null } },
-    ],
-  },
-  {
-    stageId: 'advanced-collapse-hierarchy',
-    description: 'prepareExport だけを CsvExporter へ移し、継承を implements に書き換える',
-    steps: [
-      { move: { method: 'prepareExport', toClass: 'CsvExporter' } },
-      { setSuperclass: { class: 'CsvExporter', superclass: null } },
-      { addInterface: { class: 'CsvExporter', interface: 'BaseExporter' } },
     ],
   },
   {
@@ -1051,6 +1043,17 @@ describe('stageCatalog', () => {
     expect(answers.size).toBeGreaterThan(1);
   });
 
+  it.each(checkTargets)('%s: 理解度チェックの解説は正誤を書かない(判定行だけが伝える)', (_title, checks) => {
+    // Arrange
+    const explanations = checks.flatMap((check) => check.choices).map((choice) => choice.explanation);
+
+    // Act
+    const judging = explanations.filter((text) => /^(不)?正解です/.test(text));
+
+    // Assert
+    expect(judging).toEqual([]);
+  });
+
   describe.each(stages.map((stage) => [stage.title, stage] as const))('%s', (_title, stage) => {
     it('変更の痛みカード用の理由と初期集計がある', () => {
       // Arrange
@@ -1276,5 +1279,43 @@ describe('stageCatalog', () => {
 
     // Assert
     expect(violations).toEqual([]);
+  });
+});
+
+function phasesFitSteps(phases: readonly { readonly from: number }[], stepCount: number): boolean {
+  const froms = phases.map((phase) => phase.from);
+  const ascending = froms.every((from, index) => index === 0 || from > froms[index - 1]);
+  return froms[0] === 0 && ascending && froms.every((from) => from < stepCount);
+}
+
+describe('模範解答の方針', () => {
+  const longStages = stages.filter((stage) => (sampleAnswerSteps[stage.id] ?? []).length >= 8);
+
+  it('模範解答が8手以上の全ステージに方針の表がある', () => {
+    // Arrange & Act
+    const missing = longStages.filter((stage) => (solutionPhaseTable[stage.id] ?? []).length === 0).map((stage) => stage.id);
+
+    // Assert
+    expect(longStages.length).toBeGreaterThan(0);
+    expect(missing).toEqual([]);
+  });
+
+  it('各表の from は 0 から始まり、昇順で、手順の数より小さい', () => {
+    // Arrange & Act
+    const broken = Object.entries(solutionPhaseTable).filter(([stageId, phases = []]) => !phasesFitSteps(phases, (sampleAnswerSteps[stageId] ?? []).length)).map(([stageId]) => stageId);
+
+    // Assert
+    expect(broken).toEqual([]);
+  });
+
+  it('方針の表はカタログにあるステージだけを指す', () => {
+    // Arrange
+    const stageIds = new Set(stages.map((stage) => stage.id));
+
+    // Act
+    const unknown = Object.keys(solutionPhaseTable).filter((stageId) => !stageIds.has(stageId));
+
+    // Assert
+    expect(unknown).toEqual([]);
   });
 });

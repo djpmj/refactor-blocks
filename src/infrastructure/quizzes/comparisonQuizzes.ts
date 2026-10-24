@@ -1,4 +1,5 @@
 import type { ChangeRequest } from '../../domain/change/ChangeRequest';
+import type { Codebase } from '../../domain/codebase/Codebase';
 import type { ComparisonQuiz } from '../../domain/quiz/ComparisonQuiz';
 import { sampleAnswerCodebase } from '../../domain/stage/sampleAnswer';
 import type { Stage } from '../../domain/stage/Stage';
@@ -17,14 +18,24 @@ function firstRequest(stage: Stage): ChangeRequest {
   return request;
 }
 
+/** 出題用に、メソッドの無いクラスとクラスの無いファイルを取り除く(空の受け皿が「中身を入れる先」のヒントになるため)。 */
+function withoutEmptyShells(codebase: Codebase): Codebase {
+  const files = codebase.files.map((file) => ({ ...file, classes: file.classes.filter((codeClass) => codeClass.methods.length > 0) }));
+  return { files: files.filter((file) => file.classes.length > 0) };
+}
+
+function design(label: string, codebase: Codebase) {
+  return { label, codebase: withoutEmptyShells(codebase) };
+}
+
 const userController = stageById('beginner-user-controller');
 const volatileTax = stageById('intermediate-volatile-tax');
 const volatileFormat = stageById('intermediate-volatile-format');
 const collapseHierarchy = stageById('advanced-collapse-hierarchy');
 
 // 2問目と3問目は同じ2つの設計で、依頼だけが違う(どこが変わるかで良し悪しが入れ替わる)
-const formatSplitDesign = { label: '帳票の整形を ReportFormatter に分けた設計', codebase: sampleAnswerCodebase(volatileFormat) };
-const taxSplitDesign = { label: '税の計算を TaxCalculator に分けた設計', codebase: sampleAnswerCodebase(volatileTax) };
+const formatSplitDesign = design('帳票の整形を ReportFormatter に分けた設計', sampleAnswerCodebase(volatileFormat));
+const taxSplitDesign = design('税の計算を TaxCalculator に分けた設計', sampleAnswerCodebase(volatileTax));
 
 /** 設計くらべクイズの一覧。この順に出題する。 */
 export const comparisonQuizzes: readonly ComparisonQuiz[] = [
@@ -34,8 +45,8 @@ export const comparisonQuizzes: readonly ComparisonQuiz[] = [
     description: userController.description,
     limits: userController.limits,
     designs: {
-      a: { label: 'DBは UserRepository、メールは Mailer に任せた設計', codebase: sampleAnswerCodebase(userController) },
-      b: { label: 'UserController が全部やっている設計', codebase: userController.codebase },
+      a: design('保存は UserRepository、メールは Mailer に分けた設計', sampleAnswerCodebase(userController)),
+      b: design('登録・保存・メール送信を UserController にまとめた設計', userController.codebase),
     },
     changeRequest: firstRequest(userController),
     explanation:
@@ -67,8 +78,8 @@ export const comparisonQuizzes: readonly ComparisonQuiz[] = [
     description: '売上をCSVでダウンロードさせるコード。CSVを書き出す処理を、継承を使う形と使わない形の2通りで作った。',
     limits: collapseHierarchy.limits,
     designs: {
-      a: { label: '基底クラス BaseExporter と、その子 CsvExporter に分けた設計', codebase: collapseHierarchy.codebase },
-      b: { label: 'CSVの処理を CsvExporter 1クラスにまとめた設計', codebase: sampleAnswerCodebase(collapseHierarchy) },
+      a: design('基底クラス BaseExporter と、その子 CsvExporter に分けた設計', collapseHierarchy.codebase),
+      b: design('CSVの処理を CsvExporter 1クラスにまとめた設計', sampleAnswerCodebase(collapseHierarchy)),
     },
     changeRequest: firstRequest(collapseHierarchy),
     explanation:

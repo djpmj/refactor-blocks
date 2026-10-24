@@ -457,3 +457,26 @@ describe("fileDeductionReasons", () => {
     expect([...reasons].map(([fileId, items]) => [fileId, sumReasonPoints(items)])).toEqual([...deductions]);
   });
 });
+
+describe("fileDeductionReasons: 狭めた上書き", () => {
+  it("狭めた上書きを約束違反として持ち主のファイルに数え、合計がscoreCodebaseと一致する", () => {
+    // Arrange
+    const codebase: Codebase = {
+      files: [
+        { id: "file-base", path: "base", classes: [{ id: "base", name: "Base", methods: [{ id: "base-parse", name: "parse", visibility: "protected", fragments: [] }] }] },
+        { id: "file-csv", path: "csv", classes: [{ id: "csv", name: "Csv", superclassId: "base", methods: [
+          { id: "csv-parse", name: "parse", visibility: "private", fragments: [{ id: "f", label: "parse", lines: 3, responsibility: "x" }] },
+        ] }] },
+      ],
+    };
+    const stage = { ...LOOSE, codebase, visibilityEnforced: true };
+
+    // Act
+    const reasons = fileDeductionReasons(codebase, stage);
+    const total = [...reasons.values()].flat().reduce((sum, item) => sum + item.points, 0);
+
+    // Assert
+    expect(reasons.get("file-csv")).toContainEqual({ rule: "contract", targetId: "csv-parse", points: POINTS_PER_VIOLATION });
+    expect(total).toBe(scoreCodebase(codebase, stage).deducted);
+  });
+});

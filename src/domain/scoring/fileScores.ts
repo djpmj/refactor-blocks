@@ -5,7 +5,7 @@ import type { ScoreRule } from './score';
 import { findLowCohesionClasses } from "./cohesion";
 import { findMiddleManClasses } from "./middleMan";
 import { findEncapsulationViolations, findFeatureEnvy, findOpenSetters } from "./fieldAccess";
-import { findContractViolations, findStubMethods } from "./interfaceContracts";
+import { countedNarrowedOverrides, findContractViolations, findStubMethods } from "./interfaceContracts";
 import { findEmptyContainers, findUnusedPrivateMethods } from "./leftovers";
 import { findLineLimitViolations } from "./lineLimits";
 import { findLoneSuperclasses } from "./loneSuperclass";
@@ -33,7 +33,7 @@ function fileIdByTargetId(codebase: Codebase): Map<string, string> {
  */
 export function fileDeductions(
   codebase: Codebase,
-  stage: Pick<Stage, "limits" | "dependencyLimit" | "responsibilityLimit" | "visibilityEnforced">,
+  stage: Pick<Stage, "limits" | "dependencyLimit" | "responsibilityLimit" | "visibilityEnforced" | "codebase">,
 ): Map<string, number> {
   const reasons = fileDeductionReasons(codebase, stage);
   return new Map([...reasons].map(([fileId, items]) => [fileId, items.reduce((sum, item) => sum + item.points, 0)]));
@@ -47,7 +47,7 @@ export type FileDeductionReason = {
 
 export function fileDeductionReasons(
   codebase: Codebase,
-  stage: Pick<Stage, "limits" | "dependencyLimit" | "responsibilityLimit" | "visibilityEnforced">,
+  stage: Pick<Stage, "limits" | "dependencyLimit" | "responsibilityLimit" | "visibilityEnforced" | "codebase">,
 ): Map<string, readonly FileDeductionReason[]> {
   const dependencies = classDependencies(codebase);
   const violations: readonly (readonly [ScoreRule, readonly string[]])[] = [
@@ -59,7 +59,7 @@ export function fileDeductionReasons(
     ['unused', findUnusedPrivateMethods(codebase)],
     ['lone-superclass', findLoneSuperclasses(codebase)],
     ['stub', findStubMethods(codebase)],
-    ['contract', findContractViolations(codebase)],
+    ['contract', [...findContractViolations(codebase), ...countedNarrowedOverrides(codebase, stage)]],
     ['feature-envy', findFeatureEnvy(codebase).map((violation) => violation.methodId)],
     ['encapsulation', [
       ...findEncapsulationViolations(codebase).map((violation) => violation.accessorClassId),

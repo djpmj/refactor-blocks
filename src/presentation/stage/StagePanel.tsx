@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
+import { forwardRef, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import type { Codebase } from '../../domain/codebase/Codebase';
 import { scoreCodebase, type Score } from '../../domain/scoring/score';
 import { biggestProblem } from '../../domain/scoring/biggestProblem';
@@ -9,7 +9,7 @@ import { ReferenceMenu } from './ReferenceMenu';
 import { OperationGuideDialog } from '../guide/OperationGuideDialog';
 import { useGuideShortcut } from '../guide/useGuideShortcut';
 import { useGameStore } from '../store/useGameStore';
-import { describeScore } from './describeScore';
+import { describeScoreShort } from './describeScore';
 import { ScoreBreakdown } from './ScoreBreakdown';
 import { HintList } from './HintList';
 import { HintButton } from './HintPanel';
@@ -33,17 +33,19 @@ import { ProblemHint } from './ProblemHint';
 import { painRequestsOf } from '../../domain/change/changePain';
 import { stageStep } from '../../domain/change/stageStep';
 import type { StageStep } from '../../domain/change/stageStep';
+import { useNarrowScreen } from '../useNarrowScreen';
 
 /** ステージ一覧のダイアログを開くボタン。 */
 function RoadmapButton() {
   const [open, setOpen] = useState(false);
+  const openerRef = useRef<HTMLButtonElement>(null);
   const investigating = useGameStore((state) => state.changeSession !== null);
   return (
     <>
-      <button type="button" data-testid="roadmap-open" disabled={investigating} onClick={() => setOpen(true)}>
+      <button ref={openerRef} type="button" data-testid="roadmap-open" disabled={investigating} onClick={() => setOpen(true)}>
         ステージ一覧
       </button>
-      <StageRoadmapDialog open={open} onClose={() => setOpen(false)} />
+      <StageRoadmapDialog open={open} onClose={() => { setOpen(false); openerRef.current?.focus(); }} />
     </>
   );
 }
@@ -77,9 +79,37 @@ function useStageSidebarWidth() {
   return { handleProps, style };
 }
 
-function StageSidebarToggle({ open, onToggle }: Readonly<{ open: boolean; onToggle: () => void }>) {
+function useOpenSidebarForManualFix(active: boolean, setSidebarOpen: (open: boolean) => void): void {
+  const wasActive = useRef(active);
+  useEffect(() => {
+    if (!wasActive.current && active && window.innerWidth < 1400) setSidebarOpen(true);
+    wasActive.current = active;
+  }, [active, setSidebarOpen]);
+}
+
+function ManualFixSidebarOpener({ setSidebarOpen }: Readonly<{ setSidebarOpen: (open: boolean) => void }>) {
+  const manualFix = useGameStore((state) => state.manualFix);
+  useOpenSidebarForManualFix(manualFix !== null, setSidebarOpen);
+  return null;
+}
+
+const StageSidebarToggle = forwardRef<HTMLButtonElement, Readonly<{ open: boolean; onToggle: () => void }>>(function StageSidebarToggle({ open, onToggle }, ref) {
   const label = open ? 'サイドバーを閉じる' : 'サイドバーを開く';
-  return <button type="button" className="sidebar-toggle" aria-expanded={open} aria-controls="stage-sidebar" aria-label={label} title={label} onClick={onToggle}>{open ? '«' : '»'}</button>;
+  return <button ref={ref} type="button" className="sidebar-toggle" aria-expanded={open} aria-controls="stage-sidebar" aria-label={label} title={label} onClick={onToggle}>{open ? '«' : '»'}</button>;
+});
+
+function useSidebarDrawer(open: boolean, setOpen: (open: boolean) => void, toggleRef: RefObject<HTMLButtonElement | null>) {
+  useEffect(() => {
+    if (!open && window.matchMedia('(max-width: 700px)').matches) toggleRef.current?.focus();
+  }, [open, toggleRef]);
+  useEffect(() => {
+    if (!open) return;
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape' && window.matchMedia('(max-width: 700px)').matches) setOpen(false);
+    }
+    document.addEventListener('keydown', closeOnEscape);
+    return () => document.removeEventListener('keydown', closeOnEscape);
+  }, [open, setOpen]);
 }
 
 type ScoreCelebration = { readonly scoreAfter: number; readonly deductedBefore: number; readonly deductedAfter: number } | null;
@@ -131,8 +161,8 @@ function isFloorProgress(score: Score, celebration: ScoreCelebration): boolean {
   return celebration !== null && celebration.scoreAfter === 0 && score.total === 0 && score.deducted === celebration.deductedAfter && celebration.deductedAfter < celebration.deductedBefore;
 }
 
-/** 点数を丸いゲージで見せる。詳細(減点の内訳)は隣のテキストに出す。 */
-function ScoreBadge({ score, codebase }: Readonly<{ score: Score; codebase: Codebase }>) {
+/** 点数を丸いゲージで見せる。隣のテキストは減点の件数だけで、内訳は「減点の内訳」に出す。 */
+function ScoreBadge({ score }: Readonly<{ score: Score }>) {
   const celebration = useGameStore((state) => state.celebration);
   const rising = celebration !== null && celebration.scoreAfter === score.total && celebration.scoreAfter > celebration.scoreBefore;
   const floorProgress = isFloorProgress(score, celebration);
@@ -147,7 +177,7 @@ function ScoreBadge({ score, codebase }: Readonly<{ score: Score; codebase: Code
       </div>
       <span className="sr-only" aria-live="polite" data-testid="score-announcement">{floorProgress && celebration !== null ? `減点の合計が -${celebration.deductedBefore} から -${celebration.deductedAfter} に減りました` : `${score.total}点`}</span>
       <span className="score-badge__detail" data-testid="score">
-        {describeScore(score, codebase)}
+        {describeScoreShort(score)}
       </span>
     </div>
   );
@@ -157,7 +187,7 @@ function ScoreBadge({ score, codebase }: Readonly<{ score: Score; codebase: Code
 function ScoreArea({ stage, codebase, score, disabled }: Readonly<{ stage: Stage; codebase: Codebase; score: Score; disabled: boolean }>) {
   return (
     <>
-      <ScoreBadge score={score} codebase={codebase} />
+      <ScoreBadge score={score} />
       <TestStatus stage={stage} codebase={codebase} />
       <ScoreBreakdown key={`${stage.id}-${String(disabled)}`} score={score} disabled={disabled} />
     </>
@@ -281,6 +311,21 @@ function StageSidebar({ stage, codebase, score, initialScore, investigating, rev
   );
 }
 
+function SidebarBackdrop({ open, onClose }: Readonly<{ open: boolean; onClose: () => void }>) {
+  if (!open) return null;
+  return <button type="button" className="sidebar-backdrop" aria-label="課題とヒントの外側をタップして閉じる" onClick={onClose} />;
+}
+
+function StageSidebarDrawer({ open, stage, codebase, score, initialScore, investigating, revealedCount, hints, total, problemRevealed, onRevealProblem, onReveal, sidebarRef }: Readonly<{
+  open: boolean; stage: Stage; codebase: Codebase; score: Score; initialScore: Score; investigating: boolean;
+  revealedCount: number; hints: readonly { text: string; step: SolutionStep }[]; total: number; problemRevealed: boolean;
+  onRevealProblem: () => void; onReveal: () => void; sidebarRef: RefObject<HTMLElement | null>;
+}>) {
+  return <StageSidebar key={stage.id} stage={stage} codebase={codebase} score={score} initialScore={initialScore} investigating={investigating}
+    revealedCount={revealedCount} problemRevealed={problemRevealed} onRevealProblem={onRevealProblem} hints={hints} total={total}
+    onReveal={onReveal} hidden={!open} sidebarRef={sidebarRef} />;
+}
+
 function useStagePanelEffects(stageId: string, score: number, actions: Readonly<{ recordProgress: (stageId: string, score: number) => void; startTour: () => void; setSidebarOpen: (open: boolean) => void }>, tourStep: number | null) {
   const { recordProgress, startTour, setSidebarOpen } = actions;
   useEffect(() => recordProgress(stageId, score), [stageId, score, recordProgress]);
@@ -308,6 +353,18 @@ function useStageHintState(stageId: string, score: Score) {
   };
 }
 
+function StageHeader({ stage, codebase, score, investigating }: Readonly<{ stage: Stage; codebase: Codebase; score: Score; investigating: boolean }>) {
+  return (
+    <header className="stage-panel">
+      <h1 className="stage-panel__title">{stage.title}</h1>
+      <StageNavigation />
+      <div className="stage-panel__spacer" />
+      <CritiqueButton disabled={investigating} />
+      <ScoreArea stage={stage} codebase={codebase} score={score} disabled={investigating} />
+    </header>
+  );
+}
+
 /** ステージの目標と、行数・結合度・循環依存・責務の混在から出した点数を表示する。責務の中身(responsibility の値)は見せない。 */
 function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage; children: ReactNode; active: boolean }>) {
   // 実装中は部品置き場入りのコードなので、点数と進捗は挑戦前のコードで数える
@@ -321,46 +378,35 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
   const initialScore = useMemo(() => scoreCodebase(stage.codebase, stage), [stage]);
   // 狭い画面ではキャンバスを優先して、最初は閉じておく(描画は残し、hiddenで隠すだけ)
   const [sidebarOpen, toggleSidebar, setSidebarOpen] = useStageSidebar(stage.id, score.total >= 100);
+  const sidebarToggleRef = useRef<HTMLButtonElement>(null);
+  const narrowScreen = useNarrowScreen();
+  useSidebarDrawer(sidebarOpen, setSidebarOpen, sidebarToggleRef);
   const { handleProps, style: sidebarStyle } = useStageSidebarWidth();
+  const { count: revealedCount } = stageHints;
   const { sidebarRef } = useStageFlow(stage, score.total);
-  const { hints, total } = useHints(stage, stageHints.count);
+
+  const { hints, total } = useHints(stage, revealedCount);
   const stagePanelActions = useMemo(() => ({ recordProgress, startTour, setSidebarOpen }), [recordProgress, startTour, setSidebarOpen]);
   useStagePanelEffects(stage.id, score.total, stagePanelActions, tourStep);
   return (
     <>
       <SpotlightTour />
-      <header className="stage-panel">
-        <h1 className="stage-panel__title">{stage.title}</h1>
-        <StageNavigation />
-        <div className="stage-panel__spacer" />
-        <CritiqueButton disabled={investigating} />
-        <ScoreArea stage={stage} codebase={codebase} score={score} disabled={investigating} />
-      </header>
+      <StageHeader stage={stage} codebase={codebase} score={score} investigating={investigating} />
       <CritiqueResult />
+      <ManualFixSidebarOpener setSidebarOpen={setSidebarOpen} />
       <div className={`app__body${sidebarOpen ? ' app__body--sidebar-open' : ''}`} style={sidebarStyle}>
-        <StageSidebar
-          key={stage.id}
-          stage={stage}
-          codebase={codebase}
-          score={score} initialScore={initialScore}
-          investigating={investigating}
-          revealedCount={stageHints.count}
-          problemRevealed={stageHints.problemRevealed}
-          onRevealProblem={stageHints.revealProblem}
-          hints={hints}
-          total={total}
-          onReveal={stageHints.revealStep}
-          hidden={!sidebarOpen}
-          sidebarRef={sidebarRef}
-        />
+        <StageSidebarDrawer open={sidebarOpen} stage={stage} codebase={codebase} score={score} initialScore={initialScore} investigating={investigating}
+          revealedCount={stageHints.count} problemRevealed={stageHints.problemRevealed} onRevealProblem={stageHints.revealProblem} hints={hints}
+          total={total} onReveal={stageHints.revealStep} sidebarRef={sidebarRef} />
+        <SidebarBackdrop open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         {sidebarOpen && <div className="sidebar-resizable__handle sidebar-resizable__handle--left" {...handleProps} />}
-        <StageSidebarToggle open={sidebarOpen} onToggle={toggleSidebar} />
-        <div className="workspace">
+        <StageSidebarToggle ref={sidebarToggleRef} open={sidebarOpen} onToggle={toggleSidebar} />
+        <div className="workspace" inert={sidebarOpen && narrowScreen}>
           <ActionToolbar
             stage={stage}
             isPerfect={score.total >= 100}
             active={active}
-            revealedCount={stageHints.count}
+            revealedCount={revealedCount}
             onRevealHint={stageHints.problemRevealed ? stageHints.revealStep : stageHints.revealProblem}
             onOpenHints={() => setSidebarOpen(true)}
           />

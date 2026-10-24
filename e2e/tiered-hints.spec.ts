@@ -70,6 +70,6 @@ test('100点では問題ヒントを使えない', async ({ page }) => {
   }
 
   // Assert
-  await expect(page.getByTestId('score')).toContainText('100点');
+  await expect(page.getByTestId('score-value')).toContainText('100点');
   await expect(problem).toBeDisabled();
 });

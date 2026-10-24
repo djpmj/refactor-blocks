@@ -109,30 +109,25 @@ test('左サイドバーをドラッグとキーボードで調整し、開閉�
   await expect(page.getByRole('separator', { name: '課題とヒントの幅を変更' })).toHaveAttribute('aria-valuenow', '260');
 });
 
-test('狭い画面では左サイドバーを40vw以内に収めてキャンバスを表示する', async ({ page }) => {
+test('狭い画面では左サイドバーを85vwのドロワーとして重ねる', async ({ page }) => {
   // Arrange
   await page.setViewportSize({ width: 375, height: 800 });
   await page.goto('/');
   const sidebar = page.getByRole('complementary', { name: '課題とヒント' });
+  const closeSidebar = page.getByRole('button', { name: 'サイドバーを閉じる' });
+  if (await closeSidebar.count() > 0) await closeSidebar.click();
+  const canvas = page.getByRole('region', { name: 'コードベース' });
+  await expect(sidebar).toBeHidden();
+  expect((await canvas.boundingBox())?.width).toBeGreaterThanOrEqual(340);
   await page.getByRole('button', { name: 'サイドバーを開く' }).click();
 
   // Assert
+  await expect(sidebar).toBeVisible();
   const sidebarBox = await sidebar.boundingBox();
-  const toggleBox = await page.getByRole('button', { name: 'サイドバーを閉じる' }).boundingBox();
-  if (sidebarBox === null || toggleBox === null) throw new Error('サイドバーまたは開閉ボタンの位置を取得できません');
-  expect(sidebarBox.width).toBeLessThanOrEqual(375 * 0.4 + 1);
-  const buttonGap = toggleBox.x - (sidebarBox.x + sidebarBox.width);
-  expect(buttonGap).toBeGreaterThanOrEqual(0);
-  expect(buttonGap).toBeLessThanOrEqual(2);
-  const handle = page.getByRole('separator', { name: '課題とヒントの幅を変更' });
-  await expect(handle).toHaveAttribute('aria-valuenow', '150');
-  await expect(handle).toHaveAttribute('aria-valuemin', '120');
-  await expect(handle).toHaveAttribute('aria-valuemax', '150');
-  await handle.focus();
-  await page.keyboard.press('ArrowLeft');
-  await expect(handle).toHaveAttribute('aria-valuenow', '134');
-  await expect(sidebar).toHaveCSS('width', '134px');
-  await expect(page.locator('.app__canvas')).toBeVisible();
+  expect(sidebarBox?.width).toBeGreaterThanOrEqual(375 * 0.85 - 1);
+  expect(sidebarBox?.width).toBeLessThanOrEqual(375 * 0.85 + 1);
+  await page.getByRole('button', { name: 'サイドバーを閉じる' }).click();
+  await expect(sidebar).toBeHidden();
 });
 
 test('長い内容をスクロールしてもボタンがスクロールバー上端に重ならない', async ({ page }) => {
@@ -163,7 +158,7 @@ test('長い内容をスクロールしてもボタンがスクロールバー�
   await expect(toggle).toBeVisible();
 });
 
-test('狭い画面でも閉じたサイドバーのボタンをキーボードで操作できる', async ({ page }) => {
+test('閉じたサイドバーのボタンをキーボードで操作できる', async ({ page }) => {
   // Arrange
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.emulateMedia({ colorScheme: 'dark' });

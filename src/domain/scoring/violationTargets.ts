@@ -1,10 +1,10 @@
-﻿import { findClassOfField, findClassOfMethod, type Codebase } from '../codebase/Codebase';
+﻿import { findClassOfField, type Codebase } from '../codebase/Codebase';
 import { classDependencies } from '../codebase/dependencies';
 import type { Stage } from '../stage/Stage';
 import { findLowCohesionClasses } from './cohesion';
 import { findMiddleManClasses } from './middleMan';
 import { findEncapsulationViolations, findFeatureEnvy, findOpenSetters } from './fieldAccess';
-import { findContractViolations, findStubMethods } from './interfaceContracts';
+import { countedNarrowedOverrides, findContractViolations, findStubMethods } from './interfaceContracts';
 import { findEmptyContainers, findUnusedPrivateMethods } from './leftovers';
 import { findLineLimitViolations } from './lineLimits';
 import { findLayerViolations } from './layers';
@@ -99,15 +99,13 @@ export function violationTargets(
   addClasses(targets['lone-superclass'], findLoneSuperclasses(codebase));
   addMethods(targets.stub, findStubMethods(codebase));
   addClasses(targets.contract, findContractViolations(codebase));
+  addMethods(targets.contract, countedNarrowedOverrides(codebase, stage));
   addMethods(targets['feature-envy'], findFeatureEnvy(codebase).map(({ methodId }) => methodId));
   for (const violation of findEncapsulationViolations(codebase)) {
     const owner = findClassOfField(codebase, violation.fieldId);
     if (owner !== undefined) targets.encapsulation.classIds.add(owner.id);
   }
-  for (const methodId of findOpenSetters(codebase)) {
-    const owner = findClassOfMethod(codebase, methodId);
-    if (owner !== undefined) targets.encapsulation.classIds.add(owner.id);
-  }
+  addMethods(targets.encapsulation, findOpenSetters(codebase));
   addClasses(targets.cohesion, findLowCohesionClasses(codebase).map(({ classId }) => classId));
   addMethods(targets['trivial-method'], findTrivialMethods(codebase));
   addClasses(targets['thin-class'], findThinClasses(codebase));

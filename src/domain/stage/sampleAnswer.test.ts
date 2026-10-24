@@ -4,6 +4,13 @@ import { findVisibilityViolations } from '../scoring/visibility';
 import { applySolutionSteps, sampleAnswerCodebase, solutionSnapshots, type SolutionStep } from './sampleAnswer';
 
 /** クラスA(メソッドrunに処理2つ)とクラスBを持つ最小のコードベース。 */
+/** twoClassCodebase の B を、中身の無い public メソッドだけのインターフェース役にしたもの。 */
+function interfaceBCodebase(): Codebase {
+  const base = twoClassCodebase();
+  const interfaceB = { id: 'class-b', name: 'B', methods: [{ id: 'method-b-run', name: 'runB', visibility: 'public' as const, fragments: [] }] };
+  return { files: [{ ...base.files[0], classes: base.files[0].classes.map((codeClass) => (codeClass.id === 'class-b' ? interfaceB : codeClass)) }, ...base.files.slice(1)] };
+}
+
 function twoClassCodebase(): Codebase {
   return {
     files: [
@@ -293,7 +300,7 @@ describe('applySolutionSteps', () => {
 
   it('addInterfaceステップで、クラスの実装先にインターフェースを名前で追加する', () => {
     // Arrange
-    const codebase = twoClassCodebase();
+    const codebase = interfaceBCodebase();
     const steps: SolutionStep[] = [{ addInterface: { class: 'A', interface: 'B' } }];
 
     // Act
@@ -305,7 +312,7 @@ describe('applySolutionSteps', () => {
 
   it('removeInterfaceステップで、クラスの実装先からインターフェースを外す', () => {
     // Arrange
-    const codebase = twoClassCodebase();
+    const codebase = interfaceBCodebase();
     const steps: SolutionStep[] = [{ addInterface: { class: 'A', interface: 'B' } }, { removeInterface: { class: 'A', interface: 'B' } }];
 
     // Act

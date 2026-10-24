@@ -17,7 +17,7 @@ function stereotypeClassName(stereotype: ReturnType<typeof classStereotype>): st
 
 /** ClassNode の読み取り専用版。dnd-kitのドラッグ・ドロップ先を持たず、メソッド・フィールドの並びだけを見せる。 */
 export function PreviewClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
-  const { codebase, methodLimit, selectedMethodId, onSelectMethod, highlights } = useCodebasePreview();
+  const { codebase, methodLimit, selectedMethodId, onSelectMethod, highlights, glowClassNames } = useCodebasePreview();
   const codeClass = findClass(codebase, data.classId);
   const superclass = findSuperclass(codebase, data.classId);
   const interfaceNames = findInterfaces(codebase, data.classId).map((interfaceClass) => interfaceClass.name);
@@ -27,7 +27,7 @@ export function PreviewClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
   const rolePrefix = roleName === '' ? '' : `${roleName} `;
   const fields = fieldsOf(codeClass);
   return (
-    <div className="class-node" data-testid={`preview-class-${codeClass.name}`}>
+    <div className={glowClassNames?.has(codeClass.name) === true ? 'class-node class-node--glow' : 'class-node'} data-testid={`preview-class-${codeClass.name}`} data-glow={glowClassNames?.has(codeClass.name) === true ? 'true' : undefined}>
       <DependencyHandles />
       <div className="class-node__header" aria-label={`${rolePrefix}${codeClass.name}`}>
         <span className={stereotypeClassName(stereotype)}>

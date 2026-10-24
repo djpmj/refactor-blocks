@@ -78,6 +78,8 @@ export async function completeOpeningFix(page: Page): Promise<void> {
   const tour = page.getByTestId('first-visit-tour');
   if (await tour.count() > 0 && await tour.isVisible()) await tour.getByRole('button', { name: '次へ' }).click();
   if (wasSidebarClosed) await page.getByRole('button', { name: 'サイドバーを開く' }).evaluate((element) => (element as { click(): void }).click());
+  const bannerStart = page.getByTestId('opening-fix-banner').getByRole('button', { name: '実際に直してみる' });
+  if (await bannerStart.count() > 0) await bannerStart.click();
   await releaseAllManualFixSites(page, { restoreSidebar: false });
   if (await tour.count() > 0 && await tour.isVisible()) await tour.getByRole('button', { name: 'ガイドを終了' }).click();
   const panel = page.getByRole('region', { name: '手で直すシミュレーション' });
@@ -110,4 +112,13 @@ export async function startChangeRequests(page: Page): Promise<void> {
     await completeManualFix(page);
   }
   await button.click();
+}
+
+/** 部品を置いたあとの「実装を終える」から、その依頼の結果を確定して次へ進むまで。ドラッグ直後の1回目のクリックはdnd-kitに握りつぶされることがあるので、結果が出るまで押し直す。 */
+export async function finishAndAdvance(page: Page): Promise<void> {
+  await expect(async () => {
+    await page.getByTestId('change-request-finish').click({ timeout: 1000 });
+    await expect(page.getByTestId('change-request-next')).toBeVisible({ timeout: 1000 });
+  }).toPass();
+  await page.getByTestId('change-request-next').click();
 }

@@ -7,6 +7,8 @@ export type CodebasePreviewValue = {
   readonly selectedMethodId?: string | null;
   readonly onSelectMethod?: (methodId: string) => void;
   readonly highlights?: ReadonlyMap<string, MethodHighlight>;
+  /** 光らせるクラスの名前(解答例との比較で、違いの行を押したとき)。 */
+  readonly glowClassNames?: ReadonlySet<string>;
 };
 
 export type MethodHighlight = 'site' | 'missed';

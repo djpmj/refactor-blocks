@@ -123,3 +123,20 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [method-chip-accessible-name](method-chip-accessible-name.md) | メソッドのボタンの読み上げ名に可視性・行数・警告・「直した」印を入れ、選択中を aria-pressed で伝える |
 | [move-class-to-new-file-menu](move-class-to-new-file-menu.md) | クラスのメニューから、そのクラスを新しいファイルへ移動する(唯一のクラスでは非表示) |
 | [blank-design-class-names](blank-design-class-names.md) | 白紙設計のクラスを責務に応じて自動命名し、手動改名は維持する |
+| [manual-fix-clarity](manual-fix-clarity.md) | 冒頭の手直しの答えを隠し、結果文を変更箇所のクラス単位で説明する |
+| [dark-mode-canvas-controls](dark-mode-canvas-controls.md) | ダークモードでキャンバスのズームボタン等をゲームの配色に合わせる |
+| [concept-check-feedback-labels](concept-check-feedback-labels.md) | 理解度チェックの解説に見出しを付け、解説本文から正誤の文言を外す |
+| [narrow-screen-layout](narrow-screen-layout.md) | 幅700px以下で課題とメソッドエディタをドロワー表示にしてキャンバスを広く使う |
+| [critique-contract-version](critique-contract-version.md) | AI講評のサーバーとゲームの契約版の食い違いを見分けて伝える |
+| [operation-guide-keyboard](operation-guide-keyboard.md) | 操作ガイドにキーボードだけで遊ぶ方法を書く |
+| [comparison-quiz-no-giveaway](comparison-quiz-no-giveaway.md) | 設計くらべで答える前に答えが透ける表示(評価的な設計名・警告色・空クラス)をなくす |
+| [comparison-quiz-summary](comparison-quiz-summary.md) | 設計くらべの最後の問題のあとに結果のまとめと次の行き先を出す |
+| [comparison-quiz-preview-zoom](comparison-quiz-preview-zoom.md) | 設計くらべの設計A・Bを同じ縮尺で並べる |
+| [change-request-sample-on-ideal-base](change-request-sample-on-ideal-base.md) | 変更依頼の解答例を、前の依頼を解答例どおりに置いた理想の土台から生成する |
+| [header-score-summary](header-score-summary.md) | ヘッダーの点数の説明を短くし、減点の内訳との重複をなくす |
+| [implements-candidates-interface-only](implements-candidates-interface-only.md) | 「実装するインターフェース」の候補をインターフェース役のクラスに絞る |
+| [change-request-step-feedback](change-request-step-feedback.md) | 変更依頼を1件ごとに答え合わせし、その場で置き直せるようにする |
+| [deduction-targets-named](deduction-targets-named.md) | 減点の内訳に、原因のクラス・メソッド・依存を名前で出す |
+| [override-visibility-contract](override-visibility-contract.md) | 親のメソッドを上書きして公開範囲を狭めたら約束違反に数える |
+| [hint-strategy-phases](hint-strategy-phases.md) | ヒント「次の一手」を方針のまとまりごとに見せる |
+| [answer-comparison-view](answer-comparison-view.md) | 解答例の図を、自分の設計と並べて違いが分かるように見せる |

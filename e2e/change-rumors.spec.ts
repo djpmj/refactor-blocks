@@ -1,5 +1,5 @@
 ﻿import { expect, test } from '@playwright/test';
-import { releaseAllManualFixSites, selectStage, startChangeRequests } from './selectStage.js';
+import { finishAndAdvance, releaseAllManualFixSites, selectStage, startChangeRequests } from './selectStage.js';
 
 async function dragMethodToClass(page: import('@playwright/test').Page, method: string, codeClass: string) {
   const source = await page.getByTestId(method).boundingBox();
@@ -57,30 +57,24 @@ test('変更依頼中はうわさ欄を隠す', async ({ page }) => {
   await page.getByLabel('前月比を計算する').check();
   await page.getByLabel('新しいメソッド名').fill('aggregateSales');
   await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
-  await expect(page.getByTestId('score')).toContainText('100');
+  await expect(page.getByTestId('score-value')).toContainText('100');
   await releaseAllManualFixSites(page);
   await startChangeRequests(page);
   await expect(page.getByTestId('change-panel')).toBeVisible();
   await expect(page.getByTestId('rumor-list')).toHaveCount(0);
   await dragMethodToClass(page, 'method-compareWithLastYear', 'class-ReportService');
-  await expect(async () => {
-    await page.getByTestId('change-request-finish').click({ timeout: 1000 });
-    await expect(page.getByTestId('change-request-title')).not.toHaveText('前年同月比も出して', { timeout: 1000 });
-  }).toPass();
+  await finishAndAdvance(page);
+  await expect(page.getByTestId('change-request-title')).not.toHaveText('前年同月比も出して');
   await expect(page.getByTestId('change-request-title')).toHaveText('表に「構成比」列を追加して');
   await expect(page.getByTestId('rumor-came-true')).toContainText('レポートの表の見せ方');
   await expect(page.getByTestId('rumor-came-true')).not.toContainText('「「');
   await dragMethodToClass(page, 'method-buildShareColumn', 'class-ReportService');
-  await expect(async () => {
-    await page.getByTestId('change-request-finish').click({ timeout: 1000 });
-    await expect(page.getByTestId('boss-label')).toBeVisible({ timeout: 1000 });
-  }).toPass();
+  await finishAndAdvance(page);
+  await expect(page.getByTestId('boss-label')).toBeVisible();
   await expect(page.getByTestId('rumor-came-true')).toContainText('数字の出し方');
   await dragMethodToClass(page, 'method-rebuildAggregation', 'class-ReportService');
-  await expect(async () => {
-    await page.getByTestId('change-request-finish').click({ timeout: 1000 });
-    await expect(page.getByTestId('change-outcome-req-report-share')).toBeVisible({ timeout: 1000 });
-  }).toPass();
+  await finishAndAdvance(page);
+  await expect(page.getByTestId('change-outcome-req-report-share')).toBeVisible();
   await expect(page.getByTestId('change-outcome-req-report-share').getByTestId('rumor-payoff')).toContainText('✗ うわさに備えきれず');
 });
 
@@ -97,22 +91,18 @@ test('100点の置き方では、噂のpayoffに備えていた✓文を出す',
   await dragMethodToClass(page, 'method-saveCancellation', 'class-OrderRepository');
   await dragMethodToClass(page, 'method-processOrder', 'class-OrderService');
   await dragMethodToClass(page, 'method-processCancel', 'class-OrderService');
-  await expect(page.getByTestId('score')).toContainText('100');
+  await expect(page.getByTestId('score-value')).toContainText('100');
   await releaseAllManualFixSites(page);
   await startChangeRequests(page);
 
   await dragMethodToClass(page, 'method-switchToExternalApi', 'class-OrderRepository');
-  await page.getByTestId('change-request-finish').click();
+  await finishAndAdvance(page);
   await expect(page.getByTestId('change-request-title')).toHaveText('送料無料の条件を変えて');
   await dragMethodToClass(page, 'method-reviseFreeShippingRule', 'class-OrderService');
-  await expect(async () => {
-    await page.getByTestId('change-request-finish').click({ timeout: 1000 });
-    await expect(page.getByTestId('boss-label')).toBeVisible({ timeout: 1000 });
-  }).toPass();
+  await finishAndAdvance(page);
+  await expect(page.getByTestId('boss-label')).toBeVisible();
   await dragMethodToClass(page, 'method-rebuildPersistence', 'class-OrderRepository');
-  await expect(async () => {
-    await page.getByTestId('change-request-finish').click({ timeout: 1000 });
-    await expect(page.getByTestId('change-outcome-req-free-shipping')).toBeVisible({ timeout: 1000 });
-  }).toPass();
+  await finishAndAdvance(page);
+  await expect(page.getByTestId('change-outcome-req-free-shipping')).toBeVisible();
   await expect(page.getByTestId('change-outcome-req-free-shipping').getByTestId('rumor-payoff')).toContainText('✓ うわさに備えた設計だったので');
 });

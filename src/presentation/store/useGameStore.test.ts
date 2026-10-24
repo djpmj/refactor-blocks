@@ -178,6 +178,7 @@ describe('change-request lifecycle and ghost state', () => {
       if (!placed.ok) throw new Error('OrderServiceへ配置できるはず');
       store.setState({ codebase: placed.value });
       store.getState().finishImplementation();
+      store.getState().advanceChangeRequest();
     }
     const thirdRequest = stage.changeRequests[2];
     const thirdWithPart = withChangePart(store.getState().codebase, thirdRequest);
@@ -185,6 +186,7 @@ describe('change-request lifecycle and ghost state', () => {
     if (!thirdPart.ok) throw new Error('OrderServiceへ配置できるはず');
     store.setState({ codebase: thirdPart.value });
     store.getState().finishImplementation();
+    store.getState().advanceChangeRequest();
 
     // Assert
     const outcome = store.getState().changeSession?.outcomes.at(-1);
@@ -249,13 +251,93 @@ describe('change-request lifecycle and ghost state', () => {
     const base = store.getState().codebase;
     store.setState({
       codebase: placed.value,
-      changeSession: { index, inspected: null, outcomes: [], base, carried: base, baseHistory: store.getState().history },
+      changeSession: { index, inspected: null, reviewing: null, outcomes: [], base, carried: base, sampleCarried: base, baseHistory: store.getState().history },
     });
 
     store.getState().finishImplementation();
+    store.getState().advanceChangeRequest();
     expect(store.getState().codebase).toEqual(withoutTray(placed.value));
     store.getState().endChangeRequests();
     expect(store.getState().codebase).toEqual(base);
+  });
+});
+
+describe('change-request step feedback', () => {
+  function startAndPlaceFirst() {
+    const stage = stages[0];
+    const request = stage.changeRequests[0];
+    const sample = sampleImplementation(stage.codebase, request);
+    if (sample === undefined || sample.target.kind !== 'existing-class') throw new Error('An existing-class sample placement is required');
+    const targetName = sample.target.className;
+    const target = allClasses(stage.codebase).find((item) => item.name === targetName);
+    if (target === undefined) throw new Error('The sample target class is required');
+    const store = createGameStore([stage], false, false);
+    store.getState().startChangeRequests();
+    const started = store.getState().codebase;
+    const placed = moveMethod(started, changePart(request).id, target.id);
+    if (!placed.ok) throw new Error('The sample part should be placeable');
+    store.setState({ codebase: placed.value });
+    return { store, started, placed: placed.value, stage };
+  }
+
+  it('実装を終えるとその依頼の結果がreviewingに入り、indexはまだ進まない', () => {
+    // Arrange
+    const { store } = startAndPlaceFirst();
+
+    // Act
+    store.getState().finishImplementation();
+
+    // Assert
+    const session = store.getState().changeSession;
+    expect(session?.reviewing?.request.id).toBe(store.getState().stage.changeRequests[0].id);
+    expect(session?.index).toBe(0);
+    expect(session?.outcomes).toHaveLength(0);
+  });
+
+  it('置き直すとreviewingがnullに戻り、コードがその依頼の開始時点に戻る', () => {
+    // Arrange
+    const { store, started } = startAndPlaceFirst();
+    store.getState().finishImplementation();
+
+    // Act
+    store.getState().retryChangeRequest();
+
+    // Assert
+    const session = store.getState().changeSession;
+    expect(session?.reviewing).toBeNull();
+    expect(session?.index).toBe(0);
+    expect(session?.outcomes).toHaveLength(0);
+    expect(store.getState().codebase).toEqual(started);
+  });
+
+  it('次の依頼へ進むとoutcomesに結果が足されindexが1進む', () => {
+    // Arrange
+    const { store, placed } = startAndPlaceFirst();
+    store.getState().finishImplementation();
+    const reviewing = store.getState().changeSession?.reviewing;
+
+    // Act
+    store.getState().advanceChangeRequest();
+
+    // Assert
+    const session = store.getState().changeSession;
+    expect(session?.reviewing).toBeNull();
+    expect(session?.index).toBe(1);
+    expect(session?.outcomes).toEqual([reviewing]);
+    expect(session?.carried).toEqual(withoutTray(placed));
+  });
+
+  it('結果を見ていないときは置き直すも次の依頼へも何もしない', () => {
+    // Arrange
+    const { store } = startAndPlaceFirst();
+    const before = store.getState().changeSession;
+
+    // Act
+    store.getState().retryChangeRequest();
+    store.getState().advanceChangeRequest();
+
+    // Assert
+    expect(store.getState().changeSession).toBe(before);
   });
 });
 

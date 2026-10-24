@@ -182,7 +182,7 @@ test('中級1の模範解答は混在メソッドを作らず、再生・図の�
   await openReferenceItem(page, 'reference-sample');
 
   // Assert
-  const preview = page.getByTestId('codebase-preview');
+  const preview = page.getByTestId('codebase-preview').getByTestId('answer-diagram');
   await expect(preview).not.toContainText('prepareOrder');
   await expect(preview.getByTestId('preview-class-Order')).toContainText('pay');
   await expect(preview.getByTestId('preview-class-Order')).toContainText('calculateOrderTotal');

@@ -27,7 +27,7 @@ async function clearTutorial2(page: Page) {
   await extract(page, '注文をDBに保存する', 'saveOrder');
   await extract(page, '確認メールを送る', 'sendConfirmationMail');
   await extract(page, '在庫があるか検証する', 'validateStock');
-  await expect(page.getByTestId('score')).toContainText('100');
+  await expect(page.getByTestId('score-value')).toContainText('100');
 }
 
 test('100点未満では出ず、100点で出る。キーボードで答えると解説が出て、もう一度で戻る', async ({ page }) => {
@@ -50,7 +50,9 @@ test('100点未満では出ず、100点で出る。キーボードで答える�
   await expect(first.locator('.answer-verdict')).toHaveClass(/answer-verdict--incorrect/);
   await expect(first.locator('.answer-verdict')).toHaveCSS('color', 'rgb(166, 31, 31)');
   await expect(first.locator('.answer-verdict__confetti')).toHaveCount(0);
-  await expect(first).toContainText('正解です。軽減税率のような変更');
+  await expect(first).toContainText('あなたの答えについて:');
+  await expect(first).toContainText('正解の理由:');
+  await expect(first).not.toContainText('正解です。');
   await expect(first.getByRole('radio').first()).toBeDisabled();
 
   // 2問目: キーボードだけで、正解(1番目)を選んで答える
@@ -60,6 +62,7 @@ test('100点未満では出ず、100点で出る。キーボードで答える�
   await page.keyboard.press('Tab');
   await page.keyboard.press('Enter');
   await expect(second).toContainText('✓ 正解');
+  await expect(second).toContainText('解説:');
   await expect(panel.getByTestId('check-summary')).toHaveText('2問中1問正解');
   await expect(panel.getByTestId('check-summary')).not.toHaveClass(/concept-check__summary--perfect/);
 

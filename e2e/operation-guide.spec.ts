@@ -11,9 +11,10 @@ test('操作ガイドはボタンと ? キーで開閉し、Esc・閉じるボ�
 
   for (const section of OPERATION_GUIDE) {
     await expect(dialog.getByRole('heading', { name: section.heading })).toBeVisible();
+    const sectionBox = dialog.locator('.operation-guide__section').filter({ has: page.getByRole('heading', { name: section.heading, exact: true }) });
     for (const { operation, description } of section.items) {
-      await expect(dialog.getByText(operation, { exact: true })).toBeVisible();
-      await expect(dialog.getByText(description, { exact: true })).toBeVisible();
+      await expect(sectionBox.getByText(operation, { exact: true })).toBeVisible();
+      await expect(sectionBox.getByText(description, { exact: true })).toBeVisible();
     }
   }
   for (const operation of ['似た処理をまとめる', '呼び出し元へ戻す', '公開範囲を変える']) {
@@ -24,6 +25,8 @@ test('操作ガイドはボタンと ? キーで開閉し、Esc・閉じるボ�
   await expect(dialog.getByText('同じ処理を持つメソッドが別の場所にあると、エディタに候補が出ます。統合すると1つのメソッドになり、呼び出し元はすべてそれを呼ぶようになります。')).toBeVisible();
   await expect(dialog.getByText('抽出したメソッドや横流しするだけのメソッドの中身を、呼び出し元へ書き戻して消します(Inline Method)。')).toBeVisible();
   await expect(dialog.getByText('public / protected / private を選べます。可視性を扱うステージでだけ表示されます。')).toBeVisible();
+  const keyboardSection = dialog.locator('.operation-guide__section').filter({ has: page.getByRole('heading', { name: 'キーボードで操作する' }) });
+  await expect(keyboardSection.locator('kbd')).toHaveCount(6);
 
   await page.keyboard.press('Escape');
   await expect(dialog).not.toBeVisible();
@@ -42,6 +45,32 @@ test('操作ガイドはボタンと ? キーで開閉し、Esc・閉じるボ�
   await page.keyboard.press('Enter');
   await expect(dialog).not.toBeVisible();
   await expect(openButton).toBeFocused();
+});
+
+test('キーボード操作で右クリックメニューを開ける', async ({ page }) => {
+  await page.goto('/');
+  await completeOpeningFix(page);
+  const method = page.getByTestId('method-printMonthlyReport');
+  await method.focus();
+  await page.keyboard.press('Shift+F10');
+  await expect(page.getByTestId('context-menu')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('context-menu')).toHaveCount(0);
+});
+
+test('メソッドで Enter を押すとエディタは開かず、Space と同じくキーボードドラッグが始まる', async ({ page }) => {
+  await page.goto('/');
+  await completeOpeningFix(page);
+  const method = page.getByTestId('method-printMonthlyReport');
+  await method.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.class-node--can-drop, .class-node--cannot-drop').first()).toBeVisible();
+  await expect(page.locator('.method-editor')).not.toContainText('printMonthlyReport');
+  await expect(page.locator('.drag-overlay')).toBeVisible();
+  // dnd-kit の KeyboardSensor は開始の次のタイマーで keydown の待ち受けを付けるので、その後に Esc を押す
+  await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 0)));
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.class-node--can-drop, .class-node--cannot-drop')).toHaveCount(0);
 });
 
 test('? は編集入力中は文字として入力でき、編集外でガイドを開く', async ({ page }) => {
