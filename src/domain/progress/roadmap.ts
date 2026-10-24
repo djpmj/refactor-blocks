@@ -8,7 +8,6 @@ export type StageStatus =
   | { readonly kind: 'cleared' };
 
 /** ステージ一覧に出す状態。 */
-// ponytail: 開いただけのステージも点数が付いて見える。気になるとプレイで分かったら、初期点と同じなら「未挑戦」にする
 export function stageStatus(stageId: string, progress: Progress, hasDraft: boolean): StageStatus {
   const best = progress[stageId];
   if (best === undefined) return hasDraft ? { kind: 'in-progress' } : { kind: 'not-started' };
