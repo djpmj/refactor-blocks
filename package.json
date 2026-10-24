@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "explore": "playwright test -c playwright.explore.config.ts",
     "typecheck": "tsc -b",
     "check": "npm run lint && npm run typecheck && npm test",
     "preview": "vite preview",
