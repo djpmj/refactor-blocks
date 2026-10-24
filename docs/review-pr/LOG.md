@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-24 01:35 UTC PR #272 設計くらべのプレビューを共通の縮尺にそろえる (#236)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test(1878件)✅ / npm run lint ✅ / npm run typecheck ✅。sharedZoom(小さい方・下限0.6)・onFitZoom/maxZoom・resize追従・他プレビューはfitView維持を差分で確認。E2E(quiz.spec.ts)はこの環境で実行できず未実行
+- マージ: squash & delete-branch
+
 ## 2026-10-24 UTC PR #271 設計くらべの結果まとめと回答保持を追加する (#235)
 
 - 判定: 合格(blocker無し)
@@ -210,11 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(1759件) / npm run lint ✅ / npm run typecheck ✅ / E2EはChromium未導入で実行不可(PR記載の237件成功と差分で確認)。Issue #186 の受け入れ基準1〜3を差分で確認
-- マージ: squash & delete-branch
-
-## 2026-10-17 02:30 UTC PR #206 Reduce member ranks in intermediate stage
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(1755件) / npm run lint ✅ / npm run typecheck ✅(E2Eはこの環境で実行できず未実行。差分はステージ定義とテストのみ)
 - マージ: squash & delete-branch
 
