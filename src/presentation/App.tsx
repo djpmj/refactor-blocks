@@ -11,6 +11,7 @@ import { useGameStore, useGameStoreApi } from './store/useGameStore';
 import { useUndoRedoShortcut } from './useUndoRedoShortcut';
 import { useResizableSidebarWidth } from './useResizableSidebarWidth';
 import { ManualFixMethodViewer } from './stage/ManualFixMethodViewer';
+import { pageTitle } from './pageTitle';
 
 type Mode = 'refactor' | 'quiz' | 'blank';
 
@@ -136,6 +137,10 @@ function RefactorView({ active }: Readonly<{ active: boolean }>) {
 
 export function App() {
   const [mode, setMode] = useState<Mode>('refactor');
+  const stageTitle = useGameStore((state) => state.stage.title);
+  useEffect(() => {
+    document.title = pageTitle(MODE_LABEL[mode], mode === 'refactor' ? stageTitle : null);
+  }, [mode, stageTitle]);
   // クイズ・白紙設計のキャンバスは、見えない(大きさ0の)まま fitView すると表示がずれるので、初めて開いたときにマウントする
   const [quizOpened, setQuizOpened] = useState(false);
   const [blankOpened, setBlankOpened] = useState(false);
