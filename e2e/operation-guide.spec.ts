@@ -58,6 +58,21 @@ test('キーボード操作で右クリックメニューを開ける', async ({
   await expect(page.getByTestId('context-menu')).toHaveCount(0);
 });
 
+test('メソッドで Enter を押すとエディタは開かず、Space と同じくキーボードドラッグが始まる', async ({ page }) => {
+  await page.goto('/');
+  await completeOpeningFix(page);
+  const method = page.getByTestId('method-printMonthlyReport');
+  await method.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.class-node--can-drop, .class-node--cannot-drop').first()).toBeVisible();
+  await expect(page.locator('.method-editor')).not.toContainText('printMonthlyReport');
+  await expect(page.locator('.drag-overlay')).toBeVisible();
+  // dnd-kit の KeyboardSensor は開始の次のタイマーで keydown の待ち受けを付けるので、その後に Esc を押す
+  await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 0)));
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.class-node--can-drop, .class-node--cannot-drop')).toHaveCount(0);
+});
+
 test('? は編集入力中は文字として入力でき、編集外でガイドを開く', async ({ page }) => {
   await page.goto('/');
   await completeOpeningFix(page);
