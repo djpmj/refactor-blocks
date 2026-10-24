@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { findMethod, type Codebase } from './Codebase';
-import { addInterface, availableParents, removeInterface, setSuperclass } from './setSuperclass';
-import { sampleCodebase } from './testFixtures';
+import { findMethod, mapClasses, type CodeClass, type Codebase } from './Codebase';
+import { addInterface, availableInterfaces, availableParents, implementableInterfaces, removeInterface, setSuperclass } from './setSuperclass';
+import { fragment, sampleCodebase } from './testFixtures';
 
-/** 継承・実装の関係を一切持たない3クラス(X・Y・Z)。実装先(implements)だけの輪を組み立てるテストに使う。 */
+/** 継承・実装の関係を一切持たない3つのインターフェース役のクラス(X・Y・Z)。実装先(implements)だけの輪を組み立てるテストに使う。 */
 function independentClasses(): Codebase {
   return {
     files: [
@@ -11,9 +11,32 @@ function independentClasses(): Codebase {
         id: 'file-xyz',
         path: 'src/xyz.ts',
         classes: [
-          { id: 'class-x', name: 'X', methods: [] },
-          { id: 'class-y', name: 'Y', methods: [] },
-          { id: 'class-z', name: 'Z', methods: [] },
+          interfaceClass('class-x', 'X'),
+          interfaceClass('class-y', 'Y'),
+          interfaceClass('class-z', 'Z'),
+        ],
+      },
+    ],
+  };
+}
+
+/** 中身の無い public メソッドだけを持つ = インターフェース役のクラス。 */
+function interfaceClass(id: string, name: string, superclassId?: string): CodeClass {
+  return { id, name, superclassId, methods: [{ id: `method-${id}`, name: 'run', visibility: 'public', fragments: [] }] };
+}
+
+/** 具象クラス(中身のある public メソッド)・インターフェース役・メソッドの無い空クラスが1つずつある。 */
+function interfaceAndConcreteCodebase(): Codebase {
+  return {
+    files: [
+      {
+        id: 'file-mixed',
+        path: 'src/mixed.ts',
+        classes: [
+          { id: 'class-concrete', name: 'Concrete', methods: [{ id: 'method-work', name: 'work', visibility: 'public', fragments: [fragment('f-work', 3)] }] },
+          interfaceClass('class-iface', 'Runnable'),
+          { id: 'class-empty', name: 'Empty', methods: [] },
+          { id: 'class-impl', name: 'Impl', methods: [] },
         ],
       },
     ],
@@ -35,6 +58,12 @@ function threeClassCodebase(): Codebase {
       },
     ],
   };
+}
+
+/** sampleCodebase の TaxCalculator を、中身の無い public メソッドだけのインターフェース役にしたもの。 */
+function taxAsInterfaceCodebase(): Codebase {
+  const base = sampleCodebase();
+  return { files: [base.files[0], { ...base.files[1], classes: [interfaceClass('class-tax', 'TaxCalculator')] }] };
 }
 
 describe('setSuperclass', () => {
@@ -110,7 +139,7 @@ describe('setSuperclass', () => {
 
   it('実装先(implements)になっている相手を継承元に指定すると already-related', () => {
     // Arrange
-    const withInterface = addInterface(sampleCodebase(), 'class-order', 'TaxCalculator');
+    const withInterface = addInterface(taxAsInterfaceCodebase(), 'class-order', 'TaxCalculator');
     if (!withInterface.ok) throw new Error(withInterface.error);
 
     // Act
@@ -205,7 +234,7 @@ describe('setSuperclass', () => {
 describe('addInterface', () => {
   it('実装するインターフェースを1つ追加する', () => {
     // Arrange
-    const codebase = sampleCodebase();
+    const codebase = taxAsInterfaceCodebase();
 
     // Act
     const result = addInterface(codebase, 'class-order', 'TaxCalculator');
@@ -231,7 +260,7 @@ describe('addInterface', () => {
 
   it('同じものをもう一度追加しても変化しない', () => {
     // Arrange
-    const withInterface = addInterface(sampleCodebase(), 'class-order', 'TaxCalculator');
+    const withInterface = addInterface(taxAsInterfaceCodebase(), 'class-order', 'TaxCalculator');
     if (!withInterface.ok) throw new Error(withInterface.error);
 
     // Act
@@ -243,13 +272,13 @@ describe('addInterface', () => {
 
   it('元のCodebaseは変更しない', () => {
     // Arrange
-    const codebase = sampleCodebase();
+    const codebase = taxAsInterfaceCodebase();
 
     // Act
     addInterface(codebase, 'class-order', 'TaxCalculator');
 
     // Assert
-    expect(codebase).toEqual(sampleCodebase());
+    expect(codebase).toEqual(taxAsInterfaceCodebase());
   });
 
   it.each([
@@ -278,17 +307,42 @@ describe('addInterface', () => {
     // Assert
     expect(result).toEqual({ ok: false, error: 'inheritance-cycle' });
   });
+});
 
-  it('実装先がisInterfaceLikeでなくても実装できる', () => {
+describe('addInterface(インターフェース役だけ)', () => {
+  it('具象クラスを指定すると not-interface になり、元のCodebaseは変わらない', () => {
     // Arrange
-    const codebase = sampleCodebase();
+    const codebase = interfaceAndConcreteCodebase();
 
     // Act
-    const result = addInterface(codebase, 'class-tax', 'OrderService');
+    const result = addInterface(codebase, 'class-impl', 'Concrete');
+
+    // Assert
+    expect(result).toEqual({ ok: false, error: 'not-interface' });
+    expect(codebase).toEqual(interfaceAndConcreteCodebase());
+  });
+
+  it('メソッドの無い空のクラスを指定しても not-interface になる', () => {
+    // Arrange
+    const codebase = interfaceAndConcreteCodebase();
+
+    // Act
+    const result = addInterface(codebase, 'class-impl', 'Empty');
+
+    // Assert
+    expect(result).toEqual({ ok: false, error: 'not-interface' });
+  });
+
+  it('インターフェース役を指定すると実装先に入る', () => {
+    // Arrange
+    const codebase = interfaceAndConcreteCodebase();
+
+    // Act
+    const result = addInterface(codebase, 'class-impl', 'Runnable');
 
     // Assert
     if (!result.ok) throw new Error(result.error);
-    expect(result.value.files[1].classes[0].interfaceIds).toEqual(['class-order']);
+    expect(result.value.files[0].classes[3].interfaceIds).toEqual(['class-iface']);
   });
 });
 
@@ -311,7 +365,7 @@ describe('removeInterface', () => {
 
   it('最後の1つを外すと、interfaceIdsプロパティがなくなる', () => {
     // Arrange
-    const withInterface = addInterface(sampleCodebase(), 'class-order', 'TaxCalculator');
+    const withInterface = addInterface(taxAsInterfaceCodebase(), 'class-order', 'TaxCalculator');
     if (!withInterface.ok) throw new Error(withInterface.error);
 
     // Act
@@ -411,5 +465,71 @@ describe('availableParents', () => {
 
     // Assert
     expect(result.map((codeClass) => codeClass.name)).not.toContain('X');
+  });
+});
+
+describe('availableInterfaces', () => {
+  it('インターフェース役のクラスだけを返す(具象クラス・空のクラスは含まない)', () => {
+    // Arrange
+    const codebase = interfaceAndConcreteCodebase();
+
+    // Act
+    const result = availableInterfaces(codebase, 'class-impl');
+
+    // Assert
+    expect(result.map((codeClass) => codeClass.name)).toEqual(['Runnable']);
+  });
+
+  it('自分自身は含まない', () => {
+    // Arrange
+    const codebase = interfaceAndConcreteCodebase();
+
+    // Act
+    const result = availableInterfaces(codebase, 'class-iface');
+
+    // Assert
+    expect(result).toEqual([]);
+  });
+
+  it('自分の子孫(自分を継承・実装しているインターフェース役)は含まない', () => {
+    // Arrange
+    const codebase: Codebase = { files: [{ id: 'file', path: 'src/a.ts', classes: [interfaceClass('class-base', 'Base'), interfaceClass('class-sub', 'Sub', 'class-base')] }] };
+
+    // Act
+    const result = availableInterfaces(codebase, 'class-base');
+
+    // Assert
+    expect(result).toEqual([]);
+  });
+});
+
+describe('implementableInterfaces', () => {
+  it('すでに実装している相手が後から具象化しても、候補に残る(外せる)', () => {
+    // Arrange
+    const withInterface = addInterface(interfaceAndConcreteCodebase(), 'class-impl', 'Runnable');
+    if (!withInterface.ok) throw new Error(withInterface.error);
+    const concretized = mapClasses(withInterface.value, (codeClass) =>
+      codeClass.id === 'class-iface' ? { ...codeClass, methods: [...codeClass.methods, { id: 'method-body', name: 'body', visibility: 'public', fragments: [fragment('f-body', 2)] }] } : codeClass,
+    );
+
+    // Act
+    const result = implementableInterfaces(concretized, 'class-impl');
+    const removed = removeInterface(concretized, 'class-impl', 'Runnable');
+
+    // Assert
+    expect(availableInterfaces(concretized, 'class-impl')).toEqual([]);
+    expect(result.map((codeClass) => codeClass.name)).toEqual(['Runnable']);
+    expect(removed.ok).toBe(true);
+  });
+
+  it('実装していない具象クラスは候補に出さない', () => {
+    // Arrange
+    const codebase = interfaceAndConcreteCodebase();
+
+    // Act
+    const result = implementableInterfaces(codebase, 'class-impl');
+
+    // Assert
+    expect(result.map((codeClass) => codeClass.name)).toEqual(['Runnable']);
   });
 });

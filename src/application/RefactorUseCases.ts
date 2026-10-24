@@ -335,7 +335,7 @@ const SET_SUPERCLASS_ERROR_MESSAGES: Record<SetSuperclassError, string> = {
   'already-related': 'すでに継承元または実装先になっています',
 };
 
-const ADD_INTERFACE_ERROR_MESSAGES: Record<AddInterfaceError, string> = {
+const ADD_INTERFACE_ERROR_MESSAGES: Record<Exclude<AddInterfaceError, 'not-interface'>, string> = {
   'class-not-found': '実装先を設定するクラスが見つかりません',
   'interface-not-found': 'その名前のクラスが見つかりません',
   'self-inheritance': '自分自身を実装先にはできません',
@@ -419,7 +419,8 @@ export function describeSetSuperclassError(error: SetSuperclassError): string {
   return SET_SUPERCLASS_ERROR_MESSAGES[error];
 }
 
-export function describeAddInterfaceError(error: AddInterfaceError): string {
+export function describeAddInterfaceError(error: AddInterfaceError, interfaceName: string): string {
+  if (error === 'not-interface') return `${interfaceName} はインターフェースではありません。中身の無い public メソッドだけを持つクラスを選んでください`;
   return ADD_INTERFACE_ERROR_MESSAGES[error];
 }
 

@@ -7,7 +7,7 @@ import { scorePlacement, type PlacementScore } from '../../domain/change/scorePl
 import { deleteMethod } from '../../domain/codebase/deleteMethod';
 import { moveMethod } from '../../domain/codebase/moveMethod';
 import { moveMethodToNewClass } from '../../domain/codebase/moveToNewHome';
-import { addInterface } from '../../domain/codebase/setSuperclass';
+import { addInterface, availableInterfaces } from '../../domain/codebase/setSuperclass';
 import { allClasses, findClass, findInterfaces, findSuperclass, isStubMethod, type CodeClass, type Codebase } from '../../domain/codebase/Codebase';
 import { classDependencies } from '../../domain/codebase/dependencies';
 import { scoreCodebase } from '../../domain/scoring/score';
@@ -136,6 +136,17 @@ describe('advanced-payment-gateway-interface', () => {
     // Assert
     expect(paymentGateway.methods.map((method) => method.name)).toEqual(['charge']);
     expect(paymentGateway.methods[0]?.fragments).toEqual([]);
+  });
+
+  it('初期状態で StripeGateway の実装先の候補は PaymentGateway だけになる(PaymentService・PaypalGatewayは具象クラスなので出ない)', () => {
+    // Arrange
+    const { codebase } = stage;
+
+    // Act
+    const candidates = availableInterfaces(codebase, 'class-stripe-gateway');
+
+    // Assert
+    expect(candidates.map((codeClass) => codeClass.name)).toEqual(['PaymentGateway']);
   });
 
   it('初期状態から、StripeGateway・PaypalGatewayとも決済API呼び出し側のメソッド名がPaymentGatewayと同じchargeになっている(UML風のインターフェース実現)', () => {
