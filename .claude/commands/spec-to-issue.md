@@ -1,6 +1,6 @@
 ---
 description: 機能要求を対話で仕様に詰め、docs/specs/<slug>.mdを書いてGitHub Issueを作成し、実装用ブランチを作成する
-allowed-tools: Read, Write, Glob, Grep, Bash(git:*), Bash(gh issue:*), Bash(gh pr list:*)
+allowed-tools: Read, Write, Glob, Grep, Agent, Bash(git:*), Bash(gh issue:*), Bash(gh pr list:*), Bash(bash scripts/:*)
 ---
 
 あなたはこのリポジトリの**仕様設計者**として、`$ARGUMENTS`(機能要求。指定が無ければユーザーに尋ねる)を
@@ -10,22 +10,11 @@ allowed-tools: Read, Write, Glob, Grep, Bash(git:*), Bash(gh issue:*), Bash(gh p
 
 ## 手順
 
-0. 最初に、マージ済みで不要になったworktreeを片付ける(`/implement` や評価者が作ったworktreeが
-   残り続けるため)。`git fetch origin` のあと `git worktree list --porcelain` で一覧を取り、
-   次の**すべて**を満たすものだけを `git worktree remove <パス>`(`--force` は付けない)で削除し、
-   最後に `git worktree prune` する。削除はユーザーへの確認なしで行ってよいが、削除したもの・
-   残したもの(理由つき)を短く報告する。ローカルブランチは消さない。
-   - パスがこのリポジトリと同じ親ディレクトリ直下の `refactor-blocks-*` である
-     (メインの作業ディレクトリ、今いるディレクトリ、`master` をチェックアウトしているworktree、
-     他のツールが管理する別の場所のworktreeは対象外)
-   - `git -C <パス> status --porcelain` が空(未コミットの変更・未追跡ファイルが無い)
-   - 次のどちらかで「作業が終わっている」と分かる(worktreeを消してもコミットはブランチに残るので、
-     守るべきは上の未コミットの変更だけ。迷うものは残す)
-     - `gh pr list --state merged --head <ブランチ名> --json headRefOid` でマージ済みPRがあり、
-       そのworktreeの `HEAD` がPRの `headRefOid` と同じか、その祖先である
-     - ブランチ名(detached HEADのworktreeはフォルダ名。評価者の `*-baseline` など)に含まれるIssue番号の
-       Issueが `gh issue view <番号> --json state` で `CLOSED` である
-     - コミットの無い作りたてのブランチは `master` の祖先に見えるので、`master` に含まれるかどうかでは判定しない
+0. 最初に、マージ済みで不要になったworktreeを片付ける。`bash scripts/worktree-cleanup.sh` を実行して
+   候補を確認し(dry-run)、問題なければ `bash scripts/worktree-cleanup.sh --apply` で削除する。
+   判定規則(同じ親ディレクトリ直下の `refactor-blocks-*`・未コミット変更なし・マージ済みPRまたはCLOSEDのIssue)は
+   スクリプトに入っている。削除はユーザーへの確認なしで行ってよいが、削除したもの・残したもの(理由つき)を短く報告する。
+   ローカルブランチは消さない。
 1. まず `docs/feature-ideas/IDEAS.md`(`.github/workflows/feature-ideas.yml` が定期実行して
    書き込む機能案ブレストの記録)を `Read` で取得する。直近の日付見出し数件に目を通し、
    今回の要求と関連する案があれば後の整理に使う(関連が無ければそれ以上は触れなくてよい)。
@@ -37,21 +26,18 @@ allowed-tools: Read, Write, Glob, Grep, Bash(git:*), Bash(gh issue:*), Bash(gh p
 4. 固まった内容を、`.claude/agents/spec-designer.md` の「仕様書に必ず含める項目」
    (背景・目的/変更対象ファイル一覧/データ・型の変更/TDD対象の純粋関数/受け入れ基準/スコープ外)
    に従って `docs/specs/<slug>.md` として `Write` する(`<slug>` は機能を表す英語kebab-case)。
+   書式のひな形は `docs/specs/_template.md`(小さな不具合修正は短い `docs/specs/_template-bugfix.md`)。
+   書く場所は、手順6の `bash scripts/spec-publish.sh start` が表示するmaster用worktreeの `docs/specs/`。
+   仕様が3件以上あり、互いに独立しているときは、`spec-designer` エージェントを仕様ごとに並列で起動して
+   草案を書かせてよい(同じファイルを変える仕様の実装順だけは、呼び出し元が決めてIssueに書く)。
 5. 仕様書の内容を3〜5行でユーザーに要約し、Issue化してよいか確認する。
-6. 承認されたら、以下を順に実行する(各pushの前にユーザーに短く報告し、承認を得てから実行する):
-   - `git add docs/specs/<slug>.md` し、「仕様: <slug>」のような日本語コミットメッセージ
-     (末尾に `Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>`)でコミットする
-   - `git push origin HEAD:master` する**前**に、`git branch --show-current` で今のブランチが
-     `master` であることを確認する。別のIssue用featureブランチに乗ったままここに来ていたら、
-     先に `git checkout master && git pull origin master` し、そのうえで仕様書のコミットをやり直す
-     (featureブランチのまま push すると、そのブランチの未レビューコミットも一緒に `master` へ
-     混入する。`CLAUDE.md`「masterへの直接pushの安全策」を参照)
-   - `git push origin HEAD:master` で仕様書をmasterに反映する
-   - `gh issue create --title "<slug>" --body-file docs/specs/<slug>.md` でIssueを作成し、
-     発行されたIssue番号を控える
-   - `gh issue develop <issue番号> --name "<slug>" --checkout` で、そのIssueに紐づく
-     実装用ブランチを(masterの最新から)作成しローカルにチェックアウトする
-     (`--base` は指定しない。デフォルトブランチ=masterから作られる)
+6. 承認されたら、`scripts/spec-publish.sh` で反映する(各pushの前にユーザーに短く報告し、承認を得てから実行する)。
+   - `bash scripts/spec-publish.sh start` で、`origin/master` のdetached worktreeを作る(仕様書はここに書く)
+   - `bash scripts/spec-publish.sh publish "仕様: <slug>" <slug>...` が、仕様書だけをコミットし、
+     masterとの差分が仕様書のコミットだけであることを確かめてから `git push origin HEAD:master` し、
+     Issueごとに `gh issue create` と `gh issue develop`(`--checkout` なし)を行い、worktreeを片付ける
+     (detached HEADなので、作業中のfeatureブランチのコミットがmasterへ混ざらない。`CLAUDE.md`「masterへの直接pushの安全策」)
+   - 実装用ブランチを手元にチェックアウトしたいときは、worktree(`git worktree add <パス> <ブランチ名>`)で行う
 7. Issue作成・ブランチ作成が終わったら、間を置かずに次の機能案を提案する。
    `docs/feature-ideas/IDEAS.md` を読み直し、各案について `docs/specs/`(仕様書のファイル名・内容)と
    `docs/specs/implemented.md` を突き合わせ、まだ仕様化・Issue化されていない案を洗い出す

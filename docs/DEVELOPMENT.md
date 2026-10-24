@@ -65,3 +65,21 @@ flowchart LR
 | 既存PRをレビューしたい(今すぐ・手動) | `/review-pr <PR番号>` |
 | 既存PRのレビュー・自動マージ(定期実行) | `review-pr.yml`(6時間ごと。手動実行は `workflow_dispatch`) |
 | Issue/PR・仕様書・実装依頼を実装・修正したい | Codex: `$implement` (既存の未完了対象を順に処理)、Claude Code: `/implement <Issue/PR番号・仕様書パス>` |
+
+## 作業の効率化(実機プレイ → 仕様 → 実装)
+
+実機で不具合・改善点を探して仕様にし、実装まで回すときの近道。
+
+| 場面 | 使うもの |
+| --- | --- |
+| 実機プレイで見る場所を決める | `docs/playtest/CHECKLIST.md`(観点リスト) |
+| 機械で確かめられる観点を全ステージで回す | `npm run explore`(`explore/stage-invariants.spec.ts`。CIには含めない。落ちた項目を仕様化する。新しい観点はここへ足す) |
+| 仕様書の書式 | `docs/specs/_template.md`、小さな不具合修正は `docs/specs/_template-bugfix.md` |
+| 仕様が複数ある | 互いに独立なら `spec-designer` を仕様ごとに並列で起動して草案を書かせる |
+| 仕様書をmasterへ反映してIssue・ブランチを作る | `bash scripts/spec-publish.sh start` → 仕様書を書く → `bash scripts/spec-publish.sh publish "<メッセージ>" <slug>...` |
+| 終わったworktreeの掃除 | `bash scripts/worktree-cleanup.sh`(dry-run)→ `--apply` |
+
+### 実装を並列で回すときの分け方
+
+同じファイルを変える仕様は、同時に実装せず順に回す。`/implement` を別々のworktreeで並列に走らせるときは、
+仕様書の「変更対象ファイル一覧」を突き合わせて、重なる仕様を同じグループにまとめる(グループ内は順に、グループ間は並列)。
