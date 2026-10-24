@@ -26,7 +26,7 @@ test('チュートリアル2の100点後は読む量だけを表示し、空条�
   await extract(page, 'placeOrder', '注文をDBに保存する', 'saveOrder');
   await extract(page, 'placeOrder', '確認メールを送る', 'sendConfirmationMail');
   await extract(page, 'placeOrder', '在庫があるか検証する', 'validateStock');
-  await expect(page.getByTestId('score')).toContainText('100');
+  await expect(page.getByTestId('score-value')).toContainText('100');
   await expect(page.getByText('空のクラス・ファイル: 0件にする(中身を入れるか、消す)', { exact: true })).toBeVisible();
   await releaseAllManualFixSites(page);
 
@@ -74,7 +74,7 @@ test('中級9で消費税計算を統合すると、変更箇所が減った文�
   await page.mouse.down();
   await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2, { steps: 12 });
   await page.mouse.up();
-  await expect(page.getByTestId('score')).toContainText('100');
+  await expect(page.getByTestId('score-value')).toContainText('100');
   await releaseAllManualFixSites(page);
   await expect(page.getByRole('region', { name: 'なぜ分けるのか' })).toContainText('3 か所 → 1 か所');
 });

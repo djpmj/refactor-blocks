@@ -9,7 +9,7 @@ async function refactorTutorial1(page: Page) {
   await page.getByLabel('前月比を計算する').check();
   await page.getByLabel('新しいメソッド名').fill('aggregateSales');
   await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
-  await expect(page.getByTestId('score')).toContainText('100');
+  await expect(page.getByTestId('score-value')).toContainText('100');
 }
 
 async function openTutorial(page: Page) {
@@ -77,7 +77,7 @@ test('下書き再開後は答え合わせを表示し、opening fixが無いこ
   await page.keyboard.press('Escape');
   await expect(page.getByTestId('impact-review')).toBeHidden();
   await page.reload();
-  await expect(page.getByTestId('score')).toContainText('100');
+  await expect(page.getByTestId('score-value')).toContainText('100');
   await page.locator('.change-pain').getByRole('button', { name: '実際に直してみる' }).click();
   await page.getByTestId('method-aggregateSales').click();
   await page.getByRole('button', { name: 'リリースする' }).click();

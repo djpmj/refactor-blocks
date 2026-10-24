@@ -27,7 +27,7 @@ async function clearTutorial2(page: Page) {
   await extract(page, '注文をDBに保存する', 'saveOrder');
   await extract(page, '確認メールを送る', 'sendConfirmationMail');
   await extract(page, '在庫があるか検証する', 'validateStock');
-  await expect(page.getByTestId('score')).toContainText('100');
+  await expect(page.getByTestId('score-value')).toContainText('100');
 }
 
 test('保存値が無ければオンで始まり、導入と押下中の色が出る。オフにするとリロード後も残る', async ({ page }) => {
