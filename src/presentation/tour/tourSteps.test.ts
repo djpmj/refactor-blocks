@@ -98,7 +98,7 @@ describe('nextTourStep', () => {
     const text = TOUR_STEPS[5].text;
 
     // Act
-    const hasLineCount = /\d+行/.test(text);
+    const hasLineCount = /\d行/.test(text);
 
     // Assert
     expect(hasLineCount).toBe(false);
