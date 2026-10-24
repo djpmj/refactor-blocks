@@ -105,7 +105,7 @@ test('送信履歴の記録を InvoiceService に残した設計は、解答例�
   await expect(player.getByTestId('preview-class-InvoiceService')).toContainText('sendInvoice');
   await expect(player.getByTestId('preview-class-InvoiceStorage')).not.toContainText('recordHistory');
   await expect(answer.getByTestId('preview-class-InvoiceStorage')).toContainText('recordHistory');
-  await expect(answer.getByTestId('preview-class-InvoiceService')).not.toContainText('sendInvoice');
+  await expect(answer.getByTestId('preview-class-InvoiceService')).not.toContainText('recordHistory');
 
   // Assert: 違いの一覧にその処理だけが出て、点数の事実は添えない(どちらも100点)
   const diff = dialog.getByTestId('design-diff');
