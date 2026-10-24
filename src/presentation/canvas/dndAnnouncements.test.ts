@@ -117,7 +117,7 @@ describe('createAnnouncements', () => {
 
   it('持ち上げたとき', () => {
     // Act
-    const text = announcements.onDragStart?.({ active });
+    const text = announcements.onDragStart({ active });
 
     // Assert
     expect(text).toBe('OrderService.placeOrder() を持ち上げました。');
@@ -125,7 +125,7 @@ describe('createAnnouncements', () => {
 
   it('ドロップ先の上に動かしているとき', () => {
     // Act
-    const text = announcements.onDragOver?.({ active, over });
+    const text = announcements.onDragOver({ active, over });
 
     // Assert
     expect(text).toBe('OrderService.placeOrder() を クラス TaxCalculator の上に動かしています。');
@@ -133,7 +133,7 @@ describe('createAnnouncements', () => {
 
   it('ドロップ先が無いとき', () => {
     // Act
-    const text = announcements.onDragOver?.({ active, over: null });
+    const text = announcements.onDragOver({ active, over: null });
 
     // Assert
     expect(text).toBe('OrderService.placeOrder() はどこの上にもありません。');
@@ -141,7 +141,7 @@ describe('createAnnouncements', () => {
 
   it('ドロップ先に置いたとき', () => {
     // Act
-    const text = announcements.onDragEnd?.({ active, over });
+    const text = announcements.onDragEnd({ active, over });
 
     // Assert
     expect(text).toBe('OrderService.placeOrder() を クラス TaxCalculator に置きました。');
@@ -149,7 +149,7 @@ describe('createAnnouncements', () => {
 
   it('余白に置いたとき', () => {
     // Act
-    const text = announcements.onDragEnd?.({ active, over: null });
+    const text = announcements.onDragEnd({ active, over: null });
 
     // Assert
     expect(text).toBe('OrderService.placeOrder() を余白に置きました。新しいクラスを作ります。');
@@ -160,7 +160,7 @@ describe('createAnnouncements', () => {
     const withField = createAnnouncements(codebaseWithField());
 
     // Act
-    const text = withField.onDragEnd?.({ active: { id: fieldDragId('field-lines') }, over: null });
+    const text = withField.onDragEnd({ active: { id: fieldDragId('field-lines') }, over: null });
 
     // Assert
     expect(text).toBe('OrderService.lines は元の場所に戻りました。');
@@ -168,7 +168,7 @@ describe('createAnnouncements', () => {
 
   it('取り消したとき', () => {
     // Act
-    const text = announcements.onDragCancel?.({ active, over: null });
+    const text = announcements.onDragCancel({ active, over: null });
 
     // Assert
     expect(text).toBe('OrderService.placeOrder() の移動を取り消しました。');
