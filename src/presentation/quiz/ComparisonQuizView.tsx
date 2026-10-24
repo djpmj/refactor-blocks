@@ -1,13 +1,16 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ComparisonQuiz, DesignChoice } from '../../domain/quiz/ComparisonQuiz';
 import { judgeComparison, type ComparisonVerdict } from '../../domain/quiz/judgeComparison';
 import { comparisonQuizzes } from '../../infrastructure/quizzes/comparisonQuizzes';
 import { describeDeductions, siteNames } from '../change/describeChange';
 import { CodebasePreviewCanvas } from '../preview/CodebasePreviewCanvas';
 import { AnswerVerdict } from '../feedback/AnswerVerdict';
+import { sharedZoom } from './sharedZoom';
 
 const CHOICES: readonly DesignChoice[] = ['a', 'b'];
 const CHOICE_LABEL: Record<DesignChoice, string> = { a: 'A', b: 'B' };
+/** これより小さいとメソッド名・行数が読めないので、A・Bをそろえる縮尺の下限にする。 */
+const MIN_SHARED_ZOOM = 0.6;
 
 /** 答え合わせで、その設計に依頼を当てたときの結果を出す。 */
 function DesignResult({ quiz, choice, verdict }: Readonly<{ quiz: ComparisonQuiz; choice: DesignChoice; verdict: ComparisonVerdict }>) {
@@ -37,7 +40,9 @@ function DesignResult({ quiz, choice, verdict }: Readonly<{ quiz: ComparisonQuiz
   );
 }
 
-function DesignPanel({ quiz, choice, verdict }: Readonly<{ quiz: ComparisonQuiz; choice: DesignChoice; verdict: ComparisonVerdict | null }>) {
+type DesignPanelProps = Readonly<{ quiz: ComparisonQuiz; choice: DesignChoice; verdict: ComparisonVerdict | null; zoom?: number; onFitZoom: (zoom: number) => void }>;
+
+function DesignPanel({ quiz, choice, verdict, zoom, onFitZoom }: DesignPanelProps) {
   const design = quiz.designs[choice];
   return (
     <section className="quiz-design" aria-label={`設計${CHOICE_LABEL[choice]}`} data-testid={`quiz-design-${choice}`}>
@@ -45,7 +50,7 @@ function DesignPanel({ quiz, choice, verdict }: Readonly<{ quiz: ComparisonQuiz;
         設計{CHOICE_LABEL[choice]}: {design.label}
       </h3>
       <div className="quiz-design__canvas">
-        <CodebasePreviewCanvas codebase={design.codebase} methodLimit={quiz.limits.method} wheelZoom={false} />
+        <CodebasePreviewCanvas codebase={design.codebase} methodLimit={quiz.limits.method} wheelZoom={false} maxZoom={zoom} onFitZoom={onFitZoom} />
       </div>
       {verdict === null ? null : <DesignResult quiz={quiz} choice={choice} verdict={verdict} />}
     </section>
@@ -76,6 +81,13 @@ function QuizQuestion({ quiz, onNext, focusTitle }: Readonly<{ quiz: ComparisonQ
   const judged = choice === null ? null : judgeComparison(quiz, choice);
   const verdict = judged?.ok === true ? judged.value : null;
   const { limits, changeRequest } = quiz;
+  const [fitZooms, setFitZooms] = useState<Partial<Record<DesignChoice, number>>>({});
+  const { a: fitA, b: fitB } = fitZooms;
+  const zoom = fitA === undefined || fitB === undefined ? undefined : sharedZoom(fitA, fitB, MIN_SHARED_ZOOM);
+  const onFitZooms = useMemo(() => {
+    const report = (candidate: DesignChoice) => (value: number) => setFitZooms((current) => (current[candidate] === value ? current : { ...current, [candidate]: value }));
+    return { a: report('a'), b: report('b') };
+  }, []);
   return (
     <>
       <div className="quiz__question">
@@ -106,7 +118,7 @@ function QuizQuestion({ quiz, onNext, focusTitle }: Readonly<{ quiz: ComparisonQ
       </div>
       <div className="quiz__designs">
         {CHOICES.map((candidate) => (
-          <DesignPanel key={candidate} quiz={quiz} choice={candidate} verdict={verdict} />
+          <DesignPanel key={candidate} quiz={quiz} choice={candidate} verdict={verdict} zoom={zoom} onFitZoom={onFitZooms[candidate]} />
         ))}
       </div>
     </>
