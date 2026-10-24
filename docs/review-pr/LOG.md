@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-24 UTC PR #264 インターフェースと抽象クラスの役割を表示する (#228)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(1954件) / npm run lint ✅ / npm run typecheck ✅(E2Eはこの環境では未実行、PR本文の結果に依拠)
+- マージ: squash & delete-branch
+
 ## 2026-10-24 13:10 UTC PR #292 実機プレイから仕様化・実装までの作業を効率化する道具を追加
 
 - 判定: 合格(blocker無し。前回指摘したvite.configのexplore/**除外が68c3d43で解消)
