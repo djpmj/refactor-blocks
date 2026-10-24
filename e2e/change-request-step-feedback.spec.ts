@@ -73,7 +73,7 @@ test('変更依頼は1件ごとに答え合わせし、置き直した結果が�
   await page.goto('/');
   await selectStage(page, '初級2: クラスを自分で作る');
   await solveInvoiceStage(page);
-  await expect(page.getByTestId('score')).toContainText('100');
+  await expect(page.getByTestId('score-value')).toHaveText('100点');
   await releaseAllManualFixSites(page);
   await startChangeRequests(page);
 
