@@ -12,7 +12,7 @@ function targetsAreReady(step: SolutionStep, target: ReturnType<typeof stepTarge
   return target.fileIds.length + target.classIds.length + target.methodIds.length > 0;
 }
 
-export function HintList({ hints, codebase, disabled = false }: Readonly<{ hints: readonly Hint[]; codebase: Codebase; disabled?: boolean }>) {
+export function HintList({ hints, codebase, disabled = false, onFocus }: Readonly<{ hints: readonly Hint[]; codebase: Codebase; disabled?: boolean; onFocus?: () => void }>) {
   const hintTarget = useGameStore((state) => state.hintTarget);
   const hintTargetKey = useGameStore((state) => state.hintTargetKey);
   const focusHint = useGameStore((state) => state.focusHint);
@@ -39,7 +39,7 @@ export function HintList({ hints, codebase, disabled = false }: Readonly<{ hints
               aria-pressed={pressed}
               title={hasTargets ? undefined : 'まだこの名前のブロックがありません'}
               disabled={disabled || !hasTargets}
-              onClick={() => focusHint(pressed ? null : target, hintKey)}
+              onClick={() => { focusHint(pressed ? null : target, hintKey); onFocus?.(); }}
             >
               キャンバスで見る
             </button>

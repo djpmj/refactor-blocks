@@ -10,7 +10,7 @@ function ghostHintTitle(unlocked: boolean, hasMove: boolean): string {
     : 'ドラッグで動かす手は残っていません';
 }
 
-export function GhostHintButton({ stage, score, investigating, unlocked }: Readonly<{ stage: Stage; score: number; investigating: boolean; unlocked: boolean }>) {
+export function GhostHintButton({ stage, score, investigating, unlocked, onPlay }: Readonly<{ stage: Stage; score: number; investigating: boolean; unlocked: boolean; onPlay?: () => void }>) {
   const codebase = useGameStore((state) => state.codebase);
   const ghost = useGameStore((state) => state.ghost);
   const manualFixing = useGameStore((state) => state.manualFix !== null);
@@ -25,7 +25,11 @@ export function GhostHintButton({ stage, score, investigating, unlocked }: Reado
       data-testid="ghost-hint"
       disabled={disabled || !unlocked}
       title={title}
-      onClick={() => { if (move !== undefined) playGhost(move); }}
+      onClick={() => {
+        if (move === undefined) return;
+        playGhost(move);
+        onPlay?.();
+      }}
     >
       動きで見る
     </button>

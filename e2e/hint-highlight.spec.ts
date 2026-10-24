@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { openHints } from './hintPopover.js';
 import { selectStage } from './selectStage.js';
 
 test('ヒントの対象を表示し、切り替え・解除・リセット・ステージ変更ができる', async ({ page }) => {
@@ -6,12 +7,17 @@ test('ヒントの対象を表示し、切り替え・解除・リセット・�
   await page.setViewportSize({ width: 1800, height: 1400 });
   await page.goto('/');
   await selectStage(page, 'チュートリアル1: 長いメソッドを分ける');
+  await openHints(page);
   await page.getByTestId('hint-problem').click();
   await page.getByRole('button', { name: /次の一手/ }).click();
   const hint = page.getByRole('button', { name: 'ヒント1の場所をキャンバスで見る' });
 
   // Act
   await hint.click();
+
+  // Assert: キャンバスを隠さないよう、ポップオーバーは閉じる
+  await expect(page.getByTestId('hint-popover')).toBeHidden();
+  await openHints(page);
 
   // Assert
   await expect(hint).toHaveAttribute('aria-pressed', 'true');
@@ -20,10 +26,12 @@ test('ヒントの対象を表示し、切り替え・解除・リセット・�
 
   // Act: 同じヒントをもう一度押して解除する
   await hint.click();
+  await openHints(page);
 
   // Assert
   await expect(hint).toHaveAttribute('aria-pressed', 'false');
   await expect(page.locator('.method-chip--flagged, .class-node--flagged, .file-node--flagged')).toHaveCount(0);
+  await openHints(page);
   await hint.click();
 
   // Act: 得点内訳へ切り替え、もう一度ヒントを押して解除する
@@ -32,6 +40,7 @@ test('ヒントの対象を表示し、切り替え・解除・リセット・�
   await breakdown.locator('.score-breakdown__items button[aria-pressed]').first().click();
 
   // Assert
+  await openHints(page);
   await expect(hint).toHaveAttribute('aria-pressed', 'false');
   await expect(page.locator('.method-chip--flagged, .class-node--flagged, .file-node--flagged')).toHaveCount(1);
 
@@ -43,6 +52,7 @@ test('ヒントの対象を表示し、切り替え・解除・リセット・�
   await expect(page.locator('.method-chip--flagged, .class-node--flagged, .file-node--flagged')).toHaveCount(0);
 
   // Act: ハイライト中にステージを切り替える
+  await openHints(page);
   await page.getByRole('button', { name: 'ヒント1の場所をキャンバスで見る' }).click();
   await selectStage(page, 'チュートリアル2: 太った placeOrder');
 
@@ -55,6 +65,7 @@ test('まだ存在しない対象のヒントは、前の操作で作られる�
   await page.setViewportSize({ width: 1800, height: 1400 });
   await page.goto('/');
   await selectStage(page, 'チュートリアル2: 太った placeOrder');
+  await openHints(page);
   await page.getByTestId('hint-problem').click();
   const reveal = page.getByRole('button', { name: /次の一手/ });
   await reveal.click();
@@ -71,9 +82,11 @@ test('まだ存在しない対象のヒントは、前の操作で作られる�
 
   // 同じ placeOrder を指すヒントでも、押下状態は選んだ一件だけにする
   await hintOne.click();
+  await openHints(page);
   await expect(hintOne).toHaveAttribute('aria-pressed', 'true');
   await expect(hintTwo).toHaveAttribute('aria-pressed', 'false');
   await hintTwo.click();
+  await openHints(page);
   await expect(hintOne).toHaveAttribute('aria-pressed', 'false');
   await expect(hintTwo).toHaveAttribute('aria-pressed', 'true');
 
@@ -84,6 +97,7 @@ test('まだ存在しない対象のヒントは、前の操作で作られる�
   await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
 
   // Assert
+  await openHints(page);
   await expect(hint).toBeEnabled();
   await hint.click();
   await expect(page.getByTestId('method-calculateTax').locator('.method-chip--flagged')).toBeVisible();

@@ -8,6 +8,7 @@ import type { AnswerComparison } from '../preview/ComparisonPanes';
 import { scoreCodebase } from '../../domain/scoring/score';
 import { designDiff } from '../../domain/stage/designDiff';
 import { useGameStore } from '../store/useGameStore';
+import { usePopoverDismiss } from './usePopoverDismiss';
 import { describeScoreGap, groupDesignDiff } from './describeDesignDiff';
 
 type AnswerKind = 'sample' | 'replay';
@@ -183,17 +184,11 @@ export function ReferenceMenu({ stage, disabled, revealedCount, onRevealHint, on
     if (menuOpen) menuRef.current?.querySelector<HTMLButtonElement>('[role="menuitem"]:not([aria-disabled="true"])')?.focus();
   }, [menuOpen]);
 
-  useEffect(() => {
-    if (!menuOpen) return;
-    const onPointerDown = (event: PointerEvent) => {
-      if (event.target instanceof Node && !menuRef.current?.contains(event.target) && !buttonRef.current?.contains(event.target)) setMenuOpen(false);
-    };
-    document.addEventListener('pointerdown', onPointerDown);
-    return () => document.removeEventListener('pointerdown', onPointerDown);
-  }, [menuOpen]);
+  const closeMenu = () => setMenuOpen(false);
+  usePopoverDismiss(menuOpen, menuRef, buttonRef, closeMenu);
 
   return (
-    <div className="reference-menu" ref={menuRef} onKeyDown={(event) => moveMenuFocus(event, menuRef, buttonRef, () => setMenuOpen(false))}>
+    <div className="reference-menu" ref={menuRef} onKeyDown={(event) => moveMenuFocus(event, menuRef, buttonRef, closeMenu)}>
       <button
         ref={buttonRef}
         type="button"
@@ -215,7 +210,7 @@ export function ReferenceMenu({ stage, disabled, revealedCount, onRevealHint, on
         sampleSteps={sampleSteps}
         pendingAnswer={pendingAnswer}
         remainingHints={remainingHints}
-        onHint={() => { closeConfirmation(true, buttonRef); onOpenHints(); onRevealHint(); }}
+        onHint={() => { closeConfirmation(false, buttonRef); onOpenHints(); onRevealHint(); }}
         onAnswer={chooseAnswer}
         onCancel={() => closeConfirmation(true, buttonRef)}
         onReplayClose={() => setReplaying(false)}

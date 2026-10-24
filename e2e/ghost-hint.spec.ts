@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { openHints } from './hintPopover.js';
 import { selectStage } from './selectStage.js';
 
 const STAGE = '中級3: 越境する private メソッド';
@@ -40,6 +41,7 @@ test('plays a visual-only ghost, leaves hint count and undo history alone, then 
   const button = page.getByTestId('ghost-hint');
   const hintButton = page.getByRole('button', { name: /次の一手/ });
   const score = await page.getByTestId('score').innerText();
+  await openHints(page);
   await page.getByTestId('hint-problem').click();
   await expect(button).toBeEnabled();
   await expect(page.getByRole('button', { name: '元に戻す' })).toBeDisabled();
@@ -52,12 +54,15 @@ test('plays a visual-only ghost, leaves hint count and undo history alone, then 
   await expect(page.getByText('renderTemplate を NotificationService へ動かすと良さそうです')).toBeAttached();
   await expect(page.getByTestId('score')).toHaveText(score);
   await expect(page.getByRole('button', { name: '元に戻す' })).toBeDisabled();
+  await expect(page.getByTestId('hint-popover')).toBeHidden();
+  await openHints(page);
   await expect(hintButton).toHaveText('次の一手');
   await expect(button).toBeDisabled();
   await expect(page.locator('.ghost-hint-animation')).toHaveCount(0, { timeout: 5000 });
   await expect(button).toBeEnabled();
   await button.click();
   await expect(page.getByTestId('ghost-hint-live')).toContainText('renderTemplate');
+  await openHints(page);
   await expect(hintButton).toHaveText('次の一手');
   await expect(page.locator('.ghost-hint-animation')).toHaveCount(0, { timeout: 5000 });
 
@@ -65,6 +70,7 @@ test('plays a visual-only ghost, leaves hint count and undo history alone, then 
   await dragMethodToClass(page, 'method-renderTemplate', 'class-NotificationService');
 
   // Assert: only non-drag steps remain.
+  await openHints(page);
   await expect(button).toBeDisabled();
   await expect(button).toHaveAttribute('title', 'ドラッグで動かす手は残っていません');
 });
@@ -73,7 +79,7 @@ test('shows the idle affordance without playing a ghost and clears it on interac
   // Arrange
   await page.clock.install();
   await openStage(page);
-  const button = page.getByTestId('hint-problem');
+  const button = page.getByTestId('hint-popover-button');
 
   // Act
   await page.clock.fastForward(30_000);
@@ -95,6 +101,7 @@ test('switches the ghost target after moving the first of multiple sample-answer
   await page.goto('/');
   await selectStage(page, MULTI_MOVE_STAGE);
   const button = page.getByTestId('ghost-hint');
+  await openHints(page);
   await page.getByTestId('hint-problem').click();
 
   // Act / Assert: first step and its destination coordinates.
@@ -105,6 +112,7 @@ test('switches the ghost target after moving the first of multiple sample-answer
   await dragMethodToClass(page, 'method-calculateShippingFee', 'class-ShippingService');
 
   // Assert: the next step now points at PointService, including its actual target coordinates.
+  await openHints(page);
   await expect(button).toBeEnabled();
   await button.click();
   await expectGhostAtDestination(page, 'addPoints を PointService へ動かすと良さそうです', 'class-PointService');
@@ -114,6 +122,7 @@ test('uses a source and destination highlight when reduced motion is requested',
   // Arrange
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await openStage(page);
+  await openHints(page);
   await page.getByTestId('hint-problem').click();
 
   // Act
