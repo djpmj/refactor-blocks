@@ -205,7 +205,7 @@ body { margin: 0; background: var(--bg); color: var(--text); }
   .app__body--sidebar-open > .sidebar-resizable__handle--left + .sidebar-toggle { z-index: 22; }
   .app__body--sidebar-open > .sidebar-resizable__handle--left + .sidebar-toggle { left: calc(85vw - 22px); }
   .sidebar-resizable { min-width: 0; }
-  .sidebar-resizable--rail, .sidebar-resizable--empty-open, .editor-rail { display: none; }
+  .app__body .sidebar-resizable--rail, .app__body .sidebar-resizable--empty-open, .app__body .editor-rail { display: none; }
   .sidebar-resizable--rail, .sidebar-resizable--empty-open { width: 0 !important; min-width: 0; }
   .sidebar-resizable--mobile-open { position: absolute; z-index: 31; inset: 0 0 0 auto; width: 85vw !important; max-width: 85vw; box-shadow: -8px 0 24px rgb(0 0 0 / 24%); }
   .sidebar-resizable--mobile-open .method-editor { width: 100%; box-sizing: border-box; border-left: 0; }

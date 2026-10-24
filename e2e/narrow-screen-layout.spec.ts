@@ -59,3 +59,19 @@ test('デスクトップ幅では3列配置を保つ', async ({ page }) => {
   expect(editorBox?.x).toBeGreaterThan((canvasBox?.x ?? 0) + (canvasBox?.width ?? 0) - 1);
   await expect(editor).toBeHidden();
 });
+
+test('狭い画面ではメソッド未選択のとき案内レールを出さず、幅を変えても出ない', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto('/');
+  await selectStage(page, 'チュートリアル1: 長いメソッドを分ける', { completeOpeningFix: false });
+  const rail = page.getByTestId('editor-rail');
+  await expect(rail).toBeHidden();
+  await page.setViewportSize({ width: 700, height: 812 });
+  await expect(rail).toBeHidden();
+  const canvasBox = await page.getByRole('region', { name: 'コードベース' }).boundingBox();
+  expect(canvasBox?.x).toBe(0);
+  await page.setViewportSize({ width: 375, height: 812 });
+  await expect(rail).toBeHidden();
+  await page.setViewportSize({ width: 701, height: 812 });
+  await expect(rail).toBeVisible();
+});
