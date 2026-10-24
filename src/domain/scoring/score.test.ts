@@ -602,3 +602,51 @@ describe('scoreCodebase', () => {
     expect(withLayers.total).toBe(withoutLayers.total - 10);
   });
 });
+
+describe('scoreCodebase: 狭めた上書き', () => {
+  const frag = (id: string) => [{ id, label: 'x', lines: 3, responsibility: 'x' }];
+  const codebase: Codebase = {
+    files: [{
+      id: 'file', path: 'src/all.ts', classes: [
+        { id: 'base', name: 'Base', methods: [{ id: 'base-parse', name: 'parse', visibility: 'protected', fragments: [] }] },
+        { id: 'csv', name: 'Csv', superclassId: 'base', methods: [{ id: 'csv-parse', name: 'parse', visibility: 'private', fragments: frag('f1') }] },
+        { id: 'json', name: 'Json', superclassId: 'base', methods: [{ id: 'json-parse', name: 'parse', visibility: 'private', fragments: frag('f2') }] },
+      ],
+    }],
+  };
+  const contractCount = (stage: Parameters<typeof scoreCodebase>[1]) => scoreCodebase(codebase, stage).deductions.find(({ rule }) => rule === 'contract')?.count;
+
+  it('可視性の欄を出すステージでは、狭めた上書き2件で約束違反が2件増える', () => {
+    // Arrange
+    const stage = { ...LOOSE, codebase, visibilityEnforced: true };
+
+    // Act
+    const count = contractCount(stage);
+
+    // Assert
+    expect(count).toBe(2);
+  });
+
+  it('可視性の欄を出さないステージでは数が変わらない', () => {
+    // Arrange
+    const stage = { ...LOOSE, codebase: { files: [] } };
+
+    // Act
+    const count = contractCount(stage);
+
+    // Assert
+    expect(count).toBe(0);
+  });
+
+  it('2つのparseをprotectedにすると0件になる', () => {
+    // Arrange
+    const protect = (codeClass: CodeClass): CodeClass => ({ ...codeClass, methods: codeClass.methods.map((method) => ({ ...method, visibility: 'protected' as const })) });
+    const fixed: Codebase = { files: [{ id: 'file', path: 'src/all.ts', classes: codebase.files[0].classes.map(protect) }] };
+
+    // Act
+    const count = scoreCodebase(fixed, { ...LOOSE, codebase, visibilityEnforced: true }).deductions.find(({ rule }) => rule === 'contract')?.count;
+
+    // Assert
+    expect(count).toBe(0);
+  });
+});

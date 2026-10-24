@@ -24,7 +24,7 @@ export class CritiqueVersionMismatchError extends Error {
 /** プレイヤーの「AIの講評をもらう」操作。通信の成否をResultにして返す。 */
 export async function requestCritiqueUseCase(
   codebase: Codebase,
-  stage: Pick<Stage, 'goal' | 'limits' | 'dependencyLimit' | 'responsibilityLimit'>,
+  stage: Pick<Stage, 'goal' | 'limits' | 'dependencyLimit' | 'responsibilityLimit' | 'visibilityEnforced' | 'codebase'>,
   score: Score,
   requestCritique: RequestCritique,
 ): Promise<Result<string, CritiqueError>> {

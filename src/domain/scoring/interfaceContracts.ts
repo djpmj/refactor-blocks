@@ -1,4 +1,6 @@
-import { allClasses, extendsChainIds, findClass, isAbstractLike, isInterfaceLike, isStubMethod, parentIds, type CodeClass, type Codebase } from '../codebase/Codebase';
+import type { Stage } from '../stage/Stage';
+import { showsVisibilityControl } from '../stage/showsVisibilityControl';
+import { allClasses, extendsChainIds, findClass, isAbstractLike, isInterfaceLike, isStubMethod, parentIds, type CodeClass, type Codebase, type Method } from '../codebase/Codebase';
 
 /** isStubMethodなメソッドのIDを出現順に返す。 */
 export function findStubMethods(codebase: Codebase): string[] {
@@ -146,4 +148,26 @@ function findBorrowedContracts(codebase: Codebase): string[] {
 /** 実装漏れ・インターフェースの外の契約メソッド・実装の宣言漏れ・具象の先祖からの契約の借用をまとめて返す(1件 = 1要素)。 */
 export function findContractViolations(codebase: Codebase): string[] {
   return [...findMissingImplementations(codebase), ...findContractMethodsOutsideInterfaces(codebase), ...findUndeclaredImplementations(codebase), ...findBorrowedContracts(codebase)];
+}
+
+const VISIBILITY_RANK: Record<Method['visibility'], number> = { private: 0, protected: 1, public: 2 };
+
+/**
+ * 狭めた上書き: 祖先(extendsの先祖・implementsしたインターフェース役とその先祖)の同名メソッドより、公開範囲が狭いメソッドのID。
+ * 1メソッドにつき1件。戻り値・引数の型は見ない。
+ */
+export function findNarrowedOverrides(codebase: Codebase): string[] {
+  const narrowed: string[] = [];
+  for (const codeClass of allClasses(codebase)) {
+    const ancestors = [...reachableParentIds(codebase, codeClass.id)].flatMap((id) => findClass(codebase, id)?.methods ?? []);
+    for (const method of codeClass.methods) {
+      if (ancestors.some((ancestor) => ancestor.name === method.name && VISIBILITY_RANK[ancestor.visibility] > VISIBILITY_RANK[method.visibility])) narrowed.push(method.id);
+    }
+  }
+  return narrowed;
+}
+
+/** 採点に数える狭めた上書き。可視性の欄を出さないステージではプレイヤーが直せないので数えない。 */
+export function countedNarrowedOverrides(codebase: Codebase, stage: Pick<Stage, 'visibilityEnforced' | 'codebase'>): string[] {
+  return showsVisibilityControl(stage) ? findNarrowedOverrides(codebase) : [];
 }

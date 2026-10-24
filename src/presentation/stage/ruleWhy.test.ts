@@ -30,6 +30,19 @@ describe('RULE_WHY', () => {
   });
 });
 
+describe('RULE_WHY.contract', () => {
+  it('親のメソッドを上書きして公開範囲を狭める場合の説明を含む', () => {
+    // Arrange
+    const sentence = '親のメソッドを上書きするときは、公開範囲を狭められません。private にすると親から呼べず、多くの言語ではコンパイルエラーになります。親と同じか、広い公開範囲にしましょう';
+
+    // Act
+    const { trouble } = RULE_WHY.contract;
+
+    // Assert
+    expect(trouble).toContain(sentence);
+  });
+});
+
 describe('lineLimitWhy', () => {
   it('違反の種類ごとに重複なく method、class、file の順で返す', () => {
     // Arrange

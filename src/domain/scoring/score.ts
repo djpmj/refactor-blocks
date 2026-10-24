@@ -4,7 +4,7 @@ import type { Stage } from '../stage/Stage';
 import { findLowCohesionClasses } from './cohesion';
 import { findMiddleManClasses } from './middleMan';
 import { findEncapsulationViolations, findFeatureEnvy, findOpenSetters } from './fieldAccess';
-import { findContractViolations, findStubMethods } from './interfaceContracts';
+import { countedNarrowedOverrides, findContractViolations, findStubMethods } from './interfaceContracts';
 import { findEmptyContainers, findUnusedPrivateMethods } from './leftovers';
 import { findLineLimitViolations } from './lineLimits';
 import { findLayerViolations } from './layers';
@@ -79,7 +79,7 @@ export function scoreCodebase(
     unused: findUnusedPrivateMethods(codebase).length,
     'lone-superclass': findLoneSuperclasses(codebase).length,
     stub: findStubMethods(codebase).length,
-    contract: findContractViolations(codebase).length,
+    contract: findContractViolations(codebase).length + countedNarrowedOverrides(codebase, stage).length,
     'feature-envy': findFeatureEnvy(codebase).length,
     encapsulation: findEncapsulationViolations(codebase).length + findOpenSetters(codebase).length,
     cohesion: findLowCohesionClasses(codebase).length,
