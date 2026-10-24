@@ -54,10 +54,11 @@ type CodebasePreviewCanvasProps = {
   readonly selectedMethodId?: string | null;
   readonly onSelectMethod?: (methodId: string) => void;
   readonly highlights?: ReadonlyMap<string, MethodHighlight>;
+  readonly glowClassNames?: ReadonlySet<string>;
 };
 
 /** コードベースを読み取り専用で描くキャンバス。「解答例の図」と設計くらべで使う。 */
-export function CodebasePreviewCanvas({ codebase, methodLimit, wheelZoom = true, maxZoom, onFitZoom, selectedMethodId, onSelectMethod, highlights }: CodebasePreviewCanvasProps) {
+export function CodebasePreviewCanvas({ codebase, methodLimit, wheelZoom = true, maxZoom, onFitZoom, selectedMethodId, onSelectMethod, highlights, glowClassNames }: CodebasePreviewCanvasProps) {
   const nodes = useMemo(() => layoutCodebase(codebase), [codebase]);
   const edges = useMemo(() => {
     const fileRects = fileRectsFromNodes(nodes);
@@ -65,7 +66,7 @@ export function CodebasePreviewCanvas({ codebase, methodLimit, wheelZoom = true,
   }, [codebase, nodes]);
   const bounds = useMemo(() => filesBounds(nodes), [nodes]);
   return (
-    <CodebasePreviewProvider value={{ codebase, methodLimit, selectedMethodId, onSelectMethod, highlights }}>
+    <CodebasePreviewProvider value={{ codebase, methodLimit, selectedMethodId, onSelectMethod, highlights, glowClassNames }}>
       <WarningEdgeStateProvider>
         <ReactFlow colorMode="system"
           nodes={nodes}

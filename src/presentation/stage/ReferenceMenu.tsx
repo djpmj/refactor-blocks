@@ -1,8 +1,14 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from 'react';
+import type { Codebase } from '../../domain/codebase/Codebase';
 import { sampleAnswerCodebase, sampleAnswerSteps, type SolutionStep } from '../../domain/stage/sampleAnswer';
 import type { Stage } from '../../domain/stage/Stage';
 import { SampleAnswerReplayDialog } from './SampleAnswerReplayDialog';
 import { CodebasePreviewDialog } from '../preview/CodebasePreviewDialog';
+import type { AnswerComparison } from '../preview/ComparisonPanes';
+import { scoreCodebase } from '../../domain/scoring/score';
+import { designDiff } from '../../domain/stage/designDiff';
+import { useGameStore } from '../store/useGameStore';
+import { describeScoreGap, groupDesignDiff } from './describeDesignDiff';
 
 type AnswerKind = 'sample' | 'replay';
 type PreviewKind = 'before' | 'sample' | null;
@@ -17,6 +23,19 @@ function previewCodebase(preview: PreviewKind, stage: Stage, hasSampleAnswer: bo
   if (preview === 'before') return stage.codebase;
   if (preview === 'sample' && hasSampleAnswer) return sampleAnswerCodebase(stage);
   return null;
+}
+
+/** 解答例の図に並べる、プレイヤーの今の設計との違い。 */
+function answerComparison(stage: Stage, player: Codebase, answer: Codebase): AnswerComparison {
+  return { player, groups: groupDesignDiff(designDiff(player, answer)), scoreFacts: describeScoreGap(scoreCodebase(player, stage), scoreCodebase(answer, stage)) };
+}
+
+/** 開いている図のコードベースと、解答例の図のときだけ作るプレイヤーの今の設計との違い。 */
+function usePreviewTarget(preview: PreviewKind, stage: Stage, hasSampleAnswer: boolean): { readonly codebase: PreviewCodebase; readonly comparison: AnswerComparison | undefined } {
+  const codebase = useMemo(() => previewCodebase(preview, stage, hasSampleAnswer), [preview, stage, hasSampleAnswer]);
+  const player = useGameStore((state) => state.codebase);
+  const comparison = useMemo(() => (preview === 'sample' && codebase !== null ? answerComparison(stage, player, codebase) : undefined), [preview, stage, player, codebase]);
+  return { codebase, comparison };
 }
 
 function closeMenuOnEscape(event: KeyboardEvent<HTMLDivElement>, buttonRef: RefObject<HTMLButtonElement | null>, closeMenu: () => void): boolean {
@@ -91,10 +110,11 @@ function AnswerConfirmDialog({ open, remainingHints, onHint, onAnswer, onCancel 
   );
 }
 
-function ReferenceMenuPopups({ stage, preview, codebase, replaying, sampleSteps, pendingAnswer, remainingHints, onHint, onAnswer, onCancel, onReplayClose, onPreviewClose }: Readonly<{
+function ReferenceMenuPopups({ stage, preview, codebase, comparison, replaying, sampleSteps, pendingAnswer, remainingHints, onHint, onAnswer, onCancel, onReplayClose, onPreviewClose }: Readonly<{
   stage: Stage;
   preview: 'before' | 'sample' | null;
   codebase: PreviewCodebase;
+  comparison: AnswerComparison | undefined;
   replaying: boolean;
   sampleSteps: readonly SolutionStep[] | undefined;
   pendingAnswer: AnswerKind | null;
@@ -109,7 +129,7 @@ function ReferenceMenuPopups({ stage, preview, codebase, replaying, sampleSteps,
     <>
       <AnswerConfirmDialog open={pendingAnswer !== null} remainingHints={remainingHints} onHint={onHint} onAnswer={onAnswer} onCancel={onCancel} />
       {replaying && sampleSteps !== undefined && <SampleAnswerReplayDialog stage={stage} steps={sampleSteps} onClose={onReplayClose} />}
-      <CodebasePreviewDialog title={preview === 'sample' ? '解答例の図' : '変更前の図'} codebase={codebase} methodLimit={stage.limits.method} onClose={onPreviewClose} />
+      <CodebasePreviewDialog title={preview === 'sample' ? '解答例の図' : '変更前の図'} codebase={codebase} methodLimit={stage.limits.method} comparison={comparison} onClose={onPreviewClose} />
     </>
   );
 }
@@ -156,9 +176,8 @@ export function ReferenceMenu({ stage, disabled, revealedCount, onRevealHint, on
   const { pendingAnswer, openAnswer, closeConfirmation, chooseAnswer } = useReferenceAnswer(setMenuOpen, setPreview, setReplaying);
   const sampleSteps = sampleAnswerSteps[stage.id];
   const hasSampleAnswer = sampleSteps !== undefined;
-  const totalHints = sampleSteps?.length ?? 0;
-  const remainingHints = Math.max(0, totalHints - revealedCount);
-  const codebase = useMemo(() => previewCodebase(preview, stage, hasSampleAnswer), [preview, stage, hasSampleAnswer]);
+  const remainingHints = Math.max(0, (sampleSteps?.length ?? 0) - revealedCount);
+  const { codebase, comparison } = usePreviewTarget(preview, stage, hasSampleAnswer);
 
   useEffect(() => {
     if (menuOpen) menuRef.current?.querySelector<HTMLButtonElement>('[role="menuitem"]:not([aria-disabled="true"])')?.focus();
@@ -191,6 +210,7 @@ export function ReferenceMenu({ stage, disabled, revealedCount, onRevealHint, on
         stage={stage}
         preview={preview}
         codebase={codebase}
+        comparison={comparison}
         replaying={replaying}
         sampleSteps={sampleSteps}
         pendingAnswer={pendingAnswer}

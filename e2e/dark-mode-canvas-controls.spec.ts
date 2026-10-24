@@ -36,7 +36,7 @@ async function expectReadableControls(flow: Locator) {
 
 async function openPreview(page: Page): Promise<Locator> {
   await openReferenceItem(page, 'reference-sample');
-  return page.getByTestId('codebase-preview').locator('.react-flow');
+  return page.getByTestId('codebase-preview').getByTestId('answer-diagram').locator('.react-flow');
 }
 
 test.describe('ダークモード', () => {
@@ -60,8 +60,9 @@ test.describe('ダークモード', () => {
     // Act
     const flow = await openPreview(page);
 
-    // Assert
+    // Assert: 解答例と自分の設計、どちらの図も
     await expectReadableControls(flow);
+    await expectReadableControls(page.getByTestId('codebase-preview').getByTestId('player-diagram').locator('.react-flow'));
   });
 });
 
