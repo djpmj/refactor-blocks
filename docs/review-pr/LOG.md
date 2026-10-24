@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-24 15:05 UTC PR #297 100点のあとに、外から使われていない公開メンバーを知らせる (#243)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(1963件) / npm run lint ✅ / npm run typecheck ✅。E2Eはレビュー環境で実行できず未実行(PR本文では全306件成功)。Issue #243・docs/specs/unused-public-member-notes.mdの、100点時のみ表示・入口/インターフェース役/部品置き場の除外・visibilityEnforced時の案内を差分で確認。点数は変えない
+- マージ: squash & delete-branch
+
 ## 2026-10-24 14:30 UTC PR #296 初回ツアーが正しい抽出に導き、手直しの直し忘れを防ぐ (#216)
 
 - 判定: 合格(blocker無し)
@@ -210,12 +216,6 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test(1811件)✅ / npm run lint ✅ / npm run typecheck ✅。package.json/lockのみ(react 19.3.1等)。E2Eはレビュー環境でmasterも全件失敗するため判断対象外
-- マージ: squash & delete-branch
-
-## 2026-10-19 13:45 UTC PR #256 変更するクラスに同居する別責務も巻き込みとして採点する (#221)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(lint・typecheck・Vitest 1808件)✅。E2Eはレビュー環境で未実行(PR本文では256件成功)。Issue #221の classMixedResponsibilities・entangled-class(5点)・表示文言・模範解答調整を差分で確認
 - マージ: squash & delete-branch
 
 
