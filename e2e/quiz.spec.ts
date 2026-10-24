@@ -190,6 +190,27 @@ test('右クリックメニューを開いたままキーボードで設計く�
   await expect(page.getByTestId('context-menu')).toHaveCount(0);
 });
 
+async function previewScale(page: Page, choice: 'a' | 'b'): Promise<number> {
+  const transform = await page.getByTestId(`quiz-design-${choice}`).locator('.react-flow__viewport').getAttribute('style');
+  const match = /scale\(([\d.]+)\)/.exec(transform ?? '');
+  return Number(match?.[1] ?? 'NaN');
+}
+
+for (const questionNumber of [1, 2, 3, 4]) {
+  test(`設計くらべ${questionNumber}問目は、設計A・Bのプレビューが同じ縮尺で、読める大きさになっている`, async ({ page }) => {
+    // Arrange
+    await page.goto('/');
+    await page.getByTestId('mode-quiz').click();
+
+    // Act
+    await page.getByLabel('クイズ').selectOption({ index: questionNumber - 1 });
+
+    // Assert
+    await expect.poll(async () => (await previewScale(page, 'a')) - (await previewScale(page, 'b'))).toBeCloseTo(0, 5);
+    expect(await previewScale(page, 'a')).toBeGreaterThanOrEqual(0.6 - 1e-6);
+  });
+}
+
 /** 1問目はわざと間違え(B)、残りは A を選んで最後の問題まで進む(最後の問題は答えたところで止まる)。 */
 async function answerAllFirstWrong(page: Page) {
   await page.goto('/');
