@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-24 14:30 UTC PR #296 初回ツアーが正しい抽出に導き、手直しの直し忘れを防ぐ (#216)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(1955件) / npm run lint ✅ / npm run typecheck ✅(E2Eはレビュー環境で実行できず未実行。PR本文では全305件成功)。Issue #216の手順・文言修正(manual-fix-started追加、click-inside削除、extract-area、スクロール)を差分で確認
+- マージ: squash & delete-branch
+
 ## 2026-10-24 14:30 UTC PR #295 白紙設計の部品置き場を採点対象のクラスのように見せない (#222)
 
 - 判定: 合格(blocker無し)
@@ -210,12 +216,6 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm run check(lint・typecheck・Vitest 1808件)✅。E2Eはレビュー環境で未実行(PR本文では256件成功)。Issue #221の classMixedResponsibilities・entangled-class(5点)・表示文言・模範解答調整を差分で確認
-- マージ: squash & delete-branch
-
-## 2026-10-18 10:55 UTC PR #255 行数違反の理由をメソッド・クラス・ファイルごとに説明する (#224)
-
-- 判定: 合格(blocker無し。suggestion: 中級2・チュートリアル1の出し分けを直接検証するE2Eの追加)
-- 確認した内容: npm run check(lint・typecheck・Vitest 1805件)✅。E2Eはレビュー環境で未実行(PR本文では256件成功)。Issue #224・docs/specs/line-limit-why-by-kind.mdの、種類別の説明・種類不明時のメソッド説明への既定・ヒント/減点内訳/ファイル印への反映を差分で確認。domain変更なし
 - マージ: squash & delete-branch
 
 
