@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-24 UTC PR #270 設計くらべの答えが事前に分からない表示にする (#237)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test(1872件)✅ / npm run lint ✅ / npm run typecheck ✅。設計名の中立化・空クラス/空ファイル除去・回答前の警告色非表示を差分で確認。E2E(quiz.spec.ts)はこの環境にChromiumが無く未実行
+- マージ: squash & delete-branch
+
 ## 2026-10-24 UTC PR #269 操作ガイドにキーボード操作を追加する (#230)
 
 - 判定: 合格(blocker無し)
