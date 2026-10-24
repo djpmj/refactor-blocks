@@ -2,7 +2,7 @@ import { MarkerType, type Edge, type Node } from "@xyflow/react";
 import { allClasses, fieldsOf, findClass, findMethod, parentIds, type CodeClass, type Codebase } from "../../domain/codebase/Codebase";
 import { classDependencies } from "../../domain/codebase/dependencies";
 import type { VisibilityViolationDependency } from "../../domain/scoring/visibility";
-import { TRAY_FILE_ID } from "../../domain/blank/tray";
+import { TRAY_CLASS_ID, TRAY_FILE_ID } from "../../domain/blank/tray";
 
 export type FileNodeData = { fileId: string };
 export type ClassNodeData = { classId: string };
@@ -350,7 +350,7 @@ function topLanesByEdgeId(codebase: Codebase, fileRects: ReadonlyMap<string, Fil
     const to = logicalByClassId.get(toId);
     return from === undefined || to === undefined ? undefined : logicalTopLaneSpan(id, from, to);
   };
-  const depSpans = classDependencies(codebase)
+  const depSpans = dependenciesWithoutTray(codebase)
     .map(({ from, to }) => useLogicalLayout
       ? logicalSpan(`dep-${from}-${to}`, from, to)
       : topLaneSpan(`dep-${from}-${to}`, at(from)?.fileId ?? "", at(to)?.fileId ?? "", fileRects))
@@ -475,6 +475,11 @@ function edgeFor(
   };
 }
 
+/** 部品置き場はコードではないので、そのクラスが端になる依存は矢印にしない。 */
+export function dependenciesWithoutTray(codebase: Codebase): ReturnType<typeof classDependencies> {
+  return classDependencies(codebase).filter(({ from, to }) => from !== TRAY_CLASS_ID && to !== TRAY_CLASS_ID);
+}
+
 /**
  * クラス間の依存を矢印にする。循環している依存は赤で描く。
  * 層が違えば上下(浅い方の下端→深い方の上端)、同じ層なら左右(飛び越えるときはskip)でつなぐ。
@@ -489,7 +494,7 @@ export function dependencyEdges(
   const useLogicalLayout = isDefaultLayout(codebase, fileRects);
   const laneByEdgeId = topLanesByEdgeId(codebase, fileRects, useLogicalLayout);
   const violationByPair = new Map(violations.map((violation) => [`${violation.from}\u0000${violation.to}`, violation]));
-  return classDependencies(codebase).map(({ from, to, cyclic }) => edgeFor({
+  return dependenciesWithoutTray(codebase).map(({ from, to, cyclic }) => edgeFor({
     id: `dep-${from}-${to}`, source: from, target: to,
     sourcePosition: positionByClassId.get(from), targetPosition: positionByClassId.get(to),
     sourceFilePosition: filePositionByClassIdMap.get(from), targetFilePosition: filePositionByClassIdMap.get(to),

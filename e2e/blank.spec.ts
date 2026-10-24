@@ -29,20 +29,45 @@ async function stableBoundingBox(page: Page, locator: Locator) {
   return previous;
 }
 
-/** 要素をつかんで、キャンバスの右下の余白(どのファイルの枠外)へドラッグして離す。 */
+/** 直前に作ったファイルへ表示が寄っていることがあるので、全体を表示し、メソッドが見える大きさに戻す。 */
+async function showAllWithDetails(page: Page, view: Locator) {
+  await page.getByRole('button', { name: 'Fit View' }).click();
+  // 倍率の更新は少し遅れて案内に反映されるので、出るのを待つ(出なければ、すでにメソッドが見える大きさ)
+  await view.getByRole('button', { name: '中身が見える大きさにする' }).click({ timeout: 700 }).catch(() => undefined);
+}
+
+/** キャンバスの四隅のうち、どのファイルの枠にも覆われていない所を返す(自動で全体が収まるので、どの隅が空くかは配置で変わる)。 */
+async function findEmptyCorner(page: Page, pane: { x: number; y: number; width: number; height: number }) {
+  const corners = [
+    { x: pane.x + pane.width - 30, y: pane.y + pane.height - 30 },
+    { x: pane.x + 30, y: pane.y + pane.height - 30 },
+    { x: pane.x + pane.width - 30, y: pane.y + 30 },
+    { x: pane.x + 30, y: pane.y + 30 },
+  ];
+  for (const corner of corners) {
+    const hit = await page.evaluate(`(({ x, y }) => document.elementFromPoint(x, y)?.closest('.file-node') !== null)(${JSON.stringify(corner)})`);
+    if (hit === false) return corner;
+  }
+  throw new Error('ファイルの枠外の余白が見つかりません');
+}
+
+/** 要素をつかんで、キャンバスの余白(どのファイルの枠外)へドラッグして離す。 */
 async function dragToEmptyCanvas(page: Page, view: Locator, testId: string) {
+  await showAllWithDetails(page, view);
   const from = await stableBoundingBox(page, view.getByTestId(testId));
   const pane = await stableBoundingBox(page, view.locator('.react-flow__pane'));
+  const target = await findEmptyCorner(page, pane);
   await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
   await page.mouse.down();
   await page.mouse.move(from.x + from.width / 2 + 20, from.y + from.height / 2, { steps: 5 });
-  await page.mouse.move(pane.x + pane.width - 20, pane.y + pane.height - 20, { steps: 15 });
+  await page.mouse.move(target.x, target.y, { steps: 15 });
   await page.mouse.up();
   await page.waitForTimeout(300);
 }
 
 /** ドラッグ操作(Move Method)で、あるメソッドを別クラスへ移す。 */
 async function dragMethodToClass(page: Page, view: Locator, methodTestId: string, classTestId: string) {
+  await showAllWithDetails(page, view);
   const from = await stableBoundingBox(page, view.getByTestId(methodTestId));
   const to = await stableBoundingBox(page, view.getByTestId(classTestId));
   await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
