@@ -129,3 +129,5 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [narrow-screen-layout](narrow-screen-layout.md) | 幅700px以下で課題とメソッドエディタをドロワー表示にしてキャンバスを広く使う |
 | [critique-contract-version](critique-contract-version.md) | AI講評のサーバーとゲームの契約版の食い違いを見分けて伝える |
 | [operation-guide-keyboard](operation-guide-keyboard.md) | 操作ガイドにキーボードだけで遊ぶ方法を書く |
+| [comparison-quiz-no-giveaway](comparison-quiz-no-giveaway.md) | 設計くらべで答える前に答えが透ける表示(評価的な設計名・警告色・空クラス)をなくす |
+| [comparison-quiz-summary](comparison-quiz-summary.md) | 設計くらべの最後の問題のあとに結果のまとめと次の行き先を出す |

@@ -6,6 +6,7 @@ import { describeDeductions, siteNames } from '../change/describeChange';
 import { CodebasePreviewCanvas } from '../preview/CodebasePreviewCanvas';
 import { AnswerVerdict } from '../feedback/AnswerVerdict';
 import { sharedZoom } from './sharedZoom';
+import { answerMark, summarizeQuiz, type QuizSummary } from './summarizeQuiz';
 
 const CHOICES: readonly DesignChoice[] = ['a', 'b'];
 const CHOICE_LABEL: Record<DesignChoice, string> = { a: 'A', b: 'B' };
@@ -49,8 +50,9 @@ function DesignPanel({ quiz, choice, verdict, zoom, onFitZoom }: DesignPanelProp
       <h3 className="quiz-design__title">
         設計{CHOICE_LABEL[choice]}: {design.label}
       </h3>
+      {/* 答える前は上限超えの警告色を出さない(赤い方を避けるだけで正解できてしまうため) */}
       <div className="quiz-design__canvas">
-        <CodebasePreviewCanvas codebase={design.codebase} methodLimit={quiz.limits.method} wheelZoom={false} maxZoom={zoom} onFitZoom={onFitZoom} />
+        <CodebasePreviewCanvas codebase={design.codebase} methodLimit={verdict === null ? Infinity : quiz.limits.method} wheelZoom={false} maxZoom={zoom} onFitZoom={onFitZoom} />
       </div>
       {verdict === null ? null : <DesignResult quiz={quiz} choice={choice} verdict={verdict} />}
     </section>
@@ -58,11 +60,11 @@ function DesignPanel({ quiz, choice, verdict, zoom, onFitZoom }: DesignPanelProp
 }
 
 /** 判定結果。出たらフォーカスを移し、押したボタンが無効になってもキーボード・読み上げの位置を見失わないようにする。 */
-function Verdict({ quiz, verdict }: Readonly<{ quiz: ComparisonQuiz; verdict: ComparisonVerdict }>) {
+function Verdict({ quiz, verdict, autoFocus }: Readonly<{ quiz: ComparisonQuiz; verdict: ComparisonVerdict; autoFocus: boolean }>) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    ref.current?.focus();
-  }, []);
+    if (autoFocus) ref.current?.focus();
+  }, [autoFocus]);
   return (
     <div ref={ref} className={`quiz__verdict quiz__verdict--${verdict.correct ? 'correct' : 'incorrect'}`} data-testid="quiz-verdict" tabIndex={-1}>
       <AnswerVerdict correct={verdict.correct} label={`${verdict.correct ? '⭕ 正解!' : '❌ 不正解'}(楽なのは設計${CHOICE_LABEL[verdict.answer]})`} />
@@ -71,9 +73,19 @@ function Verdict({ quiz, verdict }: Readonly<{ quiz: ComparisonQuiz; verdict: Co
   );
 }
 
-/** 1問分。呼び出し側で key={quiz.id} を付け、問題が変わったら回答をリセットする。focusTitle なら表示時に見出しへフォーカスを移す。 */
-function QuizQuestion({ quiz, onNext, focusTitle }: Readonly<{ quiz: ComparisonQuiz; onNext: (() => void) | null; focusTitle: boolean }>) {
-  const [choice, setChoice] = useState<DesignChoice | null>(null);
+type QuestionProps = Readonly<{
+  quiz: ComparisonQuiz;
+  choice: DesignChoice | null;
+  onAnswer: (choice: DesignChoice) => void;
+  isLast: boolean;
+  onNext: () => void;
+  focusTitle: boolean;
+}>;
+
+/** 1問分。答えは親が持つので、答え済みの問題を開き直すと答えと解説が出たままになる。focusTitle なら表示時に見出しへフォーカスを移す。 */
+function QuizQuestion({ quiz, choice, onAnswer, isLast, onNext, focusTitle }: QuestionProps) {
+  // 開いた時点で答え済みなら判定へフォーカスを奪わない(select の矢印キーで見返しているため)
+  const [answeredOnOpen] = useState(choice !== null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     if (focusTitle) titleRef.current?.focus();
@@ -104,17 +116,17 @@ function QuizQuestion({ quiz, onNext, focusTitle }: Readonly<{ quiz: ComparisonQ
         <p className="quiz__prompt">この変更が楽なのはどちらの設計?</p>
         <div className="quiz__actions">
           {CHOICES.map((candidate) => (
-            <button key={candidate} type="button" data-testid={`quiz-choose-${candidate}`} disabled={choice !== null} onClick={() => setChoice(candidate)}>
+            <button key={candidate} type="button" data-testid={`quiz-choose-${candidate}`} disabled={choice !== null} onClick={() => onAnswer(candidate)}>
               {CHOICE_LABEL[candidate]}のほうが楽
             </button>
           ))}
-          {verdict !== null && onNext !== null ? (
-            <button type="button" data-testid="quiz-next" onClick={onNext}>
-              次のクイズへ
+          {verdict === null ? null : (
+            <button type="button" data-testid={isLast ? 'quiz-results' : 'quiz-next'} onClick={onNext}>
+              {isLast ? '結果を見る' : '次のクイズへ'}
             </button>
-          ) : null}
+          )}
         </div>
-        {verdict === null ? null : <Verdict quiz={quiz} verdict={verdict} />}
+        {verdict === null ? null : <Verdict quiz={quiz} verdict={verdict} autoFocus={!answeredOnOpen} />}
       </div>
       <div className="quiz__designs">
         {CHOICES.map((candidate) => (
@@ -125,34 +137,127 @@ function QuizQuestion({ quiz, onNext, focusTitle }: Readonly<{ quiz: ComparisonQ
   );
 }
 
-/** 設計くらべ: 同じ機能の設計A・Bと変更依頼を見せ、変更が楽な方を選ばせる。 */
-export function ComparisonQuizView() {
+type LeaveMode = 'refactor' | 'blank';
+
+function titleOf(id: string): string {
+  return comparisonQuizzes.find((candidate) => candidate.id === id)?.title ?? id;
+}
+
+type SummaryProps = Readonly<{ summary: QuizSummary; onReview: (id: string) => void; onRetry: () => void; onLeave: (mode: LeaveMode) => void }>;
+
+/** 全問の結果。不正解の問題は押すとその問題へ移る。 */
+function QuizSummaryView({ summary, onReview, onRetry, onLeave }: SummaryProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    ref.current?.focus();
+  }, []);
+  const { correct, total, wrongIds } = summary;
+  return (
+    <div ref={ref} className="quiz__summary" data-testid="quiz-summary" tabIndex={-1}>
+      <h2 className="quiz__title">{correct === total ? `全問正解!(${total}問中${correct}問正解)` : `${total}問中${correct}問正解`}</h2>
+      {wrongIds.length === 0 ? null : (
+        <>
+          <p>まちがえた問題:</p>
+          <ul>
+            {wrongIds.map((id) => (
+              <li key={id}>
+                <button type="button" onClick={() => onReview(id)}>
+                  {titleOf(id)}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      <div className="quiz__actions">
+        <button type="button" data-testid="quiz-retry" onClick={onRetry}>
+          もう一度解く
+        </button>
+        <button type="button" data-testid="quiz-to-refactor" onClick={() => onLeave('refactor')}>
+          リファクタリングに戻る
+        </button>
+        <button type="button" data-testid="quiz-to-blank" onClick={() => onLeave('blank')}>
+          白紙設計に挑戦する
+        </button>
+      </div>
+    </div>
+  );
+}
+
+type SelectProps = Readonly<{ currentId: string; answers: Readonly<Record<string, DesignChoice>>; onSelect: (id: string) => void }>;
+
+/** 問題を選ぶプルダウン。答えた問題には正解(✓)・不正解(✗)の印を付ける。 */
+function QuizSelect({ currentId, answers, onSelect }: SelectProps) {
+  return (
+    <select
+      aria-label="クイズ"
+      className="quiz__select"
+      value={currentId}
+      onChange={(event) => {
+        onSelect(event.target.value);
+      }}
+    >
+      {comparisonQuizzes.map((candidate) => (
+        <option key={candidate.id} value={candidate.id}>
+          {candidate.title}
+          {answerMark(candidate, answers[candidate.id])}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+/** 設計くらべ: 同じ機能の設計A・Bと変更依頼を見せ、変更が楽な方を選ばせる。最後の問題のあとは結果のまとめを出す。 */
+export function ComparisonQuizView({ onLeave }: Readonly<{ onLeave: (mode: LeaveMode) => void }>) {
   const [index, setIndex] = useState(0);
   // 「次のクイズへ」で進んだときだけ見出しへフォーカスを移す。最初の表示と、矢印キーで選び直せる select ではフォーカスを奪わない
   const [navigated, setNavigated] = useState(false);
+  const [answers, setAnswers] = useState<Readonly<Record<string, DesignChoice>>>({});
+  const [resultsRequested, setResultsRequested] = useState(false);
   const quiz = comparisonQuizzes.at(index);
   if (quiz === undefined) return null;
   const goTo = (next: number, moveFocus: boolean) => {
     setIndex(next);
     setNavigated(moveFocus);
+    setResultsRequested(false);
   };
+  const goToId = (id: string, moveFocus: boolean) => {
+    goTo(comparisonQuizzes.findIndex((candidate) => candidate.id === id), moveFocus);
+  };
+  const summary = summarizeQuiz(comparisonQuizzes, answers);
+  const isLast = index + 1 >= comparisonQuizzes.length;
+  const showSummary = resultsRequested && summary.unansweredIds.length === 0;
   return (
     <main className="quiz" aria-label="設計くらべ">
-      <select
-        aria-label="クイズ"
-        className="quiz__select"
-        value={quiz.id}
-        onChange={(event) => {
-          goTo(comparisonQuizzes.findIndex((candidate) => candidate.id === event.target.value), false);
-        }}
-      >
-        {comparisonQuizzes.map((candidate) => (
-          <option key={candidate.id} value={candidate.id}>
-            {candidate.title}
-          </option>
-        ))}
-      </select>
-      <QuizQuestion key={quiz.id} quiz={quiz} focusTitle={navigated} onNext={index + 1 < comparisonQuizzes.length ? () => goTo(index + 1, true) : null} />
+      <QuizSelect currentId={quiz.id} answers={answers} onSelect={(id) => goToId(id, false)} />
+      {showSummary ? (
+        <QuizSummaryView
+          summary={summary}
+          onReview={(id) => goToId(id, true)}
+          onRetry={() => {
+            setAnswers({});
+            goTo(0, true);
+          }}
+          onLeave={onLeave}
+        />
+      ) : (
+        <>
+          {resultsRequested ? (
+            <p role="alert" className="quiz__unanswered" data-testid="quiz-unanswered">
+              まだ答えていない問題があります: {summary.unansweredIds.map(titleOf).join('、')}
+            </p>
+          ) : null}
+          <QuizQuestion
+            key={quiz.id}
+            quiz={quiz}
+            choice={answers[quiz.id] ?? null}
+            onAnswer={(choice) => setAnswers((previous) => ({ ...previous, [quiz.id]: choice }))}
+            focusTitle={navigated}
+            isLast={isLast}
+            onNext={isLast ? () => setResultsRequested(true) : () => goTo(index + 1, true)}
+          />
+        </>
+      )}
     </main>
   );
 }
