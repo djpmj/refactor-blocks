@@ -29,7 +29,7 @@ test('答えの前に問題ヒント、次の一手の順に開き、同じス�
   const confirmation = page.getByTestId('answer-confirm');
   await expect(confirmation).toBeVisible();
   await expect(confirmation.getByRole('heading', { name: '答えを見ますか?' })).toBeVisible();
-  await expect(confirmation).toContainText('ヒントはあと 3 個あります');
+  await expect(confirmation).toContainText('ヒントはあと 5 個あります');
   await expect(confirmation.getByRole('button').first()).toBeFocused();
   await confirmation.getByRole('button', { name: 'ヒントを見る' }).click();
   await expect(confirmation).not.toBeVisible();
