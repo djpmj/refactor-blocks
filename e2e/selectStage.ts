@@ -40,7 +40,7 @@ export async function releaseAllManualFixSites(page: Page, options: { readonly r
     const resultAction = await begin.count() > 0 ? begin : close;
     await expect(resultAction).toBeVisible();
     await resultAction.click();
-    await expect(tour).toContainText('3/6');
+    await expect(tour).toContainText('4/6');
   }
   const restart = panel.getByRole('button', { name: 'もう一度やる' });
   if (await restart.count() > 0) {

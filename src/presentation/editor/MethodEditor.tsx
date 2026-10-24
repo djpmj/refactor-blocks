@@ -355,14 +355,16 @@ function MethodEditorBody({ method, showVisibility, stage }: Readonly<{ method: 
       </div>
       {activeTab === 'code' ? <ClassCodePreview codebase={codebase} classId={owner?.id ?? ''} /> : (
         <div role="tabpanel" aria-label="編集">
-          <FragmentList codebase={codebase} marks={marks} method={method} selected={selected} onToggle={(id) => { setSelected(toggle(selected, id)); }} />
-          <ExtractControls
-            newName={newName}
-            disabledReason={disabledReason}
-            onNameChange={setCustomName}
-            onExtract={handleExtract}
-            previewSummary={previewSummary}
-          />
+          <div data-tour="extract-area">
+            <FragmentList codebase={codebase} marks={marks} method={method} selected={selected} onToggle={(id) => { setSelected(toggle(selected, id)); }} />
+            <ExtractControls
+              newName={newName}
+              disabledReason={disabledReason}
+              onNameChange={setCustomName}
+              onExtract={handleExtract}
+              previewSummary={previewSummary}
+            />
+          </div>
           {mergeCandidates.length > 0 ? <MergeSection method={method} candidates={mergeCandidates} /> : null}
           <MethodActions method={method} showVisibility={showVisibility} />
         </div>

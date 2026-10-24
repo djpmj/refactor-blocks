@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { nextTourStep, type TourEvent, type TourStep } from './tourSteps';
+import { nextTourStep, TOUR_STEPS, type TourEvent, type TourStep } from './tourSteps';
 
 const steps: readonly TourStep[] = [
   { target: '#sidebar', text: 'Review the task', advance: { kind: 'next' } },
+  { target: '#manual-fix-start', text: 'Start the opening fix', advance: { kind: 'manual-fix-started' } },
   { target: '#manual-fix', text: 'Release the opening fix', advance: { kind: 'manual-fix-released' } },
   { target: '#method', text: 'Select the method', advance: { kind: 'select-method', methodName: 'printMonthlyReport' } },
-  { target: '#fragments', text: 'Choose a fragment', advance: { kind: 'click-inside' } },
   { target: '#extract', text: 'Extract it', advance: { kind: 'extract' } },
 ];
 
@@ -29,30 +29,40 @@ describe('nextTourStep', () => {
     const other: TourEvent = { kind: 'method-selected', methodName: 'other' };
 
     // Act
-    const next = nextTourStep(steps, 2, expected);
+    const next = nextTourStep(steps, 3, expected);
+    const unchanged = nextTourStep(steps, 3, other);
+
+    // Assert
+    expect(next).toBe(4);
+    expect(unchanged).toBe(3);
+  });
+
+  it('手直しの開始だけで手順2から進み、リリースでは進まない', () => {
+    // Arrange
+    const started: TourEvent = { kind: 'manual-fix-started' };
+    const released: TourEvent = { kind: 'manual-fix-released' };
+
+    // Act
+    const next = nextTourStep(steps, 1, started);
+    const unchanged = nextTourStep(steps, 1, released);
+
+    // Assert
+    expect(next).toBe(2);
+    expect(unchanged).toBe(1);
+  });
+
+  it('冒頭手直しのリリースだけで手順3から進み、別イベントでは進まない', () => {
+    // Arrange
+    const released: TourEvent = { kind: 'manual-fix-released' };
+    const other: TourEvent = { kind: 'method-selected', methodName: 'printMonthlyReport' };
+
+    // Act
+    const next = nextTourStep(steps, 2, released);
     const unchanged = nextTourStep(steps, 2, other);
 
     // Assert
     expect(next).toBe(3);
     expect(unchanged).toBe(2);
-  });
-
-  it('冒頭手直しのリリースだけで次へ進み、別イベントでは進まない', () => {
-    const released: TourEvent = { kind: 'manual-fix-released' };
-    const other: TourEvent = { kind: 'method-selected', methodName: 'printMonthlyReport' };
-    expect(nextTourStep(steps, 1, released)).toBe(2);
-    expect(nextTourStep(steps, 1, other)).toBe(1);
-  });
-
-  it('advances after a click inside the target', () => {
-    // Arrange
-    const event: TourEvent = { kind: 'clicked-inside' };
-
-    // Act
-    const result = nextTourStep(steps, 3, event);
-
-    // Assert
-    expect(result).toBe(4);
   });
 
   it('advances after a successful method-count increase only', () => {
@@ -72,7 +82,7 @@ describe('nextTourStep', () => {
   it('allows skipping when an action target is unavailable and ignores mismatched events', () => {
     // Arrange
     const skip: TourEvent = { kind: 'next' };
-    const mismatched: TourEvent = { kind: 'clicked-inside' };
+    const mismatched: TourEvent = { kind: 'manual-fix-released' };
 
     // Act
     const skipped = nextTourStep(steps, 3, skip);
@@ -81,5 +91,16 @@ describe('nextTourStep', () => {
     // Assert
     expect(skipped).toBe(4);
     expect(unchanged).toBe(0);
+  });
+
+  it('最後の手順の文に行数の数字を書かない', () => {
+    // Arrange
+    const text = TOUR_STEPS[5].text;
+
+    // Act
+    const hasLineCount = /\d行/.test(text);
+
+    // Assert
+    expect(hasLineCount).toBe(false);
   });
 });

@@ -53,13 +53,25 @@ function sameCallout(current: Callout | null, next: Callout): boolean {
   return current !== null && current.left === next.left && current.top === next.top;
 }
 
+// 手順の開始後、対象が現れた最初の1回だけ、画面からはみ出していれば画面内へスクロールする
+function scrollIntoViewOnce(selector: string): boolean {
+  const target = document.querySelector(selector);
+  if (target === null || target.closest('[hidden]') !== null) return false;
+  const rect = target.getBoundingClientRect();
+  const inside = rect.top >= 0 && rect.left >= 0 && rect.bottom <= window.innerHeight && rect.right <= window.innerWidth;
+  if (!inside) target.scrollIntoView({ block: 'nearest' });
+  return true;
+}
+
 function useSpotlightPosition(step: TourStep | undefined, tourStep: number | null) {
   const [spotlight, setSpotlight] = useState<Spotlight | null>(null);
   const [callout, setCallout] = useState<Callout | null>(null);
   useEffect(() => {
     if (tourStep === null || step === undefined) return;
     let frame = 0;
+    let scrolled = false;
     const measure = () => {
+      if (!scrolled) scrolled = scrollIntoViewOnce(step.target);
       const position = measureSpotlight(step.target);
       setSpotlight((current) => sameSpotlight(current, position.spotlight) ? current : position.spotlight);
       setCallout((current) => sameCallout(current, position.callout) ? current : position.callout);
@@ -69,18 +81,6 @@ function useSpotlightPosition(step: TourStep | undefined, tourStep: number | nul
     return () => cancelAnimationFrame(frame);
   }, [step, tourStep]);
   return { spotlight, callout };
-}
-
-function useClickAdvance(step: TourStep | undefined, tourStep: number | null, advanceTour: (event: { readonly kind: 'clicked-inside' }) => void): void {
-  useEffect(() => {
-    if (tourStep === null || step?.advance.kind !== 'click-inside') return;
-    const onClick = (event: MouseEvent) => {
-      const target = event.target;
-      if (target instanceof Element && target.closest(step.target) !== null) advanceTour({ kind: 'clicked-inside' });
-    };
-    document.addEventListener('click', onClick, true);
-    return () => document.removeEventListener('click', onClick, true);
-  }, [advanceTour, step, tourStep]);
 }
 
 function useExtractAdvance(step: TourStep | undefined, tourStep: number | null, codebase: Codebase, advanceTour: (event: { readonly kind: 'method-count'; readonly count: number; readonly countAtStepStart: number }) => void): void {
@@ -112,7 +112,6 @@ export function SpotlightTour() {
   const endTour = useGameStore((state) => state.endTour);
   const step = tourStep === null ? undefined : TOUR_STEPS[tourStep];
   const { spotlight, callout } = useSpotlightPosition(step, tourStep);
-  useClickAdvance(step, tourStep, advanceTour);
   useExtractAdvance(step, tourStep, codebase, advanceTour);
   useEscapeEnd(tourStep, endTour);
   if (tourStep === null || step === undefined || callout === null) return null;
@@ -131,7 +130,7 @@ function SpotlightOverlay({
   step: TourStep;
   spotlight: Spotlight | null;
   callout: Callout;
-  onAdvance: (event: { readonly kind: 'next' } | { readonly kind: 'manual-fix-released' }) => void;
+  onAdvance: (event: { readonly kind: 'next' }) => void;
   onEnd: () => void;
 }>) {
   const missingTarget = spotlight === null;
