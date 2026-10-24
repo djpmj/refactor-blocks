@@ -42,6 +42,9 @@ while IFS='|' read -r path ref; do
   fi
   if [ -z "$reason" ]; then echo "KEEP(作業中の可能性) $path"; continue; fi
 
+  # node_modules がリンク(junction/symlink)だと、git worktree remove がリンク先(本体の node_modules)まで消すので、先にリンクだけ外す
+  # rmdir は中身のある本物のディレクトリでは失敗するだけなので、常に試してよい
+  if $apply; then cmd //c rmdir "$(cygpath -w "$path/node_modules")" >/dev/null 2>&1 || true; fi
   if $apply; then git worktree remove "$path" && echo "REMOVED($reason) $path"; else echo "CANDIDATE($reason) $path"; fi
 done
 git worktree prune
