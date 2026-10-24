@@ -1,6 +1,6 @@
 import { useEffect, type RefObject } from 'react';
 
-/** 外側クリックで閉じる。Esc は、フォーカスが中にあるときだけ閉じてボタンにフォーカスを戻す。 */
+/** 外側クリックで閉じる。Esc は、フォーカスがどこにあっても(ほかが処理していなければ)閉じてボタンにフォーカスを戻す。 */
 export function usePopoverDismiss(open: boolean, containerRef: RefObject<HTMLElement | null>, buttonRef: RefObject<HTMLButtonElement | null>, close: () => void): void {
   useEffect(() => {
     if (!open) return;
@@ -8,7 +8,8 @@ export function usePopoverDismiss(open: boolean, containerRef: RefObject<HTMLEle
       if (event.target instanceof Node && !containerRef.current?.contains(event.target)) close();
     };
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape' || !containerRef.current?.contains(document.activeElement)) return;
+      // Tab で外へ出たあとでも閉じる。ダイアログなど、すでに Esc を処理した(preventDefault した)ものは横取りしない
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
       event.preventDefault();
       close();
       buttonRef.current?.focus();

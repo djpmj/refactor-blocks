@@ -21,6 +21,12 @@ async function reach100(page: Page) {
   await releaseAllManualFixSites(page);
 }
 
+async function tabOutOfPopover(page: Page, popoverId: string) {
+  const inside = () => page.evaluate((id) => document.querySelector(`[data-testid="${id}"]`)?.closest('.popover')?.contains(document.activeElement) ?? false, popoverId);
+  for (let i = 0; i < 30 && (await inside()); i++) await page.keyboard.press('Tab');
+  expect(await inside()).toBe(false);
+}
+
 test('ツールバーが 挑戦・元に戻す・やり直し・最初に戻す・参考・答え・ヒント・うわさ・操作ガイド の順に並ぶ', async ({ page }) => {
   // Arrange
   await openTutorial1(page);
@@ -110,6 +116,26 @@ test('うわさのポップオーバーは件数をボタンに出し、パネ�
   // Assert
   await expect(popover).toBeHidden();
 });
+
+for (const [label, buttonId, popoverId] of [['ヒント', 'hint-popover-button', 'hint-popover'], ['うわさ', 'rumor-popover-button', 'rumor-popover']] as const) {
+  test(`${label}のポップオーバーは、Tab で外へ出たあとでも Esc で閉じてボタンにフォーカスが戻る`, async ({ page }) => {
+    // Arrange
+    await openTutorial1(page);
+    const button = page.getByTestId(buttonId);
+    const popover = page.getByTestId(popoverId);
+    await button.click();
+    await expect(popover).toBeVisible();
+    await tabOutOfPopover(page, popoverId);
+    await expect(popover).toBeVisible();
+
+    // Act
+    await page.keyboard.press('Escape');
+
+    // Assert
+    await expect(popover).toBeHidden();
+    await expect(button).toBeFocused();
+  });
+}
 
 test('うわさの無いステージでは、うわさのボタンを出さない', async ({ page }) => {
   // Arrange
