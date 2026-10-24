@@ -284,6 +284,8 @@ export const sampleAnswerSteps: Partial<Record<string, readonly SolutionStep[]>>
     { move: { method: 'calculateOrderTotal', toClass: 'Order' } },
     { move: { method: 'countOrdersOf', toClass: 'Customer' } },
     { extract: { from: 'checkout', fragmentIds: ['frag-pay'], name: 'pay' } },
+    { extract: { from: 'checkout', fragmentIds: ['frag-reserve-stock'], name: 'reserveStock' } },
+    { move: { method: 'reserveStock', toClass: 'Inventory' } },
   ],
   'intermediate-god-file': [
     { move: { method: 'calculateShippingFee', toClass: 'ShippingService' } },

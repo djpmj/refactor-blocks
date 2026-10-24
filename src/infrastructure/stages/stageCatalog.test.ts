@@ -200,24 +200,14 @@ describe('依存上限の理由', () => {
 /** 解答例で、同じ責務を複数のクラスに意図して散らしているステージ。ここに書いたものだけ許す。 */
 const ALLOWED_SCATTER: readonly { stageId: string; responsibility: string; reason: string }[] = [
   {
-    stageId: 'intermediate-cyclic-dependency',
-    responsibility: 'inventory',
-    reason: 'Order.checkout の「在庫を引き当てる」は Inventory.reserve を呼ぶ注文の流れの1手で、在庫を減らす実処理は Inventory に集まっている。流れを組み立てる checkout の行は他クラスを呼ぶ形のまま残すのがこのステージの題材(責務の上限4種類もこの形で決めている)',
-  },
-  {
     stageId: 'advanced-report-factory',
     responsibility: 'data-aggregation',
-    reason: 'このステージが教えるのは「組み立て(生成)」の集約だけ。集計は週次・月次の Controller が持つ設計で、責務の上限2種類と目標文にも明記している(集計まで集約する再設計は Factory 教材の見直し時)',
+    reason: '週次・月次の集計は中身が違う別の処理(duplicateGroup を持たない)で、期間ごとの Controller が持つのが自然。ステージの目標文は「重複した組み立てを ReportFactory へ委譲する」ことだけを求めており、docs/specs/advanced-report-factory.md も集計・送信は集約対象にしないと定めている',
   },
   {
     stageId: 'advanced-report-factory',
     responsibility: 'report-delivery',
-    reason: '送信も Controller に残す設計(上と同じ)。「Factory が解決するのは生成だけで、送信の変更は両 Controller に及ぶ」ことを依頼の点数でも見せている',
-  },
-  {
-    stageId: 'advanced-value-object',
-    responsibility: 'money-arithmetic',
-    reason: 'ApprovalService に残る「計算した金額を返す」return 1行(frag-approve-return-money)は重複グループを持たず、抽出して Money.add へ統合すると形が合わず統合できない。ステージ定義の見直し時に解消する',
+    reason: '送信は集約対象にしない設計(仕様書の受け入れ条件)。依頼 req-report-delivery は「Factory が解決するのは組み立てだけで、再送処理の追加は集約前後とも両 Controller に及ぶ」ことを見せる役で、ここを集約すると依頼の意味が消える',
   },
 ];
 
@@ -268,9 +258,9 @@ describe('責務の混ざったメソッド', () => {
 
     // Assert
     expect(extractedNames).not.toContain('prepareOrder');
-    expect(extractedNames).toEqual(['pay']);
+    expect(extractedNames).toEqual(['pay', 'reserveStock']);
     expect(checkout).toBeDefined();
-    expect(checkoutLineCount).toBe(19);
+    expect(checkoutLineCount).toBe(16);
     expect(checkoutLineCount).toBeLessThanOrEqual(stage.limits.method);
     expect(findMixedMethods(solved, stage.codebase, stage.cohesiveResponsibilities)).toEqual([]);
     expect(scoreCodebase(solved, stage).total).toBe(100);
@@ -839,8 +829,8 @@ function danglingFieldRefs(stage: Stage): string[] {
 
 describe('stageCatalog', () => {
   const knownChangeRequestExceptions: Readonly<Record<string, string>> = {
-    'intermediate-cyclic-dependency/req-price-rule': '置き先の Order に依頼外の責務が3種類残るため混在の減点がある。循環依存ステージを再設計するときに解消する。',
-    'intermediate-cyclic-dependency/req-member-discount': '置き先の Order に依頼外の責務が3種類残るため混在の減点がある。循環依存ステージを再設計するときに解消する。',
+    'intermediate-cyclic-dependency/req-price-rule': '置き先の Order に依頼外の責務が2種類残るため混在の減点がある。循環依存ステージを再設計するときに解消する。',
+    'intermediate-cyclic-dependency/req-member-discount': '置き先の Order に依頼外の責務が2種類残るため混在の減点がある。循環依存ステージを再設計するときに解消する。',
     'intermediate-misplaced-private/req-sms': '置き先の NotificationService に依頼外の責務が3種類残るため混在の減点がある。可視性ステージの教材を再構成するときに解消する。',
     'intermediate-misplaced-private/req-log-format': '置き先の NotificationService に依頼外の責務が3種類残るため混在の減点がある。可視性ステージの教材を再構成するときに解消する。',
     'intermediate-feature-envy/req-free-admin-seat': '置き先の UserService に依頼外の責務が2種類残るため混在の減点がある。Feature Envyの題材を再設計するときに解消する。',
