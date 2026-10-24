@@ -134,3 +134,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [comparison-quiz-preview-zoom](comparison-quiz-preview-zoom.md) | 設計くらべの設計A・Bを同じ縮尺で並べる |
 | [change-request-sample-on-ideal-base](change-request-sample-on-ideal-base.md) | 変更依頼の解答例を、前の依頼を解答例どおりに置いた理想の土台から生成する |
 | [header-score-summary](header-score-summary.md) | ヘッダーの点数の説明を短くし、減点の内訳との重複をなくす |
+| [change-request-step-feedback](change-request-step-feedback.md) | 変更依頼を1件ごとに答え合わせし、その場で置き直せるようにする |

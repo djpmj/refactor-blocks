@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-24 07:00 UTC PR #275 変更依頼を1件ごとに答え合わせし、その場で置き直せるようにする (#241)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test(1895件)✅ / npm run lint ✅ / npm run typecheck ✅。reviewing段階・置き直す・次の依頼へを仕様と照合。E2Eはこの環境にChromiumが無く未実行(PR記載の291件成功を参照)
+- マージ: squash & delete-branch
+
 ## 2026-10-24 02:10 UTC PR #274 ヘッダーの点数説明を短くして内訳の重複をなくす (#238)
 
 - 判定: 合格(blocker無し)
@@ -210,17 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm run check(lint / typecheck / test 1773件)✅ / E2Eはこの環境で実行できず未実行(PR記載の240件成功を前提とした)。Issue #181 の受け入れ基準を差分で確認。suggestion: ModifyBeforeでfirstSitesTextを2回呼んでいる
-- マージ: squash & delete-branch
-
-## 2026-10-17 06:00 UTC PR #209 feat: show where field accesses come from
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(1767件) / npm run lint ✅ / npm run typecheck ✅ / E2Eはこの環境で実行できず未実行(PR記載の239件成功を前提とした)。Issue #187 の受け入れ基準1〜4を差分で確認
-- マージ: squash & delete-branch
-
-## 2026-10-17 03:20 UTC PR #208 fix: align critique request contract
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(lint/typecheck/vitest 1763件) ✅ / workers/critique typecheck ✅ / E2Eはこの環境で実行できず未実行(PR記載の238件成功を前提とした)。Issue #188 の受け入れ基準(path必須の撤廃・契約テスト・400専用メッセージ)を差分で確認。Worker再デプロイは人が実施
 - マージ: squash & delete-branch
 
