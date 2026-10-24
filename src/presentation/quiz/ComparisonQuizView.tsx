@@ -44,8 +44,9 @@ function DesignPanel({ quiz, choice, verdict }: Readonly<{ quiz: ComparisonQuiz;
       <h3 className="quiz-design__title">
         設計{CHOICE_LABEL[choice]}: {design.label}
       </h3>
+      {/* 答える前は上限超えの警告色を出さない(赤い方を避けるだけで正解できてしまうため) */}
       <div className="quiz-design__canvas">
-        <CodebasePreviewCanvas codebase={design.codebase} methodLimit={quiz.limits.method} wheelZoom={false} />
+        <CodebasePreviewCanvas codebase={design.codebase} methodLimit={verdict === null ? Infinity : quiz.limits.method} wheelZoom={false} />
       </div>
       {verdict === null ? null : <DesignResult quiz={quiz} choice={choice} verdict={verdict} />}
     </section>

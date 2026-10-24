@@ -16,6 +16,26 @@ test('「設計くらべ」に切り替えると、1問目の設計A・Bが表�
   await expect(page.getByTestId('quiz-design-b')).not.toContainText('.ts');
 });
 
+test('答える前は設計Bに空のクラスも赤枠も出ず、答えたあとに赤枠が出る', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await page.getByTestId('mode-quiz').click();
+  const designB = page.getByTestId('quiz-design-b');
+
+  // Assert: 答える前
+  await expect(designB).toContainText('登録・保存・メール送信を UserController にまとめた設計');
+  await expect(designB.getByTestId('preview-class-UserRepository')).toHaveCount(0);
+  await expect(designB.getByTestId('preview-class-Mailer')).toHaveCount(0);
+  await expect(page.getByTestId('quiz-design-a').locator('.method-chip--over')).toHaveCount(0);
+  await expect(designB.locator('.method-chip--over')).toHaveCount(0);
+
+  // Act
+  await page.getByTestId('quiz-choose-a').click();
+
+  // Assert: 答えたあと
+  await expect(designB.locator('.method-chip--over').first()).toBeVisible();
+});
+
 test('変更が楽な設計を選ぶと正解になり、それぞれの設計の点数と理由が出る', async ({ page }) => {
   // Arrange
   await page.goto('/');
