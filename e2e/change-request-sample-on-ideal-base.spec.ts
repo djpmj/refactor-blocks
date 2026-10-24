@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { releaseAllManualFixSites, selectStage, startChangeRequests } from './selectStage.js';
+import { finishAndAdvance, releaseAllManualFixSites, selectStage, startChangeRequests } from './selectStage.js';
 
 async function stableBoundingBox(page: Page, locator: Locator) {
   const deadline = Date.now() + 3000;
@@ -60,10 +60,8 @@ async function solveInvoiceStage(page: Page) {
 }
 
 async function finish(page: Page, next: Locator) {
-  await expect(async () => {
-    await page.getByTestId('change-request-finish').click({ timeout: 1000 });
-    await expect(next).toBeVisible({ timeout: 1000 });
-  }).toPass();
+  await finishAndAdvance(page);
+  await expect(next).toBeVisible();
 }
 
 test('前の依頼で部品を置き間違えても、鬼の変更の解答例は解答例どおりに置いた土台の上で出る', async ({ page }) => {
