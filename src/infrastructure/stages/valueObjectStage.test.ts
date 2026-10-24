@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { measureChange } from '../../domain/change/measureChange';
 import { scoreChange } from '../../domain/change/scoreChange';
-import { allClasses } from '../../domain/codebase/Codebase';
+import { allClasses, type CodeClass } from '../../domain/codebase/Codebase';
 import { findLowCohesionClasses } from '../../domain/scoring/cohesion';
 import { scoreCodebase } from '../../domain/scoring/score';
 import { applySolutionSteps, sampleAnswerSteps } from '../../domain/stage/sampleAnswer';
@@ -12,8 +12,8 @@ if (stage === undefined) throw new Error('上級7 (advanced-value-object) があ
 const solution = sampleAnswerSteps[stage.id];
 if (solution === undefined) throw new Error('上級7の模範解答がありません');
 
-function hasMoneyArithmetic(fragments: readonly { readonly responsibility: string }[]): boolean {
-  return fragments.some((fragment) => fragment.responsibility === 'money-arithmetic');
+function hasMoneyArithmetic(codeClass: CodeClass): boolean {
+  return codeClass.methods.flatMap((method) => method.fragments).some((fragment) => fragment.responsibility === 'money-arithmetic');
 }
 
 describe('上級7: 金額と通貨を Money にまとめる', () => {
@@ -77,7 +77,7 @@ describe('上級7: 金額と通貨を Money にまとめる', () => {
 
     // Act
     const classesWithArithmetic = allClasses(solved)
-      .filter((codeClass) => hasMoneyArithmetic(codeClass.methods.flatMap((method) => method.fragments)))
+      .filter(hasMoneyArithmetic)
       .map((codeClass) => codeClass.name);
 
     // Assert
