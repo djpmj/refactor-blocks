@@ -138,3 +138,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [change-request-step-feedback](change-request-step-feedback.md) | 変更依頼を1件ごとに答え合わせし、その場で置き直せるようにする |
 | [deduction-targets-named](deduction-targets-named.md) | 減点の内訳に、原因のクラス・メソッド・依存を名前で出す |
 | [override-visibility-contract](override-visibility-contract.md) | 親のメソッドを上書きして公開範囲を狭めたら約束違反に数える |
+| [hint-strategy-phases](hint-strategy-phases.md) | ヒント「次の一手」を方針のまとまりごとに見せる |
