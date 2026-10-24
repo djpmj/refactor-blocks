@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-24 14:30 UTC PR #295 白紙設計の部品置き場を採点対象のクラスのように見せない (#222)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint・typecheck・Vitest 1955件)✅。E2Eはレビュー環境で実行できず未実行(PR本文では全308件成功)。Issue #222・docs/specs/blank-design-tray-display.mdの、部品置き場のバッジ/行数/警告の除去・見出し・矢印の除外(ユニットテスト付き)・問題文の文字サイズ・見えているキャンバスを測る自動フィット修正を差分で確認。domain変更はTRAY_CLASS_IDのexportのみ
+- マージ: squash & delete-branch
+
 ## 2026-10-24 14:00 UTC PR #293 ブラウザのタブ名を今のモードとステージに合わせる (#291)
 
 - 判定: 合格(blocker無し)
@@ -210,12 +216,6 @@
 
 - 判定: 合格(blocker無し。suggestion: 中級2・チュートリアル1の出し分けを直接検証するE2Eの追加)
 - 確認した内容: npm run check(lint・typecheck・Vitest 1805件)✅。E2Eはレビュー環境で未実行(PR本文では256件成功)。Issue #224・docs/specs/line-limit-why-by-kind.mdの、種類別の説明・種類不明時のメソッド説明への既定・ヒント/減点内訳/ファイル印への反映を差分で確認。domain変更なし
-- マージ: squash & delete-branch
-
-## 2026-10-18 08:40 UTC PR #253 行数バッジのE2E検証から環境依存の固定高さを除く
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅(E2Eはブラウザを導入できず未実行。差分はe2eの1アサーションのみ)
 - マージ: squash & delete-branch
 
 

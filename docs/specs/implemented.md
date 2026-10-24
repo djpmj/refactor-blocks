@@ -142,3 +142,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [answer-comparison-view](answer-comparison-view.md) | 解答例の図を、自分の設計と並べて違いが分かるように見せる |
 | [interface-abstract-marker](interface-abstract-marker.md) | インターフェース役・抽象クラス役のクラスに印と破線枠・「中身なし」表示を付ける |
 | [page-title-by-view](page-title-by-view.md) | ブラウザのタブ名を今のモード・ステージに合わせて切り替える |
+| [blank-design-tray-display](blank-design-tray-display.md) | 白紙設計の部品置き場を、採点対象のクラスのように見せない(バッジ・矢印を外し点線枠にする) |
