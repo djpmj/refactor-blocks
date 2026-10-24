@@ -67,6 +67,7 @@ import { loadDrafts, saveDrafts } from '../../infrastructure/progress/draftStora
 import { loadProgress, saveProgress } from '../../infrastructure/progress/progressStorage';
 import { loadStoryEnabled, saveStoryEnabled } from '../../infrastructure/story/storyPreference';
 import { loadTourSeen, saveTourSeen } from '../../infrastructure/tour/tourPreference';
+import { sampleCarried } from '../../domain/change/sampleImplementation';
 import { nextTourStep, TOUR_STEPS, TOUR_STAGE_ID, type TourEvent } from '../tour/tourSteps';
 import { describeInlinedBeforeDelete } from '../canvas/describeInlinedBeforeDelete';
 import type { DeleteResult } from '../../domain/codebase/deleteClass';
@@ -82,6 +83,8 @@ export type ChangeSession = {
   readonly base: Codebase;
   /** 今の依頼を始める前のコード。base に、前の依頼までの実装(部品置き場は除く)を積み重ねたもの。次の依頼はここへ部品置き場を足して始める。 */
   readonly carried: Codebase;
+  /** carried の解答例版。前の依頼を、プレイヤーの置き方ではなく解答例の置き方で積み重ねたもの。解答例はここから求める。 */
+  readonly sampleCarried: Codebase;
   /** 挑戦前の取り消し履歴。挑戦を終えたら戻す。 */
   readonly baseHistory: History;
 };
@@ -333,13 +336,15 @@ function finishImplementation(state: GameState): Partial<GameState> {
   const result = evaluateImplementationUseCase(state.stage, {
     design: session.base,
     base: session.carried,
+    sampleBase: session.sampleCarried,
     implemented: state.codebase,
   }, request);
   if (!result.ok) return { message: result.error === 'unplaced-part' ? UNPLACED_MESSAGE : 'この依頼で変更が必要な場所が見つかりません', notice: null };
   const next = state.stage.changeRequests.at(session.index + 1);
   const carried = withoutTray(state.codebase);
+  const nextSampleCarried = sampleCarried(session.sampleCarried, [request]);
   return {
-    changeSession: { ...session, index: session.index + 1, inspected: null, outcomes: [...session.outcomes, result.value], carried },
+    changeSession: { ...session, index: session.index + 1, inspected: null, outcomes: [...session.outcomes, result.value], carried, sampleCarried: nextSampleCarried },
     codebase: next === undefined ? carried : withChangePart(carried, next),
     history: emptyHistory(),
     selectedMethodId: null,
@@ -437,7 +442,7 @@ function changeSessionActions(
         focusPreviewRule: null,
         ghost: null,
         manualFix: null,
-        changeSession: { index: 0, inspected: null, outcomes: [], base: codebase, carried: codebase, baseHistory: history },
+        changeSession: { index: 0, inspected: null, outcomes: [], base: codebase, carried: codebase, sampleCarried: codebase, baseHistory: history },
         codebase: withChangePart(codebase, first),
         history: emptyHistory(),
         selectedMethodId: null,

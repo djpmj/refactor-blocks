@@ -31,8 +31,16 @@ function CostRows({ current, initial, codebase, previous }: Readonly<{ current: 
   );
 }
 
+const SAMPLE_ON_IDEAL_BASE_NOTE = '解答例は、前の依頼もすべて解答例どおりに置いた場合の置き場所です';
+
+/** 前の依頼で、解答例と違うクラスに置いていたか。 */
+// ponytail: 解答例が新しいクラスの依頼は、新クラス名がプレイヤーの命名と一致しないので判定しない。ズレを案内したくなったら、置き先のクラスIDを outcome に持たせる
+function placedOffSample({ sample, placement }: ChangeOutcome): boolean {
+  return sample?.target.kind === 'existing-class' && sample.target.className !== placement.placement.partClassName;
+}
+
 /** 解答例: どこに置くのが最も点が高いか。 */
-function SampleAnswer({ sample }: Readonly<{ sample: SampleImplementation | undefined }>) {
+function SampleAnswer({ sample, onIdealBase }: Readonly<{ sample: SampleImplementation | undefined; onIdealBase: boolean }>) {
   const [open, setOpen] = useState(false);
   const methodLimit = useGameStore((state) => state.stage.limits.method);
   if (sample === undefined) return null;
@@ -44,6 +52,7 @@ function SampleAnswer({ sample }: Readonly<{ sample: SampleImplementation | unde
       <button type="button" data-testid="outcome-sample-preview" onClick={() => setOpen(true)}>
         解答例の図を見る
       </button>
+      {onIdealBase && <span data-testid="outcome-sample-note"> {SAMPLE_ON_IDEAL_BASE_NOTE}</span>}
       <CodebasePreviewDialog title="解答例の図" codebase={open ? sample.codebase : null} methodLimit={methodLimit} onClose={() => setOpen(false)} />
     </div>
   );
@@ -79,7 +88,7 @@ function BossComparison({ outcome }: Readonly<{ outcome: ChangeOutcome }>) {
 }
 
 /** 機能の追加(current が null)では、コストの行は出さず置き方だけで採点する。 */
-function OutcomeCard({ outcome, codebase, previous }: Readonly<{ outcome: ChangeOutcome; codebase: Codebase; previous?: number }>) {
+function OutcomeCard({ outcome, codebase, previous, onIdealBase }: Readonly<{ outcome: ChangeOutcome; codebase: Codebase; previous?: number; onIdealBase: boolean }>) {
   const { current, initial, request, placement, sample } = outcome;
   const reasons = [...(current === null ? [] : describeDeductions(current, codebase)), ...describePlacement(outcome, codebase)];
   const rumorPayoff = describeRumorPayoff(outcome, codebase);
@@ -95,7 +104,7 @@ function OutcomeCard({ outcome, codebase, previous }: Readonly<{ outcome: Change
       <p className="change-outcome__scores" data-testid="outcome-placement">
         置き方 {placement.score.total}点(置いた先: {placement.placement.partClassName})
       </p>
-      <SampleAnswer sample={sample} />
+      <SampleAnswer sample={sample} onIdealBase={onIdealBase} />
       <BossComparison outcome={outcome} />
       {rumorPayoff === undefined ? null : (
         <p className={`rumor-payoff${placement.score.total === 100 ? ' rumor-payoff--ready' : ' rumor-payoff--unready'}`} data-testid="rumor-payoff">
@@ -137,11 +146,12 @@ function Results({ outcomes }: Readonly<{ outcomes: readonly ChangeOutcome[] }>)
         </p>
       </div>
       <ul className="change-outcomes">
-        {outcomes.map((outcome) => (
+        {outcomes.map((outcome, index) => (
           <OutcomeCard
             key={outcome.request.id}
             outcome={outcome}
             codebase={codebase}
+            onIdealBase={outcomes.slice(0, index).some(placedOffSample)}
             previous={previousOutcomes?.find((previous) => previous.request.id === outcome.request.id)?.current?.score.total}
           />
         ))}

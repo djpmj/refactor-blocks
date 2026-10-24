@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { allClasses, type CodeClass, type Codebase } from '../codebase/Codebase';
 import { fragment, sampleCodebase } from '../codebase/testFixtures';
 import type { ChangeRequest } from './ChangeRequest';
-import { sampleImplementation } from './sampleImplementation';
+import { sampleCarried, sampleImplementation } from './sampleImplementation';
 
 const taxRequest: ChangeRequest = { id: 'req-1', title: '軽減税率', description: '', responsibility: 'tax', linesPerSite: 8, partName: 'addReducedTax' };
 const gatewayRequest: ChangeRequest = { ...taxRequest, responsibility: 'gateway', kind: 'extend', partName: 'chargeWithPaypay' };
@@ -66,5 +66,49 @@ describe('sampleImplementation', () => {
     // Assert
     expect(sample?.target.kind).toBe('existing-class');
     expect(sample?.score).toBe(90);
+  });
+});
+
+describe('sampleCarried', () => {
+  const firstRequest: ChangeRequest = { ...taxRequest, id: 'req-first', partName: 'addFirst' };
+  const secondRequest: ChangeRequest = { ...taxRequest, id: 'req-second', partName: 'addSecond' };
+
+  it('依頼が0件なら base のまま', () => {
+    // Arrange
+    const base = sampleCodebase();
+
+    // Act
+    const carried = sampleCarried(base, []);
+
+    // Assert
+    expect(carried).toBe(base);
+  });
+
+  it('依頼1の解答例の置き方の上に、依頼2の解答例の置き方を当てる', () => {
+    // Arrange
+    const base = sampleCodebase();
+    const afterFirst = sampleImplementation(base, firstRequest)?.codebase;
+    if (afterFirst === undefined) throw new Error('解答例があるはず');
+    const expected = sampleImplementation(afterFirst, secondRequest)?.codebase;
+
+    // Act
+    const carried = sampleCarried(base, [firstRequest, secondRequest]);
+
+    // Assert
+    expect(carried).toEqual(expected);
+    const classes = allClasses(carried);
+    expect(classes.some((codeClass) => hasMethodNamed(codeClass, 'addFirst'))).toBe(true);
+    expect(classes.some((codeClass) => hasMethodNamed(codeClass, 'addSecond'))).toBe(true);
+  });
+
+  it('元の base を変更しない', () => {
+    // Arrange
+    const base = sampleCodebase();
+
+    // Act
+    sampleCarried(base, [firstRequest, secondRequest]);
+
+    // Assert
+    expect(base).toEqual(sampleCodebase());
   });
 });

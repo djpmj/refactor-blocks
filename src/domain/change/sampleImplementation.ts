@@ -57,3 +57,11 @@ export function sampleImplementation(base: Codebase, request: ChangeRequest): Sa
   }
   return best;
 }
+
+/**
+ * 前の依頼までを、それぞれの解答例の置き方で積み重ねたコード。プレイヤーが前の依頼で置き間違えても、解答例はこの上で求める。
+ * 解答例がない依頼は、そのまま飛ばす。
+ */
+export function sampleCarried(base: Codebase, requests: readonly ChangeRequest[]): Codebase {
+  return requests.reduce((carried, request) => sampleImplementation(carried, request)?.codebase ?? carried, base);
+}

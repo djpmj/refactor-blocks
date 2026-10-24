@@ -46,10 +46,10 @@ function withBossCounterfactual(stage: Pick<Stage, 'limits' | 'codebase'>, reque
   return counterfactual === undefined ? {} : { bossCounterfactual: counterfactual };
 }
 
-/** 「実装を終える」操作。design は変更コスト、base は置き方を測るコード。 */
+/** 「実装を終える」操作。design は変更コスト、base は置き方を測るコード、sampleBase は解答例を求めるコード(前の依頼を解答例どおりに置いたもの)。 */
 export function evaluateImplementationUseCase(
   stage: Pick<Stage, 'limits' | 'codebase'>,
-  codebases: Readonly<{ design: Codebase; base: Codebase; implemented: Codebase }>,
+  codebases: Readonly<{ design: Codebase; base: Codebase; sampleBase: Codebase; implemented: Codebase }>,
   request: ChangeRequest,
 ): Result<ChangeOutcome, ImplementationError> {
   const costs = measureCosts(stage, codebases.design, request);
@@ -59,7 +59,7 @@ export function evaluateImplementationUseCase(
   return ok({
     request,
     placement: { placement: placement.value, score: scorePlacement(placement.value, changeKindOf(request)) },
-    sample: sampleImplementation(codebases.base, request),
+    sample: sampleImplementation(codebases.sampleBase, request),
     ...costs.value,
     ...withBossCounterfactual(stage, request),
   });
