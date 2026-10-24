@@ -22,6 +22,7 @@ import { SuperclassLabel } from "./SuperclassLabel";
 import { BLOCK_OPERATION_TITLES } from "../guide/operationGuide";
 import { useDropTargetClassNames } from "./DropTargetsContext";
 import { useResolvedCelebration } from "./useResolvedCelebration";
+import { classRoleName, classStereotype } from "./classStereotype";
 
 /** 循環依存に関与しているクラスの印。色だけに頼らずアイコンとラベルでも伝える。ズームで詳細を隠していても出す。 */
 function CyclicMark() {
@@ -56,7 +57,7 @@ function ClassNameLabel({ classId, name }: Readonly<{ classId: string; name: str
   const interfaceNames = findInterfaces(codebase, classId).map((codeClass) => codeClass.name);
   const renameClass = useGameStore((state) => state.renameClass);
   return (
-    <span className="class-node__name-group">
+    <span className="class-node__name-line">
       <InlineEditableLabel
         value={name}
         ariaLabel="クラス名"
@@ -66,6 +67,23 @@ function ClassNameLabel({ classId, name }: Readonly<{ classId: string; name: str
       <SuperclassLabel superclassName={superclass?.name} interfaceNames={interfaceNames} />
     </span>
   );
+}
+
+function ClassStereotypeMark({ stereotype }: Readonly<{ stereotype: ReturnType<typeof classStereotype> }>) {
+  if (stereotype === null) return null;
+  return <span className="class-node__stereotype">«{stereotype}»</span>;
+}
+
+function classHeaderLabel(codeClass: CodeClass): string {
+  const roleName = classRoleName(classStereotype(codeClass));
+  const rolePrefix = roleName === '' ? '' : `${roleName} `;
+  return `${rolePrefix}${codeClass.name} を別ファイルへ移動`;
+}
+
+function classNameGroupClass(stereotype: ReturnType<typeof classStereotype>): string {
+  if (stereotype === 'interface') return 'class-node__name-group class-node__name-group--interface';
+  if (stereotype === 'abstract') return 'class-node__name-group class-node__name-group--abstract';
+  return 'class-node__name-group';
 }
 
 /** フィールド(あれば)とメソッドの一覧。詳細表示(showDetails)のときだけ描く。 */
@@ -189,12 +207,15 @@ export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
         className="class-node__header nodrag nopan"
         style={{ opacity: isDragging ? 0.3 : 1 }}
         data-testid={`class-header-${codeClass.name}`}
-        aria-label={`${codeClass.name} を別ファイルへ移動`}
+        aria-label={classHeaderLabel(codeClass)}
         title={BLOCK_OPERATION_TITLES.class}
         {...attributes}
         {...listeners}
       >
-        <ClassNameLabel classId={data.classId} name={codeClass.name} />
+        <span className={classNameGroupClass(classStereotype(codeClass))}>
+          <ClassStereotypeMark stereotype={classStereotype(codeClass)} />
+          <ClassNameLabel classId={data.classId} name={codeClass.name} />
+        </span>
         {layerName === undefined ? null : <LayerTag name={layerName} className={codeClass.name} />}
         {isCyclic ? <CyclicMark /> : null}
         {showDetails ? <ClassResponsibilityBadge codeClass={codeClass} limit={responsibilityLimit} /> : null}

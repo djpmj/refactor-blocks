@@ -7,6 +7,13 @@ import type { ClassFlowNode } from '../canvas/layoutCodebase';
 import { MethodChipView } from '../canvas/MethodChip';
 import { SuperclassLabel } from '../canvas/SuperclassLabel';
 import { useCodebasePreview } from './CodebasePreviewContext';
+import { classRoleName, classStereotype } from '../canvas/classStereotype';
+
+function stereotypeClassName(stereotype: ReturnType<typeof classStereotype>): string {
+  if (stereotype === 'interface') return 'class-node__name-group class-node__name-group--interface';
+  if (stereotype === 'abstract') return 'class-node__name-group class-node__name-group--abstract';
+  return 'class-node__name-group';
+}
 
 /** ClassNode の読み取り専用版。dnd-kitのドラッグ・ドロップ先を持たず、メソッド・フィールドの並びだけを見せる。 */
 export function PreviewClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
@@ -15,14 +22,17 @@ export function PreviewClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
   const superclass = findSuperclass(codebase, data.classId);
   const interfaceNames = findInterfaces(codebase, data.classId).map((interfaceClass) => interfaceClass.name);
   if (codeClass === undefined) return null;
+  const stereotype = classStereotype(codeClass);
+  const roleName = classRoleName(stereotype);
+  const rolePrefix = roleName === '' ? '' : `${roleName} `;
   const fields = fieldsOf(codeClass);
   return (
     <div className={glowClassNames?.has(codeClass.name) === true ? 'class-node class-node--glow' : 'class-node'} data-testid={`preview-class-${codeClass.name}`} data-glow={glowClassNames?.has(codeClass.name) === true ? 'true' : undefined}>
       <DependencyHandles />
-      <div className="class-node__header">
-        <span className="class-node__name">
-          {codeClass.name}
-          <SuperclassLabel superclassName={superclass?.name} interfaceNames={interfaceNames} />
+      <div className="class-node__header" aria-label={`${rolePrefix}${codeClass.name}`}>
+        <span className={stereotypeClassName(stereotype)}>
+          {stereotype === null ? null : <span className="class-node__stereotype">«{stereotype}»</span>}
+          <span className="class-node__name-line"><span className="class-node__name">{codeClass.name}</span><SuperclassLabel superclassName={superclass?.name} interfaceNames={interfaceNames} /></span>
         </span>
         <span className="line-badge">{classLines(codeClass, codebase)}行</span>
       </div>
