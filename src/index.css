@@ -826,3 +826,17 @@ input.class-node__name { width: 14ch; }
 .opening-fix-banner { display: flex; align-items: center; gap: 12px; width: max-content; max-width: min(760px, calc(100vw - 32px)); padding: 8px 12px; border: 1px solid var(--accent); border-radius: 8px; background: var(--surface); box-shadow: 0 2px 10px rgb(0 0 0 / 12%); font-size: 13px; }
 .opening-fix-banner button { flex: none; }
 @media (max-width: 700px) { .opening-fix-banner { align-items: flex-start; flex-direction: column; gap: 6px; } }
+
+/* 解答例の図: 左に「あなたの設計」、右に「解答例」。狭い画面では上下に積む */
+.comparison { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.comparison__panes { display: grid; flex: 1; min-height: 0; overflow-y: auto; grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); grid-auto-rows: minmax(260px, 1fr); gap: 8px; padding: 8px; }
+.comparison__pane { display: flex; flex-direction: column; min-width: 0; min-height: 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.comparison__pane h3 { margin: 0; padding: 6px 12px; font-size: 14px; border-bottom: 1px solid var(--border); }
+.comparison__canvas { flex: 1; min-height: 0; }
+.comparison__diff { flex: none; max-height: 32%; overflow-y: auto; padding: 8px 12px; border-top: 1px solid var(--border); font-size: 13px; }
+.comparison__diff ul { margin: 0; padding: 0; list-style: none; }
+.comparison__same { margin: 0; }
+.comparison__diff-row { width: 100%; padding: 4px 8px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--text); text-align: left; cursor: pointer; }
+.comparison__diff-row:hover, .comparison__diff-row[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+.comparison__facts { margin-top: 6px; color: var(--muted); }
+.class-node--glow { border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 35%, transparent); }
