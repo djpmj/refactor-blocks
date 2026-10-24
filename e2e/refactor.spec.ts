@@ -1,5 +1,5 @@
 ﻿import { expect, test, type Locator, type Page } from '@playwright/test';
-import { selectStage, startChangeRequests } from './selectStage.js';
+import { finishAndAdvance, selectStage, startChangeRequests } from './selectStage.js';
 
 test('右サイドバーの幅をドラッグとキーボードで調整し、白紙設計でも使える', async ({ page }) => {
   // Arrange
@@ -1298,10 +1298,8 @@ const TAX_PARTS = ['addReducedTaxItems', 'addContactGuide', 'validateQuantityLim
 
 /** 部品を置いたあとの「実装を終える」。ドラッグ直後の1回目のクリックはdnd-kitに握りつぶされることがあるので、次の依頼(か結果)に進むまで押し直す。 */
 async function finishRequest(page: Page) {
-  await expect(async () => {
-    await page.getByTestId('change-request-finish').click({ timeout: 1000 });
-    await expect(page.getByTestId('change-part-status').filter({ hasText: 'に置きました' })).toHaveCount(0, { timeout: 1000 });
-  }).toPass();
+  await finishAndAdvance(page);
+  await expect(page.getByTestId('change-part-status').filter({ hasText: 'に置きました' })).toHaveCount(0);
 }
 
 /**

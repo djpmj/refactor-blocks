@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { selectStage, startChangeRequests } from './selectStage.js';
+import { finishAndAdvance, selectStage, startChangeRequests } from './selectStage.js';
 import { openReferenceItem } from './referenceMenuActions.js';
 
 const BLANK_PARTS = ['placeOrder', 'shipOrder', 'calculateOrderTax', 'saveOrder', 'updateShippingStatus', 'sendOrderConfirmMail', 'sendShippedMail'] as const;
@@ -82,10 +82,8 @@ async function dragPlayerMethodToEmptyCanvas(page: Page, source: Locator) {
 }
 
 async function finishChangeRequest(page: Page) {
-  await expect(async () => {
-    await page.getByTestId('change-request-finish').click({ timeout: 1000 });
-    await expect(page.getByTestId('change-part-status').filter({ hasText: 'に置きました' })).toHaveCount(0, { timeout: 1000 });
-  }).toPass();
+  await finishAndAdvance(page);
+  await expect(page.getByTestId('change-part-status').filter({ hasText: 'に置きました' })).toHaveCount(0);
 }
 
 async function openBlankDesignResult(page: Page) {

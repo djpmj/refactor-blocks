@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { releaseAllManualFixSites, selectStage, startChangeRequests } from './selectStage.js';
+import { finishAndAdvance, releaseAllManualFixSites, selectStage, startChangeRequests } from './selectStage.js';
 
 async function dragMethodToClass(page: Page, methodId: string, classId: string) {
   const source = await page.getByTestId(methodId).boundingBox();
@@ -24,10 +24,8 @@ async function extract(page: Page, method: string, fragmentLabels: string[], nam
 /** 部品を置いて「実装を終える」。次の依頼か結果に進むまで繰り返し押す。 */
 async function implement(page: Page, partId: string, classId: string, next: ReturnType<Page['getByTestId']>) {
   await dragMethodToClass(page, partId, classId);
-  await expect(async () => {
-    await page.getByTestId('change-request-finish').click({ timeout: 1000 });
-    await expect(next).toBeVisible({ timeout: 1000 });
-  }).toPass();
+  await finishAndAdvance(page);
+  await expect(next).toBeVisible();
 }
 
 test('組み替えたチュートリアル2では、ボスが最後に出て、100点で入れられて組み替える前と比べられる', async ({ page }) => {

@@ -113,3 +113,12 @@ export async function startChangeRequests(page: Page): Promise<void> {
   }
   await button.click();
 }
+
+/** 部品を置いたあとの「実装を終える」から、その依頼の結果を確定して次へ進むまで。ドラッグ直後の1回目のクリックはdnd-kitに握りつぶされることがあるので、結果が出るまで押し直す。 */
+export async function finishAndAdvance(page: Page): Promise<void> {
+  await expect(async () => {
+    await page.getByTestId('change-request-finish').click({ timeout: 1000 });
+    await expect(page.getByTestId('change-request-next')).toBeVisible({ timeout: 1000 });
+  }).toPass();
+  await page.getByTestId('change-request-next').click();
+}

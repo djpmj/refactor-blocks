@@ -103,6 +103,8 @@ function RefactorView({ active }: Readonly<{ active: boolean }>) {
   const { mobileEditorOpen, close: closeMobileEditor } = useMobileEditor(store);
   const narrowScreen = useNarrowScreen();
   const changeSession = useGameStore((state) => state.changeSession);
+  // 結果を見ている間は、評価した配置が動かないようキャンバスの操作を止める
+  const reviewing = (changeSession?.reviewing ?? null) !== null;
   const manualFix = useGameStore((state) => state.manualFix);
   const selectedMethodId = useGameStore((state) => state.selectedMethodId);
   const selectedFieldId = useGameStore((state) => state.selectedFieldId);
@@ -121,7 +123,7 @@ function RefactorView({ active }: Readonly<{ active: boolean }>) {
   return (
     <StagePanel active={active}>
       <main className="app__body">
-        <section className="app__canvas" aria-label="コードベース" inert={mobileDrawerActive}>
+        <section className="app__canvas" aria-label="コードベース" inert={mobileDrawerActive || reviewing}>
           <CodebaseCanvas active={active} />
           <ErrorToast />
         </section>

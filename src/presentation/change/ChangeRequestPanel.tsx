@@ -7,7 +7,7 @@ import { averageScore, type ChangeAssessment } from '../../domain/change/scoreCh
 import { findClassOfMethod, findMethod, type Codebase, type Method } from '../../domain/codebase/Codebase';
 import { fragmentLines, methodLines } from '../../domain/codebase/lineCount';
 import { CodebasePreviewDialog } from '../preview/CodebasePreviewDialog';
-import { useGameStore } from '../store/useGameStore';
+import { useGameStore, type ChangeSession } from '../store/useGameStore';
 import { describeBoss } from './describeBoss';
 import { describeDeductions, describePlacement, siteNames } from './describeChange';
 import { describeRumorPayoff } from './describeRumorPayoff';
@@ -87,7 +87,7 @@ function BossComparison({ outcome }: Readonly<{ outcome: ChangeOutcome }>) {
 }
 
 /** 機能の追加(current が null)では、コストの行は出さず置き方だけで採点する。 */
-function OutcomeCard({ outcome, codebase, previous, onIdealBase }: Readonly<{ outcome: ChangeOutcome; codebase: Codebase; previous?: number; onIdealBase: boolean }>) {
+function OutcomeCard({ outcome, codebase, previous, onIdealBase, placementLabel = '置き方' }: Readonly<{ outcome: ChangeOutcome; codebase: Codebase; previous?: number; onIdealBase: boolean; placementLabel?: string }>) {
   const { current, initial, request, placement, sample } = outcome;
   const reasons = [...(current === null ? [] : describeDeductions(current, codebase)), ...describePlacement(outcome, codebase)];
   const rumorPayoff = describeRumorPayoff(outcome, codebase);
@@ -101,7 +101,7 @@ function OutcomeCard({ outcome, codebase, previous, onIdealBase }: Readonly<{ ou
         <CostRows current={current} initial={initial} codebase={codebase} previous={previous} />
       )}
       <p className="change-outcome__scores" data-testid="outcome-placement">
-        置き方 {placement.score.total}点(置いた先: {placement.placement.partClassName})
+        {placementLabel} {placement.score.total}点(置いた先: {placement.placement.partClassName})
       </p>
       <SampleAnswer sample={sample} onIdealBase={onIdealBase} />
       <BossComparison outcome={outcome} />
@@ -162,6 +162,28 @@ function Results({ outcomes }: Readonly<{ outcomes: readonly ChangeOutcome[] }>)
   );
 }
 
+/** 1件ぶんの答え合わせ。置き直すか、結果を確定して次へ進む。 */
+function Review({ outcome, isLast }: Readonly<{ outcome: ChangeOutcome; isLast: boolean }>) {
+  const codebase = useGameStore((state) => state.codebase);
+  const outcomes = useGameStore((state) => state.changeSession?.outcomes ?? []);
+  const retryChangeRequest = useGameStore((state) => state.retryChangeRequest);
+  const advanceChangeRequest = useGameStore((state) => state.advanceChangeRequest);
+  return (
+    <>
+      <h2 className="method-editor__title">この依頼の結果</h2>
+      <ul className="change-outcomes">
+        <OutcomeCard outcome={outcome} codebase={codebase} onIdealBase={outcomes.some(placedOffSample)} placementLabel="この依頼の置き方" />
+      </ul>
+      <button type="button" data-testid="change-request-retry" onClick={retryChangeRequest}>
+        置き直す
+      </button>
+      <button type="button" data-testid="change-request-next" onClick={advanceChangeRequest}>
+        {isLast ? '結果を見る' : '次の依頼へ'}
+      </button>
+    </>
+  );
+}
+
 function MethodContents({ method, codebase }: Readonly<{ method: Method; codebase: Codebase }>) {
   return (
     <li className="change-inspect__method" data-testid={`change-inspect-${method.name}`}>
@@ -208,46 +230,58 @@ function PartStatus({ request }: Readonly<{ request: ChangeRequest }>) {
   );
 }
 
-/** 変更依頼に挑戦中のサイドパネル。依頼票と実装(部品を置く)、全件終わったら結果を出す。 */
-export function ChangeRequestPanel() {
+/** 部品を置いている途中: 依頼票と、部品を置いて「実装を終える」。 */
+function Implementing({ request, session }: Readonly<{ request: ChangeRequest; session: ChangeSession }>) {
   const stage = useGameStore((state) => state.stage);
-  const session = useGameStore((state) => state.changeSession);
   const codebase = useGameStore((state) => state.codebase);
   const finishImplementation = useGameStore((state) => state.finishImplementation);
   const endChangeRequests = useGameStore((state) => state.endChangeRequests);
+  const isRumored = rumoredRequests(stage).some((candidate) => candidate.id === request.id);
+  return (
+    <>
+      {request.boss === true && <p className="boss-label" data-testid="boss-label">{BOSS_LABEL}</p>}
+      <p className="method-editor__hint">
+        依頼 {session.index + 1} / {stage.changeRequests.length}
+        <span data-testid="change-request-kind"> {KIND_LABEL[changeKindOf(request)]}</span>
+      </p>
+      {isRumored && request.rumor !== undefined && <p className="rumor-came-true" data-testid="rumor-came-true">うわさが本当になりました: 『{request.rumor.text}』</p>}
+      <h2 className="method-editor__title" data-testid="change-request-title">
+        {request.title}
+      </h2>
+      <p>{request.description}</p>
+      <p className="method-editor__hint">
+        部品置き場の {changePart(request).name}() を、実装する場所へドラッグしてください。既存のクラスへ落とすとそのクラスに足し、余白へ落とすと新しいクラスができます。
+        {usesInheritance(stage) ? '新しいクラスは右クリックで継承元・実装するインターフェースを設定できます。' : ''}Ctrl+Z で戻せます
+      </p>
+      <PartStatus request={request} />
+      <InspectedMethod />
+      <button type="button" data-testid="change-request-finish" onClick={finishImplementation} disabled={!isChangePartPlaced(codebase, request)}>
+        実装を終える
+      </button>
+      <button type="button" onClick={endChangeRequests}>
+        やめる
+      </button>
+    </>
+  );
+}
+
+function PanelBody({ session }: Readonly<{ session: ChangeSession }>) {
+  const stage = useGameStore((state) => state.stage);
+  const request = stage.changeRequests.at(session.index);
+  if (request === undefined) return <Results outcomes={session.outcomes} />;
+  if (session.reviewing !== null) return <Review outcome={session.reviewing} isLast={session.index === stage.changeRequests.length - 1} />;
+  return <Implementing request={request} session={session} />;
+}
+
+/** 変更依頼に挑戦中のサイドパネル。依頼票と実装(部品を置く)、1件ごとの答え合わせ、全件終わったら結果を出す。 */
+export function ChangeRequestPanel() {
+  const stage = useGameStore((state) => state.stage);
+  const session = useGameStore((state) => state.changeSession);
   if (session === null) return null;
   const request = stage.changeRequests.at(session.index);
-  const isRumored = request !== undefined && rumoredRequests(stage).some((candidate) => candidate.id === request.id);
   return (
     <aside className={`method-editor change-panel${request?.boss === true ? ' change-panel--boss' : ''}`} aria-label="変更依頼" data-testid="change-panel">
-      {request === undefined ? (
-        <Results outcomes={session.outcomes} />
-      ) : (
-        <>
-          {request.boss === true && <p className="boss-label" data-testid="boss-label">{BOSS_LABEL}</p>}
-          <p className="method-editor__hint">
-            依頼 {session.index + 1} / {stage.changeRequests.length}
-            <span data-testid="change-request-kind"> {KIND_LABEL[changeKindOf(request)]}</span>
-          </p>
-          {isRumored && request.rumor !== undefined && <p className="rumor-came-true" data-testid="rumor-came-true">うわさが本当になりました: 『{request.rumor.text}』</p>}
-          <h2 className="method-editor__title" data-testid="change-request-title">
-            {request.title}
-          </h2>
-          <p>{request.description}</p>
-          <p className="method-editor__hint">
-            部品置き場の {changePart(request).name}() を、実装する場所へドラッグしてください。既存のクラスへ落とすとそのクラスに足し、余白へ落とすと新しいクラスができます。
-            {usesInheritance(stage) ? '新しいクラスは右クリックで継承元・実装するインターフェースを設定できます。' : ''}Ctrl+Z で戻せます
-          </p>
-          <PartStatus request={request} />
-          <InspectedMethod />
-          <button type="button" data-testid="change-request-finish" onClick={finishImplementation} disabled={!isChangePartPlaced(codebase, request)}>
-            実装を終える
-          </button>
-          <button type="button" onClick={endChangeRequests}>
-            やめる
-          </button>
-        </>
-      )}
+      <PanelBody session={session} />
     </aside>
   );
 }

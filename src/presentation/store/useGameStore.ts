@@ -77,6 +77,8 @@ export type ChangeSession = {
   readonly index: number;
   /** 何をするメソッドか確かめるために、カーソルを合わせた(フォーカスした)メソッドのID。 */
   readonly inspected: string | null;
+  /** 実装を終えた今の依頼の結果。値があるときはその結果を見ている途中(置き直すか次へ進むまでは outcomes に足さない)、null のときは部品を置いている途中。 */
+  readonly reviewing: ChangeOutcome | null;
   readonly outcomes: readonly ChangeOutcome[];
   /** 挑戦前のコード。挑戦を終えたらここへ戻す(依頼の実装は積み重ねるが、挑戦後には持ち越さない)。 */
   readonly base: Codebase;
@@ -181,6 +183,10 @@ type GameState = {
   startChangeRequests: () => void;
   inspectMethod: (methodId: string | null) => void;
   finishImplementation: () => void;
+  /** 結果を見ている依頼を、その依頼を始めた時点のコードからやり直す。 */
+  retryChangeRequest: () => void;
+  /** 結果を確定して次の依頼(最後なら全体の結果)へ進む。 */
+  advanceChangeRequest: () => void;
   endChangeRequests: () => void;
   resetStage: () => void;
   selectStage: (stageId: string) => void;
@@ -325,13 +331,15 @@ function blockDuringOpeningFix(state: GameState): Partial<GameState> | null {
   return state.openingFixEnabled && currentStep(state) === 'opening-fix' ? { message: OPENING_FIX_MESSAGE, notice: null } : null;
 }
 
-/** 今の依頼の実装を評価して結果に積み、次の依頼(部品を足した挑戦前のコード)へ進む。全件終えたら挑戦前のコードに戻す。 */
 const CHANGE_REQUEST_LOCK_MESSAGE = '変更依頼に進む前に、手直しと組み替えを完了してください';
 
+const CHANGE_STEP_RESET: Partial<GameState> = { history: emptyHistory(), selectedMethodId: null, selectedFieldId: null, extractDraft: null, message: null, notice: null };
+
+/** 今の依頼の実装を評価して、その依頼の結果を見る段階にする。次へ進むまで index も outcomes も動かさない。 */
 function finishImplementation(state: GameState): Partial<GameState> {
   const session = state.changeSession;
   const request = session === null ? undefined : state.stage.changeRequests[session.index];
-  if (session === null || request === undefined) return {};
+  if (session === null || request === undefined || session.reviewing !== null) return {};
   const result = evaluateImplementationUseCase(state.stage, {
     design: session.base,
     base: session.carried,
@@ -339,17 +347,27 @@ function finishImplementation(state: GameState): Partial<GameState> {
     implemented: state.codebase,
   }, request);
   if (!result.ok) return { message: result.error === 'unplaced-part' ? UNPLACED_MESSAGE : 'この依頼で変更が必要な場所が見つかりません', notice: null };
+  return { changeSession: { ...session, inspected: null, reviewing: result.value }, selectedMethodId: null, selectedFieldId: null, extractDraft: null, message: null, notice: null };
+}
+
+/** 結果を見ている依頼を、その依頼を始めた時点のコード(carried + 部品置き場)に戻す。 */
+function retryChangeRequest(state: GameState): Partial<GameState> {
+  const session = state.changeSession;
+  const request = session === null ? undefined : state.stage.changeRequests[session.index];
+  if (session === null || request === undefined || session.reviewing === null) return {};
+  return { changeSession: { ...session, inspected: null, reviewing: null }, codebase: withChangePart(session.carried, request), ...CHANGE_STEP_RESET };
+}
+
+/** 見ていた結果を確定して次の依頼(部品を足した、実装を積み重ねたコード)へ進む。全件終えたら積み重ねたコードのまま全体の結果を出す。 */
+function advanceChangeRequest(state: GameState): Partial<GameState> {
+  const session = state.changeSession;
+  if (session === null || session.reviewing === null) return {};
   const next = state.stage.changeRequests.at(session.index + 1);
   const carried = withoutTray(state.codebase);
   return {
-    changeSession: { ...session, index: session.index + 1, inspected: null, outcomes: [...session.outcomes, result.value], carried, sampleCarried: result.value.sample?.codebase ?? session.sampleCarried },
+    changeSession: { ...session, index: session.index + 1, inspected: null, reviewing: null, outcomes: [...session.outcomes, session.reviewing], carried, sampleCarried: session.reviewing.sample?.codebase ?? session.sampleCarried },
     codebase: next === undefined ? carried : withChangePart(carried, next),
-    history: emptyHistory(),
-    selectedMethodId: null,
-    selectedFieldId: null,
-    extractDraft: null,
-    message: null,
-    notice: null,
+    ...CHANGE_STEP_RESET,
   };
 }
 
@@ -372,10 +390,12 @@ function historyActions(set: (partial: Partial<GameState>) => void, get: () => G
   return {
     undo: () => {
       const state = get();
+      if ((state.changeSession?.reviewing ?? null) !== null) return;
       set(blockDuringOpeningFix(state) ?? travelTo(state, undoHistory(state.history, state.codebase)));
     },
     redo: () => {
       const state = get();
+      if ((state.changeSession?.reviewing ?? null) !== null) return;
       set(blockDuringOpeningFix(state) ?? travelTo(state, redoHistory(state.history, state.codebase)));
     },
   };
@@ -420,7 +440,7 @@ function resetActions(set: (partial: Partial<GameState>) => void, get: () => Gam
 function changeSessionActions(
   set: (partial: Partial<GameState>) => void,
   get: () => GameState,
-): Pick<GameState, 'startChangeRequests' | 'inspectMethod' | 'finishImplementation' | 'endChangeRequests'> {
+): Pick<GameState, 'startChangeRequests' | 'inspectMethod' | 'finishImplementation' | 'retryChangeRequest' | 'advanceChangeRequest' | 'endChangeRequests'> {
   return {
     startChangeRequests: () => {
       const state = get();
@@ -440,7 +460,7 @@ function changeSessionActions(
         focusPreviewRule: null,
         ghost: null,
         manualFix: null,
-        changeSession: { index: 0, inspected: null, outcomes: [], base: codebase, carried: codebase, sampleCarried: codebase, baseHistory: history },
+        changeSession: { index: 0, inspected: null, reviewing: null, outcomes: [], base: codebase, carried: codebase, sampleCarried: codebase, baseHistory: history },
         codebase: withChangePart(codebase, first),
         history: emptyHistory(),
         selectedMethodId: null,
@@ -456,6 +476,12 @@ function changeSessionActions(
     },
     finishImplementation: () => {
       set({ ...finishImplementation(get()), ghost: null });
+    },
+    retryChangeRequest: () => {
+      set({ ...retryChangeRequest(get()), ghost: null });
+    },
+    advanceChangeRequest: () => {
+      set({ ...advanceChangeRequest(get()), ghost: null });
     },
     endChangeRequests: () => {
       set(endChangeRequests(get()));
