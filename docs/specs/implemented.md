@@ -139,3 +139,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [deduction-targets-named](deduction-targets-named.md) | 減点の内訳に、原因のクラス・メソッド・依存を名前で出す |
 | [override-visibility-contract](override-visibility-contract.md) | 親のメソッドを上書きして公開範囲を狭めたら約束違反に数える |
 | [hint-strategy-phases](hint-strategy-phases.md) | ヒント「次の一手」を方針のまとまりごとに見せる |
+| [answer-comparison-view](answer-comparison-view.md) | 解答例の図を、自分の設計と並べて違いが分かるように見せる |

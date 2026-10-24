@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-24 07:55 UTC PR #280 解答例の図を、自分の設計と並べて違いが分かるように見せる (#246)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test(1926件)✅ / npm run lint ✅ / npm run typecheck ✅。designDiff・describeDesignDiff・ComparisonPanesを仕様(2列表示・責務ごとの違い一覧・同じ置き方の文言・減点は事実のみ)と照合。E2EはChromiumを入れられず未実行(PR記載の298件成功を参照)
+- マージ: squash & delete-branch
+
 ## 2026-10-24 07:50 UTC PR #279 ヒント「次の一手」を方針のまとまりごとに見せる (#248)
 
 - 判定: 合格(blocker無し)
@@ -210,18 +216,6 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(1797件) / npm run lint ✅ / npm run typecheck ✅。E2Eはレビュー環境にPlaywrightブラウザが無く未実行(PR本文では全件成功)。Issue #218・docs/specs/boss-result-and-layout-fixes.mdの文言・CSS・引用符変更と一致
-- マージ: squash & delete-branch
-
-## 2026-10-17 12:00 UTC PR #239 implementをOrca管理の5件並列バッチに変更
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅。変更は .agents/skills/implement/SKILL.md と .codex/agents/implementation-orchestrator.toml のみ(src/ と .github/workflows/ は未変更)。最大5件並列・E2E_PORT分離・評価最大3回・独立評価の維持を差分で確認
-- マージ: squash & delete-branch
-
-## 2026-10-17 10:50 UTC PR #214 feat: refit the canvas on resize without hiding method details
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(lint / typecheck / test 1797件)✅。E2Eはレビュー環境で実行不可(ブラウザ未導入。PR本文では252件通過)。Issue #180・#189 と docs/specs/canvas-refit-on-resize.md・detail-zoom-floor.md の、リサイズ時の自動再フィット(ユーザー操作後は抑止)・DETAIL_ZOOM未満にしない autoViewport・縮小中の案内を差分で確認。変更は presentation 層のみで純粋関数にユニットテストあり
 - マージ: squash & delete-branch
 
 
