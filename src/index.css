@@ -514,11 +514,13 @@ input.class-node__name { width: 14ch; }
 .score-breakdown__item { display: flex; flex-direction: column; gap: 4px; }
 .score-breakdown__row { display: flex; gap: 4px; }
 .score-breakdown__violation-details { margin: 0; padding-left: 24px; line-height: 1.5; }
+.score-breakdown__targets { margin: 0; line-height: 1.8; }
 .score-breakdown__row > button:first-child { flex: 1; }
 .score-breakdown__why { padding: 6px 8px; border-left: 3px solid var(--border); }
 .score-breakdown__why[hidden] { display: none; }
 .score-breakdown__why p { margin: 0 0 4px; line-height: 1.5; }
 .score-breakdown__items button { padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); text-align: left; }
+.score-breakdown__items button.score-breakdown__target { padding: 1px 6px; }
 .score-breakdown__items button[aria-pressed='true'] { border: 3px solid var(--warning); }
 .class-node--flagged, .file-node--flagged { border: 4px solid var(--warning); background-color: color-mix(in srgb, var(--warning) 10%, var(--surface)); }
 .class-node--resolved, .file-node--resolved { animation: resolved-success 650ms ease-out; }
