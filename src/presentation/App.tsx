@@ -137,6 +137,11 @@ export function App() {
   // クイズ・白紙設計のキャンバスは、見えない(大きさ0の)まま fitView すると表示がずれるので、初めて開いたときにマウントする
   const [quizOpened, setQuizOpened] = useState(false);
   const [blankOpened, setBlankOpened] = useState(false);
+  const changeMode = (next: Mode) => {
+    setMode(next);
+    if (next === 'quiz') setQuizOpened(true);
+    if (next === 'blank') setBlankOpened(true);
+  };
   return (
     <div className="app">
       <nav className="mode-switch" aria-label="モード">
@@ -146,11 +151,7 @@ export function App() {
             type="button"
             data-testid={`mode-${candidate}`}
             aria-pressed={mode === candidate}
-            onClick={() => {
-              setMode(candidate);
-              if (candidate === 'quiz') setQuizOpened(true);
-              if (candidate === 'blank') setBlankOpened(true);
-            }}
+            onClick={() => changeMode(candidate)}
           >
             {MODE_LABEL[candidate]}
           </button>
@@ -162,7 +163,7 @@ export function App() {
       </div>
       {quizOpened ? (
         <div className="app__view" hidden={mode !== 'quiz'}>
-          <ComparisonQuizView />
+          <ComparisonQuizView onLeave={changeMode} />
         </div>
       ) : null}
       {blankOpened ? (
