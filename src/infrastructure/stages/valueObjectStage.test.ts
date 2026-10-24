@@ -67,6 +67,19 @@ describe('上級7: 金額と通貨を Money にまとめる', () => {
     expect(expenseCohesion).toBeUndefined();
   });
 
+  it('模範解答のあと: 金額の計算(money-arithmetic)は Money だけに残り、ApprovalService・PayoutService には残らない', () => {
+    // Arrange
+    const solved = applySolutionSteps(stage.codebase, solution);
+
+    // Act
+    const classesWithArithmetic = allClasses(solved)
+      .filter((codeClass) => codeClass.methods.some((method) => method.fragments.some((fragment) => fragment.responsibility === 'money-arithmetic')))
+      .map((codeClass) => codeClass.name);
+
+    // Assert
+    expect(classesWithArithmetic).toEqual(['Money']);
+  });
+
   it('変更依頼2件は、初期・模範解答のあとで表どおりの点数になる', () => {
     // Arrange
     const { codebase, limits, changeRequests } = stage;
@@ -89,8 +102,8 @@ describe('上級7: 金額と通貨を Money にまとめる', () => {
     expect(acceptEuroRequest.id).toBe('req-accept-euro');
     expect(hideYenDecimalsRequest.id).toBe('req-hide-yen-decimals');
     // 実測: accept-euroはPayoutServiceを触らない(money-validationはPayoutServiceに存在しない)ため
-    // 上限超えの件数がhide-yen-decimalsと異なる(仕様書は両方35点の見込みだったが、処理名コメントを行数に数えるようになった今は15点・5点)
-    expect(scoresBefore.map((score) => score.total)).toEqual([15, 5]);
+    // 上限超えの件数がhide-yen-decimalsと異なる(仕様書は両方35点の見込みだったが、処理名コメントを行数に数えるようになった今は25点・15点。ApprovalService の戻り値の1行を合計の処理に含め、処理名コメントが1行減って触る処理の上限超えが各1件減った)
+    expect(scoresBefore.map((score) => score.total)).toEqual([25, 15]);
     expect(scoresAfter.map((score) => score.total)).toEqual([55, 55]);
   });
 });
