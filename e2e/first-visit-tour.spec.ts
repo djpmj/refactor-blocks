@@ -177,3 +177,35 @@ test('does not auto-start elsewhere and can be replayed from the operation guide
   await expect(page.getByTestId('first-visit-tour')).toContainText('1/6');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('チュートリアル1');
 });
+
+test('after the tour extraction, re-fixing "前年同月比も出して" has one site and nothing is missed', async ({ page }) => {
+  // Arrange: play the tour all the way through the extraction with both A fragments.
+  await clearTourSeenOnce(page);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/');
+  const tour = page.getByTestId('first-visit-tour');
+  await tour.getByRole('button', { name: '次へ' }).click();
+  await page.locator('[data-tour="manual-fix-start"]').click();
+  await page.getByTestId('method-printMonthlyReport').click();
+  await page.getByRole('button', { name: 'リリースする' }).click();
+  await page.getByRole('button', { name: '組み替えを始める' }).click();
+  await page.getByTestId('method-printMonthlyReport').click();
+  const fragments = page.locator('[data-tour="fragment-list"]');
+  await fragments.getByLabel('今月の売上を集計する').check();
+  await fragments.getByLabel('前月比を計算する').check();
+  await page.locator('[data-tour="extract-button"]').click();
+  await expect(tour).toContainText('6/6');
+  await tour.getByRole('button', { name: '次へ' }).click();
+  await expect(page.getByTestId('score-value')).toContainText('100');
+
+  // Act: the post-100 re-fix, marking only what the change list points at.
+  const card = page.locator('.change-pain');
+  await card.locator('details').evaluate((element) => element.setAttribute('open', ''));
+  await card.getByRole('button', { name: '実際に直してみる' }).click();
+  await page.getByTestId('method-aggregateSales').click();
+  await page.getByRole('button', { name: 'リリースする' }).click();
+
+  // Assert
+  await expect(page.locator('.manual-fix [role="status"]')).toContainText('直し忘れなし');
+  await expect(page.locator('.manual-fix [role="status"]')).toContainText('1 か所すべて');
+});
