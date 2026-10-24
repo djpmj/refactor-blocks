@@ -189,3 +189,97 @@ test('右クリックメニューを開いたままキーボードで設計く�
   // Assert
   await expect(page.getByTestId('context-menu')).toHaveCount(0);
 });
+
+/** 1問目はわざと間違え(B)、残りは A を選んで最後の問題まで進む(最後の問題は答えたところで止まる)。 */
+async function answerAllFirstWrong(page: Page) {
+  await page.goto('/');
+  await page.getByTestId('mode-quiz').click();
+  for (let question = 0; question < 3; question += 1) {
+    await page.getByTestId(question === 0 ? 'quiz-choose-b' : 'quiz-choose-a').click();
+    await page.getByTestId('quiz-next').click();
+  }
+  await page.getByTestId('quiz-choose-a').click();
+}
+
+test('4問とも答えて「結果を見る」を押すと、N問中M問正解と不正解の問題の一覧が出る', async ({ page }) => {
+  // Arrange
+  await answerAllFirstWrong(page);
+
+  // Act
+  await page.getByRole('button', { name: '結果を見る' }).click();
+
+  // Assert
+  const summary = page.getByTestId('quiz-summary');
+  await expect(summary).toContainText(/4問中\d問正解/);
+  await expect(summary.getByRole('button', { name: /問目:/ }).first()).toBeVisible();
+});
+
+test('答えていない問題があるまま「結果を見る」を押すと、まとめの代わりに未回答の問題を知らせる', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await page.getByTestId('mode-quiz').click();
+  await page.getByLabel('クイズ').selectOption({ index: 3 });
+  await page.getByTestId('quiz-choose-a').click();
+
+  // Act
+  await page.getByRole('button', { name: '結果を見る' }).click();
+
+  // Assert
+  await expect(page.getByTestId('quiz-unanswered')).toContainText('まだ答えていない問題があります: 1問目');
+  await expect(page.getByTestId('quiz-summary')).toHaveCount(0);
+});
+
+test('2問目に答えてから1問目へ戻り、また2問目を開くと、答えと解説が残っていて、プルダウンに(✓)か(✗)が付く', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await page.getByTestId('mode-quiz').click();
+  await page.getByLabel('クイズ').selectOption({ index: 1 });
+  await page.getByTestId('quiz-choose-a').click();
+  await expect(page.getByTestId('quiz-verdict')).toBeVisible();
+
+  // Act
+  await page.getByLabel('クイズ').selectOption({ index: 0 });
+  await expect(page.getByTestId('quiz-verdict')).toHaveCount(0);
+  await page.getByLabel('クイズ').selectOption({ index: 1 });
+
+  // Assert
+  await expect(page.getByTestId('quiz-verdict')).toBeVisible();
+  await expect(page.getByTestId('quiz-choose-a')).toBeDisabled();
+  await expect(page.getByLabel('クイズ').locator('option').nth(1)).toHaveText(/\((✓|✗)\)$/);
+  await expect(page.getByLabel('クイズ').locator('option').nth(0)).not.toHaveText(/\(/);
+});
+
+test('「もう一度解く」で、すべての答えが消えて1問目に戻る', async ({ page }) => {
+  // Arrange
+  await answerAllFirstWrong(page);
+  await page.getByRole('button', { name: '結果を見る' }).click();
+
+  // Act
+  await page.getByRole('button', { name: 'もう一度解く' }).click();
+
+  // Assert
+  await expect(page.getByRole('heading', { name: /^1問目/ })).toBeVisible();
+  await expect(page.getByTestId('quiz-verdict')).toHaveCount(0);
+  await expect(page.getByLabel('クイズ').locator('option').filter({ hasText: /\(/ })).toHaveCount(0);
+  await page.getByLabel('クイズ').selectOption({ index: 3 });
+  await expect(page.getByTestId('quiz-verdict')).toHaveCount(0);
+});
+
+test('まとめの「リファクタリングに戻る」「白紙設計に挑戦する」でモードが切り替わる', async ({ page }) => {
+  // Arrange
+  await answerAllFirstWrong(page);
+  await page.getByRole('button', { name: '結果を見る' }).click();
+
+  // Act
+  await page.getByRole('button', { name: 'リファクタリングに戻る' }).click();
+
+  // Assert
+  await expect(page.getByTestId('mode-refactor')).toHaveAttribute('aria-pressed', 'true');
+
+  // Act
+  await page.getByTestId('mode-quiz').click();
+  await page.getByRole('button', { name: '白紙設計に挑戦する' }).click();
+
+  // Assert
+  await expect(page.getByTestId('mode-blank')).toHaveAttribute('aria-pressed', 'true');
+});
