@@ -504,10 +504,18 @@ describe('setSuperclassUseCase', () => {
 
 });
 
+/** TaxCalculator を、中身の無い public メソッドだけのインターフェース役にしたサンプル。 */
+function taxAsInterfaceCodebase(): Codebase {
+  const base = sampleCodebase();
+  return {
+    files: [base.files[0], { ...base.files[1], classes: [{ id: 'class-tax', name: 'TaxCalculator', methods: [{ id: 'method-calc', name: 'calculate', visibility: 'public', fragments: [] }] }] }],
+  };
+}
+
 describe('addInterfaceUseCase / removeInterfaceUseCase', () => {
   it('クラス名からIDを解決してinterfaceIdsに追加する', () => {
     // Arrange
-    const codebase = sampleCodebase();
+    const codebase = taxAsInterfaceCodebase();
 
     // Act
     const result = addInterfaceUseCase(codebase, 'class-order', 'TaxCalculator');
@@ -519,7 +527,7 @@ describe('addInterfaceUseCase / removeInterfaceUseCase', () => {
 
   it('追加したインターフェースを外す', () => {
     // Arrange
-    const withInterface = addInterfaceUseCase(sampleCodebase(), 'class-order', 'TaxCalculator');
+    const withInterface = addInterfaceUseCase(taxAsInterfaceCodebase(), 'class-order', 'TaxCalculator');
     if (!withInterface.ok) throw new Error(withInterface.error);
 
     // Act
@@ -532,8 +540,20 @@ describe('addInterfaceUseCase / removeInterfaceUseCase', () => {
 
   it('存在しない名前を指定するとエラー文言を返す', () => {
     // Arrange / Act / Assert
-    expect(describeAddInterfaceError('interface-not-found')).toBe('その名前のクラスが見つかりません');
+    expect(describeAddInterfaceError('interface-not-found', 'X')).toBe('その名前のクラスが見つかりません');
     expect(describeRemoveInterfaceError('interface-not-found')).toBe('その名前のクラスが見つかりません');
+  });
+
+  it('インターフェース役でないクラスを指定すると、名前入りのエラー文言を返す', () => {
+    // Arrange
+    const codebase = sampleCodebase();
+
+    // Act
+    const result = addInterfaceUseCase(codebase, 'class-tax', 'OrderService');
+
+    // Assert
+    expect(result).toEqual({ ok: false, error: 'not-interface' });
+    expect(describeAddInterfaceError('not-interface', 'OrderService')).toBe('OrderService はインターフェースではありません。中身の無い public メソッドだけを持つクラスを選んでください');
   });
 });
 

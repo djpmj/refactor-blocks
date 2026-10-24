@@ -1049,28 +1049,61 @@ test('クラスを右クリックして継承元を設定すると、継承の�
 
 test('クラスを右クリックして実装するインターフェースを設定すると、"implements"の表示が出る', async ({ page }) => {
   // Arrange
-  await openOrderStage(page);
-  await page.getByTestId('class-header-TaxCalculator').click({ button: 'right' });
+  await page.goto('/');
+  await selectStage(page, '上級2: 決済ゲートウェイをインターフェース越しに呼ぶ');
+  await page.getByTestId('class-header-StripeGateway').click({ button: 'right' });
   const menu = page.getByTestId('context-menu');
   await menu.getByRole('menuitem', { name: '実装するインターフェースを設定' }).click();
 
   // Act
-  await menu.getByRole('menuitemcheckbox', { name: 'OrderService' }).click();
+  await menu.getByRole('menuitemcheckbox', { name: 'PaymentGateway' }).click();
 
   // Assert
-  await expect(page.getByTestId('class-TaxCalculator')).toContainText('implements OrderService');
-  await expect(page.getByTestId('class-TaxCalculator')).not.toContainText('extends OrderService');
-  const edge = page.getByTestId('rf__edge-inherit-class-tax-calculator-class-order-service');
+  await expect(page.getByTestId('class-StripeGateway')).toContainText('implements PaymentGateway');
+  await expect(page.getByTestId('class-StripeGateway')).not.toContainText('extends PaymentGateway');
+  const edge = page.getByTestId('rf__edge-inherit-class-stripe-gateway-class-payment-gateway');
   await expect(edge).toHaveClass(/edge--inheritance/);
   await expect(edge).toHaveClass(/edge--implements/);
   await expect(edge.locator('.react-flow__edge-path')).toHaveAttribute('marker-end', "url('#implements-arrow')");
   await expect(edge.locator('.react-flow__edge-path')).toHaveCSS('stroke-dasharray', '6px, 4px');
-  await expect(page.getByTestId('class-TaxCalculator').locator('.class-node__relation--implements')).toHaveCSS('color', 'rgb(217, 115, 13)');
+  await expect(page.getByTestId('class-StripeGateway').locator('.class-node__relation--implements')).toHaveCSS('color', 'rgb(217, 115, 13)');
   // チェック式サブメニューは選んでも閉じない(Esc・外側クリックで閉じる)
   await expect(menu).toHaveCount(1);
-  await expect(menu.getByRole('menuitemcheckbox', { name: 'OrderService' })).toHaveAttribute('aria-checked', 'true');
+  await expect(menu.getByRole('menuitemcheckbox', { name: 'PaymentGateway' })).toHaveAttribute('aria-checked', 'true');
   await page.keyboard.press('Escape');
   await expect(menu).toHaveCount(0);
+});
+
+test('実装するインターフェースの候補は、インターフェース役のクラスだけになる', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await selectStage(page, '上級2: 決済ゲートウェイをインターフェース越しに呼ぶ');
+  await page.getByTestId('class-header-StripeGateway').click({ button: 'right' });
+  const menu = page.getByTestId('context-menu');
+
+  // Act
+  await menu.getByRole('menuitem', { name: '実装するインターフェースを設定' }).click();
+
+  // Assert: 具象クラスの PaymentService・PaypalGateway は出ず、PaymentGateway だけが選べる
+  const submenu = menu.getByRole('menu', { name: '実装するインターフェースを設定' });
+  await expect(submenu.getByRole('menuitemcheckbox')).toHaveText(['PaymentGateway']);
+  await expect(submenu.getByRole('menuitem')).toHaveCount(0);
+});
+
+test('インターフェース役のクラスが無いステージでは、実装するインターフェースの候補に押せない説明の項目が出る', async ({ page }) => {
+  // Arrange
+  await openCyclicStage(page);
+  await page.getByTestId('class-header-Order').click({ button: 'right' });
+  const menu = page.getByTestId('context-menu');
+
+  // Act
+  await menu.getByRole('menuitem', { name: '実装するインターフェースを設定' }).click();
+
+  // Assert
+  const submenu = menu.getByRole('menu', { name: '実装するインターフェースを設定' });
+  await expect(submenu.getByRole('menuitemcheckbox')).toHaveCount(0);
+  const note = submenu.getByRole('menuitem', { name: 'インターフェース役のクラスがありません(中身の無い public メソッドだけのクラス)' });
+  await expect(note).toBeDisabled();
 });
 
 test('上級3で3クラスがDiscountStrategyを実装すると、終点が分かれて白抜き三角マーカーが付く', async ({ page }) => {
@@ -1113,40 +1146,34 @@ test('上級3で3クラスがDiscountStrategyを実装すると、終点が分�
 });
 
 test('1つのクラスに2つのインターフェースを実装すると"implements A, B"と矢印2本が出て、チェックを外すと1つ外れる', async ({ page }) => {
-  // Arrange: チュートリアル2には OrderService・TaxCalculator の2クラスしかないので、
-  // まず余白にクラスを1つ追加してから、TaxCalculatorに2つとも実装させる
-  await openOrderStage(page);
-  const pane = await page.locator('.react-flow__pane').boundingBox();
-  if (pane === null) throw new Error('キャンバスの位置を取得できません');
-  await page.mouse.click(pane.x + pane.width - 20, pane.y + pane.height - 20, { button: 'right' });
+  // Arrange: 上級6の CollaborationTool から createTask を新しいクラスへ移し、インターフェース役を2つにしてから、SlackClient に2つとも実装させる
+  await page.goto('/');
+  await selectStage(page, '上級6: 太ったインターフェースを役割ごとに分ける');
+  await page.getByTestId('class-CollaborationTool').getByTestId('method-createTask').click({ button: 'right' });
   let menu = page.getByTestId('context-menu');
-  await menu.getByRole('menuitem', { name: 'ファイルを追加' }).click();
+  await menu.getByRole('menuitem', { name: '別のクラスへ移動' }).click();
+  await menu.getByRole('menuitem', { name: '新しいクラスへ' }).click();
   await expect(menu).toHaveCount(0);
-  await page.getByTestId('file-src/NewFile.ts').click({ button: 'right' });
-  menu = page.getByTestId('context-menu');
-  await menu.getByRole('menuitem', { name: 'クラスを追加' }).click();
-  await page.getByLabel('追加するクラス名').fill('Extra');
-  await page.getByRole('button', { name: '追加' }).click();
 
-  await page.getByTestId('class-header-TaxCalculator').click({ button: 'right' });
+  await page.getByTestId('class-header-SlackClient').click({ button: 'right' });
   menu = page.getByTestId('context-menu');
   await menu.getByRole('menuitem', { name: '実装するインターフェースを設定' }).click();
 
-  // Act(2つ実装する)
-  await menu.getByRole('menuitemcheckbox', { name: 'OrderService' }).click();
+  // Act(新しいクラスも実装する。CollaborationTool はすでに実装済み)
+  await expect(menu.getByRole('menuitemcheckbox', { name: 'CollaborationTool' })).toHaveAttribute('aria-checked', 'true');
   await menu.getByRole('menuitemcheckbox', { name: /^NewClass\d*$/ }).click();
 
   // Assert
-  await expect(page.getByTestId('class-TaxCalculator')).toContainText('implements OrderService, NewClass');
-  await expect(page.locator('[data-testid^="rf__edge-inherit-class-tax-calculator-"]')).toHaveCount(2);
+  await expect(page.getByTestId('class-SlackClient')).toContainText('implements CollaborationTool, NewClass');
+  await expect(page.locator('[data-testid^="rf__edge-inherit-class-slack-client-"]')).toHaveCount(2);
 
   // Act(1つ外す)
-  await menu.getByRole('menuitemcheckbox', { name: 'OrderService' }).click();
+  await menu.getByRole('menuitemcheckbox', { name: 'CollaborationTool' }).click();
 
   // Assert
-  await expect(page.getByTestId('class-TaxCalculator')).toContainText('implements NewClass');
-  await expect(page.getByTestId('class-TaxCalculator')).not.toContainText('OrderService');
-  await expect(page.locator('[data-testid^="rf__edge-inherit-class-tax-calculator-"]')).toHaveCount(1);
+  await expect(page.getByTestId('class-SlackClient')).toContainText('implements NewClass');
+  await expect(page.getByTestId('class-SlackClient')).not.toContainText('CollaborationTool');
+  await expect(page.locator('[data-testid^="rf__edge-inherit-class-slack-client-"]')).toHaveCount(1);
 });
 
 test('継承元を設定にカーソルを合わせるだけで、クリックしなくても候補のクラス名が右側に表示される', async ({ page }) => {

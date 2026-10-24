@@ -1,8 +1,8 @@
-import { allClasses, findClass, mapClasses, parentIds, type CodeClass, type Codebase, type Method } from './Codebase';
+import { allClasses, findClass, isInterfaceLike, mapClasses, parentIds, type CodeClass, type Codebase, type Method } from './Codebase';
 import { err, ok, type Result } from '../shared/Result';
 
 export type SetSuperclassError = 'class-not-found' | 'superclass-not-found' | 'self-inheritance' | 'inheritance-cycle' | 'already-related';
-export type AddInterfaceError = 'class-not-found' | 'interface-not-found' | 'self-inheritance' | 'inheritance-cycle' | 'already-related';
+export type AddInterfaceError = 'class-not-found' | 'interface-not-found' | 'self-inheritance' | 'inheritance-cycle' | 'already-related' | 'not-interface';
 export type RemoveInterfaceError = 'class-not-found' | 'interface-not-found';
 
 /** parentIds を親から親へ辿って classId に戻れるかを見る。壊れたデータで輪になっていても無限ループしないよう訪問済みで止める(深さ優先)。 */
@@ -67,7 +67,7 @@ export function setSuperclass(codebase: Codebase, classId: string, superclassNam
   return ok(promoteCalledPrivateMethods(withSuperclass, classId, superclass.id));
 }
 
-/** クラスに実装しているインターフェース(implements)を1つ追加する。すでに実装していれば何もしない。 */
+/** クラスに実装しているインターフェース(implements)を1つ追加する。すでに実装していれば何もしない。相手はインターフェース役(isInterfaceLike)に限る。 */
 export function addInterface(codebase: Codebase, classId: string, interfaceName: string): Result<Codebase, AddInterfaceError> {
   const target = findClass(codebase, classId);
   if (target === undefined) return err('class-not-found');
@@ -79,6 +79,7 @@ export function addInterface(codebase: Codebase, classId: string, interfaceName:
   if ((target.interfaceIds ?? []).includes(candidate.id)) return ok(codebase);
   if (target.superclassId === candidate.id) return err('already-related');
   if (reachesSelf(codebase, candidate.id, classId)) return err('inheritance-cycle');
+  if (!isInterfaceLike(candidate)) return err('not-interface');
 
   return ok(mapClasses(codebase, (codeClass) => (codeClass.id === classId ? { ...codeClass, interfaceIds: [...(codeClass.interfaceIds ?? []), candidate.id] } : codeClass)));
 }
@@ -105,4 +106,9 @@ export function removeInterface(codebase: Codebase, classId: string, interfaceNa
 /** 継承元・実装先として選べるクラス一覧(自分自身・選ぶと輪になる相手を除く)。継承元・実装先どちらのサブメニューでも使う。 */
 export function availableParents(codebase: Codebase, classId: string): CodeClass[] {
   return allClasses(codebase).filter((codeClass) => codeClass.id !== classId && !reachesSelf(codebase, codeClass.id, classId));
+}
+
+/** 実装先(implements)として選べるクラス一覧。availableParents のうち、インターフェース役のものだけ。 */
+export function availableInterfaces(codebase: Codebase, classId: string): CodeClass[] {
+  return availableParents(codebase, classId).filter(isInterfaceLike);
 }

@@ -362,15 +362,6 @@ const shortcuts: ReadonlyArray<{ readonly stageId: string; readonly description:
   },
   {
     stageId: 'advanced-collapse-hierarchy',
-    description: 'prepareExport だけを CsvExporter へ移し、継承を implements に書き換える',
-    steps: [
-      { move: { method: 'prepareExport', toClass: 'CsvExporter' } },
-      { setSuperclass: { class: 'CsvExporter', superclass: null } },
-      { addInterface: { class: 'CsvExporter', interface: 'BaseExporter' } },
-    ],
-  },
-  {
-    stageId: 'advanced-collapse-hierarchy',
     description: '「CSVを出力する」を抽出して CsvExporter へ移し、継承を外す',
     steps: [
       { extract: { from: 'downloadSalesCsv', fragmentIds: ['frag-output-csv'], name: 'outputCsv' } },

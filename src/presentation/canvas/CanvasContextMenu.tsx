@@ -5,7 +5,7 @@ import { moveMethodTargets } from '../../domain/codebase/moveMethod';
 import { moveFieldTargets } from '../../domain/codebase/moveField';
 import { moveClassTargets } from '../../domain/codebase/moveClass';
 import { fileLabels } from './fileLabels';
-import { availableParents } from '../../domain/codebase/setSuperclass';
+import { availableInterfaces, availableParents } from '../../domain/codebase/setSuperclass';
 import { useGameStore, useGameStoreApi, type GameStore } from '../store/useGameStore';
 import { clampMenuPosition, type Point } from './clampMenuPosition';
 import type { ContextMenuTarget } from './useCanvasContextMenu';
@@ -256,7 +256,7 @@ type ImplementsMenuItemProps = { target: ContextMenuTarget; label: string };
 /**
  * 「実装するインターフェースを設定」の項目。チェック式(menuitemcheckbox)で、複数選べる。
  * 押しても閉じず、続けて別のインターフェースを付け外しできる(Esc・外側クリックで閉じる)。
- * 候補から、継承元(extends)になっている相手を除く。
+ * 候補はインターフェース役のクラスだけ。継承元(extends)になっている相手は除く。無いときは押せない説明の項目を出す。
  */
 function ImplementsMenuItem({ target, label }: Readonly<ImplementsMenuItemProps>) {
   const codebase = useGameStore((state) => state.codebase);
@@ -270,11 +270,16 @@ function ImplementsMenuItem({ target, label }: Readonly<ImplementsMenuItemProps>
   if (codeClass === undefined) return null;
 
   const implementedIds = new Set(codeClass.interfaceIds ?? []);
-  const candidates = availableParents(codebase, codeClass.id).filter((candidate) => candidate.id !== codeClass.superclassId);
+  const candidates = availableInterfaces(codebase, codeClass.id).filter((candidate) => candidate.id !== codeClass.superclassId);
 
   return (
     <SubmenuTrigger label={label} open={open} setOpen={setOpen} wrapperRef={wrapperRef} triggerRef={triggerRef}>
       <div ref={submenuRef} role="menu" aria-label={label} className="context-menu context-menu__submenu" style={{ left: position.x, top: position.y }}>
+        {candidates.length === 0 ? (
+          <button type="button" role="menuitem" disabled>
+            インターフェース役のクラスがありません(中身の無い public メソッドだけのクラス)
+          </button>
+        ) : null}
         {candidates.map((candidate) => {
           const checked = implementedIds.has(candidate.id);
           return (

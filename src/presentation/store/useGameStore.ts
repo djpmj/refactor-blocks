@@ -625,7 +625,7 @@ function renameActions(
       return apply(setSuperclassUseCase(get().codebase, classId, superclassName), describeSetSuperclassError);
     },
     addInterface: (classId, interfaceName) => {
-      return apply(addInterfaceUseCase(get().codebase, classId, interfaceName), describeAddInterfaceError);
+      return apply(addInterfaceUseCase(get().codebase, classId, interfaceName), (error) => describeAddInterfaceError(error, interfaceName));
     },
     removeInterface: (classId, interfaceName) => {
       return apply(removeInterfaceUseCase(get().codebase, classId, interfaceName), describeRemoveInterfaceError);
