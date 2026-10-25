@@ -1,25 +1,21 @@
 import { expect, test, type Page } from '@playwright/test';
 import { selectStage } from './selectStage.js';
 
-const STAGE = '初級1: 何でも屋の UserController';
+const STAGE = 'チュートリアル1: 長いメソッドを分ける';
 
 async function savedProgress(page: Page): Promise<Record<string, number>> {
   const raw = await page.evaluate(() => localStorage.getItem('refactor-blocks:progress'));
   return raw === null ? {} : JSON.parse(raw);
 }
 
-/** registerUser を UserRepository へ移す(点数が上がる)。 */
-async function moveOnce(page: Page) {
-  const from = await page.getByTestId('method-registerUser').boundingBox();
-  const to = await page.getByTestId('class-UserRepository').boundingBox();
-  if (from === null || to === null) throw new Error('位置を取得できません');
-  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(from.x + from.width / 2 + 20, from.y + from.height / 2, { steps: 5 });
-  await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 15 });
-  await expect(page.getByTestId('class-UserRepository')).toHaveClass(/class-node--drop-target/);
-  await page.mouse.up();
-  await expect(page.getByTestId('class-UserRepository').getByTestId('method-registerUser')).toBeVisible();
+/** printMonthlyReport から集計と前月比を抽出する(行数超過が解消して点数が上がる)。 */
+async function extractOnce(page: Page) {
+  await page.getByTestId('method-printMonthlyReport').click();
+  await page.getByLabel('今月の売上を集計する').check();
+  await page.getByLabel('前月比を計算する').check();
+  await page.getByLabel('新しいメソッド名').fill('aggregateSales');
+  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+  await expect(page.getByTestId('method-aggregateSales')).toBeVisible();
 }
 
 async function stageCardText(page: Page): Promise<string> {
@@ -38,29 +34,32 @@ test('開いてメソッドをクリックしただけでは記録されず、�
   await selectStage(page, STAGE);
 
   // Act
-  await page.getByTestId('method-registerUser').click();
+  await page.getByTestId('method-printMonthlyReport').click();
 
   // Assert
   expect(await savedProgress(page)).toEqual({});
   expect(await stageCardText(page)).toContain('未挑戦');
 });
 
-test('メソッドの移動などで点数が上がると一覧に点数が出て、再読み込みしても残る。元に戻しても自己ベストは下がらない', async ({ page }) => {
+test('処理を抽出して点数が上がると一覧にクリアが出て、再読み込みしても残る。元に戻しても自己ベストは下がらない', async ({ page }) => {
   // Arrange
   await page.goto('/');
   await selectStage(page, STAGE);
+  expect(await savedProgress(page)).toEqual({});
 
   // Act
-  await moveOnce(page);
+  await extractOnce(page);
 
-  // Assert
+  // Assert: 初期点を超えた点数が保存される
   await expect.poll(async () => Object.values(await savedProgress(page)).length).toBe(1);
   const best = Object.values(await savedProgress(page))[0];
-  expect(await stageCardText(page)).toContain(`${String(best)}点`);
+  expect(best).toBe(100);
+  // 100点のステージは一覧では「クリア」と表示される
+  expect(await stageCardText(page)).toContain('クリア');
 
   // Act: 元に戻して初期点に戻っても
   await page.getByRole('button', { name: '元に戻す' }).click();
-  await expect(page.getByTestId('class-UserController').getByTestId('method-registerUser')).toBeVisible();
+  await expect(page.getByTestId('method-aggregateSales')).toHaveCount(0);
 
   // Assert
   expect(Object.values(await savedProgress(page))).toEqual([best]);
