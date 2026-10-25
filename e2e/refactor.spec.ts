@@ -833,17 +833,17 @@ test('新しく抽出した複数責務のメソッドが減点され、違反�
   await dragMethodToClass(page, 'method-calculateOrderTotal', 'class-Order');
   await page.getByTestId('method-checkout').click();
 
-  // Act: 合計金額と決済を1つのメソッドへ抽出する
-  await page.getByLabel('合計金額を求める').check();
+  // Act: 割引と決済を1つのメソッドへ抽出する
+  await page.getByLabel('会員ランクで割引する').check();
   await page.getByLabel('決済する').check();
-  await page.getByLabel('新しいメソッド名').fill('orderTotalAndPay');
+  await page.getByLabel('新しいメソッド名').fill('discountAndPay');
   await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
 
   // Assert: 新しいルールの10点減点が内訳に出る
   await expectDeduction(page, '責務の混ざったメソッド ×1');
   const rule = page.locator('.score-breakdown__items button[aria-pressed]').filter({ hasText: '責務の混ざったメソッド ×1' });
   await rule.click();
-  await expect(page.getByTestId('method-orderTotalAndPay').locator('.method-chip--flagged')).toBeVisible();
+  await expect(page.getByTestId('method-discountAndPay').locator('.method-chip--flagged')).toBeVisible();
 });
 
 test('決済だけを抽出したメソッドは責務の混在で減点されない', async ({ page }) => {
