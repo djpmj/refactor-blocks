@@ -277,6 +277,8 @@ function commit(state: GameState, codebase: Codebase, celebrate = true): Partial
     ...(celebration === undefined ? {} : { celebration }),
     extractDraft: null,
     ghost: null,
+    hintTarget: null,
+    hintTargetKey: null,
     history: recordChange(state.history, state.codebase),
     selectedFieldId: fieldStillThere ? state.selectedFieldId : null,
   };
@@ -312,7 +314,7 @@ function travelTo(state: GameState, travel: Travel | undefined): Partial<GameSta
   const { codebase, history } = travel;
   const stillThere = state.selectedMethodId !== null && findMethod(codebase, state.selectedMethodId) !== undefined;
   const fieldStillThere = state.selectedFieldId !== null && findField(codebase, state.selectedFieldId) !== undefined;
-  return { codebase, history, celebration: null, ghost: null, selectedMethodId: stillThere ? state.selectedMethodId : null, selectedFieldId: fieldStillThere ? state.selectedFieldId : null, extractDraft: null, message: null, notice: null };
+  return { codebase, history, celebration: null, ghost: null, hintTarget: null, hintTargetKey: null, selectedMethodId: stillThere ? state.selectedMethodId : null, selectedFieldId: fieldStillThere ? state.selectedFieldId : null, extractDraft: null, message: null, notice: null };
 }
 
 const UNPLACED_MESSAGE = '部品がまだ部品置き場にあります。置き場所へドラッグしてください';
