@@ -795,3 +795,130 @@ describe('役目を終えたトーストを消す', () => {
     expect(store.getState().notice).toBeNull();
   });
 });
+
+describe('コードが変わったらヒントの光りを消す', () => {
+  const target = { fileIds: [], classIds: [], methodIds: ['method-place-order'] };
+  const extraction = { sourceMethodId: 'method-place-order', fragmentIds: ['frag-tax'], newMethodName: 'calculateTax' };
+
+  function storeWithHint() {
+    const stage = stages.find((candidate) => candidate.title === 'チュートリアル2: 太った placeOrder');
+    if (stage === undefined) throw new Error('チュートリアル2のステージが必要です');
+    const store = createGameStore([stage], false, false);
+    store.getState().focusHint(target, 'hint-1');
+    return store;
+  }
+
+  it('抽出に成功すると hintTarget / hintTargetKey が null になる', () => {
+    // Arrange
+    const store = storeWithHint();
+
+    // Act
+    store.getState().extractMethod(extraction);
+
+    // Assert
+    expect(store.getState().hintTarget).toBeNull();
+    expect(store.getState().hintTargetKey).toBeNull();
+  });
+
+  it('メソッドの移動に成功すると null になる', () => {
+    // Arrange
+    const store = storeWithHint();
+    store.getState().extractMethod(extraction);
+    const method = allClasses(store.getState().codebase).flatMap((codeClass) => codeClass.methods).find((candidate) => candidate.name === 'calculateTax');
+    if (method === undefined) throw new Error('抽出した calculateTax が必要です');
+    store.getState().focusHint(target, 'hint-1');
+
+    // Act
+    store.getState().moveMethod(method.id, 'class-tax-calculator');
+
+    // Assert
+    expect(store.getState().hintTarget).toBeNull();
+    expect(store.getState().hintTargetKey).toBeNull();
+  });
+
+  it('元に戻す・やり直しで null になる', () => {
+    // Arrange
+    const store = storeWithHint();
+    store.getState().extractMethod(extraction);
+
+    // Act
+    store.getState().focusHint(target, 'hint-1');
+    store.getState().undo();
+
+    // Assert
+    expect(store.getState().hintTarget).toBeNull();
+    expect(store.getState().hintTargetKey).toBeNull();
+
+    // Act
+    store.getState().focusHint(target, 'hint-1');
+    store.getState().redo();
+
+    // Assert
+    expect(store.getState().hintTarget).toBeNull();
+    expect(store.getState().hintTargetKey).toBeNull();
+  });
+
+  it('失敗する抽出では hintTarget が残る', () => {
+    // Arrange
+    const store = storeWithHint();
+
+    // Act
+    const succeeded = store.getState().extractMethod({ ...extraction, newMethodName: 'placeOrder' });
+
+    // Assert
+    expect(succeeded).toBe(false);
+    expect(store.getState().hintTarget).toBe(target);
+    expect(store.getState().hintTargetKey).toBe('hint-1');
+  });
+
+  it('ヒントを入れていないとき、操作しても hintTarget は null のまま', () => {
+    // Arrange
+    const store = storeWithHint();
+    store.getState().focusHint(null);
+
+    // Act
+    store.getState().extractMethod(extraction);
+
+    // Assert
+    expect(store.getState().hintTarget).toBeNull();
+    expect(store.getState().hintTargetKey).toBeNull();
+  });
+
+  it('「どこが問題?」の光り(focusedRule)も、抽出に成功すると消える', () => {
+    // Arrange
+    const store = storeWithHint();
+    store.getState().focusRule('line-limit');
+
+    // Act
+    store.getState().extractMethod(extraction);
+
+    // Assert
+    expect(store.getState().focusedRule).toBeNull();
+  });
+
+  it('focusedRule は失敗する抽出では残り、元に戻す・やり直しでは消える', () => {
+    // Arrange
+    const store = storeWithHint();
+    store.getState().extractMethod(extraction);
+    store.getState().focusRule('line-limit');
+
+    // Act
+    store.getState().extractMethod({ ...extraction, newMethodName: 'placeOrder' });
+
+    // Assert
+    expect(store.getState().focusedRule).toBe('line-limit');
+
+    // Act
+    store.getState().undo();
+
+    // Assert
+    expect(store.getState().focusedRule).toBeNull();
+
+    // Act
+    store.getState().focusRule('line-limit');
+    store.getState().redo();
+
+    // Assert
+    expect(store.getState().focusedRule).toBeNull();
+  });
+});
