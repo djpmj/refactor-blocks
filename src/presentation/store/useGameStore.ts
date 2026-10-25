@@ -838,6 +838,30 @@ function autosaveDrafts(store: GameStore, holder: { drafts: Drafts }): void {
   });
 }
 
+/** お知らせ(notice)が表示されたままになる時間。 */
+export const NOTICE_VISIBLE_MS = 8000;
+
+/**
+ * 役目を終えたトーストを消す。
+ * 失敗の理由(message)は、前の状態と比べて状況(コード・選択・手直し・変更依頼)が変わったときに消す。
+ * その set で出た message(prev と違う)は、出した操作自身では消さない。
+ * お知らせ(notice)は、置き換わるたびに数え直して NOTICE_VISIBLE_MS 後に消す。
+ */
+function clearStaleToasts(store: GameStore): void {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  store.subscribe((state, prev) => {
+    const situationChanged = state.codebase !== prev.codebase
+      || state.selectedMethodId !== prev.selectedMethodId
+      || state.selectedFieldId !== prev.selectedFieldId
+      || (state.manualFix === null) !== (prev.manualFix === null)
+      || (state.changeSession === null) !== (prev.changeSession === null);
+    if (state.message !== null && state.message === prev.message && situationChanged) store.setState({ message: null });
+    if (state.notice === prev.notice) return;
+    clearTimeout(timer);
+    if (state.notice !== null) timer = setTimeout(() => { store.setState({ notice: null }); }, NOTICE_VISIBLE_MS);
+  });
+}
+
 /** 最初のステージの下書きを取り出す。指紋が違う・形が壊れた下書きは捨てて(ストレージからも消して) undefined を返す。 */
 function restoreFirstDraft(holder: { drafts: Drafts }, firstStage: Stage): Codebase | undefined {
   const restored = takeDraft(holder.drafts, firstStage);
@@ -896,8 +920,7 @@ export function createGameStore(allStages: readonly Stage[], saveDraftsOn = true
       hintTarget: null,
       hintTargetKey: null,
       ...EMPTY_RULE_PREVIEW,
-      message: null, notice: null,
-      ...messageActions(set), ...ghostActions(set),
+      message: null, notice: null, ...messageActions(set), ...ghostActions(set),
       changeSession: null,
       manualFix: null, ...manualFixActions(set, get),
       lastChangeReport: null,
@@ -931,6 +954,7 @@ export function createGameStore(allStages: readonly Stage[], saveDraftsOn = true
     };
   });
   if (saveDraftsOn) autosaveDrafts(store, holder);
+  clearStaleToasts(store);
   return store;
 }
 
