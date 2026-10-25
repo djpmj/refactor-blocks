@@ -68,7 +68,7 @@ import { loadLastStageId, saveLastStageId } from '../../infrastructure/progress/
 import { loadProgress, saveProgress } from '../../infrastructure/progress/progressStorage';
 import { loadStoryEnabled, saveStoryEnabled } from '../../infrastructure/story/storyPreference';
 import { loadTourSeen, saveTourSeen } from '../../infrastructure/tour/tourPreference';
-import { nextTourStep, TOUR_STEPS, TOUR_STAGE_ID, type TourEvent } from '../tour/tourSteps';
+import { nextTourStep, TOUR_STEPS, TOUR_STAGE_ID, tourResultOf, type TourEvent, type TourResult, type TourScore } from '../tour/tourSteps';
 import { describeInlinedBeforeDelete } from '../canvas/describeInlinedBeforeDelete';
 import type { DeleteResult } from '../../domain/codebase/deleteClass';
 
@@ -202,6 +202,10 @@ type GameState = {
   setStoryEnabled: (enabled: boolean) => void;
   tourStep: number | null;
   tourMethodCountAtStepStart: number;
+  /** 今の手順に入ったときの点数。最後の手順で抽出の結果を作る「前」になる。 */
+  tourScoreAtStepStart: TourScore;
+  /** 最後の手順に入るときに作る、抽出の結果。 */
+  tourResult: TourResult | null;
   startTour: (repeat?: boolean) => void;
   advanceTour: (event: TourEvent) => void;
   endTour: () => void;
@@ -211,14 +215,16 @@ function methodCount(codebase: Codebase): number {
   return codebase.files.reduce((count, file) => count + file.classes.reduce((classCount, codeClass) => classCount + codeClass.methods.length, 0), 0);
 }
 
-function tourActions(set: (partial: Partial<GameState>) => void, get: () => GameState): Pick<GameState, 'tourStep' | 'tourMethodCountAtStepStart' | 'startTour' | 'advanceTour' | 'endTour'> {
+function tourActions(set: (partial: Partial<GameState>) => void, get: () => GameState): Pick<GameState, 'tourStep' | 'tourMethodCountAtStepStart' | 'tourScoreAtStepStart' | 'tourResult' | 'startTour' | 'advanceTour' | 'endTour'> {
   return {
     tourStep: null,
     tourMethodCountAtStepStart: 0,
+    tourScoreAtStepStart: { total: 100, deducted: 0 },
+    tourResult: null,
     startTour: (repeat = false) => {
       const state = get();
       if (state.stage.id !== TOUR_STAGE_ID || state.changeSession !== null || (!repeat && loadTourSeen())) return;
-      set({ tourStep: 0, tourMethodCountAtStepStart: methodCount(state.codebase) });
+      set({ tourStep: 0, tourMethodCountAtStepStart: methodCount(state.codebase), tourScoreAtStepStart: scoreCodebase(state.codebase, state.stage), tourResult: null });
     },
     advanceTour: (event) => {
       const state = get();
@@ -229,15 +235,24 @@ function tourActions(set: (partial: Partial<GameState>) => void, get: () => Game
       const next = nextTourStep(TOUR_STEPS, state.tourStep, effectiveEvent);
       if (next === null) {
         saveTourSeen();
-        set({ tourStep: null });
+        set({ tourStep: null, tourResult: null });
       } else if (next !== state.tourStep) {
-        set({ tourStep: next, tourMethodCountAtStepStart: methodCount(state.codebase) });
+        const score = scoreCodebase(state.codebase, state.stage);
+        // 手順4に入る前提(まだメソッドを選んでいない)を揃える
+        const resetSelection = TOUR_STEPS[next].advance.kind === 'select-method' ? { selectedMethodId: null, extractDraft: null } : {};
+        set({
+          tourStep: next,
+          tourMethodCountAtStepStart: methodCount(state.codebase),
+          tourScoreAtStepStart: score,
+          tourResult: next === TOUR_STEPS.length - 1 ? tourResultOf(state.tourScoreAtStepStart, score) : null,
+          ...resetSelection,
+        });
       }
     },
     endTour: () => {
       if (get().tourStep === null) return;
       saveTourSeen();
-      set({ tourStep: null });
+      set({ tourStep: null, tourResult: null });
     },
   };
 }
