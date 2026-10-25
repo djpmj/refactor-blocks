@@ -162,19 +162,20 @@ function useReferenceAnswer(setMenuOpen: (open: boolean) => void, setPreview: (p
 }
 
 /** 変更前の図と解答例をメニューにまとめ、初回だけヒントを勧める。 */
-export function ReferenceMenu({ stage, disabled, revealedCount, onRevealHint, onOpenHints }: Readonly<{
+export function ReferenceMenu({ stage, disabled, menuOpen, onMenuOpenChange, revealedCount, onRevealHint, onOpenHints }: Readonly<{
   stage: Stage;
   disabled: boolean;
+  menuOpen: boolean;
+  onMenuOpenChange: (open: boolean) => void;
   revealedCount: number;
   onRevealHint: () => void;
   onOpenHints: () => void;
 }>) {
-  const [menuOpen, setMenuOpen] = useState(false);
   const [preview, setPreview] = useState<PreviewKind>(null);
   const [replaying, setReplaying] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const { pendingAnswer, openAnswer, closeConfirmation, chooseAnswer } = useReferenceAnswer(setMenuOpen, setPreview, setReplaying);
+  const { pendingAnswer, openAnswer, closeConfirmation, chooseAnswer } = useReferenceAnswer(onMenuOpenChange, setPreview, setReplaying);
   const sampleSteps = sampleAnswerSteps[stage.id];
   const hasSampleAnswer = sampleSteps !== undefined;
   const remainingHints = Math.max(0, (sampleSteps?.length ?? 0) - revealedCount);
@@ -184,7 +185,7 @@ export function ReferenceMenu({ stage, disabled, revealedCount, onRevealHint, on
     if (menuOpen) menuRef.current?.querySelector<HTMLButtonElement>('[role="menuitem"]:not([aria-disabled="true"])')?.focus();
   }, [menuOpen]);
 
-  const closeMenu = () => setMenuOpen(false);
+  const closeMenu = () => onMenuOpenChange(false);
   usePopoverDismiss(menuOpen, menuRef, buttonRef, closeMenu);
 
   return (
@@ -196,11 +197,11 @@ export function ReferenceMenu({ stage, disabled, revealedCount, onRevealHint, on
         aria-haspopup="menu"
         aria-expanded={menuOpen}
         disabled={disabled}
-        onClick={() => setMenuOpen((open) => !open)}
+        onClick={() => onMenuOpenChange(!menuOpen)}
       >
         参考・答え ▾
       </button>
-      {menuOpen && <ReferenceMenuItems hasSampleAnswer={hasSampleAnswer} onBefore={() => { setMenuOpen(false); setPreview('before'); }} onAnswer={(answer) => { if (hasSampleAnswer) openAnswer(answer); }} />}
+      {menuOpen && <ReferenceMenuItems hasSampleAnswer={hasSampleAnswer} onBefore={() => { onMenuOpenChange(false); setPreview('before'); }} onAnswer={(answer) => { if (hasSampleAnswer) openAnswer(answer); }} />}
       <ReferenceMenuPopups
         stage={stage}
         preview={preview}

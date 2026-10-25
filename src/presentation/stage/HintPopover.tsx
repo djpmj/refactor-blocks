@@ -48,7 +48,7 @@ export function HintPopover({ stage, codebase, score, investigating, open, onOpe
         aria-expanded={shown}
         aria-controls={panelId}
         disabled={investigating}
-        onClick={() => onOpenChange(!open)}
+        onClick={() => onOpenChange(!shown)}
       >
         ヒント ▾
       </button>

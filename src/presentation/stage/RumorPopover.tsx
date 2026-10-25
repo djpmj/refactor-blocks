@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from 'react';
+import { useId, useRef } from 'react';
 import type { Stage } from '../../domain/stage/Stage';
 import { useGameStore } from '../store/useGameStore';
 import { RumorList } from './RumorList';
@@ -6,8 +6,7 @@ import { rumorsOf } from './rumorsOf';
 import { useFocusOnOpen, usePopoverDismiss } from './usePopoverDismiss';
 
 /** ツールバーの「うわさ(N) ▾」。うわさの無いステージでは出さない。 */
-export function RumorPopover({ stage }: Readonly<{ stage: Stage }>) {
-  const [open, setOpen] = useState(false);
+export function RumorPopover({ stage, open, onOpenChange }: Readonly<{ stage: Stage; open: boolean; onOpenChange: (open: boolean) => void }>) {
   const investigating = useGameStore((state) => state.changeSession !== null);
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -15,8 +14,7 @@ export function RumorPopover({ stage }: Readonly<{ stage: Stage }>) {
   const panelId = useId();
   const count = rumorsOf(stage).length;
   const shown = open && !investigating;
-  if (investigating && open) setOpen(false);
-  usePopoverDismiss(shown, containerRef, buttonRef, () => setOpen(false));
+  usePopoverDismiss(shown, containerRef, buttonRef, () => onOpenChange(false));
   useFocusOnOpen(shown, panelRef);
   if (count === 0) return null;
   return (
@@ -29,7 +27,7 @@ export function RumorPopover({ stage }: Readonly<{ stage: Stage }>) {
         aria-expanded={shown}
         aria-controls={panelId}
         disabled={investigating}
-        onClick={() => setOpen(!open)}
+        onClick={() => onOpenChange(!shown)}
       >
         うわさ({count}) ▾
       </button>

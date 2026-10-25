@@ -1,5 +1,14 @@
 import { useEffect, type RefObject } from 'react';
 
+/** ツールバーで同時に開けるのは1つだけ。開いているパネルを1つ持ち、どの開き方でも「それを開く」にする。 */
+export type ToolbarPanel = 'reference' | 'hint' | 'rumor' | null;
+
+/** 自分が開いているときだけ閉じる(別のパネルが開いていたら触らない)。 */
+export function togglePanel(current: ToolbarPanel, name: Exclude<ToolbarPanel, null>, open: boolean): ToolbarPanel {
+  if (open) return name;
+  return current === name ? null : current;
+}
+
 /** 外側クリックで閉じる。Esc は、フォーカスがどこにあっても(ほかが処理していなければ)閉じてボタンにフォーカスを戻す。 */
 export function usePopoverDismiss(open: boolean, containerRef: RefObject<HTMLElement | null>, buttonRef: RefObject<HTMLButtonElement | null>, close: () => void): void {
   useEffect(() => {

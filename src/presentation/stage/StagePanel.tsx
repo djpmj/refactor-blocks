@@ -12,6 +12,7 @@ import { describeScoreShort } from './describeScore';
 import { ScoreBreakdown } from './ScoreBreakdown';
 import { HintPopover } from './HintPopover';
 import { RumorPopover } from './RumorPopover';
+import { togglePanel, type ToolbarPanel } from './usePopoverDismiss';
 import { ConceptCheckPanel } from './ConceptCheckPanel';
 import { UnusedPublicNote } from './UnusedPublicNote';
 import { ChangePainCard } from './ChangePainCard';
@@ -192,7 +193,7 @@ function ScoreArea({ stage, codebase, score, disabled }: Readonly<{ stage: Stage
 }
 
 /** ツールバー(キャンバスの上): 変更依頼・やり直し系・図の確認。 */
-function ActionToolbar({ stage, isPerfect, active, revealedCount, onRevealHint, onOpenHints, hintPopover }: Readonly<{ stage: Stage; isPerfect: boolean; active: boolean; revealedCount: number; onRevealHint: () => void; onOpenHints: () => void; hintPopover: ReactNode }>) {
+function ActionToolbar({ stage, isPerfect, active, revealedCount, onRevealHint, onOpenHints, panel, onPanelChange, hintPopover }: Readonly<{ stage: Stage; isPerfect: boolean; active: boolean; revealedCount: number; onRevealHint: () => void; onOpenHints: () => void; panel: ToolbarPanel; onPanelChange: (name: Exclude<ToolbarPanel, null>, open: boolean) => void; hintPopover: ReactNode }>) {
   const [guideOpen, setGuideOpen] = useState(false);
   const resetStage = useGameStore((state) => state.resetStage);
   const undo = useGameStore((state) => state.undo);
@@ -231,9 +232,9 @@ function ActionToolbar({ stage, isPerfect, active, revealedCount, onRevealHint, 
       <button type="button" className="stage-panel__reset" onClick={resetStage} disabled={investigating}>
         最初に戻す
       </button>
-      <ReferenceMenu key={stage.id} stage={stage} disabled={investigating} revealedCount={revealedCount} onRevealHint={onRevealHint} onOpenHints={onOpenHints} />
+      <ReferenceMenu key={stage.id} stage={stage} disabled={investigating} menuOpen={panel === 'reference'} onMenuOpenChange={(open) => onPanelChange('reference', open)} revealedCount={revealedCount} onRevealHint={onRevealHint} onOpenHints={onOpenHints} />
       {hintPopover}
-      <RumorPopover key={`rumor-${stage.id}`} stage={stage} />
+      <RumorPopover key={`rumor-${stage.id}`} stage={stage} open={panel === 'rumor'} onOpenChange={(open) => onPanelChange('rumor', open)} />
       <button type="button" data-testid="operation-guide-open" title="操作ガイド(?)" onClick={() => setGuideOpen(true)}>
         操作ガイド
       </button>
@@ -362,8 +363,12 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
   useSidebarDrawer(sidebarOpen, setSidebarOpen, sidebarToggleRef);
   const { handleProps, style: sidebarStyle } = useStageSidebarWidth();
   const { count: revealedCount } = stageHints;
-  const [hintOpen, setHintOpen] = useState(false);
-  if (investigating && hintOpen) setHintOpen(false);
+  const [panel, setPanel] = useState<ToolbarPanel>(null);
+  const [panelStageId, setPanelStageId] = useState(stage.id);
+  // 変更依頼に挑戦中・ステージ切替では、開いているパネルを閉じる
+  if ((investigating || panelStageId !== stage.id) && panel !== null) setPanel(null);
+  if (panelStageId !== stage.id) setPanelStageId(stage.id);
+  const changePanel = (name: Exclude<ToolbarPanel, null>, open: boolean) => setPanel((current) => togglePanel(current, name, open));
   const { sidebarRef } = useStageFlow(stage, score.total);
 
   const { hints, total } = useHints(stage, revealedCount);
@@ -388,8 +393,10 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
             active={active}
             revealedCount={revealedCount}
             onRevealHint={stageHints.problemRevealed ? stageHints.revealStep : stageHints.revealProblem}
-            onOpenHints={() => setHintOpen(true)}
-            hintPopover={<HintPopover stage={stage} codebase={codebase} score={score} investigating={investigating} open={hintOpen} onOpenChange={setHintOpen}
+            onOpenHints={() => changePanel('hint', true)}
+            panel={panel}
+            onPanelChange={changePanel}
+            hintPopover={<HintPopover stage={stage} codebase={codebase} score={score} investigating={investigating} open={panel === 'hint'} onOpenChange={(open) => changePanel('hint', open)}
               revealedCount={revealedCount} hints={hints} total={total} problemRevealed={stageHints.problemRevealed} onRevealProblem={stageHints.revealProblem} onReveal={stageHints.revealStep} />}
           />
           <DraftRestoredNotice />

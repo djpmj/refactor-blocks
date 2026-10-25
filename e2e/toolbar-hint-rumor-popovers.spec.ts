@@ -317,3 +317,49 @@ test('狭い画面(375px)でも、ポップオーバーが横にはみ出さず�
   // Assert
   await expect(page.getByTestId('hint-problem-text')).toBeVisible();
 });
+
+const EXCLUSIVE_PANELS = [
+  { label: 'ヒント', button: 'hint-popover-button', panel: 'hint-popover' },
+  { label: 'うわさ', button: 'rumor-popover-button', panel: 'rumor-popover' },
+  { label: '参考・答え', button: 'reference-menu-button', panel: 'reference-before' },
+] as const;
+
+for (const first of EXCLUSIVE_PANELS) {
+  for (const second of EXCLUSIVE_PANELS) {
+    if (first === second) continue;
+    for (const key of ['Enter', 'Space'] as const) {
+      test(`${first.label}を開いたあと、キーボード(${key})で${second.label}のボタンを押しても、開いているのは1つだけ`, async ({ page }) => {
+        // Arrange
+        await openTutorial1(page);
+        await page.getByTestId(first.button).click();
+        await expect(page.getByTestId(first.panel)).toBeVisible();
+
+        // Act
+        await page.getByTestId(second.button).focus();
+        await page.keyboard.press(key);
+
+        // Assert
+        await expect(page.getByTestId(second.panel)).toBeVisible();
+        await expect(page.getByTestId(first.panel)).toBeHidden();
+        await expect(page.getByTestId(first.button)).toHaveAttribute('aria-expanded', 'false');
+      });
+    }
+  }
+}
+
+test('狭い画面(375px)でも、ヒントを開いたままうわさをキーボードで開くと、開いているのは1つだけ', async ({ page }) => {
+  // Arrange
+  await page.setViewportSize({ width: 375, height: 700 });
+  await page.goto('/');
+  await selectStage(page, TUTORIAL1, { completeOpeningFix: false });
+  await page.getByTestId('hint-popover-button').click();
+  await expect(page.getByTestId('hint-popover')).toBeVisible();
+
+  // Act
+  await page.getByTestId('rumor-popover-button').focus();
+  await page.keyboard.press('Enter');
+
+  // Assert
+  await expect(page.getByTestId('rumor-popover')).toBeVisible();
+  await expect(page.getByTestId('hint-popover')).toBeHidden();
+});
