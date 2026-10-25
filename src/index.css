@@ -442,6 +442,11 @@ input.class-node__name { width: 14ch; }
 .react-flow__edge.animated.edge--visibility .react-flow__edge-path { animation: warning-dashdraw 1.5s linear infinite; }
 .react-flow__edge.animated.edge--cyclic .react-flow__edge-path { animation: dashdraw 1.5s linear infinite; }
 .react-flow__edge.animated.edge--visibility.edge--cyclic .react-flow__edge-path { animation: warning-dashdraw 1.5s linear infinite; }
+.react-flow__edge.edge--layer .react-flow__edge-path { stroke: var(--danger); stroke-width: 3; stroke-dasharray: 8 5; }
+.react-flow__edge.animated.edge--layer .react-flow__edge-path { animation: dashdraw 1.5s linear infinite; }
+.lane-band { position: absolute; z-index: -1; box-sizing: border-box; pointer-events: none; border-top: 1px dashed var(--border); background: color-mix(in srgb, var(--accent) 6%, transparent); }
+.lane-band:nth-child(even) { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.lane-band__name { position: absolute; top: 6px; left: 10px; color: var(--text-muted, var(--text)); font-size: 13px; font-weight: 700; letter-spacing: 0.04em; }
 .react-flow__edgelabel-renderer { z-index: 1001; }
 .warning-edge { position: absolute; pointer-events: all; z-index: 10; display: flex; flex-direction: column; align-items: center; }
 .warning-edge--open { z-index: 30; }
@@ -456,6 +461,7 @@ input.class-node__name { width: 14ch; }
 .warning-edge__section p { margin: 4px 0; }
 @media (prefers-reduced-motion: reduce) {
   .react-flow__edge.animated.edge--visibility .react-flow__edge-path,
+  .react-flow__edge.animated.edge--layer .react-flow__edge-path,
   .react-flow__edge.animated.edge--cyclic .react-flow__edge-path { animation: none; }
 }
 @keyframes warning-dashdraw {

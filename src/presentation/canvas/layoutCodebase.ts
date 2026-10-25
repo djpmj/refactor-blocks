@@ -1,6 +1,9 @@
 import { MarkerType, type Edge, type Node } from "@xyflow/react";
 import { allClasses, fieldsOf, findClass, findMethod, parentIds, type CodeClass, type Codebase } from "../../domain/codebase/Codebase";
 import { classDependencies } from "../../domain/codebase/dependencies";
+import { findLayerViolations, type LayerViolation } from "../../domain/scoring/layers";
+import type { StageLayer } from "../../domain/stage/Stage";
+import { layerLanes } from "./layerLanes";
 import type { VisibilityViolationDependency } from "../../domain/scoring/visibility";
 import { TRAY_CLASS_ID, TRAY_FILE_ID } from "../../domain/blank/tray";
 
@@ -117,8 +120,20 @@ function assignFileLayers(codebase: Codebase): Map<string, number> {
   return layer;
 }
 
-/** 層ごとにファイルをまとめる。層の中の並び順は元の `codebase.files` の順番のまま。 */
-function fileRows(codebase: Codebase): CodeFile[][] {
+/** `stage.layers` があるときの段。層ごとに1段で、層が決まらないファイルがあるときだけ最後に「未分類」の段を足す。 */
+function laneRows(codebase: Codebase, layers: readonly StageLayer[]): CodeFile[][] {
+  const laneByFileId = layerLanes(codebase, layers);
+  const rows: CodeFile[][] = Array.from({ length: layers.length + 1 }, () => []);
+  for (const file of codebase.files) rows[laneByFileId.get(file.id) ?? layers.length].push(file);
+  return rows[layers.length].length === 0 ? rows.slice(0, layers.length) : rows;
+}
+
+/**
+ * 層ごとにファイルをまとめる。層の中の並び順は元の `codebase.files` の順番のまま。
+ * `layers` があるステージでは、依存の向きではなく層の順(上から下)に段を分ける。
+ */
+function fileRows(codebase: Codebase, layers?: readonly StageLayer[]): CodeFile[][] {
+  if (layers !== undefined) return laneRows(codebase, layers);
   const layerByFileId = assignFileLayers(codebase);
   const rows: CodeFile[][] = [];
   for (const file of codebase.files) {
@@ -159,20 +174,26 @@ function rowWidth(files: readonly CodeFile[], metrics: ReadonlyMap<string, FileM
   return files.reduce((sum, file) => sum + (metrics.get(file.id)?.width ?? 0) + FILE_GAP, -FILE_GAP);
 }
 
-/**
- * ファイルを、依存・継承の向きに沿って上から下へ層(row)分けして並べ、その中にクラスを縦に積む。
- * 呼ぶ側(例: Service)が上段、呼ばれる側(実装先のインターフェースなど)が下段になるので、
- * 遠く離れたファイルをまたぐ矢印が間のファイルの上を横切ることが少なくなる。
- * クラスはファイルノードの子(parentId)として配置する。最初はステージ作者が手で座標を持たなくて済むよう自動配置にしている。
- */
-export function layoutCodebase(codebase: Codebase): CodebaseFlowNode[] {
-  const visibleCodebase = { files: codebase.files.filter((file) => file.id !== TRAY_FILE_ID || file.classes.some((codeClass) => codeClass.methods.length > 0)) };
-  const rows = fileRows(visibleCodebase);
+type PlacedRows = { readonly nodes: CodebaseFlowNode[]; readonly bands: readonly LaneBand[]; readonly width: number };
+export type LaneBand = { readonly name: string; readonly x: number; readonly y: number; readonly width: number; readonly height: number };
+
+/** 段の帯が、段の中のファイルより少し外側まで広がる余白。層の名前は、帯の上端(ファイルの上の余白)に置く。 */
+const LANE_PADDING_X = 120;
+const LANE_UNCLASSIFIED = "未分類";
+
+function withoutEmptyTray(codebase: Codebase): Codebase {
+  return { files: codebase.files.filter((file) => file.id !== TRAY_FILE_ID || file.classes.some((codeClass) => codeClass.methods.length > 0)) };
+}
+
+function placeRows(codebase: Codebase, layers: readonly StageLayer[] | undefined): PlacedRows {
+  const visibleCodebase = withoutEmptyTray(codebase);
+  const rows = fileRows(visibleCodebase, layers);
   const metrics = new Map(visibleCodebase.files.map((file) => [file.id, measureFile(file)] as const));
   const widestRow = Math.max(0, ...rows.map((files) => rowWidth(files, metrics)));
   const nodes: CodebaseFlowNode[] = [];
+  const bands: LaneBand[] = [];
   let rowY = 0;
-  for (const files of rows) {
+  rows.forEach((files, row) => {
     let fileX = (widestRow - rowWidth(files, metrics)) / 2;
     let rowHeight = MIN_FILE_HEIGHT;
     for (const file of files) {
@@ -181,9 +202,29 @@ export function layoutCodebase(codebase: Codebase): CodebaseFlowNode[] {
       fileX += fileMetrics.width + FILE_GAP;
       rowHeight = Math.max(rowHeight, fileMetrics.height);
     }
+    bands.push({
+      name: layers?.[row]?.name ?? LANE_UNCLASSIFIED,
+      x: -LANE_PADDING_X, y: rowY - ROW_GAP / 2, width: widestRow + LANE_PADDING_X * 2, height: rowHeight + ROW_GAP,
+    });
     rowY += rowHeight + ROW_GAP;
-  }
-  return nodes;
+  });
+  return { nodes, bands, width: widestRow };
+}
+
+/**
+ * ファイルを、依存・継承の向きに沿って上から下へ層(row)分けして並べ、その中にクラスを縦に積む。
+ * 呼ぶ側(例: Service)が上段、呼ばれる側(実装先のインターフェースなど)が下段になるので、
+ * 遠く離れたファイルをまたぐ矢印が間のファイルの上を横切ることが少なくなる。
+ * `layers`(レイヤードアーキテクチャのステージ)があるときは、依存の向きではなく層の順に段を分ける。
+ * クラスはファイルノードの子(parentId)として配置する。最初はステージ作者が手で座標を持たなくて済むよう自動配置にしている。
+ */
+export function layoutCodebase(codebase: Codebase, layers?: readonly StageLayer[]): CodebaseFlowNode[] {
+  return placeRows(codebase, layers).nodes;
+}
+
+/** 層ごとの段の帯(層の名前つき)。`layers` が無いステージには帯が無い。 */
+export function laneBands(codebase: Codebase, layers: readonly StageLayer[] | undefined): readonly LaneBand[] {
+  return layers === undefined ? [] : placeRows(codebase, layers).bands;
 }
 
 /** 矢印はファイルの箱(親ノード)より手前に描く。 */
@@ -195,8 +236,8 @@ type ClassPosition = { fileId: string; classIndex: number };
 type FilePosition = { row: number; col: number; classIndex: number };
 
 /** 同じ層(row)の中で、間に他ファイルを挟む辺の数。1本以上挟むと、そのファイルのクラスの上に線が重なってしまう。 */
-function defaultFileRects(codebase: Codebase): ReadonlyMap<string, FileRect> {
-  return fileRectsFromNodes(layoutCodebase(codebase));
+function defaultFileRects(codebase: Codebase, layers?: readonly StageLayer[]): ReadonlyMap<string, FileRect> {
+  return fileRectsFromNodes(layoutCodebase(codebase, layers));
 }
 
 export function fileRectsFromNodes(nodes: readonly CodebaseFlowNode[]): ReadonlyMap<string, FileRect> {
@@ -222,16 +263,16 @@ function classPositionById(codebase: Codebase): Map<string, ClassPosition> {
   return position;
 }
 
-function filePositionByClassId(codebase: Codebase): Map<string, FilePosition> {
+function filePositionByClassId(codebase: Codebase, layers?: readonly StageLayer[]): Map<string, FilePosition> {
   const position = new Map<string, FilePosition>();
-  fileRows(codebase).forEach((files, row) => files.forEach((file, col) => {
+  fileRows(codebase, layers).forEach((files, row) => files.forEach((file, col) => {
     file.classes.forEach((codeClass, classIndex) => position.set(codeClass.id, { row, col, classIndex }));
   }));
   return position;
 }
 
-function isDefaultLayout(codebase: Codebase, fileRects: ReadonlyMap<string, FileRect>): boolean {
-  const defaults = defaultFileRects(codebase);
+function isDefaultLayout(codebase: Codebase, fileRects: ReadonlyMap<string, FileRect>, layers?: readonly StageLayer[]): boolean {
+  const defaults = defaultFileRects(codebase, layers);
   if (defaults.size !== fileRects.size) return false;
   return [...defaults].every(([id, rect]) => {
     const current = fileRects.get(id);
@@ -341,10 +382,10 @@ function logicalTopLaneSpan(id: string, from: FilePosition, to: FilePosition): T
 }
 
 /** 依存・継承をまとめて1回でレーン分けする(片方ずつ割り当てると、両方が同じ高さを選んで重なるため)。 */
-function topLanesByEdgeId(codebase: Codebase, fileRects: ReadonlyMap<string, FileRect>, useLogicalLayout: boolean): ReadonlyMap<string, number> {
+function topLanesByEdgeId(codebase: Codebase, fileRects: ReadonlyMap<string, FileRect>, useLogicalLayout: boolean, layers?: readonly StageLayer[]): ReadonlyMap<string, number> {
   const positionByClassId = classPositionById(codebase);
   const at = (classId: string) => positionByClassId.get(classId);
-  const logicalByClassId = filePositionByClassId(codebase);
+  const logicalByClassId = filePositionByClassId(codebase, layers);
   const logicalSpan = (id: string, fromId: string, toId: string) => {
     const from = logicalByClassId.get(fromId);
     const to = logicalByClassId.get(toId);
@@ -377,6 +418,7 @@ type EdgeDescriptor = {
   inheritanceKind?: "extends" | "implements";
   cyclic?: boolean;
   visibility?: VisibilityViolationDependency;
+  layer?: LayerViolation["kind"];
 };
 
 function edgeRouting(
@@ -412,31 +454,57 @@ function handleSidesForPositions(
   return handleSidesForFiles({ sourceFileId, targetFileId, sourceClassIndex, targetClassIndex }, fileRects);
 }
 
+/** 依存の矢印に付ける印(循環・可視性・層の違反)のclass名。 */
+function dependencyMarks(descriptor: EdgeDescriptor): string[] {
+  return [
+    descriptor.cyclic === true && "edge--cyclic",
+    descriptor.visibility !== undefined && "edge--visibility",
+    descriptor.layer !== undefined && "edge--layer",
+  ].filter((name): name is string => name !== false);
+}
+
+function markerColorOf(descriptor: EdgeDescriptor): string | undefined {
+  if (descriptor.cyclic === true || descriptor.layer !== undefined) return "var(--danger)";
+  return descriptor.visibility === undefined ? undefined : "var(--warning)";
+}
+
 function edgeAppearance(descriptor: EdgeDescriptor): Pick<Edge, "className" | "markerEnd" | "animated"> {
-  let className: string | undefined;
-  let markerEnd: Edge["markerEnd"];
-  const cyclic = descriptor.cyclic === true;
-  const visibility = descriptor.visibility !== undefined;
-  let markerColor: string | undefined;
-  if (cyclic) markerColor = "var(--danger)";
-  else if (visibility) markerColor = "var(--warning)";
+  const marks = dependencyMarks(descriptor);
   if (descriptor.kind === "inheritance") {
-    className = `edge--inheritance edge--${descriptor.inheritanceKind ?? "extends"}`;
-    markerEnd = descriptor.inheritanceKind === "implements" ? IMPLEMENTS_ARROW_MARKER : INHERITANCE_ARROW_MARKER;
-  } else {
-    markerEnd = {
-      type: MarkerType.ArrowClosed,
-      color: markerColor,
+    return {
+      className: `edge--inheritance edge--${descriptor.inheritanceKind ?? "extends"}`,
+      markerEnd: descriptor.inheritanceKind === "implements" ? IMPLEMENTS_ARROW_MARKER : INHERITANCE_ARROW_MARKER,
+      animated: marks.length > 0,
     };
   }
-  if (descriptor.kind === "dependency") {
-    const classes = [cyclic && "edge--cyclic", visibility && "edge--visibility"].filter(Boolean);
-    className = classes.length === 0 ? undefined : classes.join(" ");
-  }
-  return { className, markerEnd, animated: cyclic || visibility };
+  return {
+    className: marks.length === 0 ? undefined : marks.join(" "),
+    markerEnd: { type: MarkerType.ArrowClosed, color: markerColorOf(descriptor) },
+    animated: marks.length > 0,
+  };
 }
 
 type EdgeGeometry = { readonly fileRects: ReadonlyMap<string, FileRect>; readonly laneByEdgeId: ReadonlyMap<string, number>; readonly useLogicalLayout: boolean };
+
+function warningData(descriptor: EdgeDescriptor, routing: Pick<Edge, "type" | "data">, codebase: Codebase): Edge["data"] {
+  const { visibility } = descriptor;
+  let route = "default";
+  if (routing.type === "topRoute") route = "topRoute";
+  else if (routing.type === "offset") route = "offset";
+  return {
+    route,
+    ...(typeof routing.data?.lane === "number" ? { lane: routing.data.lane } : {}),
+    ...(typeof routing.data?.targetOffset === "number" ? { targetOffset: routing.data.targetOffset } : {}),
+    cyclic: descriptor.cyclic === true,
+    ...(descriptor.layer === undefined ? {} : { layer: descriptor.layer }),
+    ...(visibility === undefined ? {} : {
+      visibility: {
+        kind: visibility.kind,
+        methodNames: visibility.methodIds.map((methodId) => findMethod(codebase, methodId)?.name).filter((name): name is string => name !== undefined),
+      },
+    }),
+  };
+}
 
 function edgeFor(
   descriptor: EdgeDescriptor,
@@ -445,11 +513,7 @@ function edgeFor(
 ): Edge {
   const { id, source, target } = descriptor;
   const routing = edgeRouting(descriptor, geometry.fileRects, geometry.laneByEdgeId, geometry.useLogicalLayout);
-  const warning = descriptor.kind === "dependency" && (descriptor.cyclic === true || descriptor.visibility !== undefined);
-  const visibility = descriptor.visibility;
-  let routeName = "default";
-  if (routing.type === "topRoute") routeName = "topRoute";
-  else if (routing.type === "offset") routeName = "offset";
+  const warning = descriptor.kind === "dependency" && dependencyMarks(descriptor).length > 0;
   return {
     id,
     source,
@@ -457,21 +521,7 @@ function edgeFor(
     ...routing,
     zIndex: EDGE_Z_INDEX,
     ...edgeAppearance(descriptor),
-    ...(warning ? {
-      type: "warning",
-      data: {
-        route: routeName,
-        ...(typeof routing.data?.lane === "number" ? { lane: routing.data.lane } : {}),
-        ...(typeof routing.data?.targetOffset === "number" ? { targetOffset: routing.data.targetOffset } : {}),
-        cyclic: descriptor.cyclic === true,
-        ...(visibility === undefined ? {} : {
-          visibility: {
-            kind: visibility.kind,
-            methodNames: visibility.methodIds.map((methodId) => findMethod(codebase, methodId)?.name).filter((name): name is string => name !== undefined),
-          },
-        }),
-      },
-    } : {}),
+    ...(warning ? { type: "warning", data: warningData(descriptor, routing, codebase) } : {}),
   };
 }
 
@@ -481,25 +531,28 @@ export function dependenciesWithoutTray(codebase: Codebase): ReturnType<typeof c
 }
 
 /**
- * クラス間の依存を矢印にする。循環している依存は赤で描く。
+ * クラス間の依存を矢印にする。循環している依存は赤で描く。`layers` があるステージでは、層を飛ばす・逆らう依存も赤で描く。
  * 層が違えば上下(浅い方の下端→深い方の上端)、同じ層なら左右(飛び越えるときはskip)でつなぐ。
  */
 export function dependencyEdges(
   codebase: Codebase,
   fileRects: ReadonlyMap<string, FileRect> = defaultFileRects(codebase),
   violations: readonly VisibilityViolationDependency[] = [],
+  layers?: readonly StageLayer[],
 ): Edge[] {
   const positionByClassId = classPositionById(codebase);
-  const filePositionByClassIdMap = filePositionByClassId(codebase);
-  const useLogicalLayout = isDefaultLayout(codebase, fileRects);
-  const laneByEdgeId = topLanesByEdgeId(codebase, fileRects, useLogicalLayout);
+  const filePositionByClassIdMap = filePositionByClassId(codebase, layers);
+  const useLogicalLayout = isDefaultLayout(codebase, fileRects, layers);
+  const laneByEdgeId = topLanesByEdgeId(codebase, fileRects, useLogicalLayout, layers);
   const violationByPair = new Map(violations.map((violation) => [`${violation.from}\u0000${violation.to}`, violation]));
+  const layerByPair = new Map(findLayerViolations(codebase, layers).map(({ fromClassId, toClassId, kind }) => [`${fromClassId}\u0000${toClassId}`, kind]));
   return dependenciesWithoutTray(codebase).map(({ from, to, cyclic }) => edgeFor({
     id: `dep-${from}-${to}`, source: from, target: to,
     sourcePosition: positionByClassId.get(from), targetPosition: positionByClassId.get(to),
     sourceFilePosition: filePositionByClassIdMap.get(from), targetFilePosition: filePositionByClassIdMap.get(to),
     kind: "dependency", cyclic,
     visibility: violationByPair.get(`${from}\u0000${to}`),
+    layer: layerByPair.get(`${from}\u0000${to}`),
   }, codebase, { fileRects, laneByEdgeId, useLogicalLayout }));
 }
 
@@ -507,11 +560,11 @@ export function dependencyEdges(
  * 継承(子→親)を矢印にする。依存の矢印(塗りつぶし矢印、循環時のみ赤)と区別できるよう、
  * 輪郭だけの矢印・アクセント色の専用クラスにする。親が削除されて見つからないクラスは辺を作らない。
  */
-export function inheritanceEdges(codebase: Codebase, fileRects: ReadonlyMap<string, FileRect> = defaultFileRects(codebase)): Edge[] {
+export function inheritanceEdges(codebase: Codebase, fileRects: ReadonlyMap<string, FileRect> = defaultFileRects(codebase), layers?: readonly StageLayer[]): Edge[] {
   const positionByClassId = classPositionById(codebase);
-  const filePositionByClassIdMap = filePositionByClassId(codebase);
-  const useLogicalLayout = isDefaultLayout(codebase, fileRects);
-  const laneByEdgeId = topLanesByEdgeId(codebase, fileRects, useLogicalLayout);
+  const filePositionByClassIdMap = filePositionByClassId(codebase, layers);
+  const useLogicalLayout = isDefaultLayout(codebase, fileRects, layers);
+  const laneByEdgeId = topLanesByEdgeId(codebase, fileRects, useLogicalLayout, layers);
   const edges = allClasses(codebase).flatMap((codeClass) => parentIds(codeClass)
     .filter((parentId) => findClass(codebase, parentId) !== undefined)
     .map((parentId) => edgeFor({
