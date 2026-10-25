@@ -641,6 +641,46 @@ describe('manual fix method viewer state', () => {
   });
 });
 
+describe('recordProgress', () => {
+  it('ステージを開いた直後の点数(初期点)は自己ベストとして記録しない', () => {
+    // Arrange
+    const stage = stages[0];
+    const store = createGameStore([stage], false, false);
+    const initial = scoreCodebase(stage.codebase, stage).total;
+
+    // Act
+    store.getState().recordProgress(stage.id, initial);
+
+    // Assert
+    expect(store.getState().progress[stage.id]).toBeUndefined();
+  });
+
+  it('初期点を超えた点数は記録し、その後に点数が下がっても自己ベストは下がらない', () => {
+    // Arrange
+    const stage = stages[0];
+    const store = createGameStore([stage], false, false);
+    const initial = scoreCodebase(stage.codebase, stage).total;
+
+    // Act
+    store.getState().recordProgress(stage.id, initial + 10);
+    store.getState().recordProgress(stage.id, initial);
+
+    // Assert
+    expect(store.getState().progress[stage.id]).toBe(initial + 10);
+  });
+
+  it('存在しないステージの点数は記録しない', () => {
+    // Arrange
+    const store = createGameStore(stages, false, false);
+
+    // Act
+    store.getState().recordProgress('no-such-stage', 80);
+
+    // Assert
+    expect(store.getState().progress['no-such-stage']).toBeUndefined();
+  });
+});
+
 describe('最後に開いたステージから始める', () => {
   const [first, second] = stages;
 

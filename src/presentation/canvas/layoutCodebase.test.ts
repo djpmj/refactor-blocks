@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Codebase, Fragment } from "../../domain/codebase/Codebase";
 import { advancedStages } from "../../infrastructure/stages/advancedStages";
-import { dependenciesWithoutTray, dependencyEdges, fileRectsFromNodes, handleSidesForFiles, inheritanceEdges, inheritanceKind, laneBands, layoutCodebase, spreadOffsets, type FileRect } from "./layoutCodebase";
+import { dependenciesWithoutTray, dependencyEdges, fileRectsFromNodes, handleSidesForFiles, inheritanceEdges, fileSizeOf, inheritanceKind, laneBands, layoutCodebase, spreadOffsets, type FileRect } from "./layoutCodebase";
 
 function callFragment(id: string, uses: readonly string[]): Fragment {
   return { id, label: id, lines: 1, responsibility: "call", uses };
@@ -695,5 +695,36 @@ describe("層を扱うステージの段", () => {
     const toService = edges.find((edge) => edge.target === "class-Service");
     expect(toRepository).toMatchObject({ type: "warning", className: "edge--layer", data: { layer: "skip" } });
     expect(toService?.className).toBeUndefined();
+  });
+});
+
+describe("fileSizeOf", () => {
+  it("returns the same size as the file node that layoutCodebase draws", () => {
+    // Arrange
+    const codebase = codebaseOf([["src/A.ts", "A", []], ["src/B.ts", "B", []]]);
+    const [file] = codebase.files;
+    const [codeClass] = file.classes;
+    const [method] = codeClass.methods;
+    const extraMethods = [{ ...method, id: "m-2" }, { ...method, id: "m-3" }];
+    const grown: Codebase = { files: [{ ...file, classes: [{ ...codeClass, methods: [method, ...extraMethods] }] }, codebase.files[1]] };
+    const drawn = fileRectsFromNodes(layoutCodebase(grown));
+
+    // Act
+    const size = fileSizeOf(grown, "file-src/A.ts");
+
+    // Assert
+    expect(size).toEqual({ width: drawn.get("file-src/A.ts")?.width, height: drawn.get("file-src/A.ts")?.height });
+    expect(size.height).toBeGreaterThan(fileSizeOf(codebase, "file-src/A.ts").height);
+  });
+
+  it("returns a zero size for an unknown file", () => {
+    // Arrange
+    const codebase = codebaseOf([["src/A.ts", "A", []]]);
+
+    // Act
+    const size = fileSizeOf(codebase, "missing");
+
+    // Assert
+    expect(size).toEqual({ width: 0, height: 0 });
   });
 });

@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Codebase } from '../../domain/codebase/Codebase';
-import { clearConditions, worstMeasures } from '../../domain/stage/clearConditions';
+import { clearConditionKey, clearConditions, worstMeasures } from '../../domain/stage/clearConditions';
 import type { Score } from '../../domain/scoring/score';
 import type { Stage } from '../../domain/stage/Stage';
 import type { History } from '../../domain/codebase/history';
 import { useGameStore } from '../store/useGameStore';
+import { findLineLimitViolations } from '../../domain/scoring/lineLimits';
 import { describeCondition } from './describeCondition';
 
 type PreviousConditions = {
@@ -32,19 +33,19 @@ function shouldSuppressTransition(previous: PreviousConditions | null, stageId: 
 function getNewlyMetRules(previous: PreviousConditions | null, stageId: string, conditions: ReturnType<typeof clearConditions>, suppress: boolean): string[] {
   if (previous === null || previous.stageId !== stageId || suppress) return [];
   return conditions
-    .filter((condition) => condition.count === 0 && previous.unmetRules.has(condition.rule))
-    .map((condition) => condition.rule);
+    .filter((condition) => condition.count === 0 && previous.unmetRules.has(clearConditionKey(condition)))
+    .map(clearConditionKey);
 }
 
 function hasRegressed(previous: PreviousConditions | null, stageId: string, conditions: ReturnType<typeof clearConditions>): boolean {
   return previous !== null && previous.stageId === stageId
-    && conditions.some((condition) => condition.count > 0 && !previous.unmetRules.has(condition.rule));
+    && conditions.some((condition) => condition.count > 0 && !previous.unmetRules.has(clearConditionKey(condition)));
 }
 
 function rememberConditions(stageId: string, conditions: ReturnType<typeof clearConditions>, history: History, layoutResetCount: number): PreviousConditions {
   return {
     stageId,
-    unmetRules: new Set(conditions.filter((condition) => condition.count > 0).map((condition) => condition.rule)),
+    unmetRules: new Set(conditions.filter((condition) => condition.count > 0).map(clearConditionKey)),
     history,
     layoutResetCount,
   };
@@ -96,7 +97,10 @@ export function ClearConditionList({ stage, codebase, initial, current }: Readon
   initial: Score;
   current: Score;
 }>) {
-  const conditions = useMemo(() => clearConditions(initial, current), [initial, current]);
+  const conditions = useMemo(
+    () => clearConditions(initial, current, findLineLimitViolations(codebase, stage.limits)),
+    [initial, current, codebase, stage.limits],
+  );
   const measures = useMemo(() => worstMeasures(codebase, stage), [codebase, stage]);
   const justMet = useJustMetRules(stage.id, conditions, codebase);
 
@@ -117,15 +121,15 @@ export function ClearConditionList({ stage, codebase, initial, current }: Readon
         {conditions.map((condition) => {
           const achieved = condition.count === 0;
           const description = describeCondition(condition, stage, measures, codebase);
-          const recentlyAchieved = justMet.rules.has(condition.rule);
+          const recentlyAchieved = justMet.rules.has(clearConditionKey(condition));
           const label = conditionLabel(achieved, description.goal, description.current);
           return (
             <li
-              key={condition.rule}
+              key={clearConditionKey(condition)}
               className={`clear-condition--${achieved ? 'met' : 'unmet'}${recentlyAchieved ? ' clear-condition--just-met' : ''}`}
               aria-label={label}
               onAnimationEnd={(event) => {
-                if (event.target === event.currentTarget) justMet.clear(condition.rule);
+                if (event.target === event.currentTarget) justMet.clear(clearConditionKey(condition));
               }}
             >
               <span className="clear-condition__badge" aria-hidden="true">{achieved ? '✓' : '✗'}</span>

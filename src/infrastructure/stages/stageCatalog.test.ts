@@ -14,6 +14,7 @@ import { scoreCodebase } from '../../domain/scoring/score';
 import { findLineLimitViolations } from '../../domain/scoring/lineLimits';
 import { findMisplacedResponsibilities } from '../../domain/scoring/misplacedResponsibilities';
 import { findMixedMethods } from '../../domain/scoring/mixedMethods';
+import { findRoomToImprove } from '../../domain/scoring/roomToImprove';
 import { findVisibilityViolations } from '../../domain/scoring/visibility';
 import { behaviorTests, runBehaviorTests } from '../../domain/testing/behaviorTests';
 import type { Result } from '../../domain/shared/Result';
@@ -131,6 +132,7 @@ function redFailuresAcross(stage: Stage, snapshots: readonly Codebase[]) {
 }
 
 const templateSolution = sampleAnswerSteps['advanced-template-method'] ?? [];
+const orderStateSolution = sampleAnswerSteps['advanced-order-state'] ?? [];
 
 describe('初期違反の種類', () => {
   it('役割タグを付けた全クラスは初期状態で減点されない', () => {
@@ -164,6 +166,7 @@ describe('初期違反の種類', () => {
     ['advanced-notifier-hierarchy', ['line-limit', 'responsibility', 'empty']],
     ['advanced-payment-gateway-interface', ['line-limit', 'contract']],
     ['advanced-discount-strategy', ['line-limit', 'responsibility']],
+    ['advanced-order-state', ['line-limit', 'responsibility']],
     ['advanced-report-factory', ['line-limit', 'responsibility', 'empty']],
     ['advanced-collapse-hierarchy', ['coupling', 'cycle', 'visibility', 'lone-superclass']],
     ['advanced-interface-segregation', ['stub']],
@@ -348,6 +351,30 @@ describe('責務の混ざったメソッド', () => {
 
 /** ステージの狙いを飛ばした手順。これで100点になってしまうなら、ステージの数値の作りが甘い。 */
 const shortcuts: ReadonlyArray<{ readonly stageId: string; readonly description: string; readonly steps: readonly SolutionStep[]; readonly expectedScore?: number }> = [
+  {
+    stageId: 'advanced-order-state',
+    description: '状態クラスへ移すが OrderState を実装しない',
+    steps: orderStateSolution.filter((step) => !('addInterface' in step)),
+  },
+  {
+    stageId: 'advanced-order-state',
+    description: '状態でなく操作ごとのクラスへ分ける',
+    steps: (['pay', 'ship', 'cancel'] as const).flatMap((operation): SolutionStep[] => {
+      const name = `${operation[0].toUpperCase()}${operation.slice(1)}Handler`;
+      const file = `src/order/${name}.ts`;
+      return [
+        { addFile: file },
+        { addClass: { name, file } },
+        ...(['unpaid', 'paid', 'shipped'] as const).flatMap((state): SolutionStep[] => {
+          const method = `${operation}${state[0].toUpperCase()}${state.slice(1)}`;
+          return [
+            { extract: { from: operation, fragmentIds: [`frag-${operation}-${state}`], name: method } },
+            { move: { method, fromClass: 'Order', toClass: name } },
+          ];
+        }),
+      ];
+    }),
+  },
   {
     stageId: 'advanced-template-method',
     description: '共通3手順だけ親へ移し、骨組みを子に残す',
@@ -980,6 +1007,37 @@ describe('stageCatalog', () => {
 
     // Act / Assert
     expect(invalid).toEqual([]);
+  });
+
+  it('チュートリアル1: 責務Aだけ抽出した100点には「さらに良くできるところ」が2件出て、解答例の3手で1件に減る', () => {
+    // Arrange
+    const stage = stages.find((candidate) => candidate.id === 'tutorial-extract-method');
+    if (stage === undefined) throw new Error('チュートリアル1がありません');
+    const reference = sampleAnswerCodebase(stage);
+    const aggregateOnly = applySolutionSteps(stage.codebase, [
+      { extract: { from: 'printMonthlyReport', fragmentIds: ['frag-aggregate-sales', 'frag-compare-last-month'], name: 'aggregateSales' } },
+    ]);
+    const firstThree = applySolutionSteps(stage.codebase, (sampleAnswerSteps[stage.id] ?? []).slice(0, 3));
+
+    // Act
+    const early = findRoomToImprove(aggregateOnly, reference, stage);
+    const later = findRoomToImprove(firstThree, reference, stage);
+
+    // Assert
+    expect(scoreCodebase(aggregateOnly, stage).total).toBe(100);
+    expect(early).toMatchObject([
+      { kind: 'mixed-method', methodId: 'method-print-monthly-report', responsibilities: ['formatting', 'output'] },
+      { kind: 'crowded-class', classId: 'class-report-service' },
+    ]);
+    expect(later).toMatchObject([{ kind: 'crowded-class', classId: 'class-report-service' }]);
+  });
+
+  it('全ステージで、解答例の最終形には「さらに良くできるところ」が出ない', () => {
+    // Arrange / Act
+    const shown = stages.filter((stage) => findRoomToImprove(sampleAnswerCodebase(stage), sampleAnswerCodebase(stage), stage).length > 0);
+
+    // Assert
+    expect(shown.map((stage) => stage.id)).toEqual([]);
   });
 
   it('チュートリアル1でヘッダー・行・出力を選ぶとprintReportを提案する', () => {

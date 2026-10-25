@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { sampleCodebase } from '../codebase/testFixtures';
 import type { Codebase } from '../codebase/Codebase';
 import type { Score } from '../scoring/score';
-import { clearConditions, worstMeasures } from './clearConditions';
+import { clearConditionKey, clearConditions, worstMeasures } from './clearConditions';
 
 function score(counts: Partial<Record<Score['deductions'][number]['rule'], number>>): Score {
   const rules: Score['deductions'][number]['rule'][] = ['line-limit', 'coupling', 'cycle', 'responsibility', 'visibility', 'unused'];
@@ -16,11 +16,13 @@ describe('clearConditions', () => {
     const current = score({ 'line-limit': 1, coupling: 2, responsibility: 3, unused: 1 });
 
     // Act
-    const conditions = clearConditions(initial, current);
+    const conditions = clearConditions(initial, current, [{ kind: 'method' }, { kind: 'method' }, { kind: 'class' }]);
 
     // Assert
     expect(conditions).toEqual([
-      { rule: 'line-limit', count: 1 },
+      { rule: 'line-limit', lineKind: 'method', count: 2 },
+      { rule: 'line-limit', lineKind: 'class', count: 1 },
+      { rule: 'line-limit', lineKind: 'file', count: 0 },
       { rule: 'coupling', count: 2 },
       { rule: 'responsibility', count: 3 },
       { rule: 'visibility', count: 0 },
@@ -33,14 +35,30 @@ describe('clearConditions', () => {
     const clean = score({});
 
     // Act
-    const conditions = clearConditions(clean, clean);
+    const conditions = clearConditions(clean, clean, []);
 
     // Assert
     expect(conditions).toEqual([
-      { rule: 'line-limit', count: 0 },
+      { rule: 'line-limit', lineKind: 'method', count: 0 },
+      { rule: 'line-limit', lineKind: 'class', count: 0 },
+      { rule: 'line-limit', lineKind: 'file', count: 0 },
       { rule: 'coupling', count: 0 },
       { rule: 'responsibility', count: 0 },
     ]);
+  });
+});
+
+describe('clearConditionKey', () => {
+  it('line-limitは種類を足し、それ以外はruleそのまま', () => {
+    // Arrange
+    const lineLimit = { rule: 'line-limit', lineKind: 'method', count: 1 } as const;
+    const coupling = { rule: 'coupling', count: 0 } as const;
+
+    // Act
+    const keys = [clearConditionKey(lineLimit), clearConditionKey(coupling)];
+
+    // Assert
+    expect(keys).toEqual(['line-limit:method', 'coupling']);
   });
 });
 

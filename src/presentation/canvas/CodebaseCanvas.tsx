@@ -17,7 +17,7 @@ import { findClass, findClassOfMethod, findField, findFileOfClass, findMethod, t
 import { methodLines } from '../../domain/codebase/lineCount';
 import { violationTargets } from '../../domain/scoring/violationTargets';
 import { visibilityViolationDependencies } from '../../domain/scoring/visibility';
-import { useGameStore } from '../store/useGameStore';
+import { useGameStore, useGameStoreApi } from '../store/useGameStore';
 import { CanvasContextMenu } from './CanvasContextMenu';
 import { ClassNode } from './ClassNode';
 import { createAnnouncements, SCREEN_READER_INSTRUCTIONS } from './dndAnnouncements';
@@ -25,7 +25,7 @@ import { parseClassDragId, parseClassDropId, parseFieldDragId, parseFileDropId, 
 import { FieldChipView } from './FieldChip';
 import { FileNode } from './FileNode';
 import { InheritanceMarker } from './InheritanceMarker';
-import { dependencyEdges, fileRectsFromNodes, inheritanceEdges, laneBands, layoutCodebase, NEW_CLASS_FILE_SIZE, type CodebaseFlowNode } from './layoutCodebase';
+import { dependencyEdges, FILE_GAP, fileRectsFromNodes, inheritanceEdges, laneBands, fileSizeOf, layoutCodebase, type CodebaseFlowNode } from './layoutCodebase';
 import type { Stage, StageLayer } from '../../domain/stage/Stage';
 import { MethodChipView } from './MethodChip';
 import { OffsetEdge } from './OffsetEdge';
@@ -33,6 +33,7 @@ import { TopRouteEdge } from './TopRouteEdge';
 import { WarningEdge } from './WarningEdge';
 import { WarningEdgeStateProvider } from './WarningEdgeState';
 import { useCanvasContextMenu } from './useCanvasContextMenu';
+import { avoidFileOverlap } from './avoidFileOverlap';
 import { fileTopLeftAtDrop } from './dropPosition';
 import { GhostAnimation } from './GhostAnimation';
 import type { Edge } from '@xyflow/react';
@@ -93,9 +94,9 @@ function moveMethodToDropTarget(
   if (targetFileId !== null) moveIntoFile(methodId, targetFileId);
 }
 
-/** 切り替えで隠れている画面(リファクタリング・白紙設計)のキャンバスは除き、いま見えているものを返す。 */
+/** 切り替えで隠れている画面(リファクタリング・白紙設計)のキャンバスは除き、いま見えているものを返す。バナーの帯を除いた図の領域(React Flowの実際の大きさ)を測る。 */
 function visibleCanvas(): Element | null {
-  return document.querySelector('.app__view:not([hidden]) .app__canvas');
+  return document.querySelector('.app__view:not([hidden]) .app__canvas .canvas-column__flow');
 }
 
 function canvasSize(): { width: number; height: number } | null {
@@ -375,11 +376,15 @@ type CanvasFlowProps = {
   readonly onControlZoom: () => void;
   readonly dragInteractionActive: boolean;
   readonly revealFileId: string | null;
+  readonly inert: boolean;
 };
 
-function CanvasFlow({ nodes, edges, onNodesChange, setFlow, contextMenu, selectMethod, stageId, visibleFileCount, codebase, layers, layoutResetCount, arrangeVersion, arrange, autoFitStateRef, onMoveStart, onManualFit, onControlZoom, dragInteractionActive, revealFileId }: CanvasFlowProps & { readonly layoutResetCount: number; readonly arrangeVersion: number; readonly arrange: () => void }) {
+function CanvasFlow({ nodes, edges, onNodesChange, setFlow, contextMenu, selectMethod, stageId, visibleFileCount, codebase, layers, layoutResetCount, arrangeVersion, arrange, autoFitStateRef, onMoveStart, onManualFit, onControlZoom, dragInteractionActive, revealFileId, inert }: CanvasFlowProps & { readonly layoutResetCount: number; readonly arrangeVersion: number; readonly arrange: () => void }) {
   return (
     <WarningEdgeStateProvider>
+      <div className="canvas-column">
+      <OpeningFixBanner />
+      <div className="canvas-column__flow" inert={inert}>
       <ReactFlow colorMode="system"
         nodes={nodes} edges={edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes}
         onNodesChange={onNodesChange} onInit={setFlow} nodesConnectable={false} minZoom={CANVAS_MIN_ZOOM}
@@ -392,7 +397,6 @@ function CanvasFlow({ nodes, edges, onNodesChange, setFlow, contextMenu, selectM
         <Panel position="top-right">
           <button type="button" className="nodrag nopan" data-testid="canvas-arrange" aria-label="依存の向きに沿って並べ直す" onClick={arrange}>整列</button>
         </Panel>
-        <Panel position="top-center"><OpeningFixBanner /></Panel>
         <DetailZoomNotice onZoom={onControlZoom} />
         <GhostAnimation nodes={nodes} />
         <FitViewOnLayoutChange stageId={stageId} fileCount={visibleFileCount} layoutResetCount={layoutResetCount} arrangeVersion={arrangeVersion} autoFitStateRef={autoFitStateRef} />
@@ -400,6 +404,8 @@ function CanvasFlow({ nodes, edges, onNodesChange, setFlow, contextMenu, selectM
         <RevealDroppedFile fileId={revealFileId} />
         <FitViewForRule codebase={codebase} nodes={nodes} />
       </ReactFlow>
+      </div>
+      </div>
     </WarningEdgeStateProvider>
   );
 }
@@ -449,6 +455,7 @@ function useFlowOverrides(stageId: string, layoutResetCount: number) {
 
 /** ドロップ先に応じた移動を行う。ファイルの枠外に落としたら、新しいファイル(メソッドなら新しいクラスも)を自動で作って置く。 */
 function useDropHandler(codebase: Codebase, onEnd: () => void, flow: ReactFlowInstance<CodebaseFlowNode> | null, callbacks: { setPosition: (fileId: string, position: XYPosition) => void; setRevealFileId: (fileId: string) => void }) {
+  const api = useGameStoreApi();
   const moveMethod = useGameStore((state) => state.moveMethod);
   const moveClass = useGameStore((state) => state.moveClass);
   const moveClassToNewFile = useGameStore((state) => state.moveClassToNewFile);
@@ -462,7 +469,10 @@ function useDropHandler(codebase: Codebase, onEnd: () => void, flow: ReactFlowIn
     else if (classId !== null) fileId = moveClassToNewFile(classId);
     if (fileId === null || flow === null || !isMousePosition(pointer)) return;
     const drop = flow.screenToFlowPosition({ x: pointer.clientX + event.delta.x, y: pointer.clientY + event.delta.y });
-    callbacks.setPosition(fileId, fileTopLeftAtDrop(drop, NEW_CLASS_FILE_SIZE));
+    const others = [...fileRectsFromNodes(flow.getNodes())].filter(([id]) => id !== fileId).map(([, rect]) => rect);
+    // 移した直後のstoreから、新しいファイルの実寸法(クラスのメソッド数・フィールド数で高さが変わる)を求める
+    const size = fileSizeOf(api.getState().codebase, fileId);
+    callbacks.setPosition(fileId, avoidFileOverlap(fileTopLeftAtDrop(drop, size), size, others, FILE_GAP));
     callbacks.setRevealFileId(fileId);
   };
   return (event: DragEndEvent) => {
@@ -505,7 +515,8 @@ function useDragInteraction() {
 }
 
 /** active が false の間(設計くらべで隠れている間)は、開いていた右クリックメニューを閉じる。 */
-export function CodebaseCanvas({ active }: Readonly<{ active: boolean }>) {
+/** `inert` は図(React Flow)だけを操作不可にする。バナーは含めない(幅700px以下でエディタのドロワーを開いていても、「実際に直してみる」だけは押せるようにする唯一の例外)。 */
+export function CodebaseCanvas({ active, inert }: Readonly<{ active: boolean; inert: boolean }>) {
   const codebase = useGameStore((state) => state.codebase);
   const selectMethod = useGameStore((state) => state.selectMethod);
   const stage = useGameStore((state) => state.stage);
@@ -554,7 +565,7 @@ export function CodebaseCanvas({ active }: Readonly<{ active: boolean }>) {
           nodes={nodes} edges={edges} onNodesChange={handleNodesChange} setFlow={setFlow} contextMenu={contextMenu}
           selectMethod={selectMethod} stageId={stageId} visibleFileCount={visibleFileCount} codebase={codebase} layers={layers}
           layoutResetCount={layoutResetCount} arrangeVersion={arrangeVersion} arrange={arrange}
-          autoFitStateRef={autoFitStateRef} onMoveStart={onMoveStart} onManualFit={onManualFit} onControlZoom={onControlZoom} dragInteractionActive={dragInteractionActive} revealFileId={revealFileId}
+          autoFitStateRef={autoFitStateRef} onMoveStart={onMoveStart} onManualFit={onManualFit} onControlZoom={onControlZoom} dragInteractionActive={dragInteractionActive} revealFileId={revealFileId} inert={inert}
         />
       </DropTargetsContext.Provider>
       <DraggingOverlay activeId={activeId} />

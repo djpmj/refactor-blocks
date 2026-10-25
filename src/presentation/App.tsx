@@ -124,9 +124,9 @@ function RefactorView({ active }: Readonly<{ active: boolean }>) {
   return (
     <StagePanel active={active}>
       <main className="app__body">
-        <section className="app__canvas" aria-label="コードベース" inert={mobileDrawerActive || reviewing}>
-          <CodebaseCanvas active={active} />
-          <ErrorToast />
+        <section className="app__canvas" aria-label="コードベース">
+          <CodebaseCanvas active={active} inert={mobileDrawerActive || reviewing} />
+          <div inert={mobileDrawerActive || reviewing}><ErrorToast /></div>
         </section>
         {!mobileDrawerActive && <EditorPanel rail={rail} emptyOpen={shouldRail && emptyEditorOpen} width={width} handleProps={handleProps} content={editorContent} onOpenGuide={() => setEmptyEditorOpen(true)} onCloseGuide={() => setEmptyEditorOpen(false)} />}
         <MobileEditorDrawer open={mobileDrawerActive} onClose={closeMobileEditor}>{editorContent}</MobileEditorDrawer>

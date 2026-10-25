@@ -1,7 +1,7 @@
 import { allClasses, type Codebase } from '../codebase/Codebase';
 import { CALL_RESPONSIBILITY } from './responsibilities';
 
-function isInCohesiveGroup(responsibilities: ReadonlySet<string>, groups: readonly (readonly string[])[]): boolean {
+export function isInCohesiveGroup(responsibilities: ReadonlySet<string>, groups: readonly (readonly string[])[]): boolean {
   for (const group of groups) {
     let containsAll = true;
     for (const responsibility of responsibilities) {

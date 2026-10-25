@@ -52,6 +52,13 @@ test('中級7: 100点になる前は出ず、解答例どおりに100点にす�
   await expect(note).toContainText('メソッドエディタの「可視性」で private にできます');
   await expect(note.getByRole('listitem')).toHaveText(['Account.getBalance()', 'Account.getStatus()', 'Account.getDailyWithdrawn()']);
 
+  // さらに良くできるところのカードが出る場合は、仕上げのヒントより上にある
+  const room = page.getByTestId('room-to-improve-note');
+  if (await room.count() > 0) {
+    const [roomBox, noteBox] = await Promise.all([room.boundingBox(), note.boundingBox()]);
+    expect(roomBox?.y ?? Infinity).toBeLessThan(noteBox?.y ?? 0);
+  }
+
   // Act: 名前を押すとキャンバスで選ばれる
   await note.getByRole('button', { name: 'Account.getBalance()' }).click();
 

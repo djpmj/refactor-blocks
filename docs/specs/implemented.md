@@ -153,3 +153,10 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [extract-name-inline-error](extract-name-inline-error.md) | 抽出するメソッド名が重複しているとき、押す前に入力欄のそばで伝える |
 | [next-stage-after-clear](next-stage-after-clear.md) | 100点にしたあと、次のおすすめのステージへ進むカードを出す |
 | [hint-highlight-clears-on-change](hint-highlight-clears-on-change.md) | コードが変わったら、ヒントと「どこが問題?」の光りを消す |
+| [change-pain-card-fold-while-fixing](change-pain-card-fold-while-fixing.md) | 手で直している間、変更依頼カードの本文を畳んで依頼文の二重表示をなくす |
+| [new-file-no-overlap](new-file-no-overlap.md) | 余白へのドロップで作る新しいファイルが既存のファイルと重ならないようにする |
+| [opening-fix-banner-fit](opening-fix-banner-fit.md) | 手直しの案内バナーを図に重ならない帯にし、狭い幅でも操作できるようにする |
+| [untouched-stage-not-scored](untouched-stage-not-scored.md) | 開いただけのステージを自己ベストとして記録しない |
+| [clear-condition-line-split](clear-condition-line-split.md) | クリア条件の行数をメソッド・クラス・ファイルの3行に分けて表示する |
+| [perfect-room-left-note](perfect-room-left-note.md) | 100点のあとに「さらに良くできるところ」を1〜3件、控えめに知らせる |
+| [state-pattern-stage](state-pattern-stage.md) | 上級9「注文の状態ごとの分岐を State パターンへ組み替える」ステージを追加する |

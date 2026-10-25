@@ -136,3 +136,16 @@ test('変更箇所が1か所のコードではボタンが出ず、ステージ�
   await expect(page.getByRole('region', { name: 'もし、この変更が来たら?' })).toBeVisible();
   await expect(page.getByRole('button', { name: '実際に直してみる' })).toBeHidden();
 });
+
+test('手で直している間は依頼のタイトルが1か所だけで、やめるとカードの本文が戻る', async ({ page }) => {
+  await openCopyPasteTax(page);
+  const panel = page.getByRole('region', { name: '手で直すシミュレーション' });
+
+  await expect(page.getByText('軽減税率8%に対応して')).toHaveCount(1);
+  await expect(panel).toContainText('軽減税率8%に対応して');
+  await expect(page.locator('.change-pain')).not.toContainText('軽減税率8%に対応して');
+
+  await panel.getByRole('button', { name: 'やめる' }).click();
+  await page.locator('.change-pain summary').click();
+  await expect(page.locator('.change-pain')).toContainText('軽減税率8%に対応して');
+});
