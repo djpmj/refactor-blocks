@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-25 14:40 UTC PR #331 満点でも残る改善の余地をステージパネルに案内する (#321)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test(2085件)✅ / npm run lint ✅ / npm run typecheck ✅。roomToImprove(mixed-method・crowded-class・解答例との比較・3件上限)・RoomToImproveNote・StagePanelの配置をIssue #321・docs/specs/perfect-room-left-note.mdと照合。E2Eはこの環境にChromiumを導入できず未実行(PR本文では420件成功)
+- マージ: squash & delete-branch
+
 ## 2026-10-25 14:27 UTC PR #330 クリア条件の行数表示を分ける (#313)
 
 - 判定: 合格(blocker無し)
@@ -210,12 +216,6 @@
 
 - 判定: 合格(blocker無し。suggestion: placedLikeSampleの既存クラス名一致は同名の別クラスを同一視する余地あり)
 - 確認した内容: npm test(1870件)✅ / npm run lint ✅ / npm run typecheck ✅。sampleCarried・解答例を理想の土台で求める変更・採点はcarriedのまま・注記を差分で確認。E2Eはこの環境にChromiumが無く未実行
-- マージ: squash & delete-branch
-
-## 2026-10-24 01:35 UTC PR #272 設計くらべのプレビューを共通の縮尺にそろえる (#236)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(1878件)✅ / npm run lint ✅ / npm run typecheck ✅。sharedZoom(小さい方・下限0.6)・onFitZoom/maxZoom・resize追従・他プレビューはfitView維持を差分で確認。E2E(quiz.spec.ts)はこの環境で実行できず未実行
 - マージ: squash & delete-branch
 
 
