@@ -76,6 +76,8 @@ test('変更依頼は1件ごとに答え合わせし、置き直した結果が�
   await expect(page.getByTestId('score-value')).toHaveText('100点');
   await releaseAllManualFixSites(page);
   await startChangeRequests(page);
+  await expect(page.getByTestId('change-request-title')).toBeVisible();
+  await expect(page.getByTestId('opening-fix-banner')).toHaveCount(0);
 
   // Act: 依頼1の部品をわざと InvoiceService に置いて終える
   await dragMethodToClass(page, page.getByTestId('method-adjustPdfLayout'), page.getByTestId('class-InvoiceService'));

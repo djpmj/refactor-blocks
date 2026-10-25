@@ -34,7 +34,7 @@ function BlankDesignBody({ active }: Readonly<{ active: boolean }>) {
       />
       <main className="app__body">
         <section className="app__canvas" aria-label="コードベース">
-          <CodebaseCanvas active={active} />
+          <CodebaseCanvas active={active} inert={false} />
         </section>
         <div className="sidebar-resizable" style={{ width }}>
           <div className="sidebar-resizable__handle" {...handleProps} />
