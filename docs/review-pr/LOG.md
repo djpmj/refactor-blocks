@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-25 UTC PR #306 E2Eの最初の描画待ちを15秒まで延ばす(roadmap-open の間欠失敗対策)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅(e2e/selectStage.tsの1行変更のみ。アサーションは弱めずtimeoutだけ延長)
+- マージ: squash & delete-branch
+
 ## 2026-10-25 03:15 UTC PR #305 役目を終えた通知トーストを消す (#286)
 
 - 判定: 合格(blocker無し。suggestion: e2e/toast-clears-when-stale.spec.ts の固定800ms待機を状態待ちへ)
@@ -210,12 +216,6 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test(1832件)✅ / npm run lint ✅ / npm run typecheck ✅。答え非表示、describeManualFixのクラス単位文言、OpeningFixBanner、siteClassIdsを差分で確認。E2Eはこの環境にブラウザが無く未実行(PR本文では268件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-23 08:50 UTC PR #259 白紙設計のクラスを責務に応じて命名する (#220)
-
-- 判定: 合格(blocker無し。suggestion: useGameStore.ts 先頭にBOMが混入)
-- 確認した内容: npm test(1826件)✅ / npm run lint ✅ / npm run typecheck ✅。白紙設計のclassNames設定、moveActionsでのautoNameClasses適用、回帰テストを差分で確認。E2Eはこの環境にブラウザが無く未実行(PR本文では263件成功)
 - マージ: squash & delete-branch
 
 
