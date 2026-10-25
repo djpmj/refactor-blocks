@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { findMethod, mapClasses } from './Codebase';
+import { findMethod, mapClasses, type Codebase, type Method } from './Codebase';
 import { extractMethod, type ExtractMethodRequest } from './extractMethod';
 import { methodLines } from './lineCount';
 import { sampleCodebase } from './testFixtures';
@@ -12,6 +12,12 @@ function request(overrides: Partial<ExtractMethodRequest> = {}): ExtractMethodRe
     newMethodName: 'calculateTax',
     ...overrides,
   };
+}
+
+/** place のメソッドの末尾に4つ目の処理を足す。 */
+function withExtraFragment(codebase: Codebase): Codebase {
+  const addFragment = (method: Method): Method => ({ ...method, fragments: [...method.fragments, { ...method.fragments[0], id: 'f-extra' }] });
+  return mapClasses(codebase, (codeClass) => ({ ...codeClass, methods: codeClass.methods.map(addFragment) }));
 }
 
 describe('extractMethod', () => {
@@ -76,14 +82,7 @@ describe('extractMethod', () => {
 
   it('4つの処理の途中の連続(b, c)は抽出できる', () => {
     // Arrange
-    const base = sampleCodebase();
-    const withFour = mapClasses(base, (codeClass) => ({
-      ...codeClass,
-      methods: codeClass.methods.map((method) => ({
-        ...method,
-        fragments: [...method.fragments, { ...method.fragments[0], id: 'f-extra' }],
-      })),
-    }));
+    const withFour = withExtraFragment(sampleCodebase());
 
     // Act
     const result = extractMethod(withFour, request({ fragmentIds: ['f-tax', 'f-save'] }));
