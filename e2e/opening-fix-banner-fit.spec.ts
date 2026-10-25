@@ -77,7 +77,7 @@ async function expectPanelAboveBanner(page: Page, panelSelector: string) {
     const top = Math.max(p.top, b.top);
     const bottom = Math.min(p.bottom, b.bottom);
     // 通常フロー(position: static)に置かれたパネルはバナーと重ならないので、前面かどうかを問わない
-    if (left >= right || top >= bottom) return getComputedStyle(element).position === 'static' ? 'panel-on-top' : 'no-overlap';
+    if (left >= right || top >= bottom) return doc.defaultView?.getComputedStyle(element).position === 'static' ? 'panel-on-top' : 'no-overlap';
     const hit = doc.elementFromPoint((left + right) / 2, (top + bottom) / 2);
     return hit !== null && element.contains(hit) ? 'panel-on-top' : 'banner-on-top';
   });

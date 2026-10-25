@@ -71,7 +71,7 @@ for (const width of [1280, 1001, 1000, 975, 961, 960, 600, 375]) {
     if (box === null) return;
     const points = [[4, 4], [box.width - 4, 4], [box.width / 2, box.height / 2], [4, box.height - 4], [box.width - 4, box.height - 4]];
     for (const [dx, dy] of points) {
-      const onItems = await page.evaluate(([x, y]) => document.elementFromPoint(x, y)?.closest('.score-breakdown__items') !== null, [box.x + dx, box.y + dy]);
+      const onItems = await items.evaluate((element, [x, y]) => element.ownerDocument.elementFromPoint(x, y)?.closest('.score-breakdown__items') != null, [box.x + dx, box.y + dy]);
       expect(onItems, `点(${String(dx)}, ${String(dy)})`).toBe(true);
     }
   });
