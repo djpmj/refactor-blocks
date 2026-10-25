@@ -61,4 +61,33 @@ describe('avoidFileOverlap', () => {
     // Assert
     expect(result).toEqual({ x: 10, y: 20 });
   });
+
+  it('detects a vertical overlap caused by a tall box', () => {
+    // Arrange: 低い箱なら下に収まるが、高い箱は既存と縦方向に交差する
+    const existing = [{ x: 0, y: 100, width: 200, height: 100 }];
+    const tall = { width: 100, height: 300 };
+
+    // Act
+    const low = avoidFileOverlap({ x: 50, y: 20 }, size, existing, 60);
+    const high = avoidFileOverlap({ x: 50, y: 20 }, tall, existing, 60);
+
+    // Assert
+    expect(low).toEqual({ x: 50, y: 20 });
+    expect(high).toEqual({ x: 260, y: 20 });
+  });
+
+  it('skips several files in a row for a tall box', () => {
+    // Arrange: 2つ目・3つ目は下の方にあり、高い箱だけがぶつかる
+    const existing = [
+      { x: 0, y: 0, width: 100, height: 50 },
+      { x: 160, y: 200, width: 100, height: 50 },
+      { x: 320, y: 250, width: 100, height: 50 },
+    ];
+
+    // Act
+    const result = avoidFileOverlap({ x: 50, y: 10 }, { width: 100, height: 300 }, existing, 60);
+
+    // Assert
+    expect(result).toEqual({ x: 480, y: 10 });
+  });
 });

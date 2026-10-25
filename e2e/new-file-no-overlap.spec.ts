@@ -10,7 +10,11 @@ async function box(page: Page, testId: string): Promise<Box> {
 }
 
 async function dragMethodTo(page: Page, methodId: string, x: number, y: number) {
-  const method = await box(page, methodId);
+  await dragTo(page, methodId, x, y);
+}
+
+async function dragTo(page: Page, testId: string, x: number, y: number) {
+  const method = await box(page, testId);
   // ドラッグ中の表示(DragOverlay)が元のファイルに重ならないよう、メソッドの左端をつかむ
   await page.mouse.move(method.x + 10, method.y + method.height / 2);
   await page.mouse.down();
@@ -99,4 +103,50 @@ test('「整列」は新しいファイルを、今までどおりの並びに�
   const a = await box(page, source);
   const b = await box(page, created);
   expect(b.x).toBeGreaterThanOrEqual(a.x + a.width);
+});
+
+// ファイルの箱の幅(CLASS_WIDTH 280 + 余白 24×2)。画面上の倍率を求めるのに使う
+const FILE_WIDTH = 328;
+
+test('複数メソッドを持つクラスを既存ファイルのすぐ上の余白へ落としても、新しいファイルが重ならない', async ({ page }) => {
+  // Arrange: 2メソッドのクラス(空クラス用の寸法より約18px高い)。新しい箱の下端が、空クラス用の高さだと既存ファイルの手前に収まって見える位置へ落とす
+  await openStage(page);
+  const before = await fileIds(page);
+  const source = before.find((id) => id.includes('InvoiceService'));
+  if (source === undefined) throw new Error('元のファイルが見つかりません');
+  const sourceBox = await box(page, source);
+  const scale = sourceBox.width / FILE_WIDTH;
+  const dropX = sourceBox.x + sourceBox.width / 2;
+  const dropY = sourceBox.y - (203 - 18) * scale;
+
+  // Act
+  await dragTo(page, 'class-header-InvoiceService', dropX, dropY);
+
+  // Assert: 外接矩形が交わらない
+  const created = await newFileTestId(page, before);
+  await page.waitForTimeout(250);
+  const a = await box(page, source);
+  const b = await box(page, created);
+  const intersects = a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+  expect(intersects).toBe(false);
+});
+
+test('複数メソッドを持つクラスを既存ファイルのすぐ右の余白へ落としても、新しいファイルが重ならない', async ({ page }) => {
+  // Arrange
+  await openStage(page);
+  const before = await fileIds(page);
+  const source = before.find((id) => id.includes('InvoiceService'));
+  if (source === undefined) throw new Error('元のファイルが見つかりません');
+  const sourceBox = await box(page, source);
+
+  // Act
+  await dragTo(page, 'class-header-InvoiceService', sourceBox.x + sourceBox.width + 25, sourceBox.y + sourceBox.height - 40);
+
+  // Assert
+  const created = await newFileTestId(page, before);
+  await page.waitForTimeout(250);
+  const a = await box(page, source);
+  const b = await box(page, created);
+  const intersects = a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+  expect(intersects).toBe(false);
 });
