@@ -16,11 +16,11 @@ const solution = sampleAnswerSteps[stage.id];
 if (solution === undefined) throw new Error('上級8の模範解答がありません');
 
 describe('上級8: Template Method', () => {
-  it('上級の末尾にあり、初期状態は行数と依存本数の超過で100点未満', () => {
+  it('上級9の直前にあり、初期状態は行数と依存本数の超過で100点未満', () => {
     // Arrange / Act
     const score = scoreCodebase(stage.codebase, stage);
     // Assert
-    expect(stages.filter((item) => item.level === 'advanced').at(-1)?.id).toBe(stage.id);
+    expect(stages.filter((item) => item.level === 'advanced').at(-2)?.id).toBe(stage.id);
     expect(score.total).toBeLessThan(100);
     expect(score.deductions.find((item) => item.rule === 'line-limit')?.count).toBeGreaterThan(0);
     expect(score.deductions.find((item) => item.rule === 'coupling')?.count).toBeGreaterThan(0);
