@@ -18,6 +18,12 @@ async function openStageWithHint(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'ヒント1の場所をキャンバスで見る' }).click();
 }
 
+/** 最後の1ファイルの削除は、押せる操作のまま domain が失敗を返し、コードが変わらない。 */
+async function deleteFileFails(page: Page): Promise<void> {
+  await page.getByTestId('file-src/invoice/InvoiceService.ts').click({ button: 'right', position: { x: 10, y: 10 } });
+  await page.getByTestId('context-menu').getByRole('menuitem', { name: 'このファイルを削除' }).click();
+}
+
 async function extract(page: Page, label: string, name: string): Promise<void> {
   await page.getByTestId('method-issueInvoice').click();
   await page.getByLabel(label).check();
@@ -47,21 +53,20 @@ test('抽出に成功すると光りが消え、ヒントのボタンの押し�
   await expect(page.locator(FLAGGED).first()).toBeVisible();
 });
 
-test('失敗する抽出では光りが残る', async ({ page }) => {
+test('失敗する操作では光りが残る', async ({ page }) => {
   // Arrange
   await openStageWithHint(page);
-  await extract(page, '請求書のPDFを描画する', 'renderPdf');
-  await openHints(page);
-  await page.getByRole('button', { name: 'ヒント1の場所をキャンバスで見る' }).click();
   await expect(page.locator(FLAGGED).first()).toBeVisible();
   const flaggedCount = await page.locator(FLAGGED).count();
 
-  // Act: 同じ名前での抽出は失敗する
-  await extract(page, 'PDFをストレージに保存する', 'renderPdf');
+  // Act: 最後の1ファイルの削除は失敗する
+  await deleteFileFails(page);
 
   // Assert
-  await expect(page.getByText('同じクラスに同じ名前のメソッドがあります')).toBeVisible();
+  await expect(page.getByRole('alert')).toContainText('最後の1ファイルは削除できません');
   await expect(page.locator(FLAGGED)).toHaveCount(flaggedCount);
+  await openHints(page);
+  await expect(page.getByRole('button', { name: 'ヒント1の場所をキャンバスで見る' })).toHaveAttribute('aria-pressed', 'true');
 });
 
 test('元に戻すと光りが消える', async ({ page }) => {
@@ -94,7 +99,7 @@ test('「どこが問題?」で光らせたあと抽出に成功すると、光�
   await expect(page.locator(FLAGGED)).toHaveCount(0);
 });
 
-test('「どこが問題?」の光りは、失敗する抽出では残り、元に戻すと消える', async ({ page }) => {
+test('「どこが問題?」の光りは、失敗する操作では残り、元に戻すと消える', async ({ page }) => {
   // Arrange
   await openStage(page);
   await extract(page, '請求書のPDFを描画する', 'renderPdf');
@@ -103,11 +108,11 @@ test('「どこが問題?」の光りは、失敗する抽出では残り、元�
   await expect(page.locator(FLAGGED).first()).toBeVisible();
   const flaggedCount = await page.locator(FLAGGED).count();
 
-  // Act: 同じ名前での抽出は失敗する
-  await extract(page, 'PDFをストレージに保存する', 'renderPdf');
+  // Act: 最後の1ファイルの削除は失敗する
+  await deleteFileFails(page);
 
   // Assert
-  await expect(page.getByText('同じクラスに同じ名前のメソッドがあります')).toBeVisible();
+  await expect(page.getByRole('alert')).toContainText('最後の1ファイルは削除できません');
   await expect(page.locator(FLAGGED)).toHaveCount(flaggedCount);
 
   // Act
