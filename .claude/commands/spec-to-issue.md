@@ -45,7 +45,7 @@ allowed-tools: Read, Write, Glob, Grep, Bash(git:*), Bash(gh issue:*), Bash(gh p
      `master` であることを確認する。別のIssue用featureブランチに乗ったままここに来ていたら、
      先に `git checkout master && git pull origin master` し、そのうえで仕様書のコミットをやり直す
      (featureブランチのまま push すると、そのブランチの未レビューコミットも一緒に `master` へ
-     混入する。`CLAUDE.md`「masterへの直接pushの安全策」を参照)
+     混入する。`docs/MASTER-PUSH.md`を参照)
    - `git push origin HEAD:master` で仕様書をmasterに反映する
    - `gh issue create --title "<slug>" --body-file docs/specs/<slug>.md` でIssueを作成し、
      発行されたIssue番号を控える

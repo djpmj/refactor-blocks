@@ -78,35 +78,10 @@ Claudeはこのリポジトリでの会話・報告・コミットメッセー�
   E2Eテスト・lintルールは「頼まれた」ものなので、ponytailを理由に省かない。怠けるのはそれぞれの層の中身の量。
 - 報告は「コード → 省いたもの・いつ足すか」を短く。求められていない長い設計説明は書かない。
 
-## 開発ハーネス(仕様設計・実装・評価)
+## 開発ハーネス・masterへの直接push
 
-開発の2つの経路(仕様ベースの開発・機能案ブレスト)の全体像は
-`docs/DEVELOPMENT.md` の図を参照。新機能を追加するときの進め方を `docs/specs/README.md` にまとめている。仕様設計者・実装者・評価者の
-3ロールに分けて進めるためのエージェント定義が `.claude/agents/` にある(Claude Codeを使う場合)。
-Claude Code では、仕様からまとめて回したいときは `feature-harness` skill(`.claude/skills/feature-harness/SKILL.md`)を使い、Issue/PRや確定仕様の実装・評価には `/implement` コマンドを使う。
-Codex では `$implement` を使う。Codex 用の入口は `.agents/skills/implement/SKILL.md`、エージェント定義は `.codex/agents/` にある。両方とも実装者と評価者を独立したスレッドで動かす。
-
-## masterへの直接push(仕様書・プロセス文書など)の安全策
-
-仕様書(`docs/specs/<slug>.md`)やコマンド定義(`.claude/commands/`)など、featureブランチと無関係な
-ファイルは `master` へ直接コミット・pushする運用になっている(`/spec-to-issue` の仕様書コミットなど)。
-このとき、作業ディレクトリがたまたま別のIssue用featureブランチをチェックアウトしていると、
-`git pull --rebase origin master && git push origin HEAD:master` のような操作が、**そのfeature
-ブランチに乗っている未レビューのコミットをまとめて `master` へ混入させる**事故につながる
-(2026-10-03に実際発生: レビュー前のPRのコミットがこの経路で直接 `master` に入り、GitHubがそのPRを
-自動マージ済み・関連Issueを自動クローズ済み扱いにした)。
-
-`master` へ `git push origin HEAD:master` する前に、必ず次を確認する。
-
-1. `git branch --show-current` で今いるブランチを確認する。`master` 以外のブランチに乗ったまま
-   `git pull --rebase origin master` を実行しない(そのブランチ固有の未レビューコミットが
-   `master` の最新と合流し、次の `push origin HEAD:master` で一緒に送られてしまう)。
-2. pushする前に `git log --oneline origin/master..HEAD` で、送ろうとしている差分が
-   「意図したファイルのコミットだけ」であることを1件ずつ確認する。featureブランチ固有のコミットが
-   混ざっていたら、そのブランチでのpushを中止し、`master` を別途チェックアウト
-   (別のworktreeや、一度 `master` ブランチへ切り替えてから)してそちらでコミット・pushし直す。
-3. 複数のfeatureブランチ・worktreeを同時に扱っているときほど起きやすい事故なので、
-   「いまどのブランチにいるか」を都度 `git branch --show-current` で確認する習慣を優先する。
+- 仕様設計・実装・評価の3ロールの進め方は `docs/DEVELOPMENT.md`(図)と `docs/specs/README.md` を参照。入口は Claude Code の `feature-harness` skill・`/implement`、Codex の `$implement`。
+- 仕様書やコマンド定義などを `master` へ直接pushする前は、必ず `git branch --show-current` と `git log --oneline origin/master..HEAD` で、featureブランチの未レビューコミットが混ざらないか確認する。詳細は `docs/MASTER-PUSH.md`。
 
 ## Lint
 
