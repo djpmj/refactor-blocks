@@ -64,6 +64,7 @@ import type { Progress } from '../../domain/progress/Progress';
 import { putDraft, takeDraft, type Drafts } from '../../domain/progress/drafts';
 import { updateProgress } from '../../domain/progress/updateProgress';
 import { loadDrafts, saveDrafts } from '../../infrastructure/progress/draftStorage';
+import { loadLastStageId, saveLastStageId } from '../../infrastructure/progress/lastStageStorage';
 import { loadProgress, saveProgress } from '../../infrastructure/progress/progressStorage';
 import { loadStoryEnabled, saveStoryEnabled } from '../../infrastructure/story/storyPreference';
 import { loadTourSeen, saveTourSeen } from '../../infrastructure/tour/tourPreference';
@@ -861,12 +862,19 @@ function initialManualFixState(stage: Stage, restored: Codebase | undefined): Pi
   };
 }
 
+/** 最初に開くステージ。保存されたIDのステージがあればそれ、なければ先頭。保存を使わないとき(saveDraftsOn が false)は常に先頭。 */
+function initialStage(allStages: readonly Stage[], saveDraftsOn: boolean): Stage {
+  const lastStageId = saveDraftsOn ? loadLastStageId() : undefined;
+  return allStages.find((candidate) => candidate.id === lastStageId) ?? allStages[0];
+}
+
 /**
- * stages の先頭のステージから始まるストアを作る。selectStage もこの stages から探す。
- * saveDraftsOn が true のときだけ、編集中のコードを localStorage の下書きに保存・復元する。
+ * 最初のステージから始まるストアを作る。selectStage もこの stages から探す。
+ * saveDraftsOn が true のときだけ、編集中のコードを localStorage の下書きに保存・復元し、
+ * 最後に開いたステージを最初のステージにする(保存がない・stages に無いときは先頭)。
  */
 export function createGameStore(allStages: readonly Stage[], saveDraftsOn = true, openingFixEnabled = true): GameStore {
-  const [firstStage] = allStages;
+  const firstStage = initialStage(allStages, saveDraftsOn);
   const holder = { drafts: saveDraftsOn ? loadDrafts() : {} };
   const restored = restoreFirstDraft(holder, firstStage);
   const store = createStore<GameState>((set, get) => {
@@ -910,11 +918,11 @@ export function createGameStore(allStages: readonly Stage[], saveDraftsOn = true
         const next = selectStageState(get().stages, stageId, holder.drafts);
         if (next !== null) {
           if (get().stage.id !== stageId) get().endTour();
+          if (saveDraftsOn) saveLastStageId(stageId);
           const existingOpeningFixes = get().openingFixes;
-          const existingOpeningFix = existingOpeningFixes[stageId];
           set({ ...next, openingFixes: existingOpeningFixes, layoutResetCount: get().layoutResetCount + 1, ghost: null });
           if (next.openingFixes !== undefined) {
-            set({ openingFixes: { ...existingOpeningFixes, ...next.openingFixes, [stageId]: existingOpeningFix ?? next.openingFixes[stageId] } });
+            set({ openingFixes: { ...existingOpeningFixes, ...next.openingFixes, [stageId]: existingOpeningFixes[stageId] ?? next.openingFixes[stageId] } });
           }
         }
       },
