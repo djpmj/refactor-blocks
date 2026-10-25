@@ -820,7 +820,9 @@ function progressActions(set: (partial: Partial<GameState>) => void, get: () => 
     },
     progress: loadProgress(),
     recordProgress: (stageId, score) => {
-      const next = updateProgress(get().progress, stageId, score);
+      const stage = get().stages.find((candidate) => candidate.id === stageId);
+      if (stage === undefined) return;
+      const next = updateProgress(get().progress, stageId, score, scoreCodebase(stage.codebase, stage).total);
       if (next === get().progress) return;
       saveProgress(next);
       set({ progress: next });
