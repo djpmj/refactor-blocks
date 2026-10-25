@@ -449,6 +449,22 @@ export const sampleAnswerSteps: Partial<Record<string, readonly SolutionStep[]>>
     { move: { method: 'formatMailingAddress', toClass: 'Address' } },
     { move: { method: 'changeAddress', toClass: 'Address' } },
   ],
+  'advanced-order-state': (['Unpaid', 'Paid', 'Shipped'] as const).flatMap((state): SolutionStep[] => {
+    const suffix = state.toLowerCase();
+    const file = `src/order/${state}State.ts`;
+    const toClass = `${state}State`;
+    return [
+      { addFile: file },
+      { addClass: { name: toClass, file } },
+      { extract: { from: 'pay', fragmentIds: [`frag-pay-${suffix}`], name: 'handlePay' } },
+      { move: { method: 'handlePay', fromClass: 'Order', toClass } },
+      { extract: { from: 'ship', fragmentIds: [`frag-ship-${suffix}`], name: 'handleShip' } },
+      { move: { method: 'handleShip', fromClass: 'Order', toClass } },
+      { extract: { from: 'cancel', fragmentIds: [`frag-cancel-${suffix}`], name: 'handleCancel' } },
+      { move: { method: 'handleCancel', fromClass: 'Order', toClass } },
+      { addInterface: { class: toClass, interface: 'OrderState' } },
+    ];
+  }),
   'advanced-template-method': [
     { extract: { from: 'importOrders', fromClass: 'CsvOrderImporter', fragmentIds: ['frag-csv-read'], name: 'readLines' } },
     { extract: { from: 'importOrders', fromClass: 'CsvOrderImporter', fragmentIds: ['frag-csv-validate'], name: 'validateOrders' } },

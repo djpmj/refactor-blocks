@@ -69,6 +69,11 @@ export const solutionPhaseTable: Partial<Record<string, readonly SolutionPhase[]
     { from: 9, title: '金額と通貨を Money クラスにまとめる', why: '金額と通貨はいつも一緒に扱うものなので、1つの値として持たせると取り違えがなくなるため' },
     { from: 13, title: '金額の処理を Money 自身が持つようにする', why: '検証・合計・表示を Money に任せれば、各サービスは金額の細かい決まりを知らずに済むため' },
   ],
+  'advanced-order-state': [
+    { from: 0, title: '「未払い」の分岐を、UnpaidState にまとめる', why: '未払いのときの支払い・発送・取り消しを1つのクラスに寄せれば、未払いでできることと次に移る先が1か所で読めるため' },
+    { from: 9, title: '「支払済み」も同じ形で PaidState にまとめる', why: '同じ手順で作れば、どの状態も OrderState として同じように扱えるため' },
+    { from: 18, title: '「発送済み」も ShippedState にまとめる', why: '最後の状態も分ければ、Order に状態ごとの判断が残らなくなるため' },
+  ],
   'advanced-template-method': [
     { from: 0, title: '2つの取り込みを、同じ部品に分ける', why: 'どこが共通で、どこが違うのかを見えるようにするため。違うのは「変換」だけです' },
     { from: 8, title: '共通の部品を1つにまとめる', why: '同じ処理が2か所にあると、検証ルールを変えるたびに両方を直すことになるため' },

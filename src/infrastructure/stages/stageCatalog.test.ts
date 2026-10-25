@@ -132,6 +132,7 @@ function redFailuresAcross(stage: Stage, snapshots: readonly Codebase[]) {
 }
 
 const templateSolution = sampleAnswerSteps['advanced-template-method'] ?? [];
+const orderStateSolution = sampleAnswerSteps['advanced-order-state'] ?? [];
 
 describe('初期違反の種類', () => {
   it('役割タグを付けた全クラスは初期状態で減点されない', () => {
@@ -165,6 +166,7 @@ describe('初期違反の種類', () => {
     ['advanced-notifier-hierarchy', ['line-limit', 'responsibility', 'empty']],
     ['advanced-payment-gateway-interface', ['line-limit', 'contract']],
     ['advanced-discount-strategy', ['line-limit', 'responsibility']],
+    ['advanced-order-state', ['line-limit', 'responsibility']],
     ['advanced-report-factory', ['line-limit', 'responsibility', 'empty']],
     ['advanced-collapse-hierarchy', ['coupling', 'cycle', 'visibility', 'lone-superclass']],
     ['advanced-interface-segregation', ['stub']],
@@ -349,6 +351,30 @@ describe('責務の混ざったメソッド', () => {
 
 /** ステージの狙いを飛ばした手順。これで100点になってしまうなら、ステージの数値の作りが甘い。 */
 const shortcuts: ReadonlyArray<{ readonly stageId: string; readonly description: string; readonly steps: readonly SolutionStep[]; readonly expectedScore?: number }> = [
+  {
+    stageId: 'advanced-order-state',
+    description: '状態クラスへ移すが OrderState を実装しない',
+    steps: orderStateSolution.filter((step) => !('addInterface' in step)),
+  },
+  {
+    stageId: 'advanced-order-state',
+    description: '状態でなく操作ごとのクラスへ分ける',
+    steps: (['pay', 'ship', 'cancel'] as const).flatMap((operation): SolutionStep[] => {
+      const name = `${operation[0].toUpperCase()}${operation.slice(1)}Handler`;
+      const file = `src/order/${name}.ts`;
+      return [
+        { addFile: file },
+        { addClass: { name, file } },
+        ...(['unpaid', 'paid', 'shipped'] as const).flatMap((state): SolutionStep[] => {
+          const method = `${operation}${state[0].toUpperCase()}${state.slice(1)}`;
+          return [
+            { extract: { from: operation, fragmentIds: [`frag-${operation}-${state}`], name: method } },
+            { move: { method, fromClass: 'Order', toClass: name } },
+          ];
+        }),
+      ];
+    }),
+  },
   {
     stageId: 'advanced-template-method',
     description: '共通3手順だけ親へ移し、骨組みを子に残す',

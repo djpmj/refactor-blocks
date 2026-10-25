@@ -1481,6 +1481,68 @@ const templateMethodStage: Stage = {
   },
 };
 
+const orderStateStage: Stage = {
+  id: 'advanced-order-state', level: 'advanced',
+  title: '上級9: 注文の状態ごとの分岐を State パターンへ組み替える',
+  problem: '注文の状態ごとの分岐が、支払い・発送・取り消しの各メソッドに散らばっている',
+  learns: ['State', '状態遷移'],
+  description: 'ネットショップの注文。Order の pay(支払い)・ship(発送)・cancel(取り消し)が、それぞれの中で注文の状態(未払い・支払済み・発送済み)ごとの if 分岐を重ねている。状態ごとの振る舞いと「次はどの状態へ移るか」が3つのメソッドに散らばっていて、ある状態で何ができるかを確かめるには3つとも読むことになる。注文画面の OrderController は、前任者が OrderState(インターフェース)経由で今の状態に任せる形に先に書き換えたが、状態ごとのクラスはまだ無い。取り消した注文は取り消し履歴へ移るので、取り消し済みの状態は Order には残らない。',
+  goal: '状態ごとの分岐を、状態ごとの新しいクラス(UnpaidState/PaidState/ShippedState)に集めよう。Extract Methodで分岐を handlePay / handleShip / handleCancel として取り出し、Move Methodで状態のクラスへ移す。1つの状態クラスが支払い・発送・取り消しの3つをすべて持ち、次の状態もそのクラスが決める。最後に3クラスとも OrderState を実装(implements)しよう。上級3(Strategy)は1クラスが1つの計算を持って差し替わったが、State は状態そのものをクラスにする。メソッドは13行・クラスは42行・ファイルは44行以内、1クラスの責務は2種類まで、依存先は3クラスまで',
+  why: '注文の状態が増えるたびに、支払い・発送・取り消しの全メソッドの分岐を読み直していました。状態ごとのクラスに分けると、1つの状態でできることと次に移る先がまとまり、状態の追加や変更で読む場所が絞れます。',
+  classNames: { http: 'OrderActionValidator', 'state-dispatch': 'OrderStateDispatcher', 'state-unpaid': 'UnpaidState', 'state-paid': 'PaidState', 'state-shipped': 'ShippedState' },
+  methodNames: { http: 'validateAction', 'state-dispatch': 'dispatchToState', 'state-unpaid': 'handleUnpaidOrder', 'state-paid': 'handlePaidOrder', 'state-shipped': 'handleShippedOrder' },
+  limits: { method: 13, class: 42, file: 44 },
+  // 呼び出し先の付け替え操作がないため、Order から3つの状態クラスへの依存を認める。
+  dependencyLimit: 3,
+  conditionNotes: { coupling: 'このゲームでは呼び出し先を書き換えられないため、Order が3つの状態クラスを呼ぶ形を答えとして認めるため' },
+  responsibilityLimit: 2,
+  changeRequests: [
+    { id: 'req-add-returned-state', kind: 'extend', title: '「返品」の状態を足して', description: '発送済みの注文を返品として受け付けたら、「返品」の状態にしたい。返品の注文は、支払い・発送・取り消しのどれも受け付けない。', responsibility: 'state-returned', linesPerSite: 9, partName: 'handleReturnedOrder' },
+    { id: 'req-shipped-return', title: '発送済みの注文の取り消しを、返品として受け付けて', description: '発送済みの注文の取り消しは、今はエラーにして返品窓口を案内している。返品として受け付け、次の状態を「返品」にしたい。', responsibility: 'state-shipped', linesPerSite: 4, partName: 'acceptReturnRequest' },
+    { id: 'req-paid-refund-fee', title: '支払済みの注文の取り消しで、返金手数料を差し引いて', description: '支払済みの注文を取り消すとき、返金額から決済手数料を差し引きたい。', responsibility: 'state-paid', linesPerSite: 4, partName: 'deductRefundFee', rumor: { from: 'PMの鈴木さん', text: '「支払いが済んだ注文」の扱いを見直したいという話が、いつか出てくるかもしれないらしいです。' } },
+  ],
+  checks: [
+    { id: 'check-1', question: 'Order の状態ごとの分岐を、状態ごとのクラスに分ける(State パターン)と、何が良くなる?', choices: [
+      { text: 'Order の if 分岐をすべて読まないと、ある状態で何ができるかが分からなくなる', explanation: 'それは分ける前の困りごとです。分けたあとは、1つの状態のクラスを読めば済みます。' },
+      { text: 'ある状態でできることと次に移る先が、その状態のクラスだけを読めば分かる', explanation: '状態ごとの振る舞いと遷移が1か所にまとまるので、状態の変更で読む場所が絞れます。' },
+      { text: '状態をいくつ足しても、どのクラスも一切書き換えずに済むようになる', explanation: '新しい状態はクラスを足して作れますが、そこへ移る元の状態のクラスは直します。変更依頼で確かめてみましょう。' },
+    ], answer: 1 },
+    { id: 'check-2', question: 'State パターンと Strategy パターン(上級3)の違いとして、合っているのはどれ?', choices: [
+      { text: 'State はインターフェースを使うが、Strategy はインターフェースを使わず if 分岐のまま方式を切り替える', explanation: 'どちらも共通のインターフェースを実装したクラスに分けます。違いは分け方の軸です。' },
+      { text: 'できあがるクラスの形はほぼ同じなので、どちらの名前で呼んでも同じで、使い分けを考える必要はない', explanation: '形が似ていても、方式を外から選ぶのか、自分の状態が移り変わるのかで、持たせる操作と遷移が変わります。' },
+      { text: 'State は1つのクラスが複数の操作を持ち、次の状態へ移る判断もそのクラスが持つ', explanation: 'Strategy は1つの計算方式を外から差し替え、State は状態そのものが操作と遷移を受け持ちます。' },
+    ], answer: 2 },
+  ],
+  codebase: { files: [
+    { id: 'file-order-action-controller', path: 'src/order/OrderController.ts', classes: [{ id: 'class-order-action-controller', name: 'OrderController', methods: [{ id: 'method-handle-order-action', name: 'handleOrderAction', visibility: 'public', fragments: [
+      { id: 'frag-validate-action', label: '注文IDと操作を検証して注文を読み込む', lines: 2, responsibility: 'http', code: { csharp: 'if (string.IsNullOrWhiteSpace(action)) throw new ValidationException("操作が指定されていません");\nvar order = await _orderRepository.FindAsync(orderId, cancellationToken) ?? throw new NotFoundException(orderId);' } },
+      { id: 'frag-dispatch-state', label: 'OrderState(インターフェース)経由で今の状態に操作を任せ、次の状態を保存する', lines: 4, responsibility: 'state-dispatch', uses: ['method-order-state-pay', 'method-order-state-ship', 'method-order-state-cancel'], code: { csharp: 'var next = action == "pay" ? order.State.handlePay(order) : null;\nnext ??= action == "ship" ? order.State.handleShip(order) : null;\nnext ??= action == "cancel" ? order.State.handleCancel(order) : throw new ValidationException("未対応の操作です");\nawait _orderRepository.SaveAsync(order.ChangeState(next), cancellationToken);' } },
+    ] }] }] },
+    { id: 'file-stateful-order', path: 'src/order/Order.ts', classes: [{ id: 'class-stateful-order', name: 'Order', methods: [
+      { id: 'method-order-pay', name: 'pay', visibility: 'public', fragments: [
+        { id: 'frag-pay-unpaid', label: '未払いなら、決済して次の状態を支払済みにする', lines: 3, responsibility: 'state-unpaid', suggestedName: 'handlePay', code: { csharp: 'var charge = status == OrderStatus.Unpaid ? await _payment.ChargeAsync(id, total, cancellationToken) : null;\nif (charge is { Succeeded: false }) throw new PaymentException(charge.ErrorMessage);\nif (charge is not null) return OrderStatus.Paid;' } },
+        { id: 'frag-pay-paid', label: '支払済みなら、二重決済を防ぐためにエラーにする', lines: 2, responsibility: 'state-paid', suggestedName: 'handlePay', code: { csharp: 'if (status == OrderStatus.Paid) _logger.LogWarning("支払済みの注文 {OrderId} に支払いが届きました", id);\nif (status == OrderStatus.Paid) throw new InvalidOperationException("支払済みの注文は二重に決済できません");' } },
+        { id: 'frag-pay-shipped', label: '発送済みなら、支払いを受け付けずエラーにする', lines: 2, responsibility: 'state-shipped', suggestedName: 'handlePay', code: { csharp: '_logger.LogWarning("発送済みの注文 {OrderId} に支払いが届きました", id);\nthrow new InvalidOperationException("発送済みの注文は支払いを受け付けません");' } },
+      ] },
+      { id: 'method-order-ship', name: 'ship', visibility: 'public', fragments: [
+        { id: 'frag-ship-unpaid', label: '未払いなら、発送を受け付けずエラーにする', lines: 2, responsibility: 'state-unpaid', suggestedName: 'handleShip', code: { csharp: 'if (status == OrderStatus.Unpaid) _logger.LogWarning("未払いの注文 {OrderId} に発送指示が届きました", id);\nif (status == OrderStatus.Unpaid) throw new InvalidOperationException("未払いの注文は発送できません");' } },
+        { id: 'frag-ship-paid', label: '支払済みなら、倉庫へ出荷を指示して次の状態を発送済みにする', lines: 3, responsibility: 'state-paid', suggestedName: 'handleShip', code: { csharp: 'var shipment = status == OrderStatus.Paid ? await _warehouse.RequestShipmentAsync(id, address, cancellationToken) : null;\nif (shipment is not null) trackingNumber = shipment.TrackingNumber;\nif (shipment is not null) return OrderStatus.Shipped;' } },
+        { id: 'frag-ship-shipped', label: '発送済みなら、二重発送を防ぐためにエラーにする', lines: 2, responsibility: 'state-shipped', suggestedName: 'handleShip', code: { csharp: '_logger.LogWarning("発送済みの注文 {OrderId} に発送指示が届きました", id);\nthrow new InvalidOperationException("発送済みの注文は二重に発送できません");' } },
+      ] },
+      { id: 'method-order-cancel', name: 'cancel', visibility: 'public', fragments: [
+        { id: 'frag-cancel-unpaid', label: '未払いなら、在庫を戻して注文を取り消し履歴へ移す', lines: 3, responsibility: 'state-unpaid', suggestedName: 'handleCancel', code: { csharp: 'if (status == OrderStatus.Unpaid) await _inventory.ReleaseAsync(items, cancellationToken);\nif (status == OrderStatus.Unpaid) await _orderRepository.ArchiveCanceledAsync(id, cancellationToken);\nif (status == OrderStatus.Unpaid) return OrderStatus.Canceled;' } },
+        { id: 'frag-cancel-paid', label: '支払済みなら、返金して在庫を戻し、注文を取り消し履歴へ移す', lines: 4, responsibility: 'state-paid', suggestedName: 'handleCancel', code: { csharp: 'if (status == OrderStatus.Paid) await _payment.RefundAsync(id, total, cancellationToken);\nif (status == OrderStatus.Paid) await _inventory.ReleaseAsync(items, cancellationToken);\nif (status == OrderStatus.Paid) await _orderRepository.ArchiveCanceledAsync(id, cancellationToken);\nif (status == OrderStatus.Paid) return OrderStatus.Canceled;' } },
+        { id: 'frag-cancel-shipped', label: '発送済みなら、取り消しは受け付けず返品窓口を案内する', lines: 2, responsibility: 'state-shipped', suggestedName: 'handleCancel', code: { csharp: '_logger.LogInformation("発送済みの注文 {OrderId} の取り消しを返品窓口へ案内しました", id);\nthrow new InvalidOperationException("発送済みの注文は取り消せません。返品窓口へお問い合わせください");' } },
+      ] },
+    ] }] },
+    { id: 'file-order-state', path: 'src/order/OrderState.ts', classes: [{ id: 'class-order-state', name: 'OrderState', methods: [
+      { id: 'method-order-state-pay', name: 'handlePay', visibility: 'public', fragments: [] },
+      { id: 'method-order-state-ship', name: 'handleShip', visibility: 'public', fragments: [] },
+      { id: 'method-order-state-cancel', name: 'handleCancel', visibility: 'public', fragments: [] },
+    ] }] },
+  ] },
+};
+
 export const advancedStages: readonly Stage[] = [
   notifierHierarchyStage,
   paymentGatewayInterfaceStage,
@@ -1490,4 +1552,5 @@ export const advancedStages: readonly Stage[] = [
   interfaceSegregationStage,
   valueObjectStage,
   templateMethodStage,
+  orderStateStage,
 ];
