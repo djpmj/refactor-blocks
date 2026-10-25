@@ -15,6 +15,7 @@ import { RumorPopover } from './RumorPopover';
 import { togglePanel, type ToolbarPanel } from './usePopoverDismiss';
 import { ConceptCheckPanel } from './ConceptCheckPanel';
 import { UnusedPublicNote } from './UnusedPublicNote';
+import { RoomToImproveNote } from './RoomToImproveNote';
 import { ChangePainCard } from './ChangePainCard';
 import { StoryIntro } from './StoryIntro';
 import { StoryOutro } from './StoryOutro';
@@ -287,6 +288,7 @@ function StageSidebar({ stage, codebase, score, initialScore, investigating, hid
         <summary>どんなコード?</summary>
         <p data-testid="stage-description">{stage.description}</p>
       </details>
+      {!investigating && score.total >= 100 && <RoomToImproveNote stage={stage} codebase={codebase} />}
       {!investigating && score.total >= 100 && <UnusedPublicNote stage={stage} codebase={codebase} />}
       {!investigating && score.total >= 100 && <ConceptCheckPanel key={stage.id} checks={stage.checks} />}
       <StoryOutro stage={stage} perfect={!investigating && score.total >= 100} />
