@@ -113,3 +113,52 @@ test('変更依頼の実装中はカードを出さない', async ({ page }) => 
   await expect(page.getByTestId('change-request-start')).toBeDisabled();
   await expect(page.getByTestId('next-stage-card')).toHaveCount(0);
 });
+
+test('仕上げの手直しを始めるとカードが消え、手直しを閉じると戻る', async ({ page }) => {
+  // Arrange: チュートリアル2を100点にする(仕上げの手直しがあるステージ)
+  await page.setViewportSize({ width: 1800, height: 1400 });
+  await page.goto('/');
+  await setStory(page, false);
+  await selectStage(page, STAGE_2);
+  await page.getByTestId('method-placeOrder').click();
+  await page.getByLabel('消費税を計算する(軽減税率あり)').check();
+  await page.getByLabel('新しいメソッド名').fill('calculateTax');
+  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+  await dragMethod(page, 'method-calculateTax', 'class-TaxCalculator');
+  for (const [fragment, name] of [['注文をDBに保存する', 'saveOrder'], ['確認メールを送る', 'sendConfirmationMail'], ['在庫があるか検証する', 'validateStock']] as const) {
+    await page.getByTestId('method-placeOrder').click();
+    await page.getByLabel(fragment).check();
+    await page.getByLabel('新しいメソッド名').fill(name);
+    await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+  }
+  await expect(page.getByTestId('score-announcement')).toHaveText('100点');
+  await expect(page.getByTestId('next-stage-card')).toBeVisible();
+
+  // Act
+  await page.locator('.change-pain').getByRole('button', { name: '実際に直してみる' }).click();
+
+  // Assert
+  const panel = page.getByRole('region', { name: '手で直すシミュレーション' });
+  await expect(panel).toBeVisible();
+  await expect(page.getByTestId('next-stage-card')).toHaveCount(0);
+
+  // Act: リリースして結果が出ても、閉じるまでは手直し中
+  await panel.getByRole('button', { name: 'リリースする' }).click();
+  await expect(panel).toContainText('直し忘れ');
+  await expect(page.getByTestId('next-stage-card')).toHaveCount(0);
+  await panel.getByRole('button', { name: '閉じる' }).click();
+
+  // Assert
+  await expect(panel).toBeHidden();
+  await expect(page.getByTestId('next-stage-card')).toBeVisible();
+});
+
+async function dragMethod(page: Page, method: string, target: string) {
+  const source = await page.getByTestId(method).boundingBox();
+  const destination = await page.getByTestId(target).boundingBox();
+  if (source === null || destination === null) throw new Error('ドラッグ対象が見つかりません');
+  await page.mouse.move(source.x + source.width / 2, source.y + source.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(destination.x + destination.width / 2, destination.y + destination.height / 2, { steps: 10 });
+  await page.mouse.up();
+}

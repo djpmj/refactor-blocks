@@ -10,8 +10,9 @@ export function NextStageCard({ stage, perfect }: Readonly<{ stage: Stage; perfe
   const stages = useGameStore((state) => state.stages);
   const progress = useGameStore((state) => state.progress);
   const selectStage = useGameStore((state) => state.selectStage);
+  const manualFixing = useGameStore((state) => state.manualFix !== null);
   const outroShown = storyEnabled && chapterOf(storyChapters, stage.id) !== undefined;
-  if (!perfect || outroShown) return null;
+  if (!perfect || outroShown || manualFixing) return null;
   const next = recommendNextStage(stages, progress);
   // 記録が追いつく前の一瞬は、自分自身がおすすめに出る
   if (next?.id === stage.id) return null;
