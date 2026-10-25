@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-25 16:15 UTC PR #335 仕様書の例を実機に合わせて訂正する (#327の後始末)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test(2138件)✅ / npm run lint ✅ / npm run typecheck ✅。文書のみの変更(docs/specs/tour-step-follows-state.mdの例を90→80点の実機結果に合わせて訂正)。仕様書は実装済み一覧に追加済みのため追記なし
+- マージ: squash & delete-branch
+
 ## 2026-10-25 16:00 UTC PR #334 初回ツアーの改善を実装する (#327)
 
 - 判定: 合格(blocker無し)
@@ -210,18 +216,6 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test(1899件)✅ / npm run lint ✅ / npm run typecheck ✅。候補の絞り込み・実装済みの相手を残す・説明項目を仕様と照合。E2Eはこの環境にChromiumが無く未実行(PR記載の293件成功を参照)
-- マージ: squash & delete-branch
-
-## 2026-10-24 07:10 UTC PR #276 減点の内訳に原因のクラス・メソッド・依存を名前で出す (#242)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(1902件)✅ / npm run lint ✅ / npm run typecheck ✅。対象の名前表示・依存の矢印・5件超の「ほか N 件」・押して選択を仕様と照合。E2Eは実行の承認が得られず未実行(PR記載の291件成功を参照)
-- マージ: squash & delete-branch
-
-## 2026-10-24 07:00 UTC PR #275 変更依頼を1件ごとに答え合わせし、その場で置き直せるようにする (#241)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(1895件)✅ / npm run lint ✅ / npm run typecheck ✅。reviewing段階・置き直す・次の依頼へを仕様と照合。E2Eはこの環境にChromiumが無く未実行(PR記載の291件成功を参照)
 - マージ: squash & delete-branch
 
 
