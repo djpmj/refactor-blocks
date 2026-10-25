@@ -4,6 +4,8 @@ import { RULE_LABEL } from './describeScore';
 import { findClass, type Codebase } from '../../domain/codebase/Codebase';
 import { classDependencies, cyclePath } from '../../domain/codebase/dependencies';
 
+const LINE_LABEL = { method: 'メソッド', class: 'クラス', file: 'ファイル' } as const;
+
 export type ConditionDescription = {
   readonly goal: string;
   readonly current: string | null;
@@ -11,8 +13,8 @@ export type ConditionDescription = {
 
 function describeRule(condition: ClearCondition, stage: Pick<Stage, 'limits' | 'dependencyLimit' | 'responsibilityLimit'>): string {
   if (condition.rule === 'line-limit') {
-    const { method, class: codeClass, file } = stage.limits;
-    return `行数: メソッド${method}行・クラス${codeClass}行・ファイル${file}行以内`;
+    const kind = condition.lineKind ?? 'method';
+    return `${LINE_LABEL[kind]}の行数: 1つ${stage.limits[kind]}行以内`;
   }
   if (condition.rule === 'coupling') return `結合度: 依存先は${stage.dependencyLimit}クラスまで`;
   if (condition.rule === 'responsibility') return `責務の混在: 1クラス${stage.responsibilityLimit}種類まで`;
@@ -38,12 +40,8 @@ function describeCycleStatus(measures: WorstMeasures, codebase: Codebase | undef
 function describeStatus(condition: ClearCondition, measures: WorstMeasures, codebase?: Codebase): string | null {
   if (condition.count === 0) return null;
   if (condition.rule === 'line-limit') {
-    const values = [
-      measures.method === undefined ? undefined : `メソッド最大${measures.method}行`,
-      measures.class === undefined ? undefined : `クラス最大${measures.class}行`,
-      measures.file === undefined ? undefined : `ファイル最大${measures.file}行`,
-    ].filter((value): value is string => value !== undefined);
-    return `今: ${values.join('・')}`;
+    const max = measures[condition.lineKind ?? 'method'];
+    return max === undefined ? `今: ${condition.count}件` : `今: 最大${max}行`;
   }
   if (condition.rule === 'coupling' && measures.dependencies !== undefined) return `今: 最大${measures.dependencies}クラス`;
   if (condition.rule === 'responsibility' && measures.responsibilities !== undefined) return `今: 最大${measures.responsibilities}種類`;

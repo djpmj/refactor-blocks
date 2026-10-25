@@ -83,9 +83,11 @@ test('操作でクリア条件が更新され、100点では全件達成にな�
   await selectStage(page, 'チュートリアル2: 太った placeOrder');
   const conditions = page.locator('.clear-conditions');
   await expect(conditions.locator('li[aria-label^="未達成:"]')).toHaveCount(3);
-  await expect(page.getByTestId('clear-conditions-progress')).toHaveText('1/4 達成');
+  await expect(page.getByTestId('clear-conditions-progress')).toHaveText('3/6 達成');
   await expect(conditions.locator('li.clear-condition--unmet')).toHaveCount(3);
-  await expect(conditions.locator('li.clear-condition--met')).toHaveCount(1);
+  await expect(conditions.locator('li.clear-condition--met')).toHaveCount(3);
+  await expect(conditions.locator('.clear-condition__goal', { hasText: /^(メソッド|クラス|ファイル)の行数/ })).toHaveCount(3);
+  await expect(conditions.getByText(/^行数: /)).toHaveCount(0);
   await expect(conditions.locator('li.clear-condition--just-met')).toHaveCount(0);
   const firstUnmet = conditions.locator('li.clear-condition--unmet').first();
   await expect(firstUnmet.locator('.clear-condition__badge')).toHaveText('✗');
@@ -101,15 +103,32 @@ test('操作でクリア条件が更新され、100点では全件達成にな�
   const justMet = conditions.locator('li.clear-condition--just-met');
   await expect.poll(() => justMet.count()).toBeGreaterThan(0);
   await expect(justMet.first().locator('.clear-condition__badge')).toHaveCSS('animation-name', 'clear-condition-bounce');
-  await expect(page.getByTestId('clear-conditions-progress')).not.toHaveText('1/4 達成');
+  await expect(page.getByTestId('clear-conditions-progress')).not.toHaveText('3/6 達成');
   await expect(justMet).toHaveCount(0, { timeout: 1000 });
   await page.getByRole('button', { name: '元に戻す' }).click();
   await page.getByRole('button', { name: 'やり直し' }).click();
-  await expect(page.getByTestId('clear-conditions-progress')).not.toHaveText('1/4 達成');
+  await expect(page.getByTestId('clear-conditions-progress')).not.toHaveText('3/6 達成');
   await expect(justMet).toHaveCount(0);
+  const methodRow = conditions.locator('li[aria-label*="メソッドの行数:"]');
+  const otherLineRows = conditions.locator('li[aria-label*="クラスの行数:"], li[aria-label*="ファイルの行数:"]');
+  await expect(methodRow).toHaveClass(/clear-condition--unmet/);
+  await page.evaluate(`(() => {
+    window.justMetSeen = new Set();
+    new MutationObserver(() => {
+      document.querySelectorAll('.clear-conditions li.clear-condition--just-met').forEach((li) => {
+        window.justMetSeen.add(li.getAttribute('aria-label') ?? '');
+      });
+    }).observe(document.querySelector('.clear-conditions') ?? document.body, { subtree: true, attributes: true, childList: true });
+  })()`);
   await extract(page, '注文をDBに保存する', 'saveOrder');
   await extract(page, '確認メールを送る', 'sendConfirmationMail');
   await extract(page, '在庫があるか検証する', 'validateStock');
+  // メソッドの行数だけが達成した瞬間になり、最初から達成済みのクラス・ファイルの行は弾まない
+  await expect(methodRow).toHaveClass(/clear-condition--met/);
+  const seenLabels: string = await page.evaluate('Array.from(window.justMetSeen).join("|")');
+  expect(seenLabels).toContain('メソッドの行数:');
+  expect(seenLabels).not.toMatch(/(クラス|ファイル)の行数:/);
+  await expect(otherLineRows.locator('.clear-condition__badge')).toHaveText(['✓', '✓']);
 
   await expect(page.getByTestId('score-value')).toContainText('100点');
   await expect(conditions.locator('li[aria-label^="達成:"]')).toHaveCount(await conditions.locator('li').count());
@@ -120,7 +139,7 @@ test('操作でクリア条件が更新され、100点では全件達成にな�
   await releaseAllManualFixSites(page);
   await expect(page.getByRole('region', { name: 'なぜ分けるのか' }).locator('details')).toHaveAttribute('open', '');
   await page.getByRole('button', { name: '最初に戻す' }).click();
-  await expect(page.getByTestId('clear-conditions-progress')).toHaveText('1/4 達成');
+  await expect(page.getByTestId('clear-conditions-progress')).toHaveText('3/6 達成');
   await expect(conditions.locator('li.clear-condition--just-met')).toHaveCount(0);
 });
 

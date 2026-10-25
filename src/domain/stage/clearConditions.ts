@@ -1,11 +1,24 @@
 import type { Codebase } from '../codebase/Codebase';
 import { classDependencies, findCycles } from '../codebase/dependencies';
-import { findLineLimitViolations } from '../scoring/lineLimits';
+import { findLineLimitViolations, type LineLimitViolation } from '../scoring/lineLimits';
 import { findResponsibilityViolations } from '../scoring/responsibilities';
 import type { Score, ScoreRule } from '../scoring/score';
 import type { Stage } from './Stage';
 
-export type ClearCondition = { readonly rule: ScoreRule; readonly count: number };
+export type LineKind = 'method' | 'class' | 'file';
+
+export type ClearCondition = {
+  readonly rule: ScoreRule;
+  readonly count: number;
+  /** `rule === 'line-limit'` の行だけ入る。メソッド・クラス・ファイルのどれの行数かを表す */
+  readonly lineKind?: LineKind;
+};
+
+const LINE_KINDS: readonly LineKind[] = ['method', 'class', 'file'];
+
+export function clearConditionKey(condition: Pick<ClearCondition, 'rule' | 'lineKind'>): string {
+  return condition.lineKind === undefined ? condition.rule : `${condition.rule}:${condition.lineKind}`;
+}
 
 export const ALWAYS_SHOWN_RULES: readonly ScoreRule[] = ['line-limit', 'coupling', 'responsibility'];
 
@@ -18,11 +31,17 @@ export type WorstMeasures = {
   readonly cycles?: readonly (readonly string[])[];
 };
 
-export function clearConditions(initial: Score, current: Score): ClearCondition[] {
+export function clearConditions(
+  initial: Score,
+  current: Score,
+  lineViolations: readonly Pick<LineLimitViolation, 'kind'>[],
+): ClearCondition[] {
   const initialCounts = new Map(initial.deductions.map(({ rule, count }) => [rule, count]));
   return current.deductions
     .filter(({ rule, count }) => ALWAYS_SHOWN_RULES.includes(rule) || count > 0 || (initialCounts.get(rule) ?? 0) > 0)
-    .map(({ rule, count }) => ({ rule, count }));
+    .flatMap(({ rule, count }): ClearCondition[] => rule === 'line-limit'
+      ? LINE_KINDS.map((lineKind) => ({ rule, lineKind, count: lineViolations.filter((item) => item.kind === lineKind).length }))
+      : [{ rule, count }]);
 }
 
 function maximum(values: readonly number[]): number | undefined {
