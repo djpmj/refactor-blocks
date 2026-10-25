@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { openHints } from './hintPopover.js';
 import { selectStage } from './selectStage.js';
 
 const STAGE = '中級1: 循環依存を断ち切る';
@@ -11,6 +12,7 @@ test('中級1では問題の場所を見てから次の一手と動きが使え�
   const problem = page.getByTestId('hint-problem');
   const next = page.getByRole('button', { name: /次の一手/ });
   const ghost = page.getByTestId('ghost-hint');
+  await openHints(page);
 
   // Assert
   await expect(problem).toBeVisible();
@@ -36,6 +38,7 @@ test('中級1では問題の場所を見てから次の一手と動きが使え�
   await next.click();
   await selectStage(page, 'チュートリアル1: 長いメソッドを分ける');
   await selectStage(page, STAGE);
+  await openHints(page);
 
   // Assert
   await expect(next).toBeDisabled();
@@ -71,5 +74,6 @@ test('100点では問題ヒントを使えない', async ({ page }) => {
 
   // Assert
   await expect(page.getByTestId('score-value')).toContainText('100点');
+  await openHints(page);
   await expect(problem).toBeDisabled();
 });

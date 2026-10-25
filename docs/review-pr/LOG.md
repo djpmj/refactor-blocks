@@ -38,6 +38,36 @@
 
 ## ログ一覧
 
+## 2026-10-25 07:40 UTC PR #311 抽出するメソッド名の重複を、押す前に入力欄のそばで伝える (#289)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint・typecheck・Vitest 2047件)✅。表示する理由と aria-invalid を blockOf の1つの判定から導くこと、優先順(選択なし>非連続>名前が空>重複)、aria-describedby の参照先idをIssue #289・docs/specs/extract-name-inline-error.md と照合。E2Eはこの環境で実行許可が無く未実行(PR本文では関係する14件成功、CIのe2eは確認時点で実行中)
+- マージ: squash & delete-branch
+
+## 2026-10-25 UTC PR #306 E2Eの最初の描画待ちを15秒まで延ばす(roadmap-open の間欠失敗対策)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅(e2e/selectStage.tsの1行変更のみ。アサーションは弱めずtimeoutだけ延長)
+- マージ: squash & delete-branch
+
+## 2026-10-25 03:15 UTC PR #305 役目を終えた通知トーストを消す (#286)
+
+- 判定: 合格(blocker無し。suggestion: e2e/toast-clears-when-stale.spec.ts の固定800ms待機を状態待ちへ)
+- 確認した内容: npm run check(lint・typecheck・Vitest 2030件)✅。messageは状況変化で消し出した操作自身では残す・noticeは8秒で自動消去し置換で数え直す、をIssue #286・docs/specs/toast-clears-when-stale.mdと照合。E2Eはこの環境で実行許可が無く未実行(PR本文では全352件成功)
+- マージ: squash & delete-branch
+
+## 2026-10-25 02:40 UTC PR #304 離れた処理は1つのメソッドに抽出できないようにする (#285)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint・typecheck・Vitest 2024件)✅。連続判定(isContiguous)をdomainの検証順序・application日本語メッセージ・MethodEditorの無効理由で仕様どおりに実装していることをIssue #285・docs/specs/extract-contiguous-only.mdと照合。E2Eはこの環境で実行許可が無く未実行(PR本文では全348件成功)
+- マージ: squash & delete-branch
+
+## 2026-10-25 01:15 UTC PR #301 ヒント・うわさ・参考をツールバーのポップオーバーに移す (#281)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test(2016件)✅ / npm run lint ✅ / npm run typecheck ✅。仕様(toolbar-hint-rumor-popovers)どおりの移設、開くパネル1つへの集約、Escでの閉じ・フォーカス復帰を差分で確認。E2Eはレビュー環境にPlaywrightブラウザが無く未実行(PR本文では346件成功)
+- マージ: squash & delete-branch
+
 ## 2026-10-25 00:10 UTC PR #300 再読み込みしても、最後に遊んでいたステージから続ける (#282)
 
 - 判定: 合格(blocker無し)
@@ -186,36 +216,6 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test(1832件)✅ / npm run lint ✅ / npm run typecheck ✅。colorMode="system" と .react-flow.dark の変数上書き(参照するCSS変数は全て定義済み)をIssue #233の受け入れ基準と照合。E2Eはこの環境にブラウザが無く未実行(PR本文では271件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-23 09:25 UTC PR #254 冒頭の手直しの答え表示と結果説明を改善する (#215)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(1832件)✅ / npm run lint ✅ / npm run typecheck ✅。答え非表示、describeManualFixのクラス単位文言、OpeningFixBanner、siteClassIdsを差分で確認。E2Eはこの環境にブラウザが無く未実行(PR本文では268件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-23 08:50 UTC PR #259 白紙設計のクラスを責務に応じて命名する (#220)
-
-- 判定: 合格(blocker無し。suggestion: useGameStore.ts 先頭にBOMが混入)
-- 確認した内容: npm test(1826件)✅ / npm run lint ✅ / npm run typecheck ✅。白紙設計のclassNames設定、moveActionsでのautoNameClasses適用、回帰テストを差分で確認。E2Eはこの環境にブラウザが無く未実行(PR本文では263件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-23 08:40 UTC PR #263 クラスを新しいファイルへ移すメニューを追加する (#225)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(1825件)✅ / npm run lint ✅ / npm run typecheck ✅。メニュー項目(唯一のクラスでは非表示)、Tab/矢印のフォーカス移動、操作ガイド更新を差分で確認。E2Eはこの環境にブラウザが無く未実行(PR本文では264件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-20 10:40 UTC PR #262 基底へ移したメソッドをprotectedにし統合候補を保つ (#229)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(1816件)✅ / npm run lint ✅ / npm run typecheck ✅。子孫からだけ呼ばれるメソッドはprotected・それ以外はpublic、private/protected間の統合(結果は広い可視性)、changed型と呼び出し元・通知文の更新を差分で確認。E2Eはこの環境で実行許可が無く未実行(PR本文では256/257件成功、残り1件は単独再実行で成功)
-- マージ: squash & delete-branch
-
-## 2026-10-20 10:30 UTC PR #261 メソッドの読み上げ名と選択状態を明確にする (#227)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(1813件)✅ / npm run lint ✅ / npm run typecheck ✅。読み上げ名の規則・aria-pressed・記号のaria-hiddenが仕様どおりであることを差分で確認。E2Eはこの環境にブラウザが無く未実行(PR本文では全257件成功)
 - マージ: squash & delete-branch
 
 

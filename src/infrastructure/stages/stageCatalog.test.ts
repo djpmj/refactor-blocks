@@ -305,7 +305,7 @@ describe('責務の混ざったメソッド', () => {
     expect(visibilityViolations).toEqual([]);
   });
 
-  it('中級1で合計金額と決済をまとめて抽出すると1件減点し、決済だけなら違反しない', () => {
+  it('中級1で割引と決済をまとめて抽出すると1件減点し、決済だけなら違反しない', () => {
     // Arrange
     const stage = stages.find((candidate) => candidate.id === 'intermediate-cyclic-dependency');
     if (stage === undefined) throw new Error('中級1のステージがありません');
@@ -314,7 +314,7 @@ describe('責務の混ざったメソッド', () => {
       { move: { method: 'countOrdersOf', toClass: 'Customer' } },
     ];
     const mixedSteps: SolutionStep[] = [...moves, {
-      extract: { from: 'checkout', fragmentIds: ['frag-order-total', 'frag-pay'], name: 'orderTotalAndPay' },
+      extract: { from: 'checkout', fragmentIds: ['frag-member-discount', 'frag-pay'], name: 'discountAndPay' },
     }];
     const paymentSteps: SolutionStep[] = [...moves, {
       extract: { from: 'checkout', fragmentIds: ['frag-pay'], name: 'pay' },

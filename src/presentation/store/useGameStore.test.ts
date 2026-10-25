@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { changePart, withChangePart } from '../../domain/change/changePart';
 import { withoutTray } from '../../domain/blank/tray';
 import { allClasses, findMethod } from '../../domain/codebase/Codebase';
@@ -7,7 +7,7 @@ import { checkManualFix } from '../../domain/change/checkManualFix';
 import { painRequestsOf } from '../../domain/change/changePain';
 import { sampleImplementation } from '../../domain/change/sampleImplementation';
 import { stages } from '../../infrastructure/stages/stageCatalog';
-import { createGameStore } from './useGameStore';
+import { createGameStore, NOTICE_VISIBLE_MS } from './useGameStore';
 import { scoreCodebase } from '../../domain/scoring/score';
 import { sampleAnswerCodebase } from '../../domain/stage/sampleAnswer';
 import { putDraft } from '../../domain/progress/drafts';
@@ -730,5 +730,108 @@ describe('最後に開いたステージから始める', () => {
 
     // Assert
     expect(createGameStore(stages, true, false).getState().stage.id).toBe(second.id);
+  });
+});
+
+describe('役目を終えたトーストを消す', () => {
+  const stage = stages.find((candidate) => candidate.title === '中級9: コピペされた消費税計算を1か所にまとめる');
+  const OPENING_MESSAGE = 'まず「もし、この変更が来たら?」';
+
+  function storeWithMessage() {
+    if (stage === undefined) throw new Error('tax stage is required');
+    const store = createGameStore([stage], false);
+    expect(store.getState().extractMethod({ sourceMethodId: 'method-confirm-order', fragmentIds: ['frag-order-tax'], newMethodName: 'tax' })).toBe(false);
+    expect(store.getState().message).toContain(OPENING_MESSAGE);
+    return store;
+  }
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('messageを出した操作自身では、messageは残る', () => {
+    // Arrange
+    const store = storeWithMessage();
+
+    // Act
+    store.setState({ message: 'エラー', selectedMethodId: 'method-confirm-order' });
+
+    // Assert
+    expect(store.getState().message).toBe('エラー');
+  });
+
+  it('messageが出たあと、codebaseが変わるとmessageはnullになる', () => {
+    // Arrange
+    const store = storeWithMessage();
+
+    // Act
+    store.setState({ codebase: { files: [] } });
+
+    // Assert
+    expect(store.getState().message).toBeNull();
+  });
+
+  it('messageが出たあと、selectedMethodIdが変わるとmessageはnullになる', () => {
+    // Arrange
+    const store = storeWithMessage();
+
+    // Act
+    store.setState({ selectedMethodId: 'method-confirm-order' });
+
+    // Assert
+    expect(store.getState().message).toBeNull();
+  });
+
+  it('messageが出たあと、manualFixが始まるとmessageはnullになる', () => {
+    // Arrange
+    const store = storeWithMessage();
+
+    // Act
+    store.getState().startManualFix();
+
+    // Assert
+    expect(store.getState().manualFix).not.toBeNull();
+    expect(store.getState().message).toBeNull();
+  });
+
+  it('noticeは、状況が変わっても時間までは消えず、8秒で消える', () => {
+    // Arrange
+    vi.useFakeTimers();
+    const store = storeWithMessage();
+    store.setState({ message: null, notice: 'お知らせ' });
+
+    // Act
+    store.setState({ selectedMethodId: 'method-confirm-order' });
+    vi.advanceTimersByTime(NOTICE_VISIBLE_MS - 1);
+
+    // Assert
+    expect(store.getState().notice).toBe('お知らせ');
+
+    // Act
+    vi.advanceTimersByTime(1);
+
+    // Assert
+    expect(store.getState().notice).toBeNull();
+  });
+
+  it('noticeが置き換わると8秒を数え直す', () => {
+    // Arrange
+    vi.useFakeTimers();
+    const store = storeWithMessage();
+    store.setState({ message: null, notice: '最初' });
+    vi.advanceTimersByTime(5000);
+
+    // Act
+    store.setState({ notice: '次' });
+    vi.advanceTimersByTime(5000);
+
+    // Assert
+    expect(store.getState().notice).toBe('次');
+
+    // Act
+    vi.advanceTimersByTime(3000);
+
+    // Assert
+    expect(store.getState().notice).toBeNull();
   });
 });

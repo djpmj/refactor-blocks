@@ -36,7 +36,7 @@ allowed-tools: Read, Write, Glob, Grep, Agent, Bash(git:*), Bash(gh issue:*), Ba
    - `bash scripts/spec-publish.sh publish "仕様: <slug>" <slug>...` が、仕様書だけをコミットし、
      masterとの差分が仕様書のコミットだけであることを確かめてから `git push origin HEAD:master` し、
      Issueごとに `gh issue create` と `gh issue develop`(`--checkout` なし)を行い、worktreeを片付ける
-     (detached HEADなので、作業中のfeatureブランチのコミットがmasterへ混ざらない。`CLAUDE.md`「masterへの直接pushの安全策」)
+     (detached HEADなので、作業中のfeatureブランチのコミットがmasterへ混ざらない。`docs/MASTER-PUSH.md`)
    - 実装用ブランチを手元にチェックアウトしたいときは、worktree(`git worktree add <パス> <ブランチ名>`)で行う
 7. Issue作成・ブランチ作成が終わったら、間を置かずに次の機能案を提案する。
    `docs/feature-ideas/IDEAS.md` を読み直し、各案について `docs/specs/`(仕様書のファイル名・内容)と

@@ -21,6 +21,8 @@ model: sonnet
 6. `CLAUDE.md` の「実装方針: ponytail」の観点で過剰設計がないかを見る(`.claude/skills/ponytail-review/SKILL.md` のタグ `delete`/`reuse`/`stdlib`/`native`/`yagni`/`shrink` を使う)。過剰設計の指摘は原則 suggestion とし、DDDの層構成・TDD・E2Eテストなどリポジトリで明示的に決めているものは指摘対象にしない。
 7. ブロック(ファイル・クラス・メソッド・処理の塊)の移動・分割・統合に関わる機能では、ドラッグ操作だけに限定されておらず、キーボードでも同等の操作ができるか(dnd-kitの`KeyboardSensor`やショートカット)を確認する。キーボード操作が仕様書の受け入れ基準に含まれていない場合は指摘のみとし、不合格判定の根拠にはしない。
 
+8. 失敗の握りつぶしがないかを見る(`.claude/agents/silent-failure-hunter.md` の観点: 空の`catch`、`Result`の失敗の無視、危険なフォールバック、信頼境界の検証漏れ)。ECC由来。仕様書の受け入れ基準に反する握りつぶしは blocker、それ以外は suggestion。
+
 ## 出力形式
 
 各指摘について:

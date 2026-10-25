@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { openHints } from './hintPopover.js';
 import { releaseAllManualFixSites, selectStage } from './selectStage.js';
 
 async function extract(page: Page, fragmentLabel: string, name?: string) {
@@ -18,21 +19,23 @@ async function move(page: Page, methodId: string, classId: string) {
   await page.mouse.up();
 }
 
-test('困りごと・クリア条件・ヒントが上に並び、ヒントは同じ欄に追加される', async ({ page }) => {
+test('困りごと・クリア条件が上に並び、ヒントとうわさはサイドバーではなくツールバーに出る', async ({ page }) => {
   await page.setViewportSize({ width: 1800, height: 1400 });
   await page.goto('/');
   await page.getByTestId('story-toggle').click();
-  const sidebar = page.getByRole('complementary', { name: '課題とヒント' });
+  const sidebar = page.getByRole('complementary', { name: '課題' });
   await expect(sidebar.getByRole('heading', { name: '困っていること' })).toBeVisible();
   await expect(sidebar.getByText('printMonthlyReportに集計・計算・表の組み立て・出力がまとまっている')).toBeVisible();
   await expect(sidebar.getByRole('heading', { name: 'クリア条件' })).toBeVisible();
-  await expect(sidebar.getByRole('heading', { name: 'ヒント', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: /次の一手/ })).toBeVisible();
+  await expect(sidebar.getByRole('heading', { name: '課題', exact: true })).toBeVisible();
+  await expect(sidebar.getByTestId('hint-problem')).toHaveCount(0);
+  await expect(sidebar.getByTestId('rumor-list')).toHaveCount(0);
+  await expect(sidebar).not.toContainText('気になるうわさ');
   await expect(page.getByTestId('stage-description')).toBeHidden();
   await expect(sidebar).not.toContainText('メソッドは20行以内');
 
   const order = await sidebar.evaluate((element) => {
-    const selectors = ['.story-card', '.stage-panel__problem', '.clear-conditions', '.stage-panel__hints', '.change-pain', '.stage-panel__description'];
+    const selectors = ['.story-card', '.stage-panel__problem', '.clear-conditions', '.change-pain', '.stage-panel__description'];
     return selectors.map((selector) => {
       const target = element.querySelector(selector);
       return target === null ? -1 : [...element.children].indexOf(target);
@@ -40,9 +43,11 @@ test('困りごと・クリア条件・ヒントが上に並び、ヒントは�
   });
   expect(order.slice(1)).toEqual([...order.slice(1)].sort((left, right) => left - right));
 
+  await openHints(page);
   await page.getByTestId('hint-problem').click();
   await page.getByRole('button', { name: /次の一手/ }).click();
-  await expect(sidebar.locator('.stage-panel__hint-list li')).toHaveCount(1);
+  await expect(page.getByTestId('hint-popover').locator('.stage-panel__hint-list li')).toHaveCount(1);
+  await expect(sidebar.locator('.stage-panel__hint-list')).toHaveCount(0);
 });
 
 test('ストーリーを閉じても1行で残り、押すと開き直せる', async ({ page }) => {

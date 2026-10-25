@@ -147,3 +147,7 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [unused-public-member-notes](unused-public-member-notes.md) | 100点のあとに、外から使われていない公開メンバーを知らせる |
 | [layered-stage-lanes](layered-stage-lanes.md) | 層を扱うステージで、層ごとに段を分けて並べ、層を飛ばす・逆らう矢印を赤い破線で目立たせる |
 | [resume-last-stage](resume-last-stage.md) | 再読み込みしても、最後に遊んでいたステージから続ける |
+| [toolbar-hint-rumor-popovers](toolbar-hint-rumor-popovers.md) | ヒント・うわさをサイドバーからツールバーのポップオーバーへ移す |
+| [extract-contiguous-only](extract-contiguous-only.md) | 離れた処理は1つのメソッドに抽出できないようにする |
+| [toast-clears-when-stale](toast-clears-when-stale.md) | 役目を終えた通知トースト(失敗理由は状況変化で、お知らせは8秒で)を自動で消す |
+| [extract-name-inline-error](extract-name-inline-error.md) | 抽出するメソッド名が重複しているとき、押す前に入力欄のそばで伝える |
