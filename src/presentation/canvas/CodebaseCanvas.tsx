@@ -25,7 +25,7 @@ import { parseClassDragId, parseClassDropId, parseFieldDragId, parseFileDropId, 
 import { FieldChipView } from './FieldChip';
 import { FileNode } from './FileNode';
 import { InheritanceMarker } from './InheritanceMarker';
-import { dependencyEdges, fileRectsFromNodes, inheritanceEdges, laneBands, layoutCodebase, NEW_CLASS_FILE_SIZE, type CodebaseFlowNode } from './layoutCodebase';
+import { dependencyEdges, FILE_GAP, fileRectsFromNodes, inheritanceEdges, laneBands, layoutCodebase, NEW_CLASS_FILE_SIZE, type CodebaseFlowNode } from './layoutCodebase';
 import type { Stage, StageLayer } from '../../domain/stage/Stage';
 import { MethodChipView } from './MethodChip';
 import { OffsetEdge } from './OffsetEdge';
@@ -33,6 +33,7 @@ import { TopRouteEdge } from './TopRouteEdge';
 import { WarningEdge } from './WarningEdge';
 import { WarningEdgeStateProvider } from './WarningEdgeState';
 import { useCanvasContextMenu } from './useCanvasContextMenu';
+import { avoidFileOverlap } from './avoidFileOverlap';
 import { fileTopLeftAtDrop } from './dropPosition';
 import { GhostAnimation } from './GhostAnimation';
 import type { Edge } from '@xyflow/react';
@@ -462,7 +463,8 @@ function useDropHandler(codebase: Codebase, onEnd: () => void, flow: ReactFlowIn
     else if (classId !== null) fileId = moveClassToNewFile(classId);
     if (fileId === null || flow === null || !isMousePosition(pointer)) return;
     const drop = flow.screenToFlowPosition({ x: pointer.clientX + event.delta.x, y: pointer.clientY + event.delta.y });
-    callbacks.setPosition(fileId, fileTopLeftAtDrop(drop, NEW_CLASS_FILE_SIZE));
+    const others = [...fileRectsFromNodes(flow.getNodes())].filter(([id]) => id !== fileId).map(([, rect]) => rect);
+    callbacks.setPosition(fileId, avoidFileOverlap(fileTopLeftAtDrop(drop, NEW_CLASS_FILE_SIZE), NEW_CLASS_FILE_SIZE, others, FILE_GAP));
     callbacks.setRevealFileId(fileId);
   };
   return (event: DragEndEvent) => {
