@@ -109,7 +109,8 @@ test('処理のあるファイルは削除できず、循環依存の減点が�
   await expect(sidebarToggle).toHaveAttribute('aria-expanded', 'false');
   await expect(toast).toBeVisible();
 
-  // Act: トーストを閉じ、同じ拒否操作で再び表示する
+  // Act: 内訳を閉じ(開いたままだとキャンバスの左側に被さる)、トーストを閉じ、同じ拒否操作で再び表示する
+  await page.locator('.score-breakdown summary').click();
   await page.getByLabel('メッセージを閉じる').click();
   await expect(page.getByRole('alert')).toHaveCount(0);
   await file.click({ button: 'right', position: { x: 10, y: 10 } });
