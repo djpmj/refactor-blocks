@@ -7,7 +7,12 @@ async function startExtract(page: Page) {
   await page.goto('/');
   await selectStage(page, 'チュートリアル1: 長いメソッドを分ける');
   await page.getByTestId('method-printMonthlyReport').click();
+  // 売上の集計を先に抽出して、aggregateSales を既存のメソッドにしておく
   await page.getByRole('checkbox').first().check();
+  await expect(page.getByLabel('新しいメソッド名')).toHaveValue('aggregateSales');
+  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+  await page.getByTestId('method-printMonthlyReport').click();
+  await page.getByRole('checkbox', { name: /表のヘッダーを組み立てる/ }).check();
 }
 
 for (const duplicate of ['aggregateSales', 'printMonthlyReport']) {
