@@ -147,3 +147,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [unused-public-member-notes](unused-public-member-notes.md) | 100点のあとに、外から使われていない公開メンバーを知らせる |
 | [layered-stage-lanes](layered-stage-lanes.md) | 層を扱うステージで、層ごとに段を分けて並べ、層を飛ばす・逆らう矢印を赤い破線で目立たせる |
 | [resume-last-stage](resume-last-stage.md) | 再読み込みしても、最後に遊んでいたステージから続ける |
+| [toolbar-hint-rumor-popovers](toolbar-hint-rumor-popovers.md) | ヒント・うわさをサイドバーからツールバーのポップオーバーへ移す |
