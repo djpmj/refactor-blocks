@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { findMethod } from './Codebase';
+import { findMethod, mapClasses, type Codebase, type Method } from './Codebase';
 import { extractMethod, type ExtractMethodRequest } from './extractMethod';
 import { methodLines } from './lineCount';
 import { sampleCodebase } from './testFixtures';
@@ -12,6 +12,12 @@ function request(overrides: Partial<ExtractMethodRequest> = {}): ExtractMethodRe
     newMethodName: 'calculateTax',
     ...overrides,
   };
+}
+
+/** place のメソッドの末尾に4つ目の処理を足す。 */
+function withExtraFragment(codebase: Codebase): Codebase {
+  const addFragment = (method: Method): Method => ({ ...method, fragments: [...method.fragments, { ...method.fragments[0], id: 'f-extra' }] });
+  return mapClasses(codebase, (codeClass) => ({ ...codeClass, methods: codeClass.methods.map(addFragment) }));
 }
 
 describe('extractMethod', () => {
@@ -57,7 +63,36 @@ describe('extractMethod', () => {
     expect(call?.uses).toEqual(['method-tax']);
   });
 
-  it('離れた複数の処理を選ぶと、呼び出しは最初の位置に1つだけ残る', () => {
+  it.each([
+    ['先頭の連続', ['f-validate', 'f-tax'], ['f-validate', 'f-tax']],
+    ['末尾の連続', ['f-tax', 'f-save'], ['f-tax', 'f-save']],
+    ['選ぶ順が逆でも並びで連続している', ['f-tax', 'f-validate'], ['f-validate', 'f-tax']],
+  ])('連続した複数の処理(%s)を選ぶと、呼び出しは元の位置に1つ残る', (_label, fragmentIds, extractedIds) => {
+    // Arrange
+    const codebase = sampleCodebase();
+
+    // Act
+    const result = extractMethod(codebase, request({ fragmentIds }));
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    expect(findMethod(result.value, 'method-tax')?.fragments.map((fragment) => fragment.id)).toEqual(extractedIds);
+    expect(findMethod(result.value, 'method-place')?.fragments.filter((fragment) => fragment.id === 'method-tax:call')).toHaveLength(1);
+  });
+
+  it('4つの処理の途中の連続(b, c)は抽出できる', () => {
+    // Arrange
+    const withFour = withExtraFragment(sampleCodebase());
+
+    // Act
+    const result = extractMethod(withFour, request({ fragmentIds: ['f-tax', 'f-save'] }));
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    expect(findMethod(result.value, 'method-place')?.fragments.map((fragment) => fragment.id)).toEqual(['f-validate', 'method-tax:call', 'f-extra']);
+  });
+
+  it('離れた処理(間に別の処理がある)を選ぶとエラーになる', () => {
     // Arrange
     const codebase = sampleCodebase();
 
@@ -65,13 +100,29 @@ describe('extractMethod', () => {
     const result = extractMethod(codebase, request({ fragmentIds: ['f-save', 'f-validate'] }));
 
     // Assert
-    if (!result.ok) throw new Error(result.error);
-    const source = findMethod(result.value, 'method-place');
-    expect(source?.fragments.map((fragment) => fragment.id)).toEqual(['method-tax:call', 'f-tax']);
-    expect(findMethod(result.value, 'method-tax')?.fragments.map((fragment) => fragment.id)).toEqual([
-      'f-validate',
-      'f-save',
-    ]);
+    expect(result).toEqual({ ok: false, error: 'non-contiguous-fragments' });
+  });
+
+  it('連続の検証より、選択なしのエラーが先に返る', () => {
+    // Arrange
+    const codebase = sampleCodebase();
+
+    // Act
+    const result = extractMethod(codebase, request({ fragmentIds: [] }));
+
+    // Assert
+    expect(result).toEqual({ ok: false, error: 'no-fragments-selected' });
+  });
+
+  it('連続の検証は名前の検証より先に行う', () => {
+    // Arrange
+    const codebase = sampleCodebase();
+
+    // Act
+    const result = extractMethod(codebase, request({ fragmentIds: ['f-validate', 'f-save'], newMethodName: '' }));
+
+    // Assert
+    expect(result).toEqual({ ok: false, error: 'non-contiguous-fragments' });
   });
 
   it('元のCodebaseは変更しない', () => {
