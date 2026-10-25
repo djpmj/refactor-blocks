@@ -67,7 +67,8 @@ async function expectPanelAboveBanner(page: Page, panelSelector: string) {
   const panel = page.locator(panelSelector).first();
   await expect(panel).toBeVisible();
   const covered = await panel.evaluate((element) => {
-    const banner = document.querySelector('[data-testid="opening-fix-banner"]');
+    const doc = element.ownerDocument;
+    const banner = doc.querySelector('[data-testid="opening-fix-banner"]');
     if (banner === null) throw new Error('バナーがありません');
     const p = element.getBoundingClientRect();
     const b = banner.getBoundingClientRect();
@@ -76,7 +77,7 @@ async function expectPanelAboveBanner(page: Page, panelSelector: string) {
     const top = Math.max(p.top, b.top);
     const bottom = Math.min(p.bottom, b.bottom);
     if (left >= right || top >= bottom) return 'no-overlap';
-    const hit = document.elementFromPoint((left + right) / 2, (top + bottom) / 2);
+    const hit = doc.elementFromPoint((left + right) / 2, (top + bottom) / 2);
     return hit !== null && element.contains(hit) ? 'panel-on-top' : 'banner-on-top';
   });
   expect(covered).toBe('panel-on-top');
@@ -176,11 +177,11 @@ for (const width of [1280, 600]) {
       await expect(page.getByTestId('opening-fix-banner')).toBeVisible();
       await page.getByTestId('roadmap-open').click();
       await expect(page.getByTestId('stage-roadmap')).toBeVisible();
-      const hitInDialog = await page.evaluate(() => {
-        const b = document.querySelector('[data-testid="opening-fix-banner"]')?.getBoundingClientRect();
-        const dialog = document.querySelector('[data-testid="stage-roadmap"]');
-        if (b === undefined || dialog === null) throw new Error('要素がありません');
-        const hit = document.elementFromPoint(b.left + 4, b.top + b.height / 2);
+      const hitInDialog = await page.getByTestId('stage-roadmap').evaluate((dialog) => {
+        const doc = dialog.ownerDocument;
+        const b = doc.querySelector('[data-testid="opening-fix-banner"]')?.getBoundingClientRect();
+        if (b === undefined) throw new Error('バナーがありません');
+        const hit = doc.elementFromPoint(b.left + 4, b.top + b.height / 2);
         return hit !== null && dialog.contains(hit);
       });
       expect(hitInDialog).toBe(true);
