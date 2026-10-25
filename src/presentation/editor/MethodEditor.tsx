@@ -18,7 +18,7 @@ import {
 import { changeVisibilityUseCase } from '../../application/RefactorUseCases';
 import { previewExtractMethod } from '../../application/RefactorUseCases';
 import { describeExtractPreview } from './describeExtractPreview';
-import { extractDisabledReason } from './extractDisabledReason';
+import { extractDisabledReason, extractNameInvalid } from './extractDisabledReason';
 import { findCallerOf } from '../../domain/codebase/inlineMethod';
 import { findMergeCandidates, type MergeCandidate } from '../../domain/codebase/mergeMethods';
 import { fragmentLines, methodLines } from '../../domain/codebase/lineCount';
@@ -360,7 +360,7 @@ function MethodEditorBody({ method, showVisibility, stage }: Readonly<{ method: 
             <ExtractControls
               newName={newName}
               disabledReason={disabledReason}
-              isDuplicate={selected.size > 0 && existingNames.includes(newName.trim())}
+              isDuplicate={extractNameInvalid(method, selected, newName, existingNames)}
               onNameChange={setCustomName}
               onExtract={handleExtract}
               previewSummary={previewSummary}

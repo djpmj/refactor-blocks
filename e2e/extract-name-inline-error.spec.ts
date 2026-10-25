@@ -62,3 +62,32 @@ test('前後に空白があっても重複と判定する', async ({ page }) => 
   await expect(page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' })).toBeDisabled();
   await expect(page.locator('#method-editor-extract-disabled-reason')).toHaveText(nameOf('aggregateSales'));
 });
+
+test('非連続かつ重複名のとき、aria-invalid は表示中の理由と一致し、連続に直すと重複の説明に変わる', async ({ page }) => {
+  // Arrange
+  await startExtract(page);
+  const input = page.getByLabel('新しいメソッド名');
+  const reason = page.locator('#method-editor-extract-disabled-reason');
+  const checks = page.getByRole('checkbox');
+  await input.fill('aggregateSales');
+  await expect(reason).toHaveText(nameOf('aggregateSales'));
+
+  // Act: 離れた処理を足して非連続にする(最後の処理を選ぶ)
+  await checks.last().check();
+
+  // Assert: 非連続の理由が出ているあいだは、説明のない aria-invalid を立てない
+  await expect(reason).toContainText('連続させてください');
+  await expect(input).not.toHaveAttribute('aria-invalid', 'true');
+  await expect(input).not.toHaveAttribute('aria-describedby', /.+/);
+  await expect(page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' })).toBeDisabled();
+  await expect(page.locator('.method-editor__extract-preview')).toHaveCount(0);
+
+  // Act: 連続に戻す
+  await checks.last().uncheck();
+
+  // Assert: aria-invalid が立つなら、参照先の説明が重複の文になっている
+  await expect(input).toHaveAttribute('aria-invalid', 'true');
+  const describedBy = await input.getAttribute('aria-describedby');
+  expect(describedBy).not.toBeNull();
+  await expect(page.locator(`#${describedBy}`)).toHaveText(nameOf('aggregateSales'));
+});
