@@ -1,6 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
 import { startChangeRequests, selectStage } from './selectStage.js';
-import { stages } from '../src/infrastructure/stages/stageCatalog.js';
 
 const STAGE_1 = 'チュートリアル1: 長いメソッドを分ける';
 const STAGE_2 = 'チュートリアル2: 太った placeOrder';
@@ -78,11 +77,15 @@ test('100点でないときは、ストーリーがオフでもカードは出�
 });
 
 test('全ステージをクリア済みなら「全ステージをクリアしました」が出て、ボタンは出ない', async ({ page }) => {
-  // Arrange
-  const cleared = Object.fromEntries(stages.map((stage) => [stage.id, 100]));
-  await page.addInitScript((progress) => localStorage.setItem('refactor-blocks:progress', JSON.stringify(progress)), cleared);
+  // Arrange: ロードマップに並ぶ全ステージを、自己ベスト100として保存してから開き直す
   await page.setViewportSize({ width: 1800, height: 1400 });
   await page.goto('/');
+  await page.getByTestId('roadmap-open').click();
+  const testIds = await page.locator('[data-testid^="roadmap-stage-"]').evaluateAll((cards) => cards.map((card) => card.getAttribute('data-testid') ?? ''));
+  const cleared = Object.fromEntries(testIds.map((testId) => [testId.replace('roadmap-stage-', ''), 100]));
+  expect(Object.keys(cleared).length).toBeGreaterThan(10);
+  await page.evaluate((progress) => localStorage.setItem('refactor-blocks:progress', JSON.stringify(progress)), cleared);
+  await page.reload();
   await setStory(page, false);
 
   // Act
