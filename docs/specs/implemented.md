@@ -160,3 +160,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [clear-condition-line-split](clear-condition-line-split.md) | クリア条件の行数をメソッド・クラス・ファイルの3行に分けて表示する |
 | [perfect-room-left-note](perfect-room-left-note.md) | 100点のあとに「さらに良くできるところ」を1〜3件、控えめに知らせる |
 | [state-pattern-stage](state-pattern-stage.md) | 上級9「注文の状態ごとの分岐を State パターンへ組み替える」ステージを追加する |
+| [concept-mastery-map](concept-mastery-map.md) | ステージ一覧に「学べることごと」の習得状況(件数・進み具合・未クリアへのリンク)を出す |

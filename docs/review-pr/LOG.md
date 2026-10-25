@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-25 15:45 UTC PR #333 ロードマップに概念習得リストを追加 (#317)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test(2127件)✅ / npm run lint ✅ / npm run typecheck ✅。isStageCleared・conceptMastery・ConceptMasteryList・表示切替をIssue #317・docs/specs/concept-mastery-map.mdと照合。E2Eはこの環境で未実行(PR本文では423件成功)
+- マージ: squash & delete-branch
+
 ## 2026-10-25 15:15 UTC PR #332 上級9の注文状態ステージを追加 (#328)
 
 - 判定: 合格(blocker無し)
@@ -210,12 +216,6 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test(1895件)✅ / npm run lint ✅ / npm run typecheck ✅。reviewing段階・置き直す・次の依頼へを仕様と照合。E2Eはこの環境にChromiumが無く未実行(PR記載の291件成功を参照)
-- マージ: squash & delete-branch
-
-## 2026-10-24 02:10 UTC PR #274 ヘッダーの点数説明を短くして内訳の重複をなくす (#238)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(1891件)✅ / npm run lint ✅ / npm run typecheck ✅。describeScoreShortと表示・nowrapを仕様と照合、E2E移行を差分で確認。E2Eはこの環境にChromiumが無く未実行(PR記載の290件成功を参照)
 - マージ: squash & delete-branch
 
 
