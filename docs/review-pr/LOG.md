@@ -38,6 +38,30 @@
 
 ## ログ一覧
 
+## 2026-10-25 14:30 UTC PR #303 開いただけのステージを自己ベストにせず、未挑戦ステージのE2Eを基準どおりにする (#283)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint・typecheck・Vitest 2055件)✅。updateProgressに初期点を渡し、初期点以下(100点除く)は記録しない点をIssue #283と照合。E2Eはこの環境にChromiumが無く未実行(PR本文では322件成功)
+- マージ: squash & delete-branch
+
+## 2026-10-25 14:25 UTC PR #308 手直しの案内バナーを図に重ならない通常の帯にし、狭い幅でも操作できるようにする (#284)
+
+- 判定: 合格(blocker無し。suggestion: 1000pxの切替境界が固定値で脆い)
+- 確認した内容: npm run check(lint・typecheck・Vitest 2047件)✅。バナーを通常フローの帯にして図と重ならない点、ドロワー表示時もバナーのみ操作可能な点をIssue #284・docs/specs/opening-fix-banner-fit.mdと照合。E2Eはこの環境にChromiumが無く未実行(PR本文では380件成功)
+- マージ: squash & delete-branch
+
+## 2026-10-25 14:20 UTC PR #312 余白へのドロップで作る新しいファイルが既存のファイルと重ならないようにする (#287)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint・typecheck・Vitest 2056件)✅。実寸法(fileSizeOf)で既存ファイルと重ならない位置へ右にずらす点をIssue #287・docs/specs/new-file-no-overlap.mdと照合。E2Eはこの環境にChromiumが無く未実行(PR本文では関係9 spec成功)
+- マージ: squash & delete-branch
+
+## 2026-10-25 14:15 UTC PR #329 手動修正中はChangePainCardの本文を畳む (#314)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint・typecheck・Vitest 2054件)✅。手動修正中かつchange-request以外で本文を描かない点をIssue #314・docs/specs/change-pain-card-fold-while-fixing.mdと照合。E2Eはこの環境にChromiumが無く未実行(PR本文では374件成功)
+- マージ: squash & delete-branch
+
 ## 2026-10-25 11:10 UTC PR #310 コードが変わったらヒントの光りを消す (#290)
 
 - 判定: 合格(blocker無し。前回指摘したe2e失敗は、#289に合わせて失敗操作を「最後の1ファイルの削除」に作り直したことで解消)
@@ -192,30 +216,6 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test(1863件)✅ / npm run lint ✅ / npm run typecheck ✅。回答の親保持・結果まとめ・未回答案内・✓/✗印・もう一度解く/モード遷移を差分で確認。E2E(quiz.spec.ts)はこの環境にChromiumが無く未実行
-- マージ: squash & delete-branch
-
-## 2026-10-24 UTC PR #270 設計くらべの答えが事前に分からない表示にする (#237)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(1872件)✅ / npm run lint ✅ / npm run typecheck ✅。設計名の中立化・空クラス/空ファイル除去・回答前の警告色非表示を差分で確認。E2E(quiz.spec.ts)はこの環境にChromiumが無く未実行
-- マージ: squash & delete-branch
-
-## 2026-10-24 UTC PR #269 操作ガイドにキーボード操作を追加する (#230)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(1832件)✅ / npm run lint ✅ / npm run typecheck ✅。キーボード節・Shift+F10追記・Esc再表示競合修正(onCancel)を差分で確認。Enterでエディタが開かない行はIssueの例外条項どおり除外されE2Eで現挙動を記録。E2Eはこの環境にブラウザが無く未実行(同一コミットのCI push側E2Eは成功)
-- マージ: squash & delete-branch
-
-## 2026-10-24 00:45 UTC PR #268 狭い画面のパネルをドロワー表示にする (#232)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(1832件)✅ / npm run lint ✅ / npm run typecheck ✅。Issue #232 の受け入れ基準(375pxでキャンバス340px以上、左右ドロワーの開閉・フォーカス復帰・inert、未選択レール非表示)を差分とE2Eコードで確認。E2Eはこの環境にブラウザが無く未実行(PR本文では271件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-23 15:00 UTC PR #267 理解度チェックの正誤と解説を区別して表示する (#234)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(1857件)✅ / npm run lint ✅ / npm run typecheck ✅。ConceptCheckPanelの見出し、ステージ解説から「正解です」除去、全ステージ検査テストを差分で確認。E2Eはこの環境にブラウザが無く未実行(PR本文では268件成功)
 - マージ: squash & delete-branch
 
 
