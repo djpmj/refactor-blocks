@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-25 07:40 UTC PR #311 抽出するメソッド名の重複を、押す前に入力欄のそばで伝える (#289)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint・typecheck・Vitest 2047件)✅。表示する理由と aria-invalid を blockOf の1つの判定から導くこと、優先順(選択なし>非連続>名前が空>重複)、aria-describedby の参照先idをIssue #289・docs/specs/extract-name-inline-error.md と照合。E2Eはこの環境で実行許可が無く未実行(PR本文では関係する14件成功、CIのe2eは確認時点で実行中)
+- マージ: squash & delete-branch
+
 ## 2026-10-25 UTC PR #306 E2Eの最初の描画待ちを15秒まで延ばす(roadmap-open の間欠失敗対策)
 
 - 判定: 合格(blocker無し)
@@ -210,12 +216,6 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test(1832件)✅ / npm run lint ✅ / npm run typecheck ✅。colorMode="system" と .react-flow.dark の変数上書き(参照するCSS変数は全て定義済み)をIssue #233の受け入れ基準と照合。E2Eはこの環境にブラウザが無く未実行(PR本文では271件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-23 09:25 UTC PR #254 冒頭の手直しの答え表示と結果説明を改善する (#215)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(1832件)✅ / npm run lint ✅ / npm run typecheck ✅。答え非表示、describeManualFixのクラス単位文言、OpeningFixBanner、siteClassIdsを差分で確認。E2Eはこの環境にブラウザが無く未実行(PR本文では268件成功)
 - マージ: squash & delete-branch
 
 
