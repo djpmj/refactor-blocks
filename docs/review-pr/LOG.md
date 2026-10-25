@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-25 11:10 UTC PR #310 コードが変わったらヒントの光りを消す (#290)
+
+- 判定: 合格(blocker無し。前回指摘したe2e失敗は、#289に合わせて失敗操作を「最後の1ファイルの削除」に作り直したことで解消)
+- 確認した内容: npm test(2054件)✅ / npm run lint ✅ / npm run typecheck ✅。共通のHIGHLIGHT_RESETをcommit・travelTo・CHANGE_STEP_RESETに適用し、失敗した操作では消さない点をIssue #290・docs/specs/hint-highlight-clears-on-change.mdと照合。CIのcheck・e2e(2回とも)・jscpd・knipが成功。E2Eはこの環境で実行許可が無くCI結果に依拠
+- マージ: squash & delete-branch
+
 ## 2026-10-25 10:13 UTC PR #309 100点のあと次のおすすめステージへ進むカードを出す (#288)
 
 - 判定: 合格(blocker無し)
@@ -210,12 +216,6 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test(1857件)✅ / npm run lint ✅ / npm run typecheck ✅。ConceptCheckPanelの見出し、ステージ解説から「正解です」除去、全ステージ検査テストを差分で確認。E2Eはこの環境にブラウザが無く未実行(PR本文では268件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-23 14:50 UTC PR #266 AI講評の契約版の不一致を見分けて伝える (#231)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(1835件)✅ / npm run lint ✅ / npm run typecheck ✅。X-Critique-Contractヘッダー、Workerの409(本文検証より先・ヘッダーなしは従来どおり)、400/409の文言分離、README手順をIssue #231の受け入れ基準と照合。E2Eはこの環境で実行できず未実行(PR本文では269件成功)
 - マージ: squash & delete-branch
 
 

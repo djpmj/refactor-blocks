@@ -152,3 +152,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [toast-clears-when-stale](toast-clears-when-stale.md) | 役目を終えた通知トースト(失敗理由は状況変化で、お知らせは8秒で)を自動で消す |
 | [extract-name-inline-error](extract-name-inline-error.md) | 抽出するメソッド名が重複しているとき、押す前に入力欄のそばで伝える |
 | [next-stage-after-clear](next-stage-after-clear.md) | 100点にしたあと、次のおすすめのステージへ進むカードを出す |
+| [hint-highlight-clears-on-change](hint-highlight-clears-on-change.md) | コードが変わったら、ヒントと「どこが問題?」の光りを消す |
