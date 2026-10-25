@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-25 00:10 UTC PR #300 再読み込みしても、最後に遊んでいたステージから続ける (#282)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint・typecheck・Vitest 2005件)✅。保存IDの読み込み(空文字・存在しないID・localStorage例外は先頭ステージ)、saveDraftsOn=falseで従来どおり先頭、selectStageでの保存をIssue #282・docs/specs/resume-last-stage.mdと照合。E2Eはレビュー環境にChromiumが無く未実行(PR本文では全317件成功)
+- マージ: squash & delete-branch
+
 ## 2026-10-24 15:45 UTC PR #299 層を扱うステージで、層ごとに段を分けて並べ、層を飛ばす・逆らう矢印を目立たせる (#245)
 
 - 判定: 合格(blocker無し。suggestion: 帯幅が仕様の「キャンバス幅いっぱい」より狭い / E2Eが赤色表示と層なしステージの従来配置を直接断言していない)
@@ -210,12 +216,6 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test(1813件)✅ / npm run lint ✅ / npm run typecheck ✅。読み上げ名の規則・aria-pressed・記号のaria-hiddenが仕様どおりであることを差分で確認。E2Eはこの環境にブラウザが無く未実行(PR本文では全257件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-20 03:50 UTC PR #260 新しく作ったクラスを表示領域へ収める (#223)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(lint・typecheck・Vitest 1809件)✅。panToRevealが仕様(収まっていれば0・余白24px・大きい箱は左上優先)どおり、既存クラスへのドロップでは動かさないことを差分で確認。E2Eはこの環境で実行許可が無く未実行(PR本文では全260件成功)
 - マージ: squash & delete-branch
 
 
