@@ -28,7 +28,8 @@ test('上級8: 子のparseをprivateで上書きすると約束違反になり�
   await item.getByRole('button', { name: 'なぜ?' }).click();
   await expect(item.locator('.score-breakdown__why')).toContainText('親のメソッドを上書きするときは、公開範囲を狭められません');
 
-  // Act: 2つのparseをprotectedにする
+  // Act: 理由を読み終えたら内訳を閉じ(開いたままだとキャンバスの左側に被さる)、2つのparseをprotectedにする
+  await page.locator('.score-breakdown summary').click();
   for (const [owner] of OWNERS) {
     await page.getByTestId(`class-${owner}`).getByTestId('method-parse').click();
     await page.getByLabel('メソッド parse の可視性').selectOption('protected');
