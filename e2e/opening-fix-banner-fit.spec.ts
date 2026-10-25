@@ -22,6 +22,14 @@ async function expectBannerInsideCanvas(page: Page) {
   }
 }
 
+/** 幅700px以下のドロワー表示中: ドロワーはバナーの下から始まり、バナー以外の図は操作できない(inert)。 */
+async function expectDrawerBelowBannerAndCanvasInert(page: Page) {
+  const banner = await rectOf(page, '[data-testid="opening-fix-banner"]');
+  const drawer = await rectOf(page, '.sidebar-resizable--mobile-open');
+  expect(drawer.top).toBeGreaterThanOrEqual(banner.bottom - 1);
+  await expect(page.locator('.canvas-column__flow')).toHaveJSProperty('inert', true);
+}
+
 async function nodeRects(page: Page): Promise<Rect[]> {
   return page.locator('.react-flow__node').evaluateAll((elements) => elements.map((element) => {
     const r = element.getBoundingClientRect();
@@ -58,16 +66,34 @@ for (const width of [1280, 600]) {
       await page.goto('/');
     });
 
-    test('初級1でメソッドエディタを開いても、バナーがキャンバスの内側に収まりボタンを押せる', async ({ page }) => {
+    test('初級1でエディタを開く前も、バナーがキャンバスの内側に収まりボタンを押せる', async ({ page }) => {
       await selectStage(page, '初級1: 何でも屋の UserController', { completeOpeningFix: false });
       await expectBannerInsideCanvas(page);
-      const method = page.locator('.method-chip').first();
-      await method.click();
-      await expect(page.getByTestId('opening-fix-banner')).toBeVisible();
-      await expectBannerInsideCanvas(page);
-      // 幅700px以下ではメソッドエディタが全面のドロワー(背面は暗幕でクリックを受けない既存の作り)になるので、閉じてから押す
-      if (width <= 700) await page.getByRole('button', { name: 'メソッドエディタを閉じる' }).click();
       await page.getByTestId('opening-fix-banner').getByRole('button', { name: '実際に直してみる' }).click();
+      await expect(page.getByRole('region', { name: '手で直すシミュレーション' })).toBeVisible();
+      await expect(page.getByTestId('opening-fix-banner')).toHaveCount(0);
+    });
+
+    test('初級1でメソッドエディタを開いたまま(閉じずに)、バナーがキャンバスの内側に収まりボタンを実際に押せる', async ({ page }) => {
+      await selectStage(page, '初級1: 何でも屋の UserController', { completeOpeningFix: false });
+      await page.locator('.method-chip').first().click();
+      await expect(page.locator('.method-editor')).toBeVisible();
+      await expectBannerInsideCanvas(page);
+      if (width <= 700) await expectDrawerBelowBannerAndCanvasInert(page);
+      // エディタ(幅700px以下ではドロワー)を開いたまま押す。他の要素に隠れていればPlaywrightのクリックが失敗する
+      await page.getByTestId('opening-fix-banner').getByRole('button', { name: '実際に直してみる' }).click();
+      await expect(page.getByRole('region', { name: '手で直すシミュレーション' })).toBeVisible();
+      await expect(page.getByTestId('opening-fix-banner')).toHaveCount(0);
+    });
+
+    test('初級1でメソッドエディタを開いたまま、キーボードでバナーのボタンへ届き、Enterで始められる', async ({ page }) => {
+      await selectStage(page, '初級1: 何でも屋の UserController', { completeOpeningFix: false });
+      await page.locator('.method-chip').first().click();
+      await expect(page.locator('.method-editor')).toBeVisible();
+      const button = page.getByTestId('opening-fix-banner').getByRole('button', { name: '実際に直してみる' });
+      await button.focus();
+      await expect(button).toBeFocused();
+      await page.keyboard.press('Enter');
       await expect(page.getByRole('region', { name: '手で直すシミュレーション' })).toBeVisible();
       await expect(page.getByTestId('opening-fix-banner')).toHaveCount(0);
     });

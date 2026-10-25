@@ -375,14 +375,15 @@ type CanvasFlowProps = {
   readonly onControlZoom: () => void;
   readonly dragInteractionActive: boolean;
   readonly revealFileId: string | null;
+  readonly inert: boolean;
 };
 
-function CanvasFlow({ nodes, edges, onNodesChange, setFlow, contextMenu, selectMethod, stageId, visibleFileCount, codebase, layers, layoutResetCount, arrangeVersion, arrange, autoFitStateRef, onMoveStart, onManualFit, onControlZoom, dragInteractionActive, revealFileId }: CanvasFlowProps & { readonly layoutResetCount: number; readonly arrangeVersion: number; readonly arrange: () => void }) {
+function CanvasFlow({ nodes, edges, onNodesChange, setFlow, contextMenu, selectMethod, stageId, visibleFileCount, codebase, layers, layoutResetCount, arrangeVersion, arrange, autoFitStateRef, onMoveStart, onManualFit, onControlZoom, dragInteractionActive, revealFileId, inert }: CanvasFlowProps & { readonly layoutResetCount: number; readonly arrangeVersion: number; readonly arrange: () => void }) {
   return (
     <WarningEdgeStateProvider>
       <div className="canvas-column">
       <OpeningFixBanner />
-      <div className="canvas-column__flow">
+      <div className="canvas-column__flow" inert={inert}>
       <ReactFlow colorMode="system"
         nodes={nodes} edges={edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes}
         onNodesChange={onNodesChange} onInit={setFlow} nodesConnectable={false} minZoom={CANVAS_MIN_ZOOM}
@@ -509,7 +510,8 @@ function useDragInteraction() {
 }
 
 /** active が false の間(設計くらべで隠れている間)は、開いていた右クリックメニューを閉じる。 */
-export function CodebaseCanvas({ active }: Readonly<{ active: boolean }>) {
+/** `inert` は図(React Flow)だけを操作不可にする。バナーは含めない(幅700px以下でエディタのドロワーを開いていても、「実際に直してみる」だけは押せるようにする唯一の例外)。 */
+export function CodebaseCanvas({ active, inert }: Readonly<{ active: boolean; inert: boolean }>) {
   const codebase = useGameStore((state) => state.codebase);
   const selectMethod = useGameStore((state) => state.selectMethod);
   const stage = useGameStore((state) => state.stage);
@@ -558,7 +560,7 @@ export function CodebaseCanvas({ active }: Readonly<{ active: boolean }>) {
           nodes={nodes} edges={edges} onNodesChange={handleNodesChange} setFlow={setFlow} contextMenu={contextMenu}
           selectMethod={selectMethod} stageId={stageId} visibleFileCount={visibleFileCount} codebase={codebase} layers={layers}
           layoutResetCount={layoutResetCount} arrangeVersion={arrangeVersion} arrange={arrange}
-          autoFitStateRef={autoFitStateRef} onMoveStart={onMoveStart} onManualFit={onManualFit} onControlZoom={onControlZoom} dragInteractionActive={dragInteractionActive} revealFileId={revealFileId}
+          autoFitStateRef={autoFitStateRef} onMoveStart={onMoveStart} onManualFit={onManualFit} onControlZoom={onControlZoom} dragInteractionActive={dragInteractionActive} revealFileId={revealFileId} inert={inert}
         />
       </DropTargetsContext.Provider>
       <DraggingOverlay activeId={activeId} />
