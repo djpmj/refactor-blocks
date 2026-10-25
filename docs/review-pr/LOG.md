@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-25 10:13 UTC PR #309 100点のあと次のおすすめステージへ進むカードを出す (#288)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint・typecheck・Vitest 2047件)✅。受け入れ基準1〜4と手直し中・変更依頼中の非表示をE2E(6件)が網羅していることをIssue #288と照合。E2Eはこの環境で実行許可が無く未実行(CIのe2eは確認時点で実行中)
+- マージ: squash & delete-branch
+
 ## 2026-10-25 07:40 UTC PR #311 抽出するメソッド名の重複を、押す前に入力欄のそばで伝える (#289)
 
 - 判定: 合格(blocker無し)
@@ -210,12 +216,6 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test(1835件)✅ / npm run lint ✅ / npm run typecheck ✅。X-Critique-Contractヘッダー、Workerの409(本文検証より先・ヘッダーなしは従来どおり)、400/409の文言分離、README手順をIssue #231の受け入れ基準と照合。E2Eはこの環境で実行できず未実行(PR本文では269件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-23 14:40 UTC PR #265 ダークモードのキャンバス操作ボタンを見やすくする (#233)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(1832件)✅ / npm run lint ✅ / npm run typecheck ✅。colorMode="system" と .react-flow.dark の変数上書き(参照するCSS変数は全て定義済み)をIssue #233の受け入れ基準と照合。E2Eはこの環境にブラウザが無く未実行(PR本文では271件成功)
 - マージ: squash & delete-branch
 
 
