@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-25 01:15 UTC PR #301 ヒント・うわさ・参考をツールバーのポップオーバーに移す (#281)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test(2016件)✅ / npm run lint ✅ / npm run typecheck ✅。仕様(toolbar-hint-rumor-popovers)どおりの移設、開くパネル1つへの集約、Escでの閉じ・フォーカス復帰を差分で確認。E2Eはレビュー環境にPlaywrightブラウザが無く未実行(PR本文では346件成功)
+- マージ: squash & delete-branch
+
 ## 2026-10-25 00:10 UTC PR #300 再読み込みしても、最後に遊んでいたステージから続ける (#282)
 
 - 判定: 合格(blocker無し)
@@ -210,12 +216,6 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test(1816件)✅ / npm run lint ✅ / npm run typecheck ✅。子孫からだけ呼ばれるメソッドはprotected・それ以外はpublic、private/protected間の統合(結果は広い可視性)、changed型と呼び出し元・通知文の更新を差分で確認。E2Eはこの環境で実行許可が無く未実行(PR本文では256/257件成功、残り1件は単独再実行で成功)
-- マージ: squash & delete-branch
-
-## 2026-10-20 10:30 UTC PR #261 メソッドの読み上げ名と選択状態を明確にする (#227)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(1813件)✅ / npm run lint ✅ / npm run typecheck ✅。読み上げ名の規則・aria-pressed・記号のaria-hiddenが仕様どおりであることを差分で確認。E2Eはこの環境にブラウザが無く未実行(PR本文では全257件成功)
 - マージ: squash & delete-branch
 
 

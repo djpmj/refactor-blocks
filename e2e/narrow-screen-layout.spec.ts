@@ -11,7 +11,7 @@ test('狭い画面では課題とエディタをキャンバスに重ねて開�
   const canvas = page.getByRole('region', { name: 'コードベース' });
   const canvasBox = await canvas.boundingBox();
   expect(canvasBox?.width).toBeGreaterThanOrEqual(340);
-  const sidebar = page.getByRole('complementary', { name: '課題とヒント' });
+  const sidebar = page.getByRole('complementary', { name: '課題' });
   await expect(sidebar).toBeHidden();
   await page.getByRole('button', { name: 'サイドバーを開く' }).click();
   await expect(sidebar).toBeVisible();
@@ -47,7 +47,7 @@ test('デスクトップ幅では3列配置を保つ', async ({ page }) => {
   await selectStage(page, 'チュートリアル1: 長いメソッドを分ける');
   const openSidebar = page.getByRole('button', { name: 'サイドバーを開く' });
   if (await openSidebar.count() > 0) await openSidebar.click();
-  const sidebar = page.getByRole('complementary', { name: '課題とヒント' });
+  const sidebar = page.getByRole('complementary', { name: '課題' });
   const canvas = page.getByRole('region', { name: 'コードベース' });
   const editor = page.getByTestId('method-editor');
   await expect(sidebar).toBeVisible();

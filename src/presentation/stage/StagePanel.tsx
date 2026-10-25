@@ -2,7 +2,6 @@ import { forwardRef, useEffect, useMemo, useRef, useState, type CSSProperties, t
 import type { Codebase } from '../../domain/codebase/Codebase';
 import { scoreCodebase, type Score } from '../../domain/scoring/score';
 import { biggestProblem } from '../../domain/scoring/biggestProblem';
-import type { SolutionStep } from '../../domain/stage/sampleAnswer';
 import type { Stage } from '../../domain/stage/Stage';
 import { CritiqueButton, CritiqueResult } from '../critique/CritiquePanel';
 import { ReferenceMenu } from './ReferenceMenu';
@@ -11,8 +10,9 @@ import { useGuideShortcut } from '../guide/useGuideShortcut';
 import { useGameStore } from '../store/useGameStore';
 import { describeScoreShort } from './describeScore';
 import { ScoreBreakdown } from './ScoreBreakdown';
-import { HintList } from './HintList';
-import { HintButton } from './HintPanel';
+import { HintPopover } from './HintPopover';
+import { RumorPopover } from './RumorPopover';
+import { togglePanel, type ToolbarPanel } from './usePopoverDismiss';
 import { ConceptCheckPanel } from './ConceptCheckPanel';
 import { UnusedPublicNote } from './UnusedPublicNote';
 import { ChangePainCard } from './ChangePainCard';
@@ -28,9 +28,6 @@ import { useStageSidebar } from './useStageSidebar';
 import { useCountUp } from './useCountUp';
 import { useResizableSidebarWidth } from '../useResizableSidebarWidth';
 import { ClearConditionList } from './ClearConditionList';
-import { RumorList } from './RumorList';
-import { GhostHintButton } from './GhostHintButton';
-import { ProblemHint } from './ProblemHint';
 import { painRequestsOf } from '../../domain/change/changePain';
 import { stageStep } from '../../domain/change/stageStep';
 import type { StageStep } from '../../domain/change/stageStep';
@@ -74,7 +71,7 @@ function StageNavigation() {
 
 function useStageSidebarWidth() {
   const { width, handleProps } = useResizableSidebarWidth({
-    side: 'left', defaultWidth: 260, minWidth: 200, maxWidth: 480, ariaLabel: '課題とヒントの幅を変更',
+    side: 'left', defaultWidth: 260, minWidth: 200, maxWidth: 480, ariaLabel: '課題の幅を変更',
   });
   const style: CSSProperties & { readonly '--sidebar-width': string } = { '--sidebar-width': `${width}px` };
   return { handleProps, style };
@@ -196,7 +193,7 @@ function ScoreArea({ stage, codebase, score, disabled }: Readonly<{ stage: Stage
 }
 
 /** ツールバー(キャンバスの上): 変更依頼・やり直し系・図の確認。 */
-function ActionToolbar({ stage, isPerfect, active, revealedCount, onRevealHint, onOpenHints }: Readonly<{ stage: Stage; isPerfect: boolean; active: boolean; revealedCount: number; onRevealHint: () => void; onOpenHints: () => void }>) {
+function ActionToolbar({ stage, isPerfect, active, revealedCount, onRevealHint, onOpenHints, panel, onPanelChange, hintPopover }: Readonly<{ stage: Stage; isPerfect: boolean; active: boolean; revealedCount: number; onRevealHint: () => void; onOpenHints: () => void; panel: ToolbarPanel; onPanelChange: (name: Exclude<ToolbarPanel, null>, open: boolean) => void; hintPopover: ReactNode }>) {
   const [guideOpen, setGuideOpen] = useState(false);
   const resetStage = useGameStore((state) => state.resetStage);
   const undo = useGameStore((state) => state.undo);
@@ -235,7 +232,9 @@ function ActionToolbar({ stage, isPerfect, active, revealedCount, onRevealHint, 
       <button type="button" className="stage-panel__reset" onClick={resetStage} disabled={investigating}>
         最初に戻す
       </button>
-      <ReferenceMenu key={stage.id} stage={stage} disabled={investigating} revealedCount={revealedCount} onRevealHint={onRevealHint} onOpenHints={onOpenHints} />
+      <ReferenceMenu key={stage.id} stage={stage} disabled={investigating} menuOpen={panel === 'reference'} onMenuOpenChange={(open) => onPanelChange('reference', open)} revealedCount={revealedCount} onRevealHint={onRevealHint} onOpenHints={onOpenHints} />
+      {hintPopover}
+      <RumorPopover key={`rumor-${stage.id}`} stage={stage} open={panel === 'rumor'} onOpenChange={(open) => onPanelChange('rumor', open)} />
       <button type="button" data-testid="operation-guide-open" title="操作ガイド(?)" onClick={() => setGuideOpen(true)}>
         操作ガイド
       </button>
@@ -264,43 +263,24 @@ function DraftRestoredNotice() {
   );
 }
 
-function StageSidebar({ stage, codebase, score, initialScore, investigating, revealedCount, hints, total, problemRevealed, onRevealProblem, onReveal, hidden, sidebarRef }: Readonly<{
+function StageSidebar({ stage, codebase, score, initialScore, investigating, hidden, sidebarRef }: Readonly<{
   stage: Stage;
   codebase: Codebase;
   score: Score;
   initialScore: Score;
   investigating: boolean;
-  revealedCount: number;
-  hints: readonly { text: string; step: SolutionStep }[];
-  total: number;
-  problemRevealed: boolean;
-  onRevealProblem: () => void;
-  onReveal: () => void;
   hidden: boolean;
   sidebarRef: RefObject<HTMLElement | null>;
 }>) {
   return (
-    <aside ref={sidebarRef} id="stage-sidebar" className="sidebar" aria-label="課題とヒント" hidden={hidden}>
-      <h2 className="sidebar__title">課題とヒント</h2>
+    <aside ref={sidebarRef} id="stage-sidebar" className="sidebar" aria-label="課題" hidden={hidden}>
+      <h2 className="sidebar__title">課題</h2>
       <StoryIntro key={`story-intro-${stage.id}`} stageId={stage.id} />
       <section className="stage-panel__problem" aria-labelledby="stage-problem-title">
         <h3 id="stage-problem-title">困っていること</h3>
         <p>{stage.problem}</p>
       </section>
       <ClearConditionList stage={stage} codebase={codebase} initial={initialScore} current={score} />
-      {!investigating && <RumorList stage={stage} />}
-      <section className="stage-panel__hints" aria-labelledby="stage-hints-title">
-        <h3 id="stage-hints-title">ヒント</h3>
-        <div className="stage-panel__hint-steps">
-          <ProblemHint score={score} stageId={stage.id} revealed={problemRevealed} disabled={investigating} onReveal={onRevealProblem} />
-          <HintButton revealed={revealedCount} total={total} disabled={investigating || !problemRevealed} onReveal={onReveal} />
-          <div className="stage-panel__hint-step">
-            <span className="stage-panel__hint-number" aria-hidden="true">3</span>
-            <GhostHintButton stage={stage} score={score.total} investigating={investigating} unlocked={problemRevealed} />
-          </div>
-        </div>
-        <HintList hints={hints} codebase={codebase} disabled={investigating} />
-      </section>
       {!investigating && <><ChangePainCard stage={stage} codebase={codebase} score={score.total} /><ManualFixPanel stage={stage} codebase={codebase} /></>}
       <details className="stage-panel__description">
         <summary>どんなコード?</summary>
@@ -315,17 +295,15 @@ function StageSidebar({ stage, codebase, score, initialScore, investigating, rev
 
 function SidebarBackdrop({ open, onClose }: Readonly<{ open: boolean; onClose: () => void }>) {
   if (!open) return null;
-  return <button type="button" className="sidebar-backdrop" aria-label="課題とヒントの外側をタップして閉じる" onClick={onClose} />;
+  return <button type="button" className="sidebar-backdrop" aria-label="課題の外側をタップして閉じる" onClick={onClose} />;
 }
 
-function StageSidebarDrawer({ open, stage, codebase, score, initialScore, investigating, revealedCount, hints, total, problemRevealed, onRevealProblem, onReveal, sidebarRef }: Readonly<{
+function StageSidebarDrawer({ open, stage, codebase, score, initialScore, investigating, sidebarRef }: Readonly<{
   open: boolean; stage: Stage; codebase: Codebase; score: Score; initialScore: Score; investigating: boolean;
-  revealedCount: number; hints: readonly { text: string; step: SolutionStep }[]; total: number; problemRevealed: boolean;
-  onRevealProblem: () => void; onReveal: () => void; sidebarRef: RefObject<HTMLElement | null>;
+  sidebarRef: RefObject<HTMLElement | null>;
 }>) {
   return <StageSidebar key={stage.id} stage={stage} codebase={codebase} score={score} initialScore={initialScore} investigating={investigating}
-    revealedCount={revealedCount} problemRevealed={problemRevealed} onRevealProblem={onRevealProblem} hints={hints} total={total}
-    onReveal={onReveal} hidden={!open} sidebarRef={sidebarRef} />;
+    hidden={!open} sidebarRef={sidebarRef} />;
 }
 
 function useStagePanelEffects(stageId: string, score: number, actions: Readonly<{ recordProgress: (stageId: string, score: number) => void; startTour: () => void; setSidebarOpen: (open: boolean) => void }>, tourStep: number | null) {
@@ -385,6 +363,12 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
   useSidebarDrawer(sidebarOpen, setSidebarOpen, sidebarToggleRef);
   const { handleProps, style: sidebarStyle } = useStageSidebarWidth();
   const { count: revealedCount } = stageHints;
+  const [panel, setPanel] = useState<ToolbarPanel>(null);
+  const [panelStageId, setPanelStageId] = useState(stage.id);
+  // 変更依頼に挑戦中・ステージ切替では、開いているパネルを閉じる
+  if ((investigating || panelStageId !== stage.id) && panel !== null) setPanel(null);
+  if (panelStageId !== stage.id) setPanelStageId(stage.id);
+  const changePanel = (name: Exclude<ToolbarPanel, null>, open: boolean) => setPanel((current) => togglePanel(current, name, open));
   const { sidebarRef } = useStageFlow(stage, score.total);
 
   const { hints, total } = useHints(stage, revealedCount);
@@ -398,8 +382,7 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
       <ManualFixSidebarOpener setSidebarOpen={setSidebarOpen} />
       <div className={`app__body${sidebarOpen ? ' app__body--sidebar-open' : ''}`} style={sidebarStyle}>
         <StageSidebarDrawer open={sidebarOpen} stage={stage} codebase={codebase} score={score} initialScore={initialScore} investigating={investigating}
-          revealedCount={stageHints.count} problemRevealed={stageHints.problemRevealed} onRevealProblem={stageHints.revealProblem} hints={hints}
-          total={total} onReveal={stageHints.revealStep} sidebarRef={sidebarRef} />
+          sidebarRef={sidebarRef} />
         <SidebarBackdrop open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         {sidebarOpen && <div className="sidebar-resizable__handle sidebar-resizable__handle--left" {...handleProps} />}
         <StageSidebarToggle ref={sidebarToggleRef} open={sidebarOpen} onToggle={toggleSidebar} />
@@ -410,7 +393,11 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
             active={active}
             revealedCount={revealedCount}
             onRevealHint={stageHints.problemRevealed ? stageHints.revealStep : stageHints.revealProblem}
-            onOpenHints={() => setSidebarOpen(true)}
+            onOpenHints={() => changePanel('hint', true)}
+            panel={panel}
+            onPanelChange={changePanel}
+            hintPopover={<HintPopover stage={stage} codebase={codebase} score={score} investigating={investigating} open={panel === 'hint'} onOpenChange={(open) => changePanel('hint', open)}
+              revealedCount={revealedCount} hints={hints} total={total} problemRevealed={stageHints.problemRevealed} onRevealProblem={stageHints.revealProblem} onReveal={stageHints.revealStep} />}
           />
           <DraftRestoredNotice />
           <div className="workspace__main">{children}</div>

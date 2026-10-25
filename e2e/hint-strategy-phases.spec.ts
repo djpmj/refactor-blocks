@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { openHints } from './hintPopover.js';
 import { selectStage } from './selectStage.js';
 
 test('上級8の次の一手は、方針の最初の手順の前にだけ方針の見出しと理由を出す', async ({ page }) => {
@@ -6,6 +7,7 @@ test('上級8の次の一手は、方針の最初の手順の前にだけ方針�
   await page.setViewportSize({ width: 1800, height: 1400 });
   await page.goto('/');
   await selectStage(page, '上級8: 取り込みの手順を Template Method にまとめる');
+  await openHints(page);
   await page.getByTestId('hint-problem').click();
   const next = page.getByRole('button', { name: /次の一手/ });
   const phases = page.getByTestId('hint-phase');
@@ -43,6 +45,7 @@ test('手数の少ないステージの次の一手には方針の見出しが�
   await page.setViewportSize({ width: 1800, height: 1400 });
   await page.goto('/');
   await selectStage(page, '中級1: 循環依存を断ち切る');
+  await openHints(page);
   await page.getByTestId('hint-problem').click();
   const next = page.getByRole('button', { name: /次の一手/ });
 
