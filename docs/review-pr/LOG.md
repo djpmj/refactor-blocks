@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-25 14:27 UTC PR #330 クリア条件の行数表示を分ける (#313)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint・typecheck・Vitest 2055件)✅。clearConditionKey導入・line-limitの3分割・describeCondition・ClearConditionListのkey切替をIssue #313・docs/specs/clear-condition-line-split.mdと照合。E2Eはこの環境にChromiumが無く未実行(PR本文では374件成功)
+- マージ: squash & delete-branch
+
 ## 2026-10-25 14:30 UTC PR #303 開いただけのステージを自己ベストにせず、未挑戦ステージのE2Eを基準どおりにする (#283)
 
 - 判定: 合格(blocker無し)
@@ -210,12 +216,6 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test(1878件)✅ / npm run lint ✅ / npm run typecheck ✅。sharedZoom(小さい方・下限0.6)・onFitZoom/maxZoom・resize追従・他プレビューはfitView維持を差分で確認。E2E(quiz.spec.ts)はこの環境で実行できず未実行
-- マージ: squash & delete-branch
-
-## 2026-10-24 UTC PR #271 設計くらべの結果まとめと回答保持を追加する (#235)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(1863件)✅ / npm run lint ✅ / npm run typecheck ✅。回答の親保持・結果まとめ・未回答案内・✓/✗印・もう一度解く/モード遷移を差分で確認。E2E(quiz.spec.ts)はこの環境にChromiumが無く未実行
 - マージ: squash & delete-branch
 
 
