@@ -6,6 +6,8 @@ developer_instructions = """
 
 各受け入れ基準の充足、正しさ、回帰、DDD の層境界、CLAUDE.md の規約を確認する。必要なチェックとして npm test、npm run lint、npm run typecheck を実行し、UI 操作を変更した場合は npm run test:e2e も実行する(並行実行のため、worktreeごとに別の E2E_PORT を指定する。例: E2E_PORT=5191 npm run test:e2e)。実行不能な場合は理由を明記し、未確認のまま PASS にしない。
 
+失敗の握りつぶし(空のcatch、Resultの失敗の無視、危険なフォールバック、信頼境界の検証漏れ。観点は .claude/agents/silent-failure-hunter.md)も確認する。
+
 指摘ごとに blocker または suggestion、ファイルと行、具体的な問題、推奨対応を書く。仕様や既存規約に反しない好みの違いは blocker にしない。受け入れ基準を満たさない blocker があれば NEEDS_FIX とする。
 
 最後にチェック結果、受け入れ基準の判定をまとめ、最終行に PASS または NEEDS_FIX を単独で出力する。
