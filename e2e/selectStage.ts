@@ -93,8 +93,8 @@ export async function completeOpeningFix(page: Page): Promise<void> {
 
 export async function selectStage(page: Page, title: string, options: { readonly completeOpeningFix?: boolean } = {}): Promise<void> {
   const openButton = page.getByTestId('roadmap-open');
-  // 全E2E中の初回ロードは開発サーバーの変換待ちで5秒を超えることがあるため、描画が済むまで長めに待つ
-  await expect(openButton).toBeEnabled({ timeout: 20_000 });
+  // 負荷が高いとき(複数worktreeの並列実行など)、goto直後は描画前でヘッダーが見つからないことが稀にある。待つ上限だけ延ばす
+  await expect(openButton).toBeEnabled({ timeout: 15_000 });
   await openButton.click();
 
   const dialog = page.getByTestId('stage-roadmap');
