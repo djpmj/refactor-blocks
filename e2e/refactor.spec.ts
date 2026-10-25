@@ -1794,7 +1794,23 @@ test('メソッドを余白の指定位置へドロップすると、その位�
 test('クラスを余白の指定位置へドロップすると、新しいファイルがその位置に現れる', async ({ page }) => {
   // Arrange
   await openOrderStage(page);
-  const drop = await emptyPanePoint(page);
+  // 画面を縮めて余白を作り、新しいファイルの箱(約300px幅)が既存のファイルに重ならない場所へ落とす
+  await page.getByRole('button', { name: 'Zoom out' }).click();
+  await page.getByRole('button', { name: 'Zoom out' }).click();
+  await page.waitForTimeout(500);
+  const drop = await page.evaluate<{ x: number; y: number } | null>(`(() => {
+    const pane = document.querySelector('.react-flow__pane')?.getBoundingClientRect();
+    if (pane === undefined) return null;
+    const isPane = (x, y) => document.elementFromPoint(x, y)?.classList.contains('react-flow__pane') === true;
+    for (let y = pane.bottom - 60; y > pane.top + 100; y -= 20) {
+      for (let x = pane.right - 160; x > pane.left + 160; x -= 20) {
+        const corners = [[-110, -20], [110, -20], [-110, 110], [110, 110], [0, 110]];
+        if (isPane(x, y) && corners.every(([dx, dy]) => isPane(x + dx, y + dy))) return { x, y };
+      }
+    }
+    return null;
+  })()`);
+  if (drop === null) throw new Error('新しいファイルの箱が収まる余白がありません');
 
   // Act
   await dragToCanvasPoint(page, 'class-header-TaxCalculator', drop.x, drop.y);

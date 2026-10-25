@@ -49,11 +49,11 @@ function measureFile(file: CodeFile): FileMetrics {
   return { width: CLASS_WIDTH + FILE_PADDING * 2, height: Math.max(MIN_FILE_HEIGHT, classY - CLASS_GAP + FILE_PADDING) };
 }
 
-export const NEW_CLASS_FILE_SIZE = measureFile({
-  id: 'new-file',
-  path: 'src/NewClass.ts',
-  classes: [{ id: 'new-class', name: 'NewClass', methods: [], fields: [] }],
-});
+/** ファイルの箱の実寸法(`layoutCodebase` が描く大きさと同じ)。無いファイルは 0×0。 */
+export function fileSizeOf(codebase: Codebase, fileId: string): FileMetrics {
+  const file = codebase.files.find((candidate) => candidate.id === fileId);
+  return file === undefined ? { width: 0, height: 0 } : measureFile(file);
+}
 
 /** ファイル同士の依存・継承をまとめた有向グラフ(自己参照・同じファイル内の参照は除く)。層分けに使う。 */
 function fileDependencyGraph(codebase: Codebase): Map<string, Set<string>> {
