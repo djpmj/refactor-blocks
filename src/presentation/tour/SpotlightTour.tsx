@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Codebase } from '../../domain/codebase/Codebase';
 import { useGameStore } from '../store/useGameStore';
-import { TOUR_STEPS, type TourStep } from './tourSteps';
+import { TOUR_STEPS, tourResultText, type TourStep } from './tourSteps';
 
 type Spotlight = { readonly top: number; readonly right: number; readonly bottom: number; readonly left: number };
 type Callout = { readonly left: number; readonly top: number };
@@ -108,6 +108,7 @@ function useEscapeEnd(tourStep: number | null, endTour: () => void): void {
 export function SpotlightTour() {
   const tourStep = useGameStore((state) => state.tourStep);
   const codebase = useGameStore((state) => state.codebase);
+  const tourResult = useGameStore((state) => state.tourResult);
   const advanceTour = useGameStore((state) => state.advanceTour);
   const endTour = useGameStore((state) => state.endTour);
   const step = tourStep === null ? undefined : TOUR_STEPS[tourStep];
@@ -115,12 +116,13 @@ export function SpotlightTour() {
   useExtractAdvance(step, tourStep, codebase, advanceTour);
   useEscapeEnd(tourStep, endTour);
   if (tourStep === null || step === undefined || callout === null) return null;
-  return <SpotlightOverlay stepNumber={tourStep + 1} step={step} spotlight={spotlight} callout={callout} onAdvance={advanceTour} onEnd={endTour} />;
+  return <SpotlightOverlay stepNumber={tourStep + 1} step={step} text={tourStep === TOUR_STEPS.length - 1 && tourResult !== null ? tourResultText(tourResult) : step.text} spotlight={spotlight} callout={callout} onAdvance={advanceTour} onEnd={endTour} />;
 }
 
 function SpotlightOverlay({
   stepNumber,
   step,
+  text,
   spotlight,
   callout,
   onAdvance,
@@ -128,6 +130,7 @@ function SpotlightOverlay({
 }: Readonly<{
   stepNumber: number;
   step: TourStep;
+  text: string;
   spotlight: Spotlight | null;
   callout: Callout;
   onAdvance: (event: { readonly kind: 'next' }) => void;
@@ -152,7 +155,7 @@ function SpotlightOverlay({
       )}
       <section className="spotlight-tour__callout" role="dialog" aria-label="初回ガイド" aria-live="polite" data-testid="first-visit-tour" style={{ left: callout.left, top: callout.top }}>
         <p className="spotlight-tour__step">{stepNumber}/6</p>
-        <p>{step.text}</p>
+        <p>{text}</p>
         <div className="spotlight-tour__actions">
           {advanceButtonVisible ? <button type="button" onClick={() => onAdvance({ kind: 'next' })}>次へ</button> : null}
           <button type="button" onClick={onEnd}>ガイドを終了</button>

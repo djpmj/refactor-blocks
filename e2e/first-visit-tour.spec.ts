@@ -44,6 +44,8 @@ test('first visit guides a player through Extract Method using the actual action
   await expect(tour).toContainText('5/6');
   await page.locator('[data-tour="extract-button"]').click();
   await expect(tour).toContainText('6/6');
+  await expect(tour).toContainText('クリア条件をすべて満たしました(100 点)');
+  await expect(tour).not.toContainText('続けてみよう');
   await expect(tour).not.toContainText('50行');
   await tour.getByRole('button', { name: '次へ' }).click();
   await expect(tour).toHaveCount(0);
@@ -208,4 +210,74 @@ test('after the tour extraction, re-fixing "前年同月比も出して" has one
   // Assert
   await expect(page.locator('.manual-fix [role="status"]')).toContainText('直し忘れなし');
   await expect(page.locator('.manual-fix [role="status"]')).toContainText('1 か所すべて');
+});
+
+test('step 6 does not claim progress when B and C fragments are extracted and the score does not rise', async ({ page }) => {
+  // Arrange
+  await clearTourSeenOnce(page);
+  await page.goto('/');
+  const tour = page.getByTestId('first-visit-tour');
+  await tour.getByRole('button', { name: '次へ' }).click();
+  await page.locator('[data-tour="manual-fix-start"]').click();
+  await page.getByTestId('method-printMonthlyReport').click();
+  await page.getByRole('button', { name: 'リリースする' }).click();
+  await page.getByRole('button', { name: '組み替えを始める' }).click();
+  await page.getByTestId('method-printMonthlyReport').click();
+  const fragments = page.locator('[data-tour="fragment-list"]');
+
+  // Act
+  await fragments.getByLabel('表のヘッダーを組み立てる').check();
+  await fragments.getByLabel('表の行を組み立てる').check();
+  await fragments.getByLabel('画面に出力する').check();
+  await page.locator('[data-tour="extract-button"]').click();
+
+  // Assert
+  await expect(tour).toContainText('6/6');
+  await expect(tour).toContainText('90 点のまま変わっていません');
+  await expect(tour).not.toContainText('新しいメソッドができ');
+});
+
+test('step 6 tells the score dropped when a fragment mixing two responsibilities is extracted', async ({ page }) => {
+  // Arrange
+  await clearTourSeenOnce(page);
+  await page.goto('/');
+  const tour = page.getByTestId('first-visit-tour');
+  await tour.getByRole('button', { name: '次へ' }).click();
+  await page.locator('[data-tour="manual-fix-start"]').click();
+  await page.getByTestId('method-printMonthlyReport').click();
+  await page.getByRole('button', { name: 'リリースする' }).click();
+  await page.getByRole('button', { name: '組み替えを始める' }).click();
+  await page.getByTestId('method-printMonthlyReport').click();
+  const fragments = page.locator('[data-tour="fragment-list"]');
+
+  // Act: 集計(前月比)と表の組み立て(ヘッダー)は仕事が違うのに、連続しているのでまとめて抜き出せる。
+  await fragments.getByLabel('前月比を計算する').check();
+  await fragments.getByLabel('表のヘッダーを組み立てる').check();
+  await page.locator('[data-tour="extract-button"]').click();
+
+  // Assert
+  await expect(tour).toContainText('6/6');
+  await expect(tour).toContainText('90 → 80 点に下がりました');
+  await expect(tour).toContainText('元に戻す');
+  await expect(tour).not.toContainText('新しいメソッドができ');
+});
+
+test('step 4 does not skip when the method was already selected before the replayed tour', async ({ page }) => {
+  // Arrange
+  await clearTourSeenOnce(page);
+  await page.goto('/');
+  await completeOpeningFix(page);
+  await page.getByTestId('method-printMonthlyReport').click();
+  await page.getByTestId('operation-guide-open').click();
+  await page.getByTestId('repeat-first-visit-tour').click();
+  const tour = page.getByTestId('first-visit-tour');
+  await tour.getByRole('button', { name: '次へ' }).click();
+  await page.locator('[data-tour="manual-fix-start"]').click();
+  await releaseAllManualFixSites(page);
+
+  // Assert
+  await expect(tour).toContainText('4/6');
+  await expect(page.locator('[data-tour="fragment-list"]')).toHaveCount(0);
+  await page.getByTestId('method-printMonthlyReport').click();
+  await expect(tour).toContainText('5/6');
 });
