@@ -619,7 +619,15 @@ input.class-node__name { width: 14ch; }
 .stage-roadmap__tag { font-size: 11px; padding: 1px 6px; border: 1px solid var(--border); border-radius: 999px; }
 .stage-roadmap__status { font-size: 12px; }
 .stage-roadmap__recommend { font-weight: bold; color: var(--accent); }
-@media (width <= 600px) { .stage-roadmap__cards { grid-template-columns: 1fr; } }
+.stage-roadmap__views { display: flex; gap: 4px; margin-bottom: 8px; }
+.stage-roadmap__views button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.concept-mastery { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; }
+.concept-mastery__row { padding: 10px; border: 1px solid var(--border); border-radius: 8px; }
+.concept-mastery__name { margin: 0 0 4px; font-size: 14px; }
+.concept-mastery__count { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 6px; font-size: 12px; }
+.concept-mastery__done { margin: 0; font-size: 12px; }
+.concept-mastery__stages { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+@media (width <= 600px) { .stage-roadmap__cards { grid-template-columns: 1fr; } .concept-mastery { grid-template-columns: 1fr; } }
 .sample-replay__status { display: flex; gap: 16px; padding: 8px 16px 0; font-weight: 700; }
 .sample-replay__description { margin: 0; padding: 4px 16px; }
 .sample-replay__perfect { margin: 0; padding: 0 16px; font-weight: 700; color: var(--accent); }
