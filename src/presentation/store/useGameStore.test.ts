@@ -883,4 +883,42 @@ describe('コードが変わったらヒントの光りを消す', () => {
     expect(store.getState().hintTarget).toBeNull();
     expect(store.getState().hintTargetKey).toBeNull();
   });
+
+  it('「どこが問題?」の光り(focusedRule)も、抽出に成功すると消える', () => {
+    // Arrange
+    const store = storeWithHint();
+    store.getState().focusRule('line-limit');
+
+    // Act
+    store.getState().extractMethod(extraction);
+
+    // Assert
+    expect(store.getState().focusedRule).toBeNull();
+  });
+
+  it('focusedRule は失敗する抽出では残り、元に戻す・やり直しでは消える', () => {
+    // Arrange
+    const store = storeWithHint();
+    store.getState().extractMethod(extraction);
+    store.getState().focusRule('line-limit');
+
+    // Act
+    store.getState().extractMethod({ ...extraction, newMethodName: 'placeOrder' });
+
+    // Assert
+    expect(store.getState().focusedRule).toBe('line-limit');
+
+    // Act
+    store.getState().undo();
+
+    // Assert
+    expect(store.getState().focusedRule).toBeNull();
+
+    // Act
+    store.getState().focusRule('line-limit');
+    store.getState().redo();
+
+    // Assert
+    expect(store.getState().focusedRule).toBeNull();
+  });
 });

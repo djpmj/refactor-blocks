@@ -267,6 +267,9 @@ function celebrationFor(state: GameState, codebase: Codebase, enabled: boolean):
   return { seq: (state.celebration?.seq ?? 0) + 1, scoreBefore, scoreAfter, deductedBefore: before.deducted, deductedAfter: after.deducted, resolved };
 }
 
+/** コードが変わったら、そのコードに対する案内だった光り(ヒント・「どこが問題?」)を消す。 */
+const HIGHLIGHT_RESET: Partial<GameState> = { focusedRule: null, hintTarget: null, hintTargetKey: null };
+
 function commit(state: GameState, codebase: Codebase, celebrate = true): Partial<GameState> {
   if (codebase === state.codebase) return {};
   const namedCodebase = autoNameClasses(codebase, state.stage.classNames);
@@ -277,8 +280,7 @@ function commit(state: GameState, codebase: Codebase, celebrate = true): Partial
     ...(celebration === undefined ? {} : { celebration }),
     extractDraft: null,
     ghost: null,
-    hintTarget: null,
-    hintTargetKey: null,
+    ...HIGHLIGHT_RESET,
     history: recordChange(state.history, state.codebase),
     selectedFieldId: fieldStillThere ? state.selectedFieldId : null,
   };
@@ -314,7 +316,7 @@ function travelTo(state: GameState, travel: Travel | undefined): Partial<GameSta
   const { codebase, history } = travel;
   const stillThere = state.selectedMethodId !== null && findMethod(codebase, state.selectedMethodId) !== undefined;
   const fieldStillThere = state.selectedFieldId !== null && findField(codebase, state.selectedFieldId) !== undefined;
-  return { codebase, history, celebration: null, ghost: null, hintTarget: null, hintTargetKey: null, selectedMethodId: stillThere ? state.selectedMethodId : null, selectedFieldId: fieldStillThere ? state.selectedFieldId : null, extractDraft: null, message: null, notice: null };
+  return { codebase, history, celebration: null, ghost: null, ...HIGHLIGHT_RESET, selectedMethodId: stillThere ? state.selectedMethodId : null, selectedFieldId: fieldStillThere ? state.selectedFieldId : null, extractDraft: null, message: null, notice: null };
 }
 
 const UNPLACED_MESSAGE = '部品がまだ部品置き場にあります。置き場所へドラッグしてください';
@@ -336,7 +338,7 @@ function blockDuringOpeningFix(state: GameState): Partial<GameState> | null {
 
 const CHANGE_REQUEST_LOCK_MESSAGE = '変更依頼に進む前に、手直しと組み替えを完了してください';
 
-const CHANGE_STEP_RESET: Partial<GameState> = { history: emptyHistory(), selectedMethodId: null, selectedFieldId: null, extractDraft: null, message: null, notice: null };
+const CHANGE_STEP_RESET: Partial<GameState> = { ...HIGHLIGHT_RESET, history: emptyHistory(), selectedMethodId: null, selectedFieldId: null, extractDraft: null, message: null, notice: null };
 
 /** 今の依頼の実装を評価して、その依頼の結果を見る段階にする。次へ進むまで index も outcomes も動かさない。 */
 function finishImplementation(state: GameState): Partial<GameState> {

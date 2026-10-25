@@ -25,7 +25,7 @@
   - `commit` は、コードが変わらないとき(`codebase === state.codebase`)は `{}` を返す今の動きのまま。つまり、**失敗した操作・何も変わらない操作では光りは消えない**
 - 元に戻す・やり直し(`travelTo`)でコードが変わるときも、同じく消す
 - ヒントのボタンの「押している」状態(`aria-pressed`、`hintTargetKey === hintKey`)は、`hintTargetKey` が `null` になれば自然に外れる(`HintList` は変更不要)
-- 減点の行を選んだときの強調(`focusedRule`)は、この仕様では変えない(ponytail: 減点の行はコードが変わっても残るのが今の仕様。同じ違和感が出たら別の仕様にする)
+- 「どこが問題?」は `focusRule`(`focusedRule`)で光らせるため、`hintTarget` と同じく `commit` / `travelTo` と、変更依頼の切り替え(`CHANGE_STEP_RESET`)で `focusedRule` も `null` にする。減点の行を選んだ強調も同じ `focusedRule` なので一緒に消える
 
 ## TDD対象
 
@@ -47,6 +47,5 @@
 
 ## スコープ外
 
-- 減点の行の強調(`focusedRule`)の扱い
 - ヒントの内容・段階の変更
 - 光りの見た目の変更

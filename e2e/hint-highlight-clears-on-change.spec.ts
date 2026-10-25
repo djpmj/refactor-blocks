@@ -4,11 +4,15 @@ import { selectStage } from './selectStage.js';
 
 const FLAGGED = '.method-chip--flagged, .class-node--flagged, .file-node--flagged';
 
-async function openStageWithHint(page: Page): Promise<void> {
+async function openStage(page: Page): Promise<void> {
   await page.setViewportSize({ width: 1800, height: 1400 });
   await page.goto('/');
   await selectStage(page, '初級2: クラスを自分で作る');
   await openHints(page);
+}
+
+async function openStageWithHint(page: Page): Promise<void> {
+  await openStage(page);
   await page.getByTestId('hint-problem').click();
   await page.getByRole('button', { name: /次の一手/ }).click();
   await page.getByRole('button', { name: 'ヒント1の場所をキャンバスで見る' }).click();
@@ -67,6 +71,44 @@ test('元に戻すと光りが消える', async ({ page }) => {
   await openHints(page);
   await page.getByRole('button', { name: 'ヒント1の場所をキャンバスで見る' }).click();
   await expect(page.locator(FLAGGED).first()).toBeVisible();
+
+  // Act
+  await page.getByRole('button', { name: '元に戻す' }).click();
+
+  // Assert
+  await expect(page.getByTestId('method-renderPdf')).toHaveCount(0);
+  await expect(page.locator(FLAGGED)).toHaveCount(0);
+});
+
+test('「どこが問題?」で光らせたあと抽出に成功すると、光りが消える', async ({ page }) => {
+  // Arrange
+  await openStage(page);
+  await page.getByTestId('hint-problem').click();
+  await expect(page.locator(FLAGGED).first()).toBeVisible();
+
+  // Act
+  await extract(page, '請求書のPDFを描画する', 'renderPdf');
+
+  // Assert
+  await expect(page.getByTestId('method-renderPdf')).toBeVisible();
+  await expect(page.locator(FLAGGED)).toHaveCount(0);
+});
+
+test('「どこが問題?」の光りは、失敗する抽出では残り、元に戻すと消える', async ({ page }) => {
+  // Arrange
+  await openStage(page);
+  await extract(page, '請求書のPDFを描画する', 'renderPdf');
+  await openHints(page);
+  await page.getByTestId('hint-problem').click();
+  await expect(page.locator(FLAGGED).first()).toBeVisible();
+  const flaggedCount = await page.locator(FLAGGED).count();
+
+  // Act: 同じ名前での抽出は失敗する
+  await extract(page, 'PDFをストレージに保存する', 'renderPdf');
+
+  // Assert
+  await expect(page.getByText('同じクラスに同じ名前のメソッドがあります')).toBeVisible();
+  await expect(page.locator(FLAGGED)).toHaveCount(flaggedCount);
 
   // Act
   await page.getByRole('button', { name: '元に戻す' }).click();
