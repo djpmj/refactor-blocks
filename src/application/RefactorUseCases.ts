@@ -286,6 +286,7 @@ const EXTRACT_ERROR_MESSAGES: Record<ExtractMethodError, string> = {
   'cannot-extract-all-fragments': 'すべての処理を抽出すると元のメソッドが空になります',
   'empty-method-name': '新しいメソッド名を入力してください',
   'duplicate-method-name': '同じクラスに同じ名前のメソッドがあります',
+  'non-contiguous-fragments': '離れた処理をまとめると実行順が変わります。間の処理も選んでください',
 };
 
 const MERGE_ERROR_MESSAGES: Record<MergeMethodsError, string> = {

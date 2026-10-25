@@ -118,6 +118,17 @@ describe('previewExtractMethod', () => {
     expect((preview?.fileLinesAfter ?? 0) - (preview?.fileLinesBefore ?? 0)).toBeGreaterThanOrEqual(METHOD_OVERHEAD_LINES + 1);
   });
 
+  it('連続していない処理を選ぶとプレビューを出さない', () => {
+    // Arrange
+    const input = { sourceMethodId: 'source', fragmentIds: ['header', 'footer'], newMethodName: 'prepareReport' };
+
+    // Act
+    const preview = previewExtractMethod(codebase, input);
+
+    // Assert
+    expect(preview).toBeUndefined();
+  });
+
   it('複数の処理を抽出した結果を返す', () => {
     // Arrange
     const input = { sourceMethodId: 'source', fragmentIds: ['header', 'sales'], newMethodName: 'prepareReport' };
@@ -558,6 +569,17 @@ describe('addInterfaceUseCase / removeInterfaceUseCase', () => {
 });
 
 describe('エラーメッセージ', () => {
+  it('連続していない処理の抽出エラーを日本語で返す', () => {
+    // Arrange
+    const error = 'non-contiguous-fragments';
+
+    // Act
+    const message = describeExtractError(error);
+
+    // Assert
+    expect(message).toBe('離れた処理をまとめると実行順が変わります。間の処理も選んでください');
+  });
+
   it('エラーコードをプレイヤー向けの日本語に変換する', () => {
     // Arrange
     const extractError = 'no-fragments-selected';
