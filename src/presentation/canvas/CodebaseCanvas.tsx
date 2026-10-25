@@ -93,9 +93,9 @@ function moveMethodToDropTarget(
   if (targetFileId !== null) moveIntoFile(methodId, targetFileId);
 }
 
-/** 切り替えで隠れている画面(リファクタリング・白紙設計)のキャンバスは除き、いま見えているものを返す。 */
+/** 切り替えで隠れている画面(リファクタリング・白紙設計)のキャンバスは除き、いま見えているものを返す。バナーの帯を除いた図の領域(React Flowの実際の大きさ)を測る。 */
 function visibleCanvas(): Element | null {
-  return document.querySelector('.app__view:not([hidden]) .app__canvas');
+  return document.querySelector('.app__view:not([hidden]) .app__canvas .canvas-column__flow');
 }
 
 function canvasSize(): { width: number; height: number } | null {

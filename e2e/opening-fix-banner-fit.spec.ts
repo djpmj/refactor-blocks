@@ -47,16 +47,39 @@ async function expectWholeDiagramInsideCanvas(page: Page) {
   }).toBe(true);
 }
 
+/** 図のどのノードもバナーと交わらなくなるまで待って確かめる(自動の合わせ直しは非同期)。 */
 async function expectBannerClearOfNodes(page: Page) {
   await expect(page.locator('.react-flow__node').first()).toBeVisible();
-  await page.waitForTimeout(300);
-  const banner = await rectOf(page, '[data-testid="opening-fix-banner"]');
-  const nodes = await nodeRects(page);
-  expect(nodes.length).toBeGreaterThan(0);
-  for (const node of nodes) {
-    const overlaps = node.left < banner.right && node.right > banner.left && node.top < banner.bottom && node.bottom > banner.top;
-    expect(overlaps).toBe(false);
-  }
+  await expect.poll(async () => {
+    const banner = await rectOf(page, '[data-testid="opening-fix-banner"]');
+    const nodes = await nodeRects(page);
+    return nodes.length > 0 && nodes.every((node) => !(node.left < banner.right && node.right > banner.left && node.top < banner.bottom && node.bottom > banner.top));
+  }).toBe(true);
+}
+
+async function openFirstMethodEditor(page: Page) {
+  await page.locator('.method-chip').first().click();
+  await expect(page.locator('.method-editor')).toBeVisible();
+}
+
+/** バナー(z-index 32)より前に出るべきパネルが、バナーと交わる領域でも最前面にあること。 */
+async function expectPanelAboveBanner(page: Page, panelSelector: string) {
+  const panel = page.locator(panelSelector).first();
+  await expect(panel).toBeVisible();
+  const covered = await panel.evaluate((element) => {
+    const banner = document.querySelector('[data-testid="opening-fix-banner"]');
+    if (banner === null) throw new Error('バナーがありません');
+    const p = element.getBoundingClientRect();
+    const b = banner.getBoundingClientRect();
+    const left = Math.max(p.left, b.left);
+    const right = Math.min(p.right, b.right);
+    const top = Math.max(p.top, b.top);
+    const bottom = Math.min(p.bottom, b.bottom);
+    if (left >= right || top >= bottom) return 'no-overlap';
+    const hit = document.elementFromPoint((left + right) / 2, (top + bottom) / 2);
+    return hit !== null && element.contains(hit) ? 'panel-on-top' : 'banner-on-top';
+  });
+  expect(covered).toBe('panel-on-top');
 }
 
 for (const width of [1280, 600]) {
@@ -103,46 +126,80 @@ for (const width of [1280, 600]) {
       await expectBannerInsideCanvas(page);
       await expectBannerClearOfNodes(page);
     });
+
+    test('中級3でメソッドエディタを開いたままでも、バナーがファイル・クラスの箱と重ならない', async ({ page }) => {
+      await selectStage(page, '中級3: 越境する private メソッド', { completeOpeningFix: false });
+      await openFirstMethodEditor(page);
+      await expectBannerInsideCanvas(page);
+      await expectBannerClearOfNodes(page);
+    });
+
+    for (const editorOpen of [false, true]) {
+      test(`中級3で${editorOpen ? 'エディタを開いたまま' : 'エディタなしで'}「実際に直してみる」を押すと、バナーが消え図の全体がキャンバスの中に見える`, async ({ page }) => {
+        await selectStage(page, '中級3: 越境する private メソッド', { completeOpeningFix: false });
+        if (editorOpen) await openFirstMethodEditor(page);
+        await expectWholeDiagramInsideCanvas(page);
+        await page.locator('[data-testid="opening-fix-banner"] button').click();
+        await expect(page.getByTestId('opening-fix-banner')).toHaveCount(0);
+        await expectWholeDiagramInsideCanvas(page);
+      });
+    }
+
+    test('手直し中はバナーが出ず、「やめる」で手直しを閉じると(まだ直していないので)また出る', async ({ page }) => {
+      await selectStage(page, '初級1: 何でも屋の UserController', { completeOpeningFix: false });
+      await expect(page.getByTestId('opening-fix-banner')).toBeVisible();
+      await page.getByTestId('opening-fix-banner').getByRole('button', { name: '実際に直してみる' }).click();
+      const panel = page.getByRole('region', { name: '手で直すシミュレーション' });
+      await expect(panel).toBeVisible();
+      await expect(page.getByTestId('opening-fix-banner')).toHaveCount(0);
+      await panel.getByRole('button', { name: 'やめる' }).click();
+      await expect(panel).toHaveCount(0);
+      await expect(page.getByTestId('opening-fix-banner')).toBeVisible();
+    });
+
+    for (const [name, open, panel] of [
+      ['ヒント', (page: Page) => page.getByTestId('hint-popover-button').click(), '.popover__panel'],
+      ['参考・答え', (page: Page) => page.getByTestId('reference-menu-button').click(), '.reference-menu__items'],
+      ['採点の内訳', (page: Page) => page.locator('.score-breakdown > summary').click(), '.score-breakdown__items'],
+      ['テスト状況', (page: Page) => page.getByTestId('test-status-summary').click(), '.test-status__body'],
+    ] as const) {
+      test(`バナーが出ている間も、ツールバーの「${name}」はバナーより前に出る`, async ({ page }) => {
+        await selectStage(page, '初級1: 何でも屋の UserController', { completeOpeningFix: false });
+        await expect(page.getByTestId('opening-fix-banner')).toBeVisible();
+        await open(page);
+        await expectPanelAboveBanner(page, panel);
+      });
+    }
+
+    test('バナーが出ている間も、ステージ一覧のダイアログはバナーより前に出る', async ({ page }) => {
+      await selectStage(page, '初級1: 何でも屋の UserController', { completeOpeningFix: false });
+      await expect(page.getByTestId('opening-fix-banner')).toBeVisible();
+      await page.getByTestId('roadmap-open').click();
+      await expect(page.getByTestId('stage-roadmap')).toBeVisible();
+      const hitInDialog = await page.evaluate(() => {
+        const b = document.querySelector('[data-testid="opening-fix-banner"]')?.getBoundingClientRect();
+        const dialog = document.querySelector('[data-testid="stage-roadmap"]');
+        if (b === undefined || dialog === null) throw new Error('要素がありません');
+        const hit = document.elementFromPoint(b.left + 4, b.top + b.height / 2);
+        return hit !== null && dialog.contains(hit);
+      });
+      expect(hitInDialog).toBe(true);
+    });
+
+    test('操作ガイド(ツアー)の表示中はバナーが出ず、ガイドを終えるとまた出る', async ({ page }) => {
+      await page.addInitScript(() => {
+        if (sessionStorage.getItem('first-visit-tour-test-reset') !== 'done') {
+          localStorage.removeItem('refactor-blocks:tour-seen');
+          sessionStorage.setItem('first-visit-tour-test-reset', 'done');
+        }
+      });
+      await page.goto('/');
+      const tour = page.getByTestId('first-visit-tour');
+      await expect(tour).toBeVisible();
+      await expect(page.getByTestId('opening-fix-banner')).toHaveCount(0);
+      await page.keyboard.press('Escape');
+      await expect(tour).toHaveCount(0);
+      await expect(page.getByTestId('opening-fix-banner')).toBeVisible();
+    });
   });
 }
-
-test('「実際に直してみる」を押すとバナーが消え、図の全体がキャンバスの中に見える', async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 900 });
-  await page.goto('/');
-  await selectStage(page, '中級3: 越境する private メソッド', { completeOpeningFix: false });
-  await expectWholeDiagramInsideCanvas(page);
-  await page.locator('[data-testid="opening-fix-banner"] button').click();
-  await expect(page.getByTestId('opening-fix-banner')).toHaveCount(0);
-  await expectWholeDiagramInsideCanvas(page);
-});
-
-test('手直し中はバナーが出ず、「やめる」で手直しを閉じると(まだ直していないので)また出る', async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 900 });
-  await page.goto('/');
-  await selectStage(page, '初級1: 何でも屋の UserController', { completeOpeningFix: false });
-  await expect(page.getByTestId('opening-fix-banner')).toBeVisible();
-  await page.getByTestId('opening-fix-banner').getByRole('button', { name: '実際に直してみる' }).click();
-  const panel = page.getByRole('region', { name: '手で直すシミュレーション' });
-  await expect(panel).toBeVisible();
-  await expect(page.getByTestId('opening-fix-banner')).toHaveCount(0);
-  await panel.getByRole('button', { name: 'やめる' }).click();
-  await expect(panel).toHaveCount(0);
-  await expect(page.getByTestId('opening-fix-banner')).toBeVisible();
-});
-
-test('操作ガイド(ツアー)の表示中はバナーが出ず、ガイドを終えるとまた出る', async ({ page }) => {
-  await page.addInitScript(() => {
-    if (sessionStorage.getItem('first-visit-tour-test-reset') !== 'done') {
-      localStorage.removeItem('refactor-blocks:tour-seen');
-      sessionStorage.setItem('first-visit-tour-test-reset', 'done');
-    }
-  });
-  await page.setViewportSize({ width: 1280, height: 900 });
-  await page.goto('/');
-  const tour = page.getByTestId('first-visit-tour');
-  await expect(tour).toBeVisible();
-  await expect(page.getByTestId('opening-fix-banner')).toHaveCount(0);
-  await page.keyboard.press('Escape');
-  await expect(tour).toHaveCount(0);
-  await expect(page.getByTestId('opening-fix-banner')).toBeVisible();
-});
