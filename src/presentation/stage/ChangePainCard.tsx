@@ -162,6 +162,7 @@ export function ChangePainCard({ stage, codebase, score }: Readonly<{ stage: Sta
   const startManualFix = useGameStore((state) => state.startManualFix);
   const openingDone = useGameStore((state) => Object.prototype.hasOwnProperty.call(state.openingFixes, stage.id));
   const closingSolved = useGameStore((state) => state.closingFixSolved);
+  const fixingByHand = useGameStore((state) => state.manualFix !== null);
   const tourNeedsManualFix = useGameStore((state) => state.tourStep !== null && TOUR_STEPS[state.tourStep]?.advance.kind === 'manual-fix-started');
   if (pain === undefined && extendPain === undefined) return null;
   const step = visibleStep(stageStep({ score, hasModifyRequest: pain !== undefined, openingDone, closingSolved }), pain);
@@ -174,7 +175,7 @@ export function ChangePainCard({ stage, codebase, score }: Readonly<{ stage: Sta
           <h3 id={titleId}>{cardHeading(step, pain !== undefined)}</h3>
           <span>{painSummary(step, pain, extendPain)}</span>
         </summary>
-        <CardBody stage={stage} codebase={codebase} step={step} pain={pain} extendPain={extendPain} />
+        {!(fixingByHand && step !== 'change-request') && <CardBody stage={stage} codebase={codebase} step={step} pain={pain} extendPain={extendPain} />}
         {shouldShowManualFixButton && <ManualFixButton onStart={startManualFix} />}
       </details>
     </section>
