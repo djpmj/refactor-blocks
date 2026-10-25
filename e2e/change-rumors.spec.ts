@@ -1,4 +1,5 @@
 ﻿import { expect, test } from '@playwright/test';
+import { openRumors } from './hintPopover.js';
 import { finishAndAdvance, releaseAllManualFixSites, selectStage, startChangeRequests } from './selectStage.js';
 
 async function dragMethodToClass(page: import('@playwright/test').Page, method: string, codeClass: string) {
@@ -22,7 +23,7 @@ async function extract(page: import('@playwright/test').Page, method: string, fr
   await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
 }
 
-test('サイドバーに本文だけのうわさを出し、ストーリー中は話し手も表示する', async ({ page }) => {
+test('ツールバーのポップオーバーに本文だけのうわさを出し、ストーリー中は話し手も表示する', async ({ page }) => {
   await page.setViewportSize({ width: 1800, height: 1400 });
   await page.goto('/');
   await selectStage(page, 'チュートリアル1: 長いメソッドを分ける');
@@ -30,6 +31,7 @@ test('サイドバーに本文だけのうわさを出し、ストーリー中�
   const rumors = page.getByTestId('rumor-list');
   const storyToggle = page.getByTestId('story-toggle');
   if (await storyToggle.getAttribute('aria-pressed') === 'false') await storyToggle.click();
+  await openRumors(page);
   await expect(rumors).toBeVisible();
   await expect(page.getByTestId('rumor-req-report-share')).toContainText('営業の佐藤さんから');
   await expect(page.getByTestId('rumor-req-report-share')).toContainText('表の見せ方');
@@ -37,18 +39,20 @@ test('サイドバーに本文だけのうわさを出し、ストーリー中�
   await expect(page.getByTestId('rumor-list')).toHaveAttribute('aria-labelledby', 'rumor-list-title');
 
   await storyToggle.click();
+  await openRumors(page);
   await expect(page.getByTestId('rumor-req-report-share')).not.toContainText('営業の佐藤さんから');
   await expect(page.getByTestId('rumor-req-report-share')).toContainText('表の見せ方');
 });
 
-test('噂の対象がないステージでは欄を表示しない', async ({ page }) => {
+test('噂の対象がないステージではうわさのボタンを表示しない', async ({ page }) => {
   await page.setViewportSize({ width: 1800, height: 1400 });
   await page.goto('/');
   await selectStage(page, '中級10: 会員ランクごとのif分岐をクラスに分ける', { completeOpeningFix: false });
+  await expect(page.getByTestId('rumor-popover-button')).toHaveCount(0);
   await expect(page.getByTestId('rumor-list')).toHaveCount(0);
 });
 
-test('変更依頼中はうわさ欄を隠す', async ({ page }) => {
+test('変更依頼中はうわさのボタンが無効になる', async ({ page }) => {
   await page.setViewportSize({ width: 1800, height: 1400 });
   await page.goto('/');
   await selectStage(page, 'チュートリアル1: 長いメソッドを分ける');
@@ -61,6 +65,7 @@ test('変更依頼中はうわさ欄を隠す', async ({ page }) => {
   await releaseAllManualFixSites(page);
   await startChangeRequests(page);
   await expect(page.getByTestId('change-panel')).toBeVisible();
+  await expect(page.getByTestId('rumor-popover-button')).toBeDisabled();
   await expect(page.getByTestId('rumor-list')).toHaveCount(0);
   await dragMethodToClass(page, 'method-compareWithLastYear', 'class-ReportService');
   await finishAndAdvance(page);

@@ -3,10 +3,9 @@ import type { Score } from '../../domain/scoring/score';
 import { useGameStore } from '../store/useGameStore';
 import { RULE_LABEL } from './describeScore';
 import { lineLimitWhy, RULE_WHY } from './ruleWhy';
-import { useIdle } from './useIdle';
 import { findLineLimitViolations } from '../../domain/scoring/lineLimits';
 
-export function ProblemHint({ score, stageId, revealed, disabled, onReveal }: Readonly<{ score: Score; stageId: string; revealed: boolean; disabled: boolean; onReveal: () => void }>) {
+export function ProblemHint({ score, revealed, disabled, onReveal }: Readonly<{ score: Score; revealed: boolean; disabled: boolean; onReveal: () => void }>) {
   const codebase = useGameStore((state) => state.codebase);
   const stage = useGameStore((state) => state.stage);
   const rule = biggestProblem(score);
@@ -14,13 +13,12 @@ export function ProblemHint({ score, stageId, revealed, disabled, onReveal }: Re
   const lineWhy = rule === 'line-limit'
     ? lineLimitWhy(findLineLimitViolations(codebase, stage.limits).map((violation) => violation.kind))
     : [];
-  const idle = useIdle(!disabled && !revealed && score.total < 100, codebase, stageId);
   return (
     <div className="stage-panel__hint-step">
       <span className="stage-panel__hint-number" aria-hidden="true">1</span>
       <button
         type="button"
-        className={`problem-hint-button${idle ? ' ghost-hint-button--idle' : ''}`}
+        className="problem-hint-button"
         data-testid="hint-problem"
         disabled={disabled || rule === undefined}
         onClick={() => { if (rule !== undefined) onReveal(); }}

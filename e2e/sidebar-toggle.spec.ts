@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { openHints } from './hintPopover.js';
 import { selectStage } from './selectStage.js';
 
 async function tabToElement(page: Page, target: Locator) {
@@ -12,7 +13,7 @@ test('サイドバー開閉ボタンが境界の外側に接して動く', async
   // Arrange
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/');
-  const sidebar = page.getByRole('complementary', { name: '課題とヒント' });
+  const sidebar = page.getByRole('complementary', { name: '課題' });
   const closeButton = page.getByRole('button', { name: 'サイドバーを閉じる' });
   const header = page.locator('header.stage-panel');
   await expect(sidebar).toBeVisible();
@@ -51,13 +52,14 @@ test('左サイドバーをドラッグとキーボードで調整し、開閉�
   // Arrange
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/');
-  const sidebar = page.getByRole('complementary', { name: '課題とヒント' });
-  const handle = page.getByRole('separator', { name: '課題とヒントの幅を変更' });
+  const sidebar = page.getByRole('complementary', { name: '課題' });
+  const handle = page.getByRole('separator', { name: '課題の幅を変更' });
   const toggle = page.getByRole('button', { name: 'サイドバーを閉じる' });
   await expect(sidebar).toBeVisible();
   await page.getByTestId('story-toggle').click();
-  const hintButton = sidebar.getByRole('button', { name: /次の一手/ });
-  await sidebar.getByTestId('hint-problem').click();
+  await openHints(page);
+  const hintButton = page.getByRole('button', { name: /次の一手/ });
+  await page.getByTestId('hint-problem').click();
   for (let hint = 0; hint < 20 && await hintButton.isEnabled(); hint += 1) await hintButton.click();
   const painDetails = sidebar.locator('.change-pain details');
   if (await painDetails.count() > 0) await painDetails.locator('summary').click();
@@ -106,14 +108,14 @@ test('左サイドバーをドラッグとキーボードで調整し、開閉�
   // Assert
   await expect(handle).toHaveAttribute('aria-valuenow', '216');
   await page.reload();
-  await expect(page.getByRole('separator', { name: '課題とヒントの幅を変更' })).toHaveAttribute('aria-valuenow', '260');
+  await expect(page.getByRole('separator', { name: '課題の幅を変更' })).toHaveAttribute('aria-valuenow', '260');
 });
 
 test('狭い画面では左サイドバーを85vwのドロワーとして重ねる', async ({ page }) => {
   // Arrange
   await page.setViewportSize({ width: 375, height: 800 });
   await page.goto('/');
-  const sidebar = page.getByRole('complementary', { name: '課題とヒント' });
+  const sidebar = page.getByRole('complementary', { name: '課題' });
   const closeSidebar = page.getByRole('button', { name: 'サイドバーを閉じる' });
   if (await closeSidebar.count() > 0) await closeSidebar.click();
   const canvas = page.getByRole('region', { name: 'コードベース' });
@@ -135,7 +137,7 @@ test('長い内容をスクロールしてもボタンがスクロールバー�
   await page.setViewportSize({ width: 1440, height: 400 });
   await page.goto('/');
   await selectStage(page, '上級3: 会員ランクの割引をStrategyパターンへ組み替える');
-  const sidebar = page.getByRole('complementary', { name: '課題とヒント' });
+  const sidebar = page.getByRole('complementary', { name: '課題' });
   const toggle = page.getByRole('button', { name: 'サイドバーを閉じる' });
   await expect(sidebar).toBeVisible();
 
@@ -163,7 +165,7 @@ test('閉じたサイドバーのボタンをキーボードで操作できる',
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.emulateMedia({ colorScheme: 'dark' });
   await page.goto('/');
-  const sidebar = page.getByRole('complementary', { name: '課題とヒント' });
+  const sidebar = page.getByRole('complementary', { name: '課題' });
   const openButton = page.getByRole('button', { name: 'サイドバーを開く' });
   await expect(sidebar).toBeHidden();
   await expect(openButton).toBeVisible();

@@ -60,7 +60,7 @@ test('左サイドバーの幅を変えても右サイドバーの幅は独立�
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/');
   await page.getByTestId('editor-rail').click();
-  const leftHandle = page.getByRole('separator', { name: '課題とヒントの幅を変更' });
+  const leftHandle = page.getByRole('separator', { name: '課題の幅を変更' });
   const rightSidebar = page.locator('.sidebar-resizable').first();
   await expect(rightSidebar).toHaveCSS('width', '360px');
 

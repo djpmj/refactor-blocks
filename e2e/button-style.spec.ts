@@ -1,4 +1,5 @@
 import { expect, test, type Locator } from '@playwright/test';
+import { openHints } from './hintPopover.js';
 import { selectStage } from './selectStage.js';
 
 async function expectButtonBackgroundToMatchVariable(locator: Locator, variable: '--surface' | '--accent') {
@@ -24,6 +25,7 @@ test('tutorial buttons use shared default and primary styles without changing Re
   await page.goto('/');
   await selectStage(page, 'チュートリアル1: 長いメソッドを分ける');
 
+  await openHints(page);
   const hintButton = page.getByRole('button', { name: /次の一手/ });
   const ghostHintButton = page.getByRole('button', { name: '動きで見る' });
   for (const button of [hintButton, ghostHintButton]) {

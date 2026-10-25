@@ -1,10 +1,10 @@
 import type { Stage } from '../../domain/stage/Stage';
-import { rumoredRequests } from '../../domain/change/rumors';
+import { rumorsOf } from './rumorsOf';
 import { useGameStore } from '../store/useGameStore';
 
 export function RumorList({ stage }: Readonly<{ stage: Stage }>) {
   const enabled = useGameStore((state) => state.storyEnabled);
-  const requests = rumoredRequests(stage).filter((request) => request.rumor !== undefined);
+  const requests = rumorsOf(stage);
   if (requests.length === 0) return null;
   return (
     <section className="rumor-list" aria-labelledby="rumor-list-title" data-testid="rumor-list">
