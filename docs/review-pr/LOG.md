@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-25 16:00 UTC PR #334 初回ツアーの改善を実装する (#327)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test(2128件)✅ / npm run lint ✅ / npm run typecheck ✅。差分をIssue #327・docs/specs/tour-step-follows-state.mdの設計判断1〜7と照合。E2Eはこの環境で未実行(PR本文では423件成功)。仕様書の受け入れ基準2(B+C=90→80)は実機と不一致(suggestion)
+- マージ: squash & delete-branch
+
 ## 2026-10-25 15:45 UTC PR #333 ロードマップに概念習得リストを追加 (#317)
 
 - 判定: 合格(blocker無し)
