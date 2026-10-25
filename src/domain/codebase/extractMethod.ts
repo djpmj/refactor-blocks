@@ -14,7 +14,8 @@ export type ExtractMethodError =
   | 'fragment-not-in-method'
   | 'cannot-extract-all-fragments'
   | 'empty-method-name'
-  | 'duplicate-method-name';
+  | 'duplicate-method-name'
+  | 'non-contiguous-fragments';
 
 /** 抽出した処理の代わりに元のメソッドに残る「呼び出し」1行。 */
 const CALL_LINES = 1;
@@ -22,6 +23,12 @@ const CALL_LINES = 1;
 /** 抽出したメソッドの呼び出し行のID。Inline Method で呼び出し元を探すときにも使う。 */
 export function callFragmentId(methodId: string): string {
   return `${methodId}:call`;
+}
+
+/** 選んだ処理が、元のメソッドの並びの中で途切れずに続いているか(選んだ順は問わない)。 */
+export function isContiguous(source: Method, fragmentIds: readonly string[]): boolean {
+  const indexes = source.fragments.flatMap((fragment, index) => (fragmentIds.includes(fragment.id) ? [index] : []));
+  return indexes.length === 0 || indexes[indexes.length - 1] - indexes[0] + 1 === indexes.length;
 }
 
 function validate(codebase: Codebase, request: ExtractMethodRequest): Result<Method, ExtractMethodError> {
@@ -32,6 +39,7 @@ function validate(codebase: Codebase, request: ExtractMethodRequest): Result<Met
   const fragmentIdsInSource = new Set(source.fragments.map((fragment) => fragment.id));
   if (request.fragmentIds.some((id) => !fragmentIdsInSource.has(id))) return err('fragment-not-in-method');
   if (request.fragmentIds.length >= source.fragments.length) return err('cannot-extract-all-fragments');
+  if (!isContiguous(source, request.fragmentIds)) return err('non-contiguous-fragments');
   const name = request.newMethodName.trim();
   if (name === '') return err('empty-method-name');
   if (owner.methods.some((method) => method.name === name)) return err('duplicate-method-name');

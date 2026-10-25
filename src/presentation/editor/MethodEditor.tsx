@@ -19,6 +19,7 @@ import { changeVisibilityUseCase } from '../../application/RefactorUseCases';
 import { previewExtractMethod } from '../../application/RefactorUseCases';
 import { describeExtractPreview } from './describeExtractPreview';
 import { findCallerOf } from '../../domain/codebase/inlineMethod';
+import { isContiguous } from '../../domain/codebase/extractMethod';
 import { findMergeCandidates, type MergeCandidate } from '../../domain/codebase/mergeMethods';
 import { fragmentLines, methodLines } from '../../domain/codebase/lineCount';
 import { suggestMethodName } from '../../domain/codebase/suggestMethodName';
@@ -143,8 +144,9 @@ function MergeSection({ method, candidates }: Readonly<{ method: Method; candida
 
 const VISIBILITY_OPTIONS: readonly Visibility[] = ['public', 'protected', 'private'];
 
-function extractDisabledReason(selectedCount: number, newName: string): string | null {
-  if (selectedCount === 0) return '処理を1つ以上選ぶと押せます';
+function extractDisabledReason(method: Method, selected: ReadonlySet<string>, newName: string): string | null {
+  if (selected.size === 0) return '処理を1つ以上選ぶと押せます';
+  if (!isContiguous(method, [...selected])) return '間の処理も選ぶか、選ぶ処理を連続させてください(離れた処理をまとめると実行順が変わります)';
   if (newName.trim() === '') return 'メソッド名を入れると押せます';
   return null;
 }
@@ -332,7 +334,7 @@ function MethodEditorBody({ method, showVisibility, stage }: Readonly<{ method: 
       owner?.methods.map((ownerMethod) => ownerMethod.name) ?? [],
       methodNaming,
     );
-  const disabledReason = extractDisabledReason(selected.size, newName);
+  const disabledReason = extractDisabledReason(method, selected, newName);
 
   const previewSummary = useExtractPreviewSummary(method, selected, newName);
 

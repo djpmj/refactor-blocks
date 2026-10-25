@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-25 02:40 UTC PR #304 離れた処理は1つのメソッドに抽出できないようにする (#285)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint・typecheck・Vitest 2024件)✅。連続判定(isContiguous)をdomainの検証順序・application日本語メッセージ・MethodEditorの無効理由で仕様どおりに実装していることをIssue #285・docs/specs/extract-contiguous-only.mdと照合。E2Eはこの環境で実行許可が無く未実行(PR本文では全348件成功)
+- マージ: squash & delete-branch
+
 ## 2026-10-25 01:15 UTC PR #301 ヒント・うわさ・参考をツールバーのポップオーバーに移す (#281)
 
 - 判定: 合格(blocker無し)
@@ -210,12 +216,6 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test(1825件)✅ / npm run lint ✅ / npm run typecheck ✅。メニュー項目(唯一のクラスでは非表示)、Tab/矢印のフォーカス移動、操作ガイド更新を差分で確認。E2Eはこの環境にブラウザが無く未実行(PR本文では264件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-20 10:40 UTC PR #262 基底へ移したメソッドをprotectedにし統合候補を保つ (#229)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(1816件)✅ / npm run lint ✅ / npm run typecheck ✅。子孫からだけ呼ばれるメソッドはprotected・それ以外はpublic、private/protected間の統合(結果は広い可視性)、changed型と呼び出し元・通知文の更新を差分で確認。E2Eはこの環境で実行許可が無く未実行(PR本文では256/257件成功、残り1件は単独再実行で成功)
 - マージ: squash & delete-branch
 
 
