@@ -18,8 +18,8 @@ import {
 import { changeVisibilityUseCase } from '../../application/RefactorUseCases';
 import { previewExtractMethod } from '../../application/RefactorUseCases';
 import { describeExtractPreview } from './describeExtractPreview';
+import { extractDisabledReason, extractNameInvalid } from './extractDisabledReason';
 import { findCallerOf } from '../../domain/codebase/inlineMethod';
-import { isContiguous } from '../../domain/codebase/extractMethod';
 import { findMergeCandidates, type MergeCandidate } from '../../domain/codebase/mergeMethods';
 import { fragmentLines, methodLines } from '../../domain/codebase/lineCount';
 import { suggestMethodName } from '../../domain/codebase/suggestMethodName';
@@ -144,22 +144,17 @@ function MergeSection({ method, candidates }: Readonly<{ method: Method; candida
 
 const VISIBILITY_OPTIONS: readonly Visibility[] = ['public', 'protected', 'private'];
 
-function extractDisabledReason(method: Method, selected: ReadonlySet<string>, newName: string): string | null {
-  if (selected.size === 0) return '処理を1つ以上選ぶと押せます';
-  if (!isContiguous(method, [...selected])) return '間の処理も選ぶか、選ぶ処理を連続させてください(離れた処理をまとめると実行順が変わります)';
-  if (newName.trim() === '') return 'メソッド名を入れると押せます';
-  return null;
-}
-
 function ExtractControls({
   newName,
   disabledReason,
+  isDuplicate,
   onNameChange,
   onExtract,
   previewSummary,
 }: Readonly<{
   newName: string;
   disabledReason: string | null;
+  isDuplicate: boolean;
   onNameChange: (name: string) => void;
   onExtract: () => void;
   previewSummary: string | undefined;
@@ -169,6 +164,8 @@ function ExtractControls({
       <div className="method-editor__extract">
         <input
           aria-label="新しいメソッド名"
+          aria-invalid={isDuplicate ? true : undefined}
+          aria-describedby={isDuplicate ? 'method-editor-extract-disabled-reason' : undefined}
           placeholder="処理を選ぶと名前を自動で考えます"
           value={newName}
           onChange={(event) => onNameChange(event.target.value)}
@@ -326,15 +323,16 @@ function MethodEditorBody({ method, showVisibility, stage }: Readonly<{ method: 
   const [activeTab, setActiveTab] = useState<'edit' | 'code'>('edit');
   // null のあいだは選んだ処理から名前を自動で考え、プレイヤーが入力したらその名前を優先する
   const [customName, setCustomName] = useState<string | null>(null);
+  const existingNames = owner?.methods.map((ownerMethod) => ownerMethod.name) ?? [];
   const methodNaming = useMemo(() => methodNamingOf(stage), [stage]);
   const newName =
     customName ??
     suggestMethodName(
       method.fragments.filter((fragment) => selected.has(fragment.id)),
-      owner?.methods.map((ownerMethod) => ownerMethod.name) ?? [],
+      existingNames,
       methodNaming,
     );
-  const disabledReason = extractDisabledReason(method, selected, newName);
+  const disabledReason = extractDisabledReason(method, selected, newName, existingNames);
 
   const previewSummary = useExtractPreviewSummary(method, selected, newName);
 
@@ -362,6 +360,7 @@ function MethodEditorBody({ method, showVisibility, stage }: Readonly<{ method: 
             <ExtractControls
               newName={newName}
               disabledReason={disabledReason}
+              isDuplicate={extractNameInvalid(method, selected, newName, existingNames)}
               onNameChange={setCustomName}
               onExtract={handleExtract}
               previewSummary={previewSummary}
