@@ -380,6 +380,9 @@ type CanvasFlowProps = {
 function CanvasFlow({ nodes, edges, onNodesChange, setFlow, contextMenu, selectMethod, stageId, visibleFileCount, codebase, layers, layoutResetCount, arrangeVersion, arrange, autoFitStateRef, onMoveStart, onManualFit, onControlZoom, dragInteractionActive, revealFileId }: CanvasFlowProps & { readonly layoutResetCount: number; readonly arrangeVersion: number; readonly arrange: () => void }) {
   return (
     <WarningEdgeStateProvider>
+      <div className="canvas-column">
+      <OpeningFixBanner />
+      <div className="canvas-column__flow">
       <ReactFlow colorMode="system"
         nodes={nodes} edges={edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes}
         onNodesChange={onNodesChange} onInit={setFlow} nodesConnectable={false} minZoom={CANVAS_MIN_ZOOM}
@@ -392,7 +395,6 @@ function CanvasFlow({ nodes, edges, onNodesChange, setFlow, contextMenu, selectM
         <Panel position="top-right">
           <button type="button" className="nodrag nopan" data-testid="canvas-arrange" aria-label="依存の向きに沿って並べ直す" onClick={arrange}>整列</button>
         </Panel>
-        <Panel position="top-center"><OpeningFixBanner /></Panel>
         <DetailZoomNotice onZoom={onControlZoom} />
         <GhostAnimation nodes={nodes} />
         <FitViewOnLayoutChange stageId={stageId} fileCount={visibleFileCount} layoutResetCount={layoutResetCount} arrangeVersion={arrangeVersion} autoFitStateRef={autoFitStateRef} />
@@ -400,6 +402,8 @@ function CanvasFlow({ nodes, edges, onNodesChange, setFlow, contextMenu, selectM
         <RevealDroppedFile fileId={revealFileId} />
         <FitViewForRule codebase={codebase} nodes={nodes} />
       </ReactFlow>
+      </div>
+      </div>
     </WarningEdgeStateProvider>
   );
 }
