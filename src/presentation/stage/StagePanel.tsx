@@ -18,6 +18,7 @@ import { UnusedPublicNote } from './UnusedPublicNote';
 import { ChangePainCard } from './ChangePainCard';
 import { StoryIntro } from './StoryIntro';
 import { StoryOutro } from './StoryOutro';
+import { NextStageCard } from './NextStageCard';
 import { ManualFixPanel } from './ManualFixPanel';
 import { SpotlightTour } from '../tour/SpotlightTour';
 import { TOUR_STAGE_ID } from '../tour/tourSteps';
@@ -289,6 +290,7 @@ function StageSidebar({ stage, codebase, score, initialScore, investigating, hid
       {!investigating && score.total >= 100 && <UnusedPublicNote stage={stage} codebase={codebase} />}
       {!investigating && score.total >= 100 && <ConceptCheckPanel key={stage.id} checks={stage.checks} />}
       <StoryOutro stage={stage} perfect={!investigating && score.total >= 100} />
+      <NextStageCard stage={stage} perfect={!investigating && score.total >= 100} />
     </aside>
   );
 }
