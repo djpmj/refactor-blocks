@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-25 03:15 UTC PR #305 役目を終えた通知トーストを消す (#286)
+
+- 判定: 合格(blocker無し。suggestion: e2e/toast-clears-when-stale.spec.ts の固定800ms待機を状態待ちへ)
+- 確認した内容: npm run check(lint・typecheck・Vitest 2030件)✅。messageは状況変化で消し出した操作自身では残す・noticeは8秒で自動消去し置換で数え直す、をIssue #286・docs/specs/toast-clears-when-stale.mdと照合。E2Eはこの環境で実行許可が無く未実行(PR本文では全352件成功)
+- マージ: squash & delete-branch
+
 ## 2026-10-25 02:40 UTC PR #304 離れた処理は1つのメソッドに抽出できないようにする (#285)
 
 - 判定: 合格(blocker無し)
@@ -210,12 +216,6 @@
 
 - 判定: 合格(blocker無し。suggestion: useGameStore.ts 先頭にBOMが混入)
 - 確認した内容: npm test(1826件)✅ / npm run lint ✅ / npm run typecheck ✅。白紙設計のclassNames設定、moveActionsでのautoNameClasses適用、回帰テストを差分で確認。E2Eはこの環境にブラウザが無く未実行(PR本文では263件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-23 08:40 UTC PR #263 クラスを新しいファイルへ移すメニューを追加する (#225)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(1825件)✅ / npm run lint ✅ / npm run typecheck ✅。メニュー項目(唯一のクラスでは非表示)、Tab/矢印のフォーカス移動、操作ガイド更新を差分で確認。E2Eはこの環境にブラウザが無く未実行(PR本文では264件成功)
 - マージ: squash & delete-branch
 
 

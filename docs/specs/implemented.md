@@ -149,3 +149,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [resume-last-stage](resume-last-stage.md) | 再読み込みしても、最後に遊んでいたステージから続ける |
 | [toolbar-hint-rumor-popovers](toolbar-hint-rumor-popovers.md) | ヒント・うわさをサイドバーからツールバーのポップオーバーへ移す |
 | [extract-contiguous-only](extract-contiguous-only.md) | 離れた処理は1つのメソッドに抽出できないようにする |
+| [toast-clears-when-stale](toast-clears-when-stale.md) | 役目を終えた通知トースト(失敗理由は状況変化で、お知らせは8秒で)を自動で消す |
