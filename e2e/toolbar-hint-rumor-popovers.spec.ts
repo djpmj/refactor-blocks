@@ -22,9 +22,9 @@ async function reach100(page: Page) {
 }
 
 async function tabOutOfPopover(page: Page, popoverId: string) {
-  const inside = () => page.evaluate((id) => document.querySelector(`[data-testid="${id}"]`)?.closest('.popover')?.contains(document.activeElement) ?? false, popoverId);
-  for (let i = 0; i < 30 && (await inside()); i++) await page.keyboard.press('Tab');
-  expect(await inside()).toBe(false);
+  const focusedInside = page.locator(`.popover:has([data-testid="${popoverId}"]) :focus`);
+  for (let i = 0; i < 30 && (await focusedInside.count()) > 0; i++) await page.keyboard.press('Tab');
+  await expect(focusedInside).toHaveCount(0);
 }
 
 test('ツールバーが 挑戦・元に戻す・やり直し・最初に戻す・参考・答え・ヒント・うわさ・操作ガイド の順に並ぶ', async ({ page }) => {
