@@ -1085,6 +1085,104 @@ describe('recordMilestone', () => {
   });
 });
 
+describe('operation result (増えた・消えた減点)', () => {
+  const tutorial = stages.find((candidate) => candidate.id === 'tutorial-extract-method');
+  if (tutorial === undefined) throw new Error('tutorial-extract-method が見つからない');
+  const source = 'method-print-monthly-report';
+  const tableAndPrint = { sourceMethodId: source, fragmentIds: ['frag-table-header', 'frag-table-rows', 'frag-print'], newMethodName: 'renderReport' };
+  const renderReportId = (store: ReturnType<typeof createGameStore>) => allClasses(store.getState().codebase).flatMap((codeClass) => codeClass.methods).find((method) => method.name === 'renderReport')?.id ?? '';
+  const newStore = () => createGameStore([tutorial, stages[1]], false, false);
+
+  it('表の組み立てと出力を1つにまとめると、責務の混ざったメソッドの増加が出る', () => {
+    // Arrange
+    const store = newStore();
+    // Act
+    store.getState().extractMethod(tableAndPrint);
+    // Assert
+    expect(store.getState().operationResult?.lines).toContain('「責務の混ざったメソッド」の減点が1件増えました(-10)');
+  });
+
+  it('集計だけを抽出すると better で、「増えました」の行がない', () => {
+    // Arrange
+    const store = newStore();
+    // Act
+    store.getState().extractMethod({ sourceMethodId: source, fragmentIds: ['frag-aggregate-sales', 'frag-compare-last-month'], newMethodName: 'aggregate' });
+    // Assert
+    const result = store.getState().operationResult;
+    expect(result?.tone).toBe('better');
+    expect(result?.lines.some((line) => line.includes('増えました'))).toBe(false);
+  });
+
+  it('減点が変わらない操作の後は null になる', () => {
+    // Arrange
+    const store = newStore();
+    store.getState().extractMethod(tableAndPrint);
+    // Act
+    store.getState().renameClass('class-report-service', 'Renamed');
+    // Assert
+    expect(store.getState().operationResult).toBeNull();
+  });
+
+  it('undo / redo の後は null', () => {
+    // Arrange
+    const store = newStore();
+    store.getState().extractMethod(tableAndPrint);
+    // Act & Assert
+    store.getState().undo();
+    expect(store.getState().operationResult).toBeNull();
+    store.getState().redo();
+    expect(store.getState().operationResult).toBeNull();
+  });
+
+  it('resetStage・selectStage の後は null', () => {
+    // Arrange
+    const store = newStore();
+    store.getState().extractMethod(tableAndPrint);
+    // Act
+    store.getState().resetStage();
+    // Assert
+    expect(store.getState().operationResult).toBeNull();
+    store.getState().extractMethod(tableAndPrint);
+    store.getState().selectStage(stages[1].id);
+    expect(store.getState().operationResult).toBeNull();
+  });
+
+  it('失敗した操作・selectMethod では前の結果が残り、dismissOperationResult で消える', () => {
+    // Arrange
+    const store = newStore();
+    store.getState().extractMethod(tableAndPrint);
+    const result = store.getState().operationResult;
+    // Act
+    store.getState().extractMethod({ sourceMethodId: 'no-such-method', fragmentIds: ['x'], newMethodName: 'y' });
+    // Assert
+    expect(store.getState().message).not.toBeNull();
+    expect(store.getState().operationResult).toBe(result);
+    store.getState().selectMethod(source);
+    expect(store.getState().operationResult).toBe(result);
+    store.getState().dismissOperationResult();
+    expect(store.getState().operationResult).toBeNull();
+  });
+
+  describe('自動で消える', () => {
+    beforeEach(() => { vi.useFakeTimers(); });
+    afterEach(() => { vi.useRealTimers(); });
+
+    it('NOTICE_VISIBLE_MS 後に null になり、置き換わると数え直す', () => {
+      // Arrange
+      const store = newStore();
+      store.getState().extractMethod(tableAndPrint);
+      vi.advanceTimersByTime(NOTICE_VISIBLE_MS - 1000);
+      // Act
+      store.getState().inlineMethod(renderReportId(store));
+      vi.advanceTimersByTime(NOTICE_VISIBLE_MS - 1000);
+      // Assert
+      expect(store.getState().operationResult).not.toBeNull();
+      vi.advanceTimersByTime(1000);
+      expect(store.getState().operationResult).toBeNull();
+    });
+  });
+});
+
 describe('move count', () => {
   const tutorial1 = () => {
     const stage = stages.find((candidate) => candidate.id === 'tutorial-extract-method');
