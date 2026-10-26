@@ -41,7 +41,7 @@ test('開いてメソッドをクリックしただけでは記録されず、�
   expect(await stageCardText(page)).toContain('未挑戦');
 });
 
-test('処理を抽出して点数が上がると一覧にクリアが出て、再読み込みしても残る。元に戻しても自己ベストは下がらない', async ({ page }) => {
+test('処理を抽出して点数が上がると一覧に100点が出て、再読み込みしても残る。元に戻しても自己ベストは下がらない', async ({ page }) => {
   // Arrange
   await page.goto('/');
   await selectStage(page, STAGE);
@@ -54,8 +54,8 @@ test('処理を抽出して点数が上がると一覧にクリアが出て、�
   await expect.poll(async () => Object.values(await savedProgress(page)).length).toBe(1);
   const best = Object.values(await savedProgress(page))[0];
   expect(best).toBe(100);
-  // 100点のステージは一覧では「クリア」と表示される
-  expect(await stageCardText(page)).toContain('クリア');
+  // 100点のステージは一覧に点数が出る(理解度チェック・変更依頼が済むまで「クリア」にはならない)
+  expect(await stageCardText(page)).toContain('100点(あと: 理解度チェック・変更依頼)');
 
   // Act: 元に戻して初期点に戻っても
   await page.getByRole('button', { name: '元に戻す' }).click();

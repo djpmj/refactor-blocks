@@ -61,8 +61,8 @@ function CheckItem({ check, answered, onAnswer }: CheckItemProps) {
   );
 }
 
-/** 100点のときに出す、選択式の理解度チェック。回答の状態はここだけに持つ(呼び出し側で key={stage.id} を付ける)。 */
-export function ConceptCheckPanel({ checks }: Readonly<{ checks: readonly ConceptCheck[] }>) {
+/** 100点のときに出す、選択式の理解度チェック。1回の挑戦で全問正解したら onAllCorrect を呼ぶ。回答の状態はここだけに持つ(呼び出し側で key={stage.id} を付ける)。 */
+export function ConceptCheckPanel({ checks, onAllCorrect }: Readonly<{ checks: readonly ConceptCheck[]; onAllCorrect: () => void }>) {
   const [answers, setAnswers] = useState<Readonly<Partial<Record<string, number>>>>({});
   const [round, setRound] = useState(0);
   const correctCount = checks.filter((check) => judgeCheck(check, answers[check.id] ?? -1).correct).length;
@@ -75,7 +75,11 @@ export function ConceptCheckPanel({ checks }: Readonly<{ checks: readonly Concep
           key={`${String(round)}-${check.id}`}
           check={check}
           answered={answers[check.id]}
-          onAnswer={(chosen) => setAnswers((current) => ({ ...current, [check.id]: chosen }))}
+          onAnswer={(chosen) => {
+            const next = { ...answers, [check.id]: chosen };
+            setAnswers(next);
+            if (checks.every((item) => judgeCheck(item, next[item.id] ?? -1).correct)) onAllCorrect();
+          }}
         />
       ))}
       {allAnswered && (
