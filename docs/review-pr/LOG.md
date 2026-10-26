@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-26 09:45 UTC PR #338 手で直す最中の「読む」クリックと「直した」印を別の操作に分ける (#318)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test(2154件)✅ / npm run lint ✅ / npm run typecheck ✅。差分をIssue #318・docs/specs/manual-fix-read-vs-mark.mdの設計判断と照合。E2Eはこの環境でブラウザ未導入のため未実行(PR本文では429件成功)
+- マージ: squash & delete-branch
+
 ## 2026-10-26 09:30 UTC PR #337 クリアを習得として扱い、マイルストーン表示を追加する (#316)
 
 - 判定: 合格(blocker無し)
@@ -211,12 +217,5 @@
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test(1926件)✅ / npm run lint ✅ / npm run typecheck ✅。designDiff・describeDesignDiff・ComparisonPanesを仕様(2列表示・責務ごとの違い一覧・同じ置き方の文言・減点は事実のみ)と照合。E2EはChromiumを入れられず未実行(PR記載の298件成功を参照)
 - マージ: squash & delete-branch
-
-## 2026-10-24 07:50 UTC PR #279 ヒント「次の一手」を方針のまとまりごとに見せる (#248)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(1924件)✅ / npm run lint ✅ / npm run typecheck ✅。方針の表・見出しは方針の最初の手順でのみ表示・8手未満は出さない点を仕様と照合。E2Eはこの環境で実行の承認が得られず未実行(PR記載の297件成功を参照)
-- マージ: squash & delete-branch
-
 
 

@@ -163,4 +163,5 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [concept-mastery-map](concept-mastery-map.md) | ステージ一覧に「学べることごと」の習得状況(件数・進み具合・未クリアへのリンク)を出す |
 | [tour-step-follows-state](tour-step-follows-state.md) | 初回ツアーの最後の文を抽出の結果(点数の増減)で出し分け、手順4を飛ばさない |
 | [responsibility-label-names](responsibility-label-names.md) | 責務の印(A/B/C)に、その責務の日本語名を添えて表示する |
+| [manual-fix-read-vs-mark](manual-fix-read-vs-mark.md) | 手で直す間のメソッドのクリック(読む)と「直した」印(チェックボックス)を別の操作に分ける |
 | [clear-means-learned](clear-means-learned.md) | 「✅ クリア」を100点・理解度チェック・変更依頼をすべて終えたステージにだけ付ける |
