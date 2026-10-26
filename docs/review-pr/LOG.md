@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-26 09:30 UTC PR #337 クリアを習得として扱い、マイルストーン表示を追加する (#316)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test(2177件)✅ / npm run lint ✅ / npm run typecheck ✅。差分をIssue #316・docs/specs/clear-means-learned.mdと照合(DDD層境界・isMilestonesの入力検証を確認)。E2Eはこの環境で実行許可が無く未実行(PR本文では434件成功)
+- マージ: squash & delete-branch
+
 ## 2026-10-26 03:22 UTC PR #336 責務マークの表示ラベルを整備し、関連ステージ・ツアーを更新する (#324)
 
 - 判定: 合格(blocker無し)
@@ -212,10 +218,5 @@
 - 確認した内容: npm test(1924件)✅ / npm run lint ✅ / npm run typecheck ✅。方針の表・見出しは方針の最初の手順でのみ表示・8手未満は出さない点を仕様と照合。E2Eはこの環境で実行の承認が得られず未実行(PR記載の297件成功を参照)
 - マージ: squash & delete-branch
 
-## 2026-10-24 07:40 UTC PR #278 親のメソッドを上書きして公開範囲を狭めたら約束違反に数える (#249)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(1929件)✅ / npm run lint ✅ / npm run typecheck ✅。findNarrowedOverrides・可視性欄のあるステージのみ採点・violationTargets・ruleWhy文言をIssue #249と照合。E2Eはこの環境で実行の承認が得られず未実行(PR記載の296件成功を参照)
-- マージ: squash & delete-branch
 
 
