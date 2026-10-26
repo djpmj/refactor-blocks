@@ -380,11 +380,12 @@ type CanvasFlowProps = {
 };
 
 function CanvasFlow({ nodes, edges, onNodesChange, setFlow, contextMenu, selectMethod, stageId, visibleFileCount, codebase, layers, layoutResetCount, arrangeVersion, arrange, autoFitStateRef, onMoveStart, onManualFit, onControlZoom, dragInteractionActive, revealFileId, inert }: CanvasFlowProps & { readonly layoutResetCount: number; readonly arrangeVersion: number; readonly arrange: () => void }) {
+  const marking = useGameStore((state) => state.manualFix !== null && !state.manualFix.released);
   return (
     <WarningEdgeStateProvider>
       <div className="canvas-column">
       <OpeningFixBanner />
-      <div className="canvas-column__flow" inert={inert}>
+      <div className={marking ? 'canvas-column__flow canvas-column__flow--marking' : 'canvas-column__flow'} inert={inert}>
       <ReactFlow colorMode="system"
         nodes={nodes} edges={edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes}
         onNodesChange={onNodesChange} onInit={setFlow} nodesConnectable={false} minZoom={CANVAS_MIN_ZOOM}

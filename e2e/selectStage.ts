@@ -1,9 +1,8 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
-/** 「直した」印のチェックボックスをキーボード(フォーカス+Space)で付ける。依存の矢印が上に重なるステージでも、クリックを奪われずに済む。 */
-async function markFixed(page: Page, check: Locator): Promise<void> {
-  await check.focus();
-  if (!await check.isChecked()) await page.keyboard.press('Space');
+/** 「直した」印のチェックボックスを実際のマウスクリックで付ける(矢印ラベルに覆われていないことの確認も兼ねる)。 */
+async function markFixed(check: Locator): Promise<void> {
+  if (!await check.isChecked()) await check.click();
   await expect(check).toBeChecked();
 }
 
@@ -36,7 +35,7 @@ export async function releaseAllManualFixSites(page: Page, options: { readonly r
   for (const [name, className] of methodLocations) {
     const check = page.getByRole('checkbox', { name: `${className}.${name}() を直した` });
     if (await check.count() > 0) {
-      await markFixed(page, check);
+      await markFixed(check);
       if (tourActive) await expect(check).toBeChecked();
     }
   }
@@ -56,7 +55,7 @@ export async function releaseAllManualFixSites(page: Page, options: { readonly r
       await restart.click();
       for (const item of missed) {
         const match = item.match(/([\w$]+)\.([\w$]+)$/);
-        if (match !== null) await markFixed(page, page.getByRole('checkbox', { name: `${match[1]}.${match[2]}() を直した` }));
+        if (match !== null) await markFixed(page.getByRole('checkbox', { name: `${match[1]}.${match[2]}() を直した` }));
       }
       await panel.getByRole('button', { name: 'リリースする' }).click();
     }
