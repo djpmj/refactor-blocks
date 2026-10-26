@@ -165,3 +165,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [responsibility-label-names](responsibility-label-names.md) | 責務の印(A/B/C)に、その責務の日本語名を添えて表示する |
 | [manual-fix-read-vs-mark](manual-fix-read-vs-mark.md) | 手で直す間のメソッドのクリック(読む)と「直した」印(チェックボックス)を別の操作に分ける |
 | [clear-means-learned](clear-means-learned.md) | 「✅ クリア」を100点・理解度チェック・変更依頼をすべて終えたステージにだけ付ける |
+| [move-count-challenge](move-count-challenge.md) | 100点にしたとき、自分の手数と模範解答の手数をサイドバーに1行で出し、手数の自己ベストを保存する |
