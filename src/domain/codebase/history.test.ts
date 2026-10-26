@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Codebase } from './Codebase';
-import { emptyHistory, recordChange, redoHistory, undoHistory } from './history';
+import { emptyHistory, movesSince, recordChange, redoHistory, undoHistory } from './history';
 
 function codebaseOf(path: string): Codebase {
   return { files: [{ id: 'file', path, classes: [] }] };
@@ -80,5 +80,59 @@ describe('redoHistory', () => {
 
     // Assert
     expect(redone?.codebase).toBe(B);
+  });
+});
+
+describe('movesSince', () => {
+  const S = codebaseOf('s');
+  const D = codebaseOf('s');
+
+  it('履歴が空で初期コードのままなら0手', () => {
+    // Arrange
+    const history = emptyHistory();
+
+    // Act & Assert
+    expect(movesSince(history, S, S)).toBe(0);
+  });
+
+  it('過去に積んだ分がそのまま手数になる', () => {
+    // Arrange・Act・Assert
+    expect(movesSince({ past: [S], future: [] }, A, S)).toBe(1);
+    expect(movesSince({ past: [S, A, B], future: [] }, C, S)).toBe(3);
+  });
+
+  it('最初に戻した直後は0手、そこから1手で1手', () => {
+    // Arrange・Act・Assert
+    expect(movesSince({ past: [S, A, B], future: [] }, S, S)).toBe(0);
+    expect(movesSince({ past: [S, A, B, S], future: [] }, C, S)).toBe(1);
+  });
+
+  it('最初に戻したのを undo すると、戻す前の手数に戻る', () => {
+    // Arrange
+    const reset = recordChange({ past: [S, A], future: [] }, B);
+
+    // Act
+    const undone = undoHistory(reset, S);
+
+    // Assert
+    expect(undone && movesSince(undone.history, undone.codebase, S)).toBe(2);
+  });
+
+  it('undo してから別の手を打つと、undo した手は数えない', () => {
+    // Arrange
+    const undone = undoHistory({ past: [S, A], future: [] }, B);
+    if (undone === undefined) throw new Error('undo できるはず');
+
+    // Act
+    const history = recordChange(undone.history, undone.codebase);
+
+    // Assert
+    expect(movesSince(history, C, S)).toBe(2);
+  });
+
+  it('下書きから再開したとき(道のりに初期コードが無い)は undefined', () => {
+    // Arrange・Act・Assert
+    expect(movesSince({ past: [], future: [] }, D, S)).toBeUndefined();
+    expect(movesSince({ past: [D], future: [] }, A, S)).toBeUndefined();
   });
 });

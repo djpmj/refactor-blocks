@@ -18,7 +18,7 @@ import { findRoomToImprove } from '../../domain/scoring/roomToImprove';
 import { findVisibilityViolations } from '../../domain/scoring/visibility';
 import { behaviorTests, runBehaviorTests } from '../../domain/testing/behaviorTests';
 import type { Result } from '../../domain/shared/Result';
-import { applySolutionSteps, sampleAnswerCodebase, sampleAnswerSteps, solutionSnapshots, type SolutionStep } from '../../domain/stage/sampleAnswer';
+import { applySolutionSteps, sampleAnswerCodebase, sampleAnswerSteps, sampleMovesToPerfect, solutionSnapshots, type SolutionStep } from '../../domain/stage/sampleAnswer';
 import { sampleImplementation } from '../../domain/change/sampleImplementation';
 import type { Stage } from '../../domain/stage/Stage';
 import { findScatteredResponsibilities } from '../../domain/stage/scatteredResponsibilities';
@@ -1451,5 +1451,31 @@ describe('模範解答の方針', () => {
 
     // Assert
     expect(unknown).toEqual([]);
+  });
+});
+
+describe('模範解答で100点に届く手数', () => {
+  it('模範解答を持つ全ステージで、1以上かつ手順の長さ以下', () => {
+    // Arrange
+    const withAnswer = stages.filter((stage) => sampleAnswerSteps[stage.id] !== undefined);
+
+    // Act
+    const invalid = withAnswer.filter((stage) => {
+      const moves = sampleMovesToPerfect(stage);
+      return moves === undefined || moves < 1 || moves > (sampleAnswerSteps[stage.id] ?? []).length;
+    }).map((stage) => stage.id);
+
+    // Assert
+    expect(withAnswer.length).toBeGreaterThan(0);
+    expect(invalid).toEqual([]);
+  });
+
+  it('チュートリアル1は最初の抽出1手で100点になる', () => {
+    // Arrange
+    const stage = stages.find((candidate) => candidate.id === 'tutorial-extract-method');
+    if (stage === undefined) throw new Error('チュートリアル1がありません');
+
+    // Act & Assert
+    expect(sampleMovesToPerfect(stage)).toBe(1);
   });
 });

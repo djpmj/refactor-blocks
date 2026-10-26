@@ -889,3 +889,4 @@ input.class-node__name { width: 14ch; }
 .comparison__diff-row:hover, .comparison__diff-row[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
 .comparison__facts { margin-top: 6px; color: var(--muted); }
 .class-node--glow { border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 35%, transparent); }
+.move-count { margin: 8px 0; color: var(--muted); font-size: 12px; }

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { changePart, withChangePart } from '../../domain/change/changePart';
 import { withoutTray } from '../../domain/blank/tray';
 import { allClasses, findMethod } from '../../domain/codebase/Codebase';
+import { movesSince } from '../../domain/codebase/history';
 import { moveMethod } from '../../domain/codebase/moveMethod';
 import { checkManualFix } from '../../domain/change/checkManualFix';
 import { painRequestsOf } from '../../domain/change/changePain';
@@ -1179,5 +1180,52 @@ describe('operation result (増えた・消えた減点)', () => {
       vi.advanceTimersByTime(1000);
       expect(store.getState().operationResult).toBeNull();
     });
+  });
+});
+
+describe('move count', () => {
+  const tutorial1 = () => {
+    const stage = stages.find((candidate) => candidate.id === 'tutorial-extract-method');
+    if (stage === undefined) throw new Error('チュートリアル1が必要です');
+    return stage;
+  };
+
+  it('抽出1回で1手、最初に戻すと0手、undoで1手に戻る', () => {
+    // Arrange
+    const stage = tutorial1();
+    const store = createGameStore([stage], false, false);
+    const moves = () => movesSince(store.getState().history, store.getState().codebase, stage.codebase);
+
+    // Act
+    store.getState().extractMethod({ sourceMethodId: 'method-print-monthly-report', fragmentIds: ['frag-aggregate-sales', 'frag-compare-last-month'], newMethodName: 'aggregateSales' });
+
+    // Assert
+    expect(moves()).toBe(1);
+
+    // Act
+    store.getState().resetStage();
+
+    // Assert
+    expect(moves()).toBe(0);
+
+    // Act
+    store.getState().undo();
+
+    // Assert
+    expect(moves()).toBe(1);
+  });
+
+  it('自己ベストは少ないほうを残し、localStorageにも保存する', () => {
+    // Arrange
+    localStorage.removeItem('refactor-blocks:move-bests');
+    const store = createGameStore([tutorial1()], false, false);
+
+    // Act
+    store.getState().recordMoveBest('x', 3);
+    store.getState().recordMoveBest('x', 5);
+
+    // Assert
+    expect(store.getState().moveBests.x).toBe(3);
+    expect(localStorage.getItem('refactor-blocks:move-bests')).toBe('{"x":3}');
   });
 });
