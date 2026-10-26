@@ -317,6 +317,9 @@ input.class-node__name { width: 14ch; }
 .method-chip__lines-after { color: #287a45; font-weight: 700; }
 .method-chip__lines-after--over { color: var(--danger); }
 .method-chip-row { display: contents; }
+.method-chip-row--manual-fix { display: flex; align-items: center; gap: 4px; }
+.method-chip-row--manual-fix > .method-chip-button { flex: 1; min-width: 0; }
+.manual-fix-check { display: inline-grid; place-items: center; flex: none; width: 24px; height: 24px; cursor: pointer; }
 .extract-preview-chip { pointer-events: none; opacity: 0.5; }
 .extract-preview-chip .method-chip { border-style: dashed; }
 

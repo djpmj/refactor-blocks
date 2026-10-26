@@ -79,7 +79,7 @@ function ResultView({ stage, codebase, result, opening, closingFix, openingFix, 
 function FixInput({ fixedCount, onRelease, onClose }: Readonly<{ fixedCount: number; onRelease: () => void; onClose: () => void }>) {
   return (
     <>
-      <p>直す必要がありそうなメソッドをクリックして『直した』印を付けてください。付け終えたらリリースします</p>
+      <p>メソッドをクリックすると中身が右に出ます。直す必要があると判断したメソッドの右のチェックボックスで『直した』印を付けてください。付け終えたらリリースします</p>
       <p>直した印: {fixedCount} 個</p>
       <div className="manual-fix__actions"><button type="button" onClick={onRelease}>リリースする</button><button type="button" onClick={onClose}>やめる</button></div>
     </>

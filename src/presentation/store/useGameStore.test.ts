@@ -584,7 +584,7 @@ describe('manual fix method viewer state', () => {
     expect(store.getState().manualFix?.viewedMethodId).toBe('method-b');
   });
 
-  it('updates the viewed method after release without changing fixed marks', () => {
+  it('does not change fixed marks or the viewed method when toggling after release', () => {
     // Arrange
     const store = createGameStore(stages, false);
     store.getState().startManualFix();
@@ -596,7 +596,65 @@ describe('manual fix method viewer state', () => {
 
     // Assert
     expect(store.getState().manualFix?.fixedIds).toEqual(['method-a']);
+    expect(store.getState().manualFix?.viewedMethodId).toBe('method-a');
+  });
+
+  it('views a method without touching fixed marks, even when read repeatedly', () => {
+    // Arrange
+    const store = createGameStore(stages, false);
+    store.getState().startManualFix();
+
+    // Act
+    store.getState().viewManualFixMethod('method-a');
+    store.getState().viewManualFixMethod('method-a');
+
+    // Assert
+    expect(store.getState().manualFix?.viewedMethodId).toBe('method-a');
+    expect(store.getState().manualFix?.fixedIds).toEqual([]);
+  });
+
+  it('keeps a fixed mark when the method is read again', () => {
+    // Arrange
+    const store = createGameStore(stages, false);
+    store.getState().startManualFix();
+    store.getState().toggleFixed('method-a');
+
+    // Act
+    store.getState().viewManualFixMethod('method-a');
+
+    // Assert
+    expect(store.getState().manualFix?.fixedIds).toEqual(['method-a']);
+  });
+
+  it('does not change the selected method when viewing during manual fix', () => {
+    // Arrange
+    const store = createGameStore(stages, false);
+    store.getState().selectMethod('method-place-order');
+    store.getState().startManualFix();
+
+    // Act
+    store.getState().viewManualFixMethod('method-confirm-order');
+
+    // Assert
+    expect(store.getState().selectedMethodId).toBe('method-place-order');
+  });
+
+  it('can view a method after release without changing fixed marks, and does nothing when inactive', () => {
+    // Arrange
+    const store = createGameStore(stages, false);
+    store.getState().startManualFix();
+    store.getState().toggleFixed('method-a');
+    store.getState().releaseManualFix();
+
+    // Act
+    store.getState().viewManualFixMethod('method-b');
+
+    // Assert
     expect(store.getState().manualFix?.viewedMethodId).toBe('method-b');
+    expect(store.getState().manualFix?.fixedIds).toEqual(['method-a']);
+    store.getState().endManualFix();
+    store.getState().viewManualFixMethod('method-c');
+    expect(store.getState().manualFix).toBeNull();
   });
 
   it('clears the viewed method when restarted and does nothing when inactive', () => {

@@ -13,9 +13,9 @@ test('opening fix hides method names until refactoring begins', async ({ page })
   await expect(card).not.toContainText('Order.checkout');
   await page.getByTestId('opening-fix-banner').getByRole('button', { name: '実際に直してみる' }).click();
   await expect(page.getByRole('button', { name: 'リリースする' })).toBeVisible();
-  await page.getByTestId('method-checkout').click();
-  await page.getByTestId('method-calculateOrderTotal').click();
-  await page.getByTestId('method-getLines').click();
+  await page.getByRole('checkbox', { name: 'Order.checkout() を直した' }).check();
+  await page.getByRole('checkbox', { name: 'Customer.calculateOrderTotal() を直した' }).check();
+  await page.getByRole('checkbox', { name: 'Order.getLines() を直した' }).check();
   await page.getByRole('button', { name: 'リリースする' }).click();
   await page.getByRole('button', { name: '組み替えを始める' }).click();
   await expect(card).toContainText('Order.checkout');
@@ -31,7 +31,7 @@ test('a solved opening fix reports the read volume and scrolls result actions in
   await selectStage(page, 'チュートリアル2: 太った placeOrder', { completeOpeningFix: false });
   await page.getByTestId('opening-fix-banner').getByRole('button', { name: '実際に直してみる' }).click();
   await expect(page.getByRole('button', { name: 'リリースする' })).toBeInViewport();
-  await page.getByTestId('method-placeOrder').click();
+  await page.getByRole('checkbox', { name: 'OrderService.placeOrder() を直した' }).check();
   await page.getByRole('button', { name: 'リリースする' }).click();
   await expect(page.getByText(/この変更のために 31 行を読みました/)).toBeVisible();
   await expect(page.getByRole('button', { name: '組み替えを始める' })).toBeInViewport();

@@ -3,7 +3,8 @@ export type GuideSection = { readonly heading: string; readonly items: readonly 
 
 export const BLOCK_OPERATION_TITLES = {
   method: 'クリックで中身を表示 / ドラッグで別のクラスへ移動 / ダブルクリックで名前を変更',
-  manualFix: 'クリックで「直した」印を付け外し',
+  manualFix: 'クリックで中身を右に表示',
+  manualFixCheck: 'チェックで「直した」印を付け外し',
   field: 'クリックで説明を表示 / ドラッグで別のクラスへ移動',
   class: 'ドラッグで別のファイルへ移動 / ダブルクリックで名前を変更',
 } as const;

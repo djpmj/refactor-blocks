@@ -76,18 +76,30 @@ export function MethodChipView({ method, overLimit, selected = false, changeCoun
   );
 }
 
-/** 手で直すシミュレーション中の「直した」印の状態と切り替え。 */
+/** 手で直すシミュレーション中の「直した」印の状態と、クリックの意味(手で直す間は中身を読むだけ)。 */
 function useManualFixMark(methodId: string) {
   const manualFixing = useGameStore((state) => state.manualFix !== null);
   const fixed = useGameStore((state) => state.manualFix?.fixedIds.includes(methodId) ?? false);
-  const toggleFixed = useGameStore((state) => state.toggleFixed);
+  const viewManualFixMethod = useGameStore((state) => state.viewManualFixMethod);
   const selectMethod = useGameStore((state) => state.selectMethod);
-  /** 印の付け替え中は、メソッドの選択ではなく「直した」印を切り替える。 */
   const onClick = () => {
-    if (manualFixing) toggleFixed(methodId);
+    if (manualFixing) viewManualFixMethod(methodId);
     else selectMethod(methodId);
   };
   return { manualFixing, fixed, onClick };
+}
+
+/** 手で直す間、メソッドのチップの右に出す「直した」印のチェックボックス。リリース後は出さない。 */
+export function ManualFixCheck({ method, className }: Readonly<{ method: Method; className: string }>) {
+  const shown = useGameStore((state) => state.manualFix !== null && !state.manualFix.released);
+  const fixed = useGameStore((state) => state.manualFix?.fixedIds.includes(method.id) ?? false);
+  const toggleFixed = useGameStore((state) => state.toggleFixed);
+  if (!shown) return null;
+  return (
+    <label className="manual-fix-check nodrag nopan" title={BLOCK_OPERATION_TITLES.manualFixCheck}>
+      <input type="checkbox" checked={fixed} onChange={() => { toggleFixed(method.id); }} aria-label={`${className}.${method.name}() を直した`} />
+    </label>
+  );
 }
 
 /**
@@ -98,7 +110,7 @@ export function MethodChip({ method, linePreview }: Readonly<{ method: Method; l
   const resolved = useResolvedCelebration('methodIds', method.id);
   const overLimit = useMethodOverLimit(method);
   const flagged = useMethodFlagged(method.id);
-  const selected = useGameStore((state) => state.manualFix === null && state.selectedMethodId === method.id);
+  const selected = useGameStore((state) => (state.manualFix === null ? state.selectedMethodId : state.manualFix.viewedMethodId) === method.id);
   const inspectMethod = useGameStore((state) => state.inspectMethod);
   const inspected = useGameStore((state) => state.changeSession?.inspected === method.id);
   const renameMethod = useGameStore((state) => state.renameMethod);
@@ -152,7 +164,7 @@ export function MethodChip({ method, linePreview }: Readonly<{ method: Method; l
       {...attributes}
       // 印の付け外し中は Enter/Space を、キーボードドラッグの開始ではなくボタンのクリックとして使う
       {...(manualFixing ? { ...listeners, onKeyDown: undefined } : listeners)}
-      aria-pressed={manualFixing ? fixed : selected}
+      aria-pressed={selected}
       title={manualFixing ? BLOCK_OPERATION_TITLES.manualFix : BLOCK_OPERATION_TITLES.method}
     >
       <MethodChipView method={method} overLimit={overLimit} selected={selected} changeCount={changeCount} flagged={flagged} fixed={fixed} linePreview={linePreview} />

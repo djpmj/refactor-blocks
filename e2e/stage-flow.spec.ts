@@ -64,7 +64,7 @@ test('冒頭の手直しを終えるまで編集を止め、仕上げを正解�
 
   await card.getByRole('button', { name: '実際に直してみる' }).click();
   const closing = page.getByRole('region', { name: '手で直すシミュレーション' });
-  await page.getByTestId('method-placeOrder').click();
+  await page.getByRole('checkbox', { name: 'OrderService.placeOrder() を直した' }).check();
   await closing.getByRole('button', { name: 'リリースする' }).click();
   await expect(closing).toContainText('関係のないメソッド');
   await expect(page.getByTestId('change-request-start')).toBeDisabled();
