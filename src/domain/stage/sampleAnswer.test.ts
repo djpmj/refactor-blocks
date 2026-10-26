@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { allClasses, findClass, findClassOfMethod, type Codebase } from '../codebase/Codebase';
 import { findVisibilityViolations } from '../scoring/visibility';
-import { applySolutionSteps, sampleAnswerCodebase, solutionSnapshots, type SolutionStep } from './sampleAnswer';
+import type { Stage } from './Stage';
+import { applySolutionSteps, sampleAnswerCodebase, sampleMovesToPerfect, solutionSnapshots, type SolutionStep } from './sampleAnswer';
 
 /** クラスA(メソッドrunに処理2つ)とクラスBを持つ最小のコードベース。 */
 /** twoClassCodebase の B を、中身の無い public メソッドだけのインターフェース役にしたもの。 */
@@ -461,5 +462,42 @@ describe('solutionSnapshots', () => {
 
     // Assert
     expect(findClassOfMethod(result[1], 'method-work')?.methods.find(({ id }) => id === 'method-work')?.visibility).toBe('public');
+  });
+});
+
+describe('sampleMovesToPerfect', () => {
+  /** クラスAは5メソッド(52行)で上限32を超える。2つ B へ移すと100点になる。 */
+  function twoOversizedStage(): Pick<Stage, 'id' | 'codebase' | 'limits' | 'dependencyLimit' | 'responsibilityLimit' | 'visibilityEnforced'> {
+    const method = (id: string, lines = 6) => ({ id, name: id, visibility: 'public' as const, fragments: [{ id: `${id}-f`, label: id, lines, responsibility: 'r' }] });
+    const codebase: Codebase = { files: [{ id: 'file', path: 'src/a.ts', classes: [{ id: 'class-a', name: 'A', methods: [method('x'), method('y'), method('p'), method('q'), method('r')] }, { id: 'class-b', name: 'B', methods: [method('w')] }] }] };
+    return { id: 'stage-x', codebase, limits: { method: 100, class: 32, file: 100 }, dependencyLimit: 10, responsibilityLimit: 10 };
+  }
+  const moveX: SolutionStep = { move: { method: 'x', toClass: 'B' } };
+  const moveY: SolutionStep = { move: { method: 'y', toClass: 'B' } };
+
+  it('初めて100点に届いた手の数を返す(後ろの手は数えない)', () => {
+    // Arrange
+    const stage = twoOversizedStage();
+
+    // Act & Assert
+    expect(sampleMovesToPerfect(stage, { 'stage-x': [moveX, moveY, { changeVisibility: { method: 'w', class: 'B', visibility: 'private' } }] })).toBe(2);
+  });
+
+  it('初期コードがすでに100点なら0', () => {
+    // Arrange
+    const stage = { ...twoOversizedStage(), limits: { method: 100, class: 100, file: 100 } };
+
+    // Act & Assert
+    expect(sampleMovesToPerfect(stage, { 'stage-x': [moveX] })).toBe(0);
+  });
+
+  it('手順が無い・空・最後まで100点に届かないなら undefined', () => {
+    // Arrange
+    const stage = twoOversizedStage();
+
+    // Act & Assert
+    expect(sampleMovesToPerfect(stage, {})).toBeUndefined();
+    expect(sampleMovesToPerfect(stage, { 'stage-x': [] })).toBeUndefined();
+    expect(sampleMovesToPerfect(stage, { 'stage-x': [moveX] })).toBeUndefined();
   });
 });

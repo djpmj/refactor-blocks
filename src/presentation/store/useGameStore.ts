@@ -63,9 +63,11 @@ import { stages } from '../../infrastructure/stages/stageCatalog';
 import type { Progress } from '../../domain/progress/Progress';
 import { putDraft, takeDraft, type Drafts } from '../../domain/progress/drafts';
 import { addMilestone, type Milestones, type StageMilestone } from '../../domain/progress/milestones';
+import { updateMoveBest, type MoveBests } from '../../domain/progress/moveBests';
 import { updateProgress } from '../../domain/progress/updateProgress';
 import { loadDrafts, saveDrafts } from '../../infrastructure/progress/draftStorage';
 import { loadLastStageId, saveLastStageId } from '../../infrastructure/progress/lastStageStorage';
+import { loadMoveBests, saveMoveBests } from '../../infrastructure/progress/moveBestStorage';
 import { loadMilestones, loadProgress, saveMilestones, saveProgress } from '../../infrastructure/progress/progressStorage';
 import { loadStoryEnabled, saveStoryEnabled } from '../../infrastructure/story/storyPreference';
 import { loadTourSeen, saveTourSeen } from '../../infrastructure/tour/tourPreference';
@@ -199,6 +201,9 @@ type GameState = {
   draftStageIds: readonly string[];
   progress: Progress;
   recordProgress: (stageId: string, score: number) => void;
+  /** ステージごとの、100点に届いた最少の手数。progress とは別のキーに保存する。 */
+  moveBests: MoveBests;
+  recordMoveBest: (stageId: string, moves: number) => void;
   /** 100点のあとに終えた段階(理解度チェック・変更依頼)。一覧の「クリア」の判定に使う。保存される。 */
   milestones: Milestones;
   recordMilestone: (stageId: string, milestone: StageMilestone) => void;
@@ -840,7 +845,7 @@ function replaceMethodActions(
 }
 
 /** ステージごとの自己ベストの読み込みと記録、ストーリーのオン/オフ(どちらも閲覧者ごとに保存される)。 */
-function progressActions(set: (partial: Partial<GameState>) => void, get: () => GameState): Pick<GameState, 'progress' | 'recordProgress' | 'milestones' | 'recordMilestone' | 'storyEnabled' | 'setStoryEnabled'> {
+function progressActions(set: (partial: Partial<GameState>) => void, get: () => GameState): Pick<GameState, 'progress' | 'recordProgress' | 'moveBests' | 'recordMoveBest' | 'milestones' | 'recordMilestone' | 'storyEnabled' | 'setStoryEnabled'> {
   return {
     storyEnabled: loadStoryEnabled(),
     setStoryEnabled: (enabled) => {
@@ -855,6 +860,13 @@ function progressActions(set: (partial: Partial<GameState>) => void, get: () => 
       if (next === get().progress) return;
       saveProgress(next);
       set({ progress: next });
+    },
+    moveBests: loadMoveBests(),
+    recordMoveBest: (stageId, moves) => {
+      const next = updateMoveBest(get().moveBests, stageId, moves);
+      if (next === get().moveBests) return;
+      saveMoveBests(next);
+      set({ moveBests: next });
     },
     milestones: loadMilestones(),
     recordMilestone: (stageId, milestone) => {
