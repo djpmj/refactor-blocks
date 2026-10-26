@@ -3,6 +3,7 @@
 /** チュートリアル1: Extract Method だけで解ける。まとまった処理を1つ抜き出せば行数の上限に収まる。 */
 const extractMethodStage: Stage = {
   methodNames: { aggregation: 'aggregateSales', formatting: 'buildTable', output: 'printReport' },
+  responsibilityNames: { aggregation: '集計', formatting: '表の組み立て', output: '出力' },
   classNames: {
     "aggregation": "AggregationHandler",
     "formatting": "FormattingHandler",
@@ -81,6 +82,7 @@ const extractMethodStage: Stage = {
 /** チュートリアル2: 注文処理が1メソッドに詰め込まれた OrderService を分解し、税の計算を別クラスへ移す。 */
 const orderServiceStage: Stage = {
   methodNames: { validation: 'validateOrder', pricing: 'calculateSubtotal', tax: 'calculateTax', persistence: 'saveOrder', notification: 'sendConfirmationMail' },
+  responsibilityNames: { validation: '入力の検証', pricing: '小計の計算', tax: '税の計算', persistence: 'DBへの保存', notification: 'メール通知' },
   classNames: {
     "validation": "Validator",
     "pricing": "PriceCalculator",

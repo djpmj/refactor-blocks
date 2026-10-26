@@ -25,7 +25,8 @@ function getTargetRect(selector: string): DOMRect | null {
 
 function calloutFor(spotlight: Spotlight): Callout {
   const width = Math.min(360, window.innerWidth - 32);
-  const height = 170;
+  // ponytail: 吹き出しの高さは固定の見積もり。文言が長くなって見積もりを超えたら、描画後の実測に切り替える
+  const height = 200;
   const below = spotlight.bottom + 12;
   const top = below + height < window.innerHeight ? below : Math.max(12, spotlight.top - height - 12);
   return { left: Math.min(Math.max(16, spotlight.left), window.innerWidth - width - 16), top };

@@ -9,6 +9,7 @@ import type { Stage } from '../../domain/stage/Stage';
  * 中身が本質的に違うので、統合せず各クラスに残したまま Move Method で共通の受け皿には集めない。
  */
 const notifierHierarchyStage: Stage = {
+  responsibilityNames: { formatting: '通知文の組み立て', logging: '送信ログ', 'email-delivery': 'メール送信', 'sms-delivery': 'SMS送信' },
   classNames: {
     "formatting": "FormattingHandler",
     "logging": "LoggingHandler",
@@ -130,6 +131,7 @@ const notifierHierarchyStage: Stage = {
  * 実装数に比例して増える)との対比になる(詳細: docs/specs/payment-gateway-true-dip.md)。
  */
 const paymentGatewayInterfaceStage: Stage = {
+  responsibilityNames: { validation: '入力の検証', 'gateway-dispatch': '決済の振り分け', 'gateway-integration': '決済APIの呼び出し', 'payment-logging': '決済ログ', 'stripe-config': 'Stripeの設定', 'paypal-config': 'PayPalの設定' },
   classNames: {
     "validation": "Validator",
     "gateway-dispatch": "GatewayDispatchHandler",
@@ -307,6 +309,7 @@ const paymentGatewayInterfaceStage: Stage = {
  * (Strategyパターン本来の「方針を増やしても既存クラスに触らずに済む」形)。
  */
 const discountStrategyStage: Stage = {
+  responsibilityNames: { validation: '入力の検証', 'discount-regular': '通常の割引', 'discount-premium': 'プレミアムの割引', 'discount-vip': 'VIPの割引' },
   classNames: {
     "validation": "Validator",
     "discount-regular": "RegularDiscount",
@@ -413,6 +416,7 @@ const discountStrategyStage: Stage = {
  * 統合し、Move Methodで別クラス(Factory)へ委譲するだけで解ける、という対比になる。
  */
 const reportFactoryStage: Stage = {
+  responsibilityNames: { 'data-aggregation': 'データの集計', 'report-building': 'レポートの組み立て', 'report-delivery': 'レポートの送信' },
   classNames: {
     "data-aggregation": "DataAggregationHandler",
     "report-building": "ReportBuildingHandler",
@@ -531,6 +535,7 @@ const reportFactoryStage: Stage = {
  * (上級2)のために正当に使われるので、この減点(lone-superclass)の対象にしていない。
  */
 const collapseHierarchyStage: Stage = {
+  responsibilityNames: { http: '入力の検証', query: '売上の取得', 'csv-format': 'CSVの形式' },
   classNames: {
     "http": "HttpHandler",
     "query": "QueryHandler",
@@ -679,6 +684,7 @@ const collapseHierarchyStage: Stage = {
  * タスク管理だけ使う IncidentService は、どちらも太った CollaborationTool に依存している。
  */
 const interfaceSegregationStage: Stage = {
+  responsibilityNames: { 'alert-format': '通知文の組み立て', 'alert-dispatch': 'チャット投稿', triage: '障害の判定', 'incident-dispatch': '対応タスク登録', 'chat-post': 'Slackへの投稿', 'task-create': 'タスクの作成', 'task-complete': 'タスクの完了' },
   classNames: {
     "alert-format": "AlertFormatHandler",
     "alert-dispatch": "AlertDispatchHandler",
@@ -977,6 +983,7 @@ const interfaceSegregationStage: Stage = {
  * submitがcategoryも読むのは、凝集度の全ステージ化でExpenseがsubmit・isReceiptRequiredの2塊に分かれないようにするため。
  */
 const valueObjectStage: Stage = {
+  responsibilityNames: { workflow: '申請の状態遷移', 'category-rule': '領収書の要否', application: '申請内容の確認', 'money-validation': '金額の検証', 'money-format': '金額の表示', 'approval-request': '承認依頼', aggregation: '申請の集計', 'money-arithmetic': '金額の合計', transfer: '振込' },
   classNames: {
     "workflow": "WorkflowHandler",
     "category-rule": "CategoryRuleHandler",
@@ -1238,6 +1245,7 @@ const valueObjectStage: Stage = {
 };
 
 const templateMethodStage: Stage = {
+  responsibilityNames: { http: '形式の判定', 'import-dispatch': '取り込みの振り分け', 'file-read': 'ファイルの読み込み', 'order-parse': '注文への変換', 'order-validation': '注文の検証', persistence: 'DBへの保存' },
   classNames: {
     "http": "HttpHandler",
     "import-dispatch": "ImportDispatchHandler",
@@ -1489,6 +1497,7 @@ const orderStateStage: Stage = {
   description: 'ネットショップの注文。Order の pay(支払い)・ship(発送)・cancel(取り消し)が、それぞれの中で注文の状態(未払い・支払済み・発送済み)ごとの if 分岐を重ねている。状態ごとの振る舞いと「次はどの状態へ移るか」が3つのメソッドに散らばっていて、ある状態で何ができるかを確かめるには3つとも読むことになる。注文画面の OrderController は、前任者が OrderState(インターフェース)経由で今の状態に任せる形に先に書き換えたが、状態ごとのクラスはまだ無い。取り消した注文は取り消し履歴へ移るので、取り消し済みの状態は Order には残らない。',
   goal: '状態ごとの分岐を、状態ごとの新しいクラス(UnpaidState/PaidState/ShippedState)に集めよう。Extract Methodで分岐を handlePay / handleShip / handleCancel として取り出し、Move Methodで状態のクラスへ移す。1つの状態クラスが支払い・発送・取り消しの3つをすべて持ち、次の状態もそのクラスが決める。最後に3クラスとも OrderState を実装(implements)しよう。上級3(Strategy)は1クラスが1つの計算を持って差し替わったが、State は状態そのものをクラスにする。メソッドは13行・クラスは42行・ファイルは44行以内、1クラスの責務は2種類まで、依存先は3クラスまで',
   why: '注文の状態が増えるたびに、支払い・発送・取り消しの全メソッドの分岐を読み直していました。状態ごとのクラスに分けると、1つの状態でできることと次に移る先がまとまり、状態の追加や変更で読む場所が絞れます。',
+  responsibilityNames: { http: '操作の検証', 'state-dispatch': '状態の振り分け', 'state-unpaid': '未払いの処理', 'state-paid': '支払済みの処理', 'state-shipped': '発送済みの処理', 'state-returned': '返品の処理' },
   classNames: { http: 'OrderActionValidator', 'state-dispatch': 'OrderStateDispatcher', 'state-unpaid': 'UnpaidState', 'state-paid': 'PaidState', 'state-shipped': 'ShippedState' },
   methodNames: { http: 'validateAction', 'state-dispatch': 'dispatchToState', 'state-unpaid': 'handleUnpaidOrder', 'state-paid': 'handlePaidOrder', 'state-shipped': 'handleShippedOrder' },
   limits: { method: 13, class: 42, file: 44 },

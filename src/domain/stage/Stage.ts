@@ -54,6 +54,8 @@ export type Stage = {
   readonly codebase: Codebase;
   /** 責務(Fragment.responsibility)ごとの自動命名先。 */
   readonly classNames: Readonly<Record<string, string>>;
+  /** 責務(Fragment.responsibility)ごとの画面に出す日本語名。例: { aggregation: '集計' }。'call' には書かない。 */
+  readonly responsibilityNames: Readonly<Record<string, string>>;
   /** 責務(Fragment.responsibility)ごとの自動メソッド名。 */
   readonly methodNames?: Readonly<Record<string, string>>;
   /** リファクタリング後に出す変更依頼。責務は初期のコードベースに存在するものを選ぶ。 */
