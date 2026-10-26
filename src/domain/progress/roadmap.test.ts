@@ -18,6 +18,7 @@ function stageOf(id: string, learns: readonly string[] = ['Extract Method'], wit
     responsibilityLimit: 2,
     codebase: { files: [] },
     classNames: {},
+    responsibilityNames: {},
     changeRequests: withSteps ? [{ id: 'r', title: '', description: '', responsibility: 'x', linesPerSite: 1 }] : [],
   };
 }

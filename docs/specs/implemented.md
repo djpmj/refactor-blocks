@@ -162,3 +162,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [state-pattern-stage](state-pattern-stage.md) | 上級9「注文の状態ごとの分岐を State パターンへ組み替える」ステージを追加する |
 | [concept-mastery-map](concept-mastery-map.md) | ステージ一覧に「学べることごと」の習得状況(件数・進み具合・未クリアへのリンク)を出す |
 | [tour-step-follows-state](tour-step-follows-state.md) | 初回ツアーの最後の文を抽出の結果(点数の増減)で出し分け、手順4を飛ばさない |
+| [responsibility-label-names](responsibility-label-names.md) | 責務の印(A/B/C)に、その責務の日本語名を添えて表示する |
