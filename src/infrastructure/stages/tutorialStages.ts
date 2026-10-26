@@ -14,6 +14,7 @@ const extractMethodStage: Stage = {
   level: 'tutorial',
   title: 'チュートリアル1: 長いメソッドを分ける',
   learns: ['Extract Method'],
+  principles: ['srp'],
   checks: [
     {
       id: 'check-1',
@@ -95,6 +96,7 @@ const orderServiceStage: Stage = {
   level: 'tutorial',
   title: 'チュートリアル2: 太った placeOrder',
   learns: ['Extract Method', 'Move Method'],
+  principles: ['srp'],
   checks: [
     {
       id: 'check-1',

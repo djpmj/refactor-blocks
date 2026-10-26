@@ -27,6 +27,7 @@ const notifierHierarchyStage: Stage = {
   level: 'advanced',
   title: '上級1: 通知クラスの共通処理を基底クラスへ集める',
   learns: ['継承', '共通処理の集約'],
+  principles: ['dry'],
   checks: [
     {
       id: 'check-1',
@@ -153,6 +154,7 @@ const paymentGatewayInterfaceStage: Stage = {
   level: 'advanced',
   title: '上級2: 決済ゲートウェイをインターフェース越しに呼ぶ',
   learns: ['インターフェース', 'implements'],
+  principles: ['dip'],
   checks: [
     {
       id: 'check-1',
@@ -327,6 +329,7 @@ const discountStrategyStage: Stage = {
   level: 'advanced',
   title: '上級3: 会員ランクの割引をStrategyパターンへ組み替える',
   learns: ['Strategy', 'implements'],
+  principles: ['ocp'],
   checks: [
     {
       id: 'check-1',
@@ -432,6 +435,7 @@ const reportFactoryStage: Stage = {
   level: 'advanced',
   title: '上級4: レポート生成処理をFactoryへ集約する',
   learns: ['Factory', '生成の集約'],
+  principles: ['dry', 'srp'],
   checks: [
     {
       id: 'check-1',
@@ -551,6 +555,7 @@ const collapseHierarchyStage: Stage = {
   level: 'advanced',
   title: '上級5: 子が1つしかない継承を畳む',
   learns: ['継承の見直し', 'Collapse Hierarchy'],
+  principles: ['yagni'],
   checks: [
     {
       id: 'check-1',
@@ -708,6 +713,7 @@ const interfaceSegregationStage: Stage = {
   level: 'advanced',
   title: '上級6: 太ったインターフェースを役割ごとに分ける',
   learns: ['ISP', 'implements'],
+  principles: ['isp'],
   checks: [
     {
       id: 'check-1',
@@ -1011,6 +1017,7 @@ const valueObjectStage: Stage = {
   level: 'advanced',
   title: '上級7: 金額と通貨を Money にまとめる',
   learns: ['Value Object', 'カプセル化'],
+  principles: ['encapsulation', 'dry'],
   checks: [
     {
       id: 'check-1',
@@ -1267,6 +1274,7 @@ const templateMethodStage: Stage = {
   level: 'advanced',
   title: '上級8: 取り込みの手順を Template Method にまとめる',
   learns: ['Template Method', '継承'],
+  principles: ['dry', 'ocp'],
   checks: [
     {
       id: 'check-1',
@@ -1494,6 +1502,7 @@ const orderStateStage: Stage = {
   title: '上級9: 注文の状態ごとの分岐を State パターンへ組み替える',
   problem: '注文の状態ごとの分岐が、支払い・発送・取り消しの各メソッドに散らばっている',
   learns: ['State', '状態遷移'],
+  principles: ['srp'],
   description: 'ネットショップの注文。Order の pay(支払い)・ship(発送)・cancel(取り消し)が、それぞれの中で注文の状態(未払い・支払済み・発送済み)ごとの if 分岐を重ねている。状態ごとの振る舞いと「次はどの状態へ移るか」が3つのメソッドに散らばっていて、ある状態で何ができるかを確かめるには3つとも読むことになる。注文画面の OrderController は、前任者が OrderState(インターフェース)経由で今の状態に任せる形に先に書き換えたが、状態ごとのクラスはまだ無い。取り消した注文は取り消し履歴へ移るので、取り消し済みの状態は Order には残らない。',
   goal: '状態ごとの分岐を、状態ごとの新しいクラス(UnpaidState/PaidState/ShippedState)に集めよう。Extract Methodで分岐を handlePay / handleShip / handleCancel として取り出し、Move Methodで状態のクラスへ移す。1つの状態クラスが支払い・発送・取り消しの3つをすべて持ち、次の状態もそのクラスが決める。最後に3クラスとも OrderState を実装(implements)しよう。上級3(Strategy)は1クラスが1つの計算を持って差し替わったが、State は状態そのものをクラスにする。メソッドは13行・クラスは42行・ファイルは44行以内、1クラスの責務は2種類まで、依存先は3クラスまで',
   why: '注文の状態が増えるたびに、支払い・発送・取り消しの全メソッドの分岐を読み直していました。状態ごとのクラスに分けると、1つの状態でできることと次に移る先がまとまり、状態の追加や変更で読む場所が絞れます。',

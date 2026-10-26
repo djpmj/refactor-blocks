@@ -3,6 +3,7 @@ import { conceptMastery, isStageCleared, recommendNextStage, stageStatus, type S
 import type { Milestones } from '../../domain/progress/milestones';
 import type { Progress } from '../../domain/progress/Progress';
 import type { Stage } from '../../domain/stage/Stage';
+import { DESIGN_PRINCIPLES } from '../../infrastructure/stages/designPrinciples';
 import { useGameStore } from '../store/useGameStore';
 import { ConceptMasteryList } from './ConceptMasteryList';
 import { LearningRecordSection } from './LearningRecordSection';
@@ -51,6 +52,16 @@ function StageCard({ stage, current, recommended, status, onChoose }: StageCardP
           </span>
         ))}
       </span>
+      {stage.principles !== undefined && stage.principles.length > 0 && (
+        <span className="stage-roadmap__principles" data-testid={`roadmap-principles-${stage.id}`}>
+          <span className="stage-roadmap__principles-heading">原則</span>
+          {stage.principles.map((p) => (
+            <span key={p} className="stage-roadmap__tag stage-roadmap__tag--principle">
+              {DESIGN_PRINCIPLES[p].label}
+            </span>
+          ))}
+        </span>
+      )}
       <span className="stage-roadmap__status">
         {describeStatus(status)}
         {recommended && <span className="stage-roadmap__recommend"> おすすめ</span>}

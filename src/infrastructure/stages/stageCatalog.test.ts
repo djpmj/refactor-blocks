@@ -26,6 +26,7 @@ import { methodNamingOf } from '../../domain/stage/methodNaming';
 import { blankDesignProblems } from '../blankDesigns/blankDesignProblems';
 import { validateCheck } from '../../domain/stage/conceptCheck';
 import { stages } from './stageCatalog';
+import { DESIGN_PRINCIPLES } from './designPrinciples';
 import { storyChapters } from '../story/storyChapters';
 import { solutionPhaseTable } from './solutionPhaseTable';
 
@@ -1477,5 +1478,29 @@ describe('模範解答で100点に届く手数', () => {
 
     // Act & Assert
     expect(sampleMovesToPerfect(stage)).toBe(1);
+  });
+});
+
+describe('設計原則(principles)', () => {
+  it.each(stages.map((stage) => [stage.id, stage] as const))('%s: 関係する原則が1〜2個あり、重複しない', (_id, stage) => {
+    // Arrange
+    const principles = stage.principles ?? [];
+
+    // Act & Assert
+    expect(principles.length).toBeGreaterThanOrEqual(1);
+    expect(principles.length).toBeLessThanOrEqual(2);
+    expect(new Set(principles).size).toBe(principles.length);
+  });
+
+  it('原則の表は全原則に空でない表示名と40文字以内の説明を持つ', () => {
+    // Arrange
+    const entries = Object.entries(DESIGN_PRINCIPLES);
+
+    // Act & Assert
+    for (const [, info] of entries) {
+      expect(info.label.trim()).not.toBe('');
+      expect(info.summary.trim()).not.toBe('');
+      expect(info.summary.length).toBeLessThanOrEqual(40);
+    }
   });
 });
