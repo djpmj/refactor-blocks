@@ -627,6 +627,13 @@ input.class-node__name { width: 14ch; }
 .stage-roadmap__tag { font-size: 11px; padding: 1px 6px; border: 1px solid var(--border); border-radius: 999px; }
 .stage-roadmap__status { font-size: 12px; }
 .stage-roadmap__recommend { font-weight: bold; color: var(--accent); }
+.learning-record { margin-top: 16px; padding-top: 8px; border-top: 1px solid var(--border); font-size: 13px; }
+.learning-record h3 { margin: 4px 0 6px; font-size: 14px; }
+.learning-record fieldset { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; }
+.learning-record__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.learning-record__confirm { margin-top: 8px; padding: 8px; border: 1px solid var(--border); border-radius: 8px; }
+.learning-record__warning, .learning-record__error { font-weight: bold; color: var(--danger); }
+.learning-record__note { font-size: 12px; }
 .stage-roadmap__views { display: flex; gap: 4px; margin-bottom: 8px; }
 .stage-roadmap__views button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
 .concept-mastery { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; }

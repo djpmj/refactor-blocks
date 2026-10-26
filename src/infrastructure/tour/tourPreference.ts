@@ -8,10 +8,12 @@ export function loadTourSeen(): boolean {
   }
 }
 
-export function saveTourSeen(): void {
+export function saveTourSeen(): boolean {
   try {
     localStorage.setItem(STORAGE_KEY, 'true');
+    return true;
   } catch {
     // The tour remains usable when browser storage is unavailable.
+    return false;
   }
 }
