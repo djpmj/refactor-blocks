@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { changePart, withChangePart } from '../../domain/change/changePart';
 import { withoutTray } from '../../domain/blank/tray';
 import { allClasses, findMethod } from '../../domain/codebase/Codebase';
@@ -960,5 +960,68 @@ describe('コードが変わったらヒントの光りを消す', () => {
 
     // Assert
     expect(store.getState().focusedRule).toBeNull();
+  });
+});
+
+describe('recordMilestone', () => {
+  const stage = stages[0];
+
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  function placeLikeSample(store: ReturnType<typeof createGameStore>): void {
+    const session = store.getState().changeSession;
+    const request = session === null ? undefined : stage.changeRequests[session.index];
+    if (session === null || request === undefined) throw new Error('変更依頼の最中が必要です');
+    const sample = sampleImplementation(session.sampleCarried, request);
+    if (sample === undefined) throw new Error('解答例が必要です');
+    store.setState({ codebase: sample.codebase });
+    store.getState().finishImplementation();
+  }
+
+  it('同じ段階を2回記録しても参照が変わらない', () => {
+    // Arrange
+    const store = createGameStore([stage], false, false);
+    store.getState().recordMilestone(stage.id, 'concept-check');
+    const before = store.getState().milestones;
+
+    // Act
+    store.getState().recordMilestone(stage.id, 'concept-check');
+
+    // Assert
+    expect(before[stage.id]).toEqual(['concept-check']);
+    expect(store.getState().milestones).toBe(before);
+  });
+
+  it('変更依頼を全件解答例どおりに置いて最後まで確定すると記録される', () => {
+    // Arrange
+    const store = createGameStore([stage], false, false);
+    store.setState({ codebase: sampleAnswerCodebase(stage) });
+    store.getState().startChangeRequests();
+
+    // Act
+    for (let i = 0; i < stage.changeRequests.length; i += 1) {
+      placeLikeSample(store);
+      store.getState().advanceChangeRequest();
+    }
+
+    // Assert
+    expect(store.getState().milestones[stage.id]).toContain('change-request');
+  });
+
+  it('途中で endChangeRequests すると記録されない', () => {
+    // Arrange
+    const store = createGameStore([stage], false, false);
+    store.setState({ codebase: sampleAnswerCodebase(stage) });
+    store.getState().startChangeRequests();
+    placeLikeSample(store);
+    store.getState().advanceChangeRequest();
+
+    // Act
+    store.getState().endChangeRequests();
+
+    // Assert
+    expect(store.getState().milestones[stage.id]).toBeUndefined();
   });
 });

@@ -7,7 +7,7 @@ import { moveMethod } from '../domain/codebase/moveMethod';
 import { sampleCodebase } from '../domain/codebase/testFixtures';
 import type { CodeClass, Codebase, Method } from '../domain/codebase/Codebase';
 import { sampleImplementation } from '../domain/change/sampleImplementation';
-import { evaluateImplementationUseCase } from './ChangeRequestUseCases';
+import { evaluateImplementationUseCase, isChangeChallengeCleared } from './ChangeRequestUseCases';
 
 const taxRequest: ChangeRequest = { id: 'req-tax', title: '軽減税率', description: '', responsibility: 'tax', linesPerSite: 8 };
 const stage = { limits: { method: 20, class: 100, file: 100 }, codebase: sampleCodebase() };
@@ -140,5 +140,42 @@ function addPreviousPartToFile(file: Codebase['files'][number]): Codebase['files
     if (!result.ok) throw new Error('成功するはず');
     expect(result.value.sample).toEqual(sampleImplementation(sampleBase, request));
     expect(result.value.sample).not.toEqual(sampleImplementation(base, request));
+  });
+});
+
+describe('isChangeChallengeCleared', () => {
+  function outcomeOf(placed: number, sample: number | undefined) {
+    return { placement: { score: { total: placed } }, sample: sample === undefined ? undefined : { score: sample } };
+  }
+
+  it('全件を確定し、どれも解答例と同じ点以上なら true', () => {
+    // Arrange
+    const outcomes = [outcomeOf(100, 100), outcomeOf(100, 100)];
+
+    // Act
+    const cleared = isChangeChallengeCleared(outcomes, 2);
+
+    // Assert
+    expect(cleared).toBe(true);
+  });
+
+  it('解答例より低い置き方があれば false', () => {
+    expect(isChangeChallengeCleared([outcomeOf(90, 100), outcomeOf(100, 100)], 2)).toBe(false);
+  });
+
+  it('解答例でも100にならない依頼は、同じ点なら満たす', () => {
+    expect(isChangeChallengeCleared([outcomeOf(80, 80)], 1)).toBe(true);
+  });
+
+  it('解答例が無い依頼は満たしたとみなす', () => {
+    expect(isChangeChallengeCleared([outcomeOf(0, undefined)], 1)).toBe(true);
+  });
+
+  it('確定が依頼の数に足りなければ false', () => {
+    expect(isChangeChallengeCleared([outcomeOf(100, 100)], 2)).toBe(false);
+  });
+
+  it('依頼が0件なら false', () => {
+    expect(isChangeChallengeCleared([], 0)).toBe(false);
   });
 });

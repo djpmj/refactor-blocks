@@ -64,3 +64,14 @@ export function evaluateImplementationUseCase(
     ...withBossCounterfactual(stage, request),
   });
 }
+
+/**
+ * 変更依頼をすべて確定し、どの依頼も解答例と同じ点以上で置けたか。
+ * 解答例が無い依頼(sample が undefined)は、比べる相手が無いので満たしたとみなす。
+ */
+/** 判定に使う ChangeOutcome の部分。 */
+type ClearableOutcome = { readonly placement: { readonly score: { readonly total: number } }; readonly sample: { readonly score: number } | undefined };
+
+export function isChangeChallengeCleared(outcomes: readonly ClearableOutcome[], requestCount: number): boolean {
+  return requestCount > 0 && outcomes.length === requestCount && outcomes.every((outcome) => outcome.placement.score.total >= (outcome.sample?.score ?? 0));
+}

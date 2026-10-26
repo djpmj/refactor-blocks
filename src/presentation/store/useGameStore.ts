@@ -1,6 +1,6 @@
 ﻿import { createContext, useContext, type Context } from 'react';
 import { createStore, useStore, type StoreApi } from 'zustand';
-import { evaluateImplementationUseCase, type ChangeOutcome } from '../../application/ChangeRequestUseCases';
+import { evaluateImplementationUseCase, isChangeChallengeCleared, type ChangeOutcome } from '../../application/ChangeRequestUseCases';
 import { describeCritiqueError, requestCritiqueUseCase } from '../../application/CritiqueUseCases';
 import { withoutTray } from '../../domain/blank/tray';
 import { withChangePart } from '../../domain/change/changePart';
@@ -62,10 +62,11 @@ import type { Result } from '../../domain/shared/Result';
 import { stages } from '../../infrastructure/stages/stageCatalog';
 import type { Progress } from '../../domain/progress/Progress';
 import { putDraft, takeDraft, type Drafts } from '../../domain/progress/drafts';
+import { addMilestone, type Milestones, type StageMilestone } from '../../domain/progress/milestones';
 import { updateProgress } from '../../domain/progress/updateProgress';
 import { loadDrafts, saveDrafts } from '../../infrastructure/progress/draftStorage';
 import { loadLastStageId, saveLastStageId } from '../../infrastructure/progress/lastStageStorage';
-import { loadProgress, saveProgress } from '../../infrastructure/progress/progressStorage';
+import { loadMilestones, loadProgress, saveMilestones, saveProgress } from '../../infrastructure/progress/progressStorage';
 import { loadStoryEnabled, saveStoryEnabled } from '../../infrastructure/story/storyPreference';
 import { loadTourSeen, saveTourSeen } from '../../infrastructure/tour/tourPreference';
 import { nextTourStep, TOUR_STEPS, TOUR_STAGE_ID, tourResultOf, type TourEvent, type TourResult, type TourScore } from '../tour/tourSteps';
@@ -197,6 +198,9 @@ type GameState = {
   draftStageIds: readonly string[];
   progress: Progress;
   recordProgress: (stageId: string, score: number) => void;
+  /** 100点のあとに終えた段階(理解度チェック・変更依頼)。一覧の「クリア」の判定に使う。保存される。 */
+  milestones: Milestones;
+  recordMilestone: (stageId: string, milestone: StageMilestone) => void;
   /** ストーリー(章の導入・結び)を出すか。保存される閲覧者の好み。 */
   storyEnabled: boolean;
   setStoryEnabled: (enabled: boolean) => void;
@@ -391,6 +395,13 @@ function advanceChangeRequest(state: GameState): Partial<GameState> {
   };
 }
 
+/** 最後の変更依頼を確定し、どの依頼も解答例と同じ点以上なら「変更依頼」の段階を記録する。 */
+function recordChangeMilestone(state: GameState): void {
+  const { changeSession, stage } = state;
+  if (changeSession === null || changeSession.index !== stage.changeRequests.length) return;
+  if (isChangeChallengeCleared(changeSession.outcomes, stage.changeRequests.length)) state.recordMilestone(stage.id, 'change-request');
+}
+
 function endChangeRequests(state: GameState): Partial<GameState> {
   const session = state.changeSession;
   if (session === null) return {};
@@ -502,6 +513,7 @@ function changeSessionActions(
     },
     advanceChangeRequest: () => {
       set({ ...advanceChangeRequest(get()), ghost: null });
+      recordChangeMilestone(get());
     },
     endChangeRequests: () => {
       set(endChangeRequests(get()));
@@ -826,7 +838,7 @@ function replaceMethodActions(
 }
 
 /** ステージごとの自己ベストの読み込みと記録、ストーリーのオン/オフ(どちらも閲覧者ごとに保存される)。 */
-function progressActions(set: (partial: Partial<GameState>) => void, get: () => GameState): Pick<GameState, 'progress' | 'recordProgress' | 'storyEnabled' | 'setStoryEnabled'> {
+function progressActions(set: (partial: Partial<GameState>) => void, get: () => GameState): Pick<GameState, 'progress' | 'recordProgress' | 'milestones' | 'recordMilestone' | 'storyEnabled' | 'setStoryEnabled'> {
   return {
     storyEnabled: loadStoryEnabled(),
     setStoryEnabled: (enabled) => {
@@ -841,6 +853,13 @@ function progressActions(set: (partial: Partial<GameState>) => void, get: () => 
       if (next === get().progress) return;
       saveProgress(next);
       set({ progress: next });
+    },
+    milestones: loadMilestones(),
+    recordMilestone: (stageId, milestone) => {
+      const next = addMilestone(get().milestones, stageId, milestone);
+      if (next === get().milestones) return;
+      saveMilestones(next);
+      set({ milestones: next });
     },
   };
 }
