@@ -46,6 +46,7 @@ function makeProblem(overrides: Partial<BlankDesignProblem> = {}): BlankDesignPr
     responsibilityLimit: 1,
     codebase: trayCodebase(parts),
     classNames: {},
+    responsibilityNames: {},
     changeRequests: [taxRequest],
     modelAnswer: [
       { addFile: 'src/Flow.ts' },
