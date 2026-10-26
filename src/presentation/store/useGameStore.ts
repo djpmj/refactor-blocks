@@ -10,7 +10,8 @@ import { stageStep, type StageStep } from '../../domain/change/stageStep';
 import { allClasses, findClassOfMethod, findField, findMethod, type Codebase, type Visibility } from '../../domain/codebase/Codebase';
 import { autoNameClasses } from '../../domain/codebase/autoNameClasses';
 import { emptyHistory, recordChange, redoHistory, undoHistory, type History, type Travel } from '../../domain/codebase/history';
-import { scoreCodebase, type ScoreRule } from '../../domain/scoring/score';
+import { scoreCodebase, type Score, type ScoreRule } from '../../domain/scoring/score';
+import { describeOperationResult, type OperationResult } from '../stage/describeOperationResult';
 import { resolvedTargets } from '../../domain/scoring/resolvedTargets';
 import type { ViolationTarget } from '../../domain/scoring/violationTargets';
 import type { Stage } from '../../domain/stage/Stage';
@@ -121,6 +122,9 @@ type GameState = {
   layoutResetCount: number;
   codebase: Codebase;
   celebration: { readonly seq: number; readonly scoreBefore: number; readonly scoreAfter: number; readonly deductedBefore: number; readonly deductedAfter: number; readonly resolved: ViolationTarget } | null;
+  /** 直前のプレイヤーの操作で増えた・消えた減点。8秒(NOTICE_VISIBLE_MS)で消える。 */
+  operationResult: OperationResult | null;
+  dismissOperationResult: () => void;
   ghost: GhostMove | null;
   playGhost: (move: GhostMove) => void;
   clearGhost: () => void;
@@ -274,10 +278,7 @@ function methodSelectionActions(set: (partial: Partial<GameState>) => void, get:
 }
 
 /** コードベースが変わったときだけ、変更前のものを履歴に積んで差し替える。何も変わらない操作は1手に数えない。 */
-function celebrationFor(state: GameState, codebase: Codebase, enabled: boolean): GameState['celebration'] | undefined {
-  if (!enabled || state.changeSession !== null) return undefined;
-  const before = scoreCodebase(state.codebase, state.stage);
-  const after = scoreCodebase(codebase, state.stage);
+function celebrationFor(state: GameState, codebase: Codebase, before: Score, after: Score): GameState['celebration'] | undefined {
   const scoreBefore = before.total;
   const scoreAfter = after.total;
   const resolved = resolvedTargets(state.codebase, codebase, state.stage);
@@ -290,14 +291,22 @@ function celebrationFor(state: GameState, codebase: Codebase, enabled: boolean):
 /** コードが変わったら、そのコードに対する案内だった光り(ヒント・「どこが問題?」)を消す。 */
 const HIGHLIGHT_RESET: Partial<GameState> = { focusedRule: null, hintTarget: null, hintTargetKey: null };
 
+/** プレイヤーの操作の前後を採点して、演出と操作の結果を作る。1回の操作で採点は前後1回ずつ。 */
+function scoredOperation(state: GameState, codebase: Codebase, celebrate: boolean): Partial<GameState> {
+  if (!celebrate || state.changeSession !== null) return { operationResult: null };
+  const before = scoreCodebase(state.codebase, state.stage);
+  const after = scoreCodebase(codebase, state.stage);
+  const celebration = celebrationFor(state, codebase, before, after);
+  return { operationResult: describeOperationResult(before, after), ...(celebration === undefined ? {} : { celebration }) };
+}
+
 function commit(state: GameState, codebase: Codebase, celebrate = true): Partial<GameState> {
   if (codebase === state.codebase) return {};
   const namedCodebase = autoNameClasses(codebase, state.stage.classNames);
   const fieldStillThere = state.selectedFieldId !== null && findField(namedCodebase, state.selectedFieldId) !== undefined;
-  const celebration = celebrationFor(state, namedCodebase, celebrate);
   return {
     codebase: namedCodebase,
-    ...(celebration === undefined ? {} : { celebration }),
+    ...scoredOperation(state, namedCodebase, celebrate),
     extractDraft: null,
     ghost: null,
     ...HIGHLIGHT_RESET,
@@ -336,7 +345,7 @@ function travelTo(state: GameState, travel: Travel | undefined): Partial<GameSta
   const { codebase, history } = travel;
   const stillThere = state.selectedMethodId !== null && findMethod(codebase, state.selectedMethodId) !== undefined;
   const fieldStillThere = state.selectedFieldId !== null && findField(codebase, state.selectedFieldId) !== undefined;
-  return { codebase, history, celebration: null, ghost: null, ...HIGHLIGHT_RESET, selectedMethodId: stillThere ? state.selectedMethodId : null, selectedFieldId: fieldStillThere ? state.selectedFieldId : null, extractDraft: null, message: null, notice: null };
+  return { codebase, history, celebration: null, operationResult: null, ghost: null, ...HIGHLIGHT_RESET, selectedMethodId: stillThere ? state.selectedMethodId : null, selectedFieldId: fieldStillThere ? state.selectedFieldId : null, extractDraft: null, message: null, notice: null };
 }
 
 const UNPLACED_MESSAGE = '部品がまだ部品置き場にあります。置き場所へドラッグしてください';
@@ -433,8 +442,11 @@ function historyActions(set: (partial: Partial<GameState>) => void, get: () => G
   };
 }
 
-function messageActions(set: (partial: Partial<GameState>) => void): Pick<GameState, 'dismissMessage'> {
+function messageActions(set: (partial: Partial<GameState>) => void): Pick<GameState, 'dismissMessage' | 'dismissOperationResult'> {
   return {
+    dismissOperationResult: () => {
+      set({ operationResult: null });
+    },
     dismissMessage: () => {
       set({ message: null, notice: null });
     },
@@ -464,7 +476,7 @@ function resetActions(set: (partial: Partial<GameState>) => void, get: () => Gam
   return {
     resetStage: () => {
       if (get().changeSession !== null) return;
-      set({ ...commit(get(), get().stage.codebase, false), layoutResetCount: get().layoutResetCount + 1, celebration: null, ghost: null, manualFix: null, closingFixSolved: false, impactReviewOpen: false, extractDraft: null, focusedRule: null, hintTarget: null, hintTargetKey: null, previewRule: null, hoverPreviewRule: null, focusPreviewRule: null, selectedMethodId: null, selectedFieldId: null, message: null, notice: null });
+      set({ ...commit(get(), get().stage.codebase, false), layoutResetCount: get().layoutResetCount + 1, celebration: null, operationResult: null, ghost: null, manualFix: null, closingFixSolved: false, impactReviewOpen: false, extractDraft: null, focusedRule: null, hintTarget: null, hintTargetKey: null, previewRule: null, hoverPreviewRule: null, focusPreviewRule: null, selectedMethodId: null, selectedFieldId: null, message: null, notice: null });
     },
   };
 }
@@ -491,6 +503,7 @@ function changeSessionActions(
         hoverPreviewRule: null,
         focusPreviewRule: null,
         ghost: null,
+        operationResult: null,
         manualFix: null,
         changeSession: { index: 0, inspected: null, reviewing: null, outcomes: [], base: codebase, carried: codebase, sampleCarried: codebase, baseHistory: history },
         codebase: withChangePart(codebase, first),
@@ -612,6 +625,7 @@ function selectStageState(allStages: readonly Stage[], stageId: string, drafts: 
     stage,
     codebase: draft ?? stage.codebase,
     celebration: null,
+    operationResult: null,
     restoredDraft: draft !== undefined,
     ...(draft !== undefined && painRequestsOf(stage).modify !== undefined ? { openingFixes: { [stage.id]: null } } : {}),
     closingFixSolved: false,
@@ -887,10 +901,11 @@ export const NOTICE_VISIBLE_MS = 8000;
  * 役目を終えたトーストを消す。
  * 失敗の理由(message)は、前の状態と比べて状況(コード・選択・手直し・変更依頼)が変わったときに消す。
  * その set で出た message(prev と違う)は、出した操作自身では消さない。
- * お知らせ(notice)は、置き換わるたびに数え直して NOTICE_VISIBLE_MS 後に消す。
+ * お知らせ(notice)と操作の結果(operationResult)は、置き換わるたびに数え直して NOTICE_VISIBLE_MS 後に消す。
  */
 function clearStaleToasts(store: GameStore): void {
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let resultTimer: ReturnType<typeof setTimeout> | undefined;
   store.subscribe((state, prev) => {
     const situationChanged = state.codebase !== prev.codebase
       || state.selectedMethodId !== prev.selectedMethodId
@@ -898,6 +913,10 @@ function clearStaleToasts(store: GameStore): void {
       || (state.manualFix === null) !== (prev.manualFix === null)
       || (state.changeSession === null) !== (prev.changeSession === null);
     if (state.message !== null && state.message === prev.message && situationChanged) store.setState({ message: null });
+    if (state.operationResult !== prev.operationResult) {
+      clearTimeout(resultTimer);
+      if (state.operationResult !== null) resultTimer = setTimeout(() => { store.setState({ operationResult: null }); }, NOTICE_VISIBLE_MS);
+    }
     if (state.notice === prev.notice) return;
     clearTimeout(timer);
     if (state.notice !== null) timer = setTimeout(() => { store.setState({ notice: null }); }, NOTICE_VISIBLE_MS);
@@ -949,7 +968,7 @@ export function createGameStore(allStages: readonly Stage[], saveDraftsOn = true
       stages: allStages,
       stage: firstStage, layoutResetCount: 0,
       codebase: restored ?? firstStage.codebase,
-      celebration: null,
+      celebration: null, operationResult: null,
       restoredDraft: restored !== undefined,
       ...initialManualFixState(firstStage, restored),
       openingFixEnabled,

@@ -43,6 +43,7 @@ import { autoViewport } from './autoViewport';
 import { DETAIL_ZOOM, useShowDetails } from './semanticZoom';
 import { shouldRefit, type AutoFitState } from './autoFit';
 import { OpeningFixBanner } from './OpeningFixBanner';
+import { OperationResult } from './OperationResult';
 import { panToReveal } from './panToReveal';
 
 const CANVAS_MIN_ZOOM = 0.3;
@@ -398,6 +399,7 @@ function CanvasFlow({ nodes, edges, onNodesChange, setFlow, contextMenu, selectM
         <Panel position="top-right">
           <button type="button" className="nodrag nopan" data-testid="canvas-arrange" aria-label="依存の向きに沿って並べ直す" onClick={arrange}>整列</button>
         </Panel>
+        <Panel position="top-center"><OperationResult /></Panel>
         <DetailZoomNotice onZoom={onControlZoom} />
         <GhostAnimation nodes={nodes} />
         <FitViewOnLayoutChange stageId={stageId} fileCount={visibleFileCount} layoutResetCount={layoutResetCount} arrangeVersion={arrangeVersion} autoFitStateRef={autoFitStateRef} />
