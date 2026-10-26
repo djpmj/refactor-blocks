@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-26 10:50 UTC PR #341 学習記録をロードマップに表示する (#323)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test(2228件)✅ / npm run lint ✅ / npm run typecheck ✅。差分をIssue #323・docs/specs/progress-export-import.mdと照合(入力検証・層境界)。E2Eはこの環境で実行できず未実行(PR本文では446件成功)
+- マージ: squash & delete-branch
+
 ## 2026-10-26 10:30 UTC PR #339 手数チャレンジ: 最少手数との比較とベスト記録を追加 (#319)
 
 - 判定: 合格(blocker無し)
@@ -218,10 +224,5 @@
 - 確認した内容: npm test(1951件)✅ / npm run lint ✅ / npm run typecheck ✅。.github/workflows配下の変更なし。spec-publish.shはPR本文どおり未実行。E2Eはこの環境で未実行(PR記載の301件成功を参照)
 - マージ: squash & delete-branch
 
-## 2026-10-24 07:55 UTC PR #280 解答例の図を、自分の設計と並べて違いが分かるように見せる (#246)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(1926件)✅ / npm run lint ✅ / npm run typecheck ✅。designDiff・describeDesignDiff・ComparisonPanesを仕様(2列表示・責務ごとの違い一覧・同じ置き方の文言・減点は事実のみ)と照合。E2EはChromiumを入れられず未実行(PR記載の298件成功を参照)
-- マージ: squash & delete-branch
 
 

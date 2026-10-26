@@ -166,3 +166,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [manual-fix-read-vs-mark](manual-fix-read-vs-mark.md) | 手で直す間のメソッドのクリック(読む)と「直した」印(チェックボックス)を別の操作に分ける |
 | [clear-means-learned](clear-means-learned.md) | 「✅ クリア」を100点・理解度チェック・変更依頼をすべて終えたステージにだけ付ける |
 | [move-count-challenge](move-count-challenge.md) | 100点にしたとき、自分の手数と模範解答の手数をサイドバーに1行で出し、手数の自己ベストを保存する |
+| [progress-export-import](progress-export-import.md) | 学習記録(自己ベスト・下書き・設定)をJSONファイルで書き出し・読み込みし、ロードマップに表示する |
