@@ -149,6 +149,7 @@ type GameState = {
   closeImpactReview: () => void;
   startManualFix: () => void;
   toggleFixed: (methodId: string) => void;
+  viewManualFixMethod: (methodId: string) => void;
   releaseManualFix: () => void;
   restartManualFix: () => void;
   endManualFix: () => void;
@@ -525,7 +526,7 @@ function changeSessionActions(
 function manualFixActions(
   set: (partial: Partial<GameState>) => void,
   get: () => GameState,
-): Pick<GameState, 'startManualFix' | 'toggleFixed' | 'releaseManualFix' | 'restartManualFix' | 'endManualFix' | 'openImpactReview' | 'closeImpactReview'> {
+): Pick<GameState, 'startManualFix' | 'toggleFixed' | 'viewManualFixMethod' | 'releaseManualFix' | 'restartManualFix' | 'endManualFix' | 'openImpactReview' | 'closeImpactReview'> {
   return {
     startManualFix: () => {
       const state = get();
@@ -535,15 +536,16 @@ function manualFixActions(
     },
     toggleFixed: (methodId) => {
       const { manualFix } = get();
-      if (manualFix === null) return;
-      if (manualFix.released) {
-        set({ manualFix: { ...manualFix, viewedMethodId: methodId } });
-        return;
-      }
+      if (manualFix === null || manualFix.released) return;
       const fixedIds = manualFix.fixedIds.includes(methodId)
         ? manualFix.fixedIds.filter((id) => id !== methodId)
         : [...manualFix.fixedIds, methodId];
       set({ manualFix: { ...manualFix, fixedIds, viewedMethodId: methodId } });
+    },
+    viewManualFixMethod: (methodId) => {
+      const { manualFix } = get();
+      if (manualFix === null) return;
+      set({ manualFix: { ...manualFix, viewedMethodId: methodId } });
     },
     releaseManualFix: () => {
       const state = get();

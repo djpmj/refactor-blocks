@@ -26,9 +26,9 @@ test('first visit guides a player through Extract Method using the actual action
   await expect(tour).toContainText('2/6');
   await page.locator('[data-tour="manual-fix-start"]').click();
   await expect(tour).toContainText('3/6');
-  const markedMethod = page.getByTestId('method-printMonthlyReport');
-  await markedMethod.click();
-  await expect(markedMethod).toHaveAttribute('aria-pressed', 'true');
+  const markedCheck = page.getByRole('checkbox', { name: 'ReportService.printMonthlyReport() を直した' });
+  await markedCheck.check();
+  await expect(markedCheck).toBeChecked();
   await page.getByRole('button', { name: '\u30ea\u30ea\u30fc\u30b9\u3059\u308b' }).click();
   await expect(page.locator('.manual-fix [role=\"status\"]')).toContainText('\u76f4\u3057\u5fd8\u308c');
   await expect(page.getByRole('button', { name: '\u7d44\u307f\u66ff\u3048\u3092\u59cb\u3081\u308b' })).toBeVisible();
@@ -77,8 +77,7 @@ test('step 2 spotlights the start button inside the viewport and pressing it adv
 
   // Assert
   await expect(tour).toContainText('3/6');
-  const method = page.getByTestId('method-printMonthlyReport');
-  await method.click();
+  await page.getByRole('checkbox', { name: 'ReportService.printMonthlyReport() を直した' }).check();
   await page.getByRole('button', { name: 'リリースする' }).click();
   await expect(page.locator('.manual-fix [role="status"]')).toContainText('直し忘れ');
   await page.getByRole('button', { name: '組み替えを始める' }).click();
@@ -188,7 +187,7 @@ test('after the tour extraction, re-fixing "前年同月比も出して" has one
   const tour = page.getByTestId('first-visit-tour');
   await tour.getByRole('button', { name: '次へ' }).click();
   await page.locator('[data-tour="manual-fix-start"]').click();
-  await page.getByTestId('method-printMonthlyReport').click();
+  await page.getByRole('checkbox', { name: 'ReportService.printMonthlyReport() を直した' }).check();
   await page.getByRole('button', { name: 'リリースする' }).click();
   await page.getByRole('button', { name: '組み替えを始める' }).click();
   await page.getByTestId('method-printMonthlyReport').click();
@@ -204,7 +203,7 @@ test('after the tour extraction, re-fixing "前年同月比も出して" has one
   const card = page.locator('.change-pain');
   await card.locator('details').evaluate((element) => element.setAttribute('open', ''));
   await card.getByRole('button', { name: '実際に直してみる' }).click();
-  await page.getByTestId('method-aggregateSales').click();
+  await page.getByRole('checkbox', { name: 'ReportService.aggregateSales() を直した' }).check();
   await page.getByRole('button', { name: 'リリースする' }).click();
 
   // Assert
@@ -219,7 +218,7 @@ test('step 6 does not claim progress when B and C fragments are extracted and th
   const tour = page.getByTestId('first-visit-tour');
   await tour.getByRole('button', { name: '次へ' }).click();
   await page.locator('[data-tour="manual-fix-start"]').click();
-  await page.getByTestId('method-printMonthlyReport').click();
+  await page.getByRole('checkbox', { name: 'ReportService.printMonthlyReport() を直した' }).check();
   await page.getByRole('button', { name: 'リリースする' }).click();
   await page.getByRole('button', { name: '組み替えを始める' }).click();
   await page.getByTestId('method-printMonthlyReport').click();
@@ -244,7 +243,7 @@ test('step 6 tells the score dropped when a fragment mixing two responsibilities
   const tour = page.getByTestId('first-visit-tour');
   await tour.getByRole('button', { name: '次へ' }).click();
   await page.locator('[data-tour="manual-fix-start"]').click();
-  await page.getByTestId('method-printMonthlyReport').click();
+  await page.getByRole('checkbox', { name: 'ReportService.printMonthlyReport() を直した' }).check();
   await page.getByRole('button', { name: 'リリースする' }).click();
   await page.getByRole('button', { name: '組み替えを始める' }).click();
   await page.getByTestId('method-printMonthlyReport').click();

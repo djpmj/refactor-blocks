@@ -1,4 +1,10 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
+
+/** 「直した」印のチェックボックスを実際のマウスクリックで付ける(矢印ラベルに覆われていないことの確認も兼ねる)。 */
+async function markFixed(check: Locator): Promise<void> {
+  if (!await check.isChecked()) await check.click();
+  await expect(check).toBeChecked();
+}
 
 export async function releaseAllManualFixSites(page: Page, options: { readonly restoreSidebar?: boolean } = {}): Promise<void> {
   const wasCollapsed = await page.getByRole('button', { name: 'サイドバーを開く' }).count() > 0;
@@ -27,10 +33,10 @@ export async function releaseAllManualFixSites(page: Page, options: { readonly r
     return match === null ? [] : [[match[2], match[1]] as const];
   }))];
   for (const [name, className] of methodLocations) {
-    const method = page.getByTestId(`class-${className}`).getByTestId(`method-${name}`);
-    if (await method.count() > 0) {
-      await method.click();
-      if (tourActive) await expect(method).toHaveAttribute('aria-pressed', 'true');
+    const check = page.getByRole('checkbox', { name: `${className}.${name}() を直した` });
+    if (await check.count() > 0) {
+      await markFixed(check);
+      if (tourActive) await expect(check).toBeChecked();
     }
   }
   await panel.getByRole('button', { name: 'リリースする' }).click();
@@ -49,7 +55,7 @@ export async function releaseAllManualFixSites(page: Page, options: { readonly r
       await restart.click();
       for (const item of missed) {
         const match = item.match(/([\w$]+)\.([\w$]+)$/);
-        if (match !== null) await page.getByTestId(`class-${match[1]}`).getByTestId(`method-${match[2]}`).click();
+        if (match !== null) await markFixed(page.getByRole('checkbox', { name: `${match[1]}.${match[2]}() を直した` }));
       }
       await panel.getByRole('button', { name: 'リリースする' }).click();
     }

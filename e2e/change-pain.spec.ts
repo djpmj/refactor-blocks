@@ -123,7 +123,7 @@ test('冒頭の手直し結果に読み行数を示し、画面内へ操作ボ�
   await banner.getByRole('button', { name: '実際に直してみる' }).click();
   const release = page.getByRole('button', { name: 'リリースする' });
   await expect(release).toBeInViewport();
-  await page.getByTestId('method-printMonthlyReport').click();
+  await page.getByRole('checkbox', { name: 'ReportService.printMonthlyReport() を直した' }).check();
   await page.getByRole('button', { name: 'リリースする' }).click();
   await expect(page.getByRole('button', { name: '組み替えを始める' })).toBeInViewport();
   await page.getByRole('button', { name: '組み替えを始める' }).click();

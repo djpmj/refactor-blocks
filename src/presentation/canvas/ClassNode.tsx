@@ -15,7 +15,7 @@ import { DependencyHandles } from "./DependencyHandles";
 import { FieldChip } from "./FieldChip";
 import { InlineEditableLabel } from "./InlineEditableLabel";
 import type { ClassFlowNode } from "./layoutCodebase";
-import { MethodChip, MethodChipView } from "./MethodChip";
+import { ManualFixCheck, MethodChip, MethodChipView } from "./MethodChip";
 import type { Method } from "../../domain/codebase/Codebase";
 import { useShowDetails } from "./semanticZoom";
 import { SuperclassLabel } from "./SuperclassLabel";
@@ -94,6 +94,7 @@ function ClassBody({ codeClass }: Readonly<{ codeClass: CodeClass }>) {
   const draft = useGameStore((state) => state.extractDraft);
   const methodLimit = useGameStore((state) => state.stage.limits.method);
   const previewAllowed = useGameStore((state) => state.changeSession === null && state.manualFix === null);
+  const manualFixing = useGameStore((state) => state.manualFix !== null);
   const preview = draft === null || !previewAllowed ? undefined : previewExtractMethod(codebase, draft);
   return (
     <>
@@ -117,13 +118,14 @@ function ClassBody({ codeClass }: Readonly<{ codeClass: CodeClass }>) {
               fragments: [{ id: 'extract-preview-fragment', label: '', lines: Math.max(0, (preview?.newMethodLines ?? 3) - 3), responsibility: 'preview' }],
             };
             return (
-              <div className="method-chip-row" key={method.id}>
+              <div className={manualFixing ? 'method-chip-row method-chip-row--manual-fix' : 'method-chip-row'} key={method.id}>
                 <MethodChip
                   method={method}
                   linePreview={isSource
                     ? { before: preview.sourceLinesBefore, after: preview.sourceLinesAfter, afterOverLimit: preview.sourceLinesAfter > methodLimit }
                     : undefined}
                 />
+                <ManualFixCheck method={method} className={codeClass.name} />
                 {isSource ? (
                   <div className="extract-preview-chip" role="img" aria-label={`抽出後のプレビュー: ${placeholder.name}() ${preview.newMethodLines}行`} data-testid="extract-preview-chip">
                     <MethodChipView method={placeholder} overLimit={false} />

@@ -25,13 +25,13 @@ async function openTutorial(page: Page) {
 
 async function reachImpactReview(page: Page, leaveOpeningMissed: boolean) {
   await page.locator('.change-pain').getByRole('button', { name: '実際に直してみる' }).click();
-  if (!leaveOpeningMissed) await page.getByTestId('method-printMonthlyReport').click();
+  if (!leaveOpeningMissed) await page.getByRole('checkbox', { name: 'ReportService.printMonthlyReport() を直した' }).check();
   await page.getByRole('button', { name: 'リリースする' }).click();
   if (leaveOpeningMissed) await expect(page.getByRole('region', { name: '手で直すシミュレーション' })).toContainText('直し忘れ 1 か所');
   await page.getByRole('button', { name: '組み替えを始める' }).click();
   await refactorTutorial1(page);
   await page.locator('.change-pain').getByRole('button', { name: '実際に直してみる' }).click();
-  await page.getByTestId('method-aggregateSales').click();
+  await page.getByRole('checkbox', { name: 'ReportService.aggregateSales() を直した' }).check();
   await page.getByRole('button', { name: 'リリースする' }).click();
   await expect(page.getByTestId('impact-review')).toBeVisible();
 }
@@ -79,7 +79,7 @@ test('下書き再開後は答え合わせを表示し、opening fixが無いこ
   await page.reload();
   await expect(page.getByTestId('score-value')).toContainText('100');
   await page.locator('.change-pain').getByRole('button', { name: '実際に直してみる' }).click();
-  await page.getByTestId('method-aggregateSales').click();
+  await page.getByRole('checkbox', { name: 'ReportService.aggregateSales() を直した' }).check();
   await page.getByRole('button', { name: 'リリースする' }).click();
   const dialog = page.getByTestId('impact-review');
   await expect(dialog).toBeVisible();
