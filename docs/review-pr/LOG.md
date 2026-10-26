@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-26 11:00 UTC PR #340 操作結果のフィードバックを表示する (#320)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint・typecheck・Vitest 2222件)✅。差分をIssue #320の設計判断と照合(domain層は無変更)。E2Eはこの環境にChromiumが無く未実行(PR本文では446件成功・1件は単独再実行で成功)
+- マージ: squash & delete-branch
+
 ## 2026-10-26 10:50 UTC PR #341 学習記録をロードマップに表示する (#323)
 
 - 判定: 合格(blocker無し)
@@ -211,18 +217,5 @@
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(1958件) / npm run lint ✅ / npm run typecheck ✅。E2Eはレビュー環境で実行できず未実行(PR本文では全件成功)。Issue #291・docs/specs/page-title-by-view.mdの受け入れ基準1〜3を差分とE2E spec で確認。domain/application変更なし
 - マージ: squash & delete-branch
-
-## 2026-10-24 UTC PR #264 インターフェースと抽象クラスの役割を表示する (#228)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(1954件) / npm run lint ✅ / npm run typecheck ✅(E2Eはこの環境では未実行、PR本文の結果に依拠)
-- マージ: squash & delete-branch
-
-## 2026-10-24 13:10 UTC PR #292 実機プレイから仕様化・実装までの作業を効率化する道具を追加
-
-- 判定: 合格(blocker無し。前回指摘したvite.configのexplore/**除外が68c3d43で解消)
-- 確認した内容: npm test(1951件)✅ / npm run lint ✅ / npm run typecheck ✅。.github/workflows配下の変更なし。spec-publish.shはPR本文どおり未実行。E2Eはこの環境で未実行(PR記載の301件成功を参照)
-- マージ: squash & delete-branch
-
 
 
