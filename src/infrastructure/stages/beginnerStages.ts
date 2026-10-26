@@ -14,6 +14,7 @@ const userControllerStage: Stage = {
   level: 'beginner',
   title: '初級1: 何でも屋の UserController',
   learns: ['責務の分離', 'Move Method'],
+  principles: ['srp'],
   checks: [
     {
       id: 'check-1',
@@ -114,6 +115,7 @@ const invoiceServiceStage: Stage = {
   level: 'beginner',
   title: '初級2: クラスを自分で作る',
   learns: ['クラスの追加', '責務の分離'],
+  principles: ['srp'],
   checks: [
     {
       id: 'check-1',

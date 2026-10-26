@@ -5,6 +5,7 @@ import { useGameStore } from '../store/useGameStore';
 import { stageStep } from '../../domain/change/stageStep';
 import { TOUR_STEPS } from '../tour/tourSteps';
 import { describeClasses, describePain, describePainTrend, summarizePain, type PainDescription } from './describePain';
+import { DESIGN_PRINCIPLES } from '../../infrastructure/stages/designPrinciples';
 import { explainChangeImpact } from '../../domain/change/changeImpact';
 
 function LocationList({ description }: Readonly<{ description: PainDescription }>) {
@@ -126,6 +127,11 @@ function CardBody({ stage, codebase, step, pain, extendPain }: Readonly<{ stage:
     return (
       <>
         <p>{stage.why}</p>
+        {stage.principles?.map((p) => (
+          <p key={p} className="change-pain__principle" data-testid="why-principle">
+            関係する原則: <strong>{DESIGN_PRINCIPLES[p].label}</strong> — {DESIGN_PRINCIPLES[p].summary}
+          </p>
+        ))}
         {pain !== undefined && <ModifyAfter pain={pain} />}
         {extendPain?.improved === true && <ExtendAfter pain={extendPain} />}
         {pain !== undefined && explainChangeImpact(stage.codebase, codebase, pain.request) !== undefined && <ImpactReviewButton />}

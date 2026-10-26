@@ -65,6 +65,7 @@ test('100点で理由を見せてサイドバーを一度だけ自動で開く',
   await expect(page.getByRole('region', { name: 'もし、この変更が来たら?(もう一度)' })).toBeVisible();
   await releaseAllManualFixSites(page);
   await expect(reason).toContainText('税率');
+  await expect(reason).toContainText('関係する原則: SRP(単一責任)');
   await expect(reason).toContainText('読む量は');
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
 

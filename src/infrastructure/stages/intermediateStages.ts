@@ -28,6 +28,7 @@ const cyclicDependencyStage: Stage = {
   level: 'intermediate',
   title: '中級1: 循環依存を断ち切る',
   learns: ['循環依存', 'Move Method'],
+  principles: ['adp', 'encapsulation'],
   checks: [
     {
       id: 'check-1',
@@ -175,6 +176,7 @@ const godFileStage: Stage = {
   level: 'intermediate',
   title: '中級2: 何でも入った1つのファイル',
   learns: ['ファイル分割', '責務の分離'],
+  principles: ['srp'],
   checks: [
     {
       id: 'check-1',
@@ -325,6 +327,7 @@ const misplacedPrivateStage: Stage = {
   level: 'intermediate',
   title: '中級3: 越境する private メソッド',
   learns: ['カプセル化', 'private'],
+  principles: ['encapsulation'],
   checks: [
     {
       id: 'check-1',
@@ -513,6 +516,7 @@ const volatileTaxStage: Stage = {
   level: 'intermediate',
   title: '中級4: 変わるのは税の計算',
   learns: ['変わる部分の分離', '責務の分離'],
+  principles: ['srp'],
   checks: [
     {
       id: 'check-1',
@@ -569,6 +573,7 @@ const volatileFormatStage: Stage = {
   level: 'intermediate',
   title: '中級5: 変わるのは帳票の形式',
   learns: ['変わる部分の分離', '責務の分離'],
+  principles: ['srp'],
   checks: [
     {
       id: 'check-1',
@@ -632,6 +637,7 @@ const featureEnvyStage: Stage = {
   level: 'intermediate',
   title: '中級6: 他人のデータばかり触るメソッド',
   learns: ['Feature Envy', 'Move Method'],
+  principles: ['encapsulation'],
   checks: [
     {
       id: 'check-1',
@@ -806,6 +812,7 @@ const anemicDomainModelStage: Stage = {
   level: 'intermediate',
   title: '中級7: getter/setter だけの口座クラス',
   learns: ['貧血ドメインモデル', 'カプセル化'],
+  principles: ['encapsulation'],
   checks: [
     {
       id: 'check-1',
@@ -1017,6 +1024,7 @@ const extractClassStage: Stage = {
   level: 'intermediate',
   title: '中級8: 給与と住所を抱えた社員クラス',
   learns: ['Extract Class', '責務の分離'],
+  principles: ['srp'],
   checks: [
     {
       id: 'check-1',
@@ -1173,6 +1181,7 @@ const copyPasteTaxStage: Stage = {
   level: 'intermediate',
   title: '中級9: コピペされた消費税計算を1か所にまとめる',
   learns: ['重複の排除', 'Merge Methods'],
+  principles: ['dry'],
   checks: [
     {
       id: 'check-1',
@@ -1316,6 +1325,7 @@ const memberRankBranchingStage: Stage = {
   level: 'intermediate',
   title: '中級10: 会員ランクごとのif分岐をクラスに分ける',
   learns: ['分岐の分離', '継承'],
+  principles: ['ocp'],
   checks: [
     {
       id: 'check-1',
@@ -1461,6 +1471,7 @@ const layeredOrderApiStage: Stage = {
   level: 'intermediate',
   title: '中級11: Controller に全部書いてある注文API',
   learns: ['層(Controller/Service/Repository)', '依存の向き'],
+  principles: ['srp', 'adp'],
   checks: [
     {
       id: 'check-1',
@@ -1579,6 +1590,7 @@ const middleManStage: Stage = {
   level: 'intermediate',
   title: '中級12: 横流しするだけの OrderManager',
   learns: ['Middle Man', 'Inline Method / Inline Class'],
+  principles: ['yagni'],
   checks: [
     {
       id: 'check-1',
