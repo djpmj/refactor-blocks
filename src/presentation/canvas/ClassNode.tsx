@@ -7,7 +7,7 @@ import { previewExtractMethod } from "../../application/RefactorUseCases";
 import { classLayers } from "../../domain/scoring/layers";
 import { classResponsibilities } from "../../domain/scoring/responsibilities";
 import { responsibilityMarks } from "../../domain/stage/responsibilityMarks";
-import { responsibilityMarkLetter } from "../editor/responsibilityMarkLetter";
+import { responsibilityBreakdown } from "../editor/responsibilityLabel";
 import { violationTargets } from "../../domain/scoring/violationTargets";
 import { useGameStore } from "../store/useGameStore";
 import { classDragId, classDropId } from "./dndIds";
@@ -154,16 +154,19 @@ function ClassResponsibilityBadge({ codeClass, limit }: Readonly<{ codeClass: Co
   const responsibilities = classResponsibilities(codeClass);
   const marks = responsibilityMarks(initial, current, reservedResponsibilities);
   if (responsibilities.length === 0) return null;
-  const letters = responsibilities.map((responsibility) => responsibilityMarkLetter(marks.get(responsibility) ?? 0));
+  const breakdown = responsibilityBreakdown(responsibilities, marks, stage.responsibilityNames);
   const over = responsibilities.length > limit;
   return (
-    <span
-      className={over ? 'responsibility-count responsibility-count--over' : 'responsibility-count'}
-      data-testid={`class-responsibilities-${codeClass.name}`}
-      title={`責務 ${letters.join('・')}`}
-    >
-      責務 {responsibilities.length}種類{over ? `(上限 ${limit})` : ''}
-    </span>
+    <>
+      <span
+        className={over ? 'responsibility-count responsibility-count--over' : 'responsibility-count'}
+        data-testid={`class-responsibilities-${codeClass.name}`}
+        title={`責務 ${breakdown}`}
+      >
+        責務 {responsibilities.length}種類{over ? `(上限 ${limit})` : ''}
+      </span>
+      <span className="sr-only" data-testid={`class-responsibility-names-${codeClass.name}`}>(内訳: {breakdown})</span>
+    </>
   );
 }
 

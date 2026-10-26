@@ -119,6 +119,27 @@ function classNameFailures(stage: Stage): string[] {
   return failures;
 }
 
+/** 初期コードと変更依頼に出てくる責務(call を除く)すべてに、画面に出す日本語名があるか。 */
+function responsibilityNameFailures(stage: Stage): string[] {
+  const responsibilities = stageResponsibilities(stage);
+  for (const request of stage.changeRequests) {
+    if (request.responsibility !== 'call') responsibilities.add(request.responsibility);
+  }
+  const identifiers = new Set([...Object.values(stage.classNames), ...Object.values(stage.methodNames ?? {})]);
+  const failures: string[] = [];
+  for (const responsibility of responsibilities) {
+    if (!Object.hasOwn(stage.responsibilityNames, responsibility)) failures.push(`${stage.id}: missing ${responsibility}`);
+  }
+  const seen = new Set<string>();
+  for (const [responsibility, name] of Object.entries(stage.responsibilityNames)) {
+    if (name.length < 1 || name.length > 10) failures.push(`${stage.id}: invalid ${responsibility}`);
+    if (name === responsibility || identifiers.has(name)) failures.push(`${stage.id}: identifier ${responsibility}`);
+    if (seen.has(name)) failures.push(`${stage.id}: duplicate ${name}`);
+    seen.add(name);
+  }
+  return failures;
+}
+
 /** 赤になっているテストの失敗。onlyNonCompile なら、コンパイルエラー以外だけ。 */
 function redFailures(stage: Stage, snapshot: Codebase, onlyNonCompile: boolean) {
   return runBehaviorTests(stage, snapshot).flatMap((result) =>
@@ -1056,6 +1077,14 @@ describe('stageCatalog', () => {
   it('全ステージの自動命名表がコード上の全責務を覆い、初期クラス名と重ならない', () => {
     // Arrange / Act
     const failures = stages.flatMap(classNameFailures);
+
+    // Assert
+    expect(failures).toEqual([]);
+  });
+
+  it('全ステージと白紙設計の問題の責務に、重ならない日本語名が付いている', () => {
+    // Arrange / Act
+    const failures = [...stages, ...blankDesignProblems].flatMap(responsibilityNameFailures);
 
     // Assert
     expect(failures).toEqual([]);

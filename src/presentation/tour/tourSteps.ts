@@ -20,7 +20,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
   { target: '[data-tour="manual-fix-start"]', text: '組み替える前に、まずこのコードのまま変更を入れてみよう。「実際に直してみる」を押そう。', advance: { kind: 'manual-fix-started' } },
   { target: '.app__body', text: 'メソッドをクリックすると中身が右に出ます。直す必要があるメソッドの右のチェックボックスで「直した」印を付け、左の「リリースする」を押そう。結果を読んだら「組み替えを始める」へ。', advance: { kind: 'manual-fix-released' } },
   { target: '[data-testid="method-printMonthlyReport"]', text: '長すぎるメソッド printMonthlyReport() をクリックしてみよう。', advance: { kind: 'select-method', methodName: 'printMonthlyReport' } },
-  { target: '[data-tour="extract-area"]', text: '処理がまとまりごとに並んでいます。左の英字は責務の印で、同じ英字は同じ仕事です。A の処理を全部選んで「選んだ処理をメソッドとして抽出」を押そう。', advance: { kind: 'extract' } },
+  { target: '[data-tour="extract-area"]', text: '処理がまとまりごとに並んでいます。左の英字と名前は責務(その処理が受け持つ仕事)の印で、同じ英字は同じ仕事です。A の処理を全部選んで「選んだ処理をメソッドとして抽出」を押そう。', advance: { kind: 'extract' } },
   { target: '.score-badge', text: '抽出の結果、点数とクリア条件がどう変わったか確かめよう。', advance: { kind: 'next' } },
 ];
 

@@ -66,6 +66,7 @@ const orderShippingParts = [placeOrder, shipOrder, calculateOrderTax, saveOrder,
 /** 白紙設計の問題の一覧。ステージ一覧・ステージ選択・進捗には入れない。 */
 export const blankDesignProblems: readonly BlankDesignProblem[] = [
   {
+    responsibilityNames: { 'order-flow': '注文の流れ', tax: '税の計算', persistence: 'DBへの保存', notification: 'メール通知' },
     classNames: {
       'order-flow': 'OrderService',
       tax: 'TaxCalculator',

@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-26 03:22 UTC PR #336 責務マークの表示ラベルを整備し、関連ステージ・ツアーを更新する (#324)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test(2150件)✅ / npm run lint ✅ / npm run typecheck ✅。差分をIssue #324・docs/specs/responsibility-label-names.mdの設計判断と照合。E2Eはこの環境で実行許可が無く未実行(PR本文では428件成功)
+- マージ: squash & delete-branch
+
 ## 2026-10-25 16:15 UTC PR #335 仕様書の例を実機に合わせて訂正する (#327の後始末)
 
 - 判定: 合格(blocker無し)
@@ -210,12 +216,6 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test(1929件)✅ / npm run lint ✅ / npm run typecheck ✅。findNarrowedOverrides・可視性欄のあるステージのみ採点・violationTargets・ruleWhy文言をIssue #249と照合。E2Eはこの環境で実行の承認が得られず未実行(PR記載の296件成功を参照)
-- マージ: squash & delete-branch
-
-## 2026-10-24 07:15 UTC PR #277 実装するインターフェースの候補をインターフェース役のクラスに絞る (#244)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(1899件)✅ / npm run lint ✅ / npm run typecheck ✅。候補の絞り込み・実装済みの相手を残す・説明項目を仕様と照合。E2Eはこの環境にChromiumが無く未実行(PR記載の293件成功を参照)
 - マージ: squash & delete-branch
 
 

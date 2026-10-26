@@ -10,6 +10,7 @@ import {
   isInterfaceLike,
   parentIds,
   isStubMethod,
+  type CodeClass,
   type Codebase,
   type Fragment,
   type Method,
@@ -25,7 +26,7 @@ import { fragmentLines, methodLines } from '../../domain/codebase/lineCount';
 import { suggestMethodName } from '../../domain/codebase/suggestMethodName';
 import { methodNamingOf } from '../../domain/stage/methodNaming';
 import { responsibilityMarks } from '../../domain/stage/responsibilityMarks';
-import { CALL_RESPONSIBILITY } from '../../domain/scoring/responsibilities';
+import { CALL_RESPONSIBILITY, classResponsibilities } from '../../domain/scoring/responsibilities';
 import type { Stage } from '../../domain/stage/Stage';
 import { showsVisibilityControl } from '../../domain/stage/showsVisibilityControl';
 import { ChangeMemo } from '../change/ChangeMemo';
@@ -34,6 +35,7 @@ import { useGameStore } from '../store/useGameStore';
 import { FieldInfo } from './FieldInfo';
 import { ResponsibilityMark } from './ResponsibilityMark';
 import { describeVisibility } from './describeVisibility';
+import { responsibilityBreakdown, responsibilityNameOf } from './responsibilityLabel';
 
 function toggle(selected: ReadonlySet<string>, id: string): Set<string> {
   const next = new Set(selected);
@@ -78,10 +80,11 @@ export function FragmentFieldRefs({ codebase, fragment }: Readonly<{ codebase: C
 function FragmentList({
   codebase,
   marks,
+  names,
   method,
   selected,
   onToggle,
-}: Readonly<{ codebase: Codebase; marks: ReadonlyMap<string, number>; method: Method; selected: ReadonlySet<string>; onToggle: (id: string) => void }>) {
+}: Readonly<{ codebase: Codebase; marks: ReadonlyMap<string, number>; names: Readonly<Record<string, string>>; method: Method; selected: ReadonlySet<string>; onToggle: (id: string) => void }>) {
   return (
     <ul className="fragment-list" data-tour="fragment-list">
       {method.fragments.map((fragment) => (
@@ -94,7 +97,7 @@ function FragmentList({
                 onToggle(fragment.id);
               }}
             />
-            {fragment.responsibility === CALL_RESPONSIBILITY ? null : <ResponsibilityMark number={marks.get(fragment.responsibility) ?? 0} />}
+            {fragment.responsibility === CALL_RESPONSIBILITY ? null : <ResponsibilityMark number={marks.get(fragment.responsibility) ?? 0} name={responsibilityNameOf(names, fragment.responsibility)} />}
             <span className="fragment-list__label">{fragment.label}</span>
             <span className="fragment-list__lines">{fragmentLines(fragment, codebase)}行</span>
           </label>
@@ -103,6 +106,13 @@ function FragmentList({
       ))}
     </ul>
   );
+}
+
+/** 選んだメソッドのクラスが受け持つ責務の内訳。責務が0種類なら出さない。 */
+function OwnerResponsibilities({ owner, marks, names }: Readonly<{ owner: CodeClass; marks: ReadonlyMap<string, number>; names: Readonly<Record<string, string>> }>) {
+  const breakdown = responsibilityBreakdown(classResponsibilities(owner), marks, names);
+  if (breakdown === '') return null;
+  return <p className="method-editor__responsibilities" data-testid="owner-responsibilities">{owner.name} の責務: {breakdown}</p>;
 }
 
 /** 選択中のメソッドと形が一致する、別クラスのprivateメソッドへのボタンを並べ、Merge Methodsを実行する。 */
@@ -307,17 +317,21 @@ function MethodActions({ method, showVisibility }: Readonly<{ method: Method; sh
   );
 }
 
+/** 印の番号。codebaseが変わらない限り同じ参照を保つ。 */
+function useResponsibilityMarks(stage: Stage, codebase: Codebase): ReadonlyMap<string, number> {
+  return useMemo(
+    () => responsibilityMarks(stage.codebase, codebase, stage.changeRequests.map((request) => request.responsibility)),
+    [stage, codebase],
+  );
+}
+
 /** 選択中のメソッドの中身を表示し、処理のまとまりを選んで Extract Method する。 */
 function MethodEditorBody({ method, showVisibility, stage }: Readonly<{ method: Method; showVisibility: boolean; stage: Stage }>) {
   const codebase = useGameStore((state) => state.codebase);
-  const initialCodebase = useGameStore((state) => state.stage.codebase);
   const owner = findClassOfMethod(codebase, method.id);
   // codebaseが変わらない限り同じ配列参照を保つ(毎レンダー新しい配列を作るとZustandの購読が無限ループする)
   const mergeCandidates = useMemo(() => findMergeCandidates(codebase, method.id), [codebase, method.id]);
-  const marks = useMemo(
-    () => responsibilityMarks(initialCodebase, codebase, stage.changeRequests.map((request) => request.responsibility)),
-    [initialCodebase, codebase, stage.changeRequests],
-  );
+  const marks = useResponsibilityMarks(stage, codebase);
   const extractMethod = useGameStore((state) => state.extractMethod);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [activeTab, setActiveTab] = useState<'edit' | 'code'>('edit');
@@ -349,6 +363,7 @@ function MethodEditorBody({ method, showVisibility, stage }: Readonly<{ method: 
       <h2 className="method-editor__title">
         {owner?.name ?? '?'}.{method.name}() <span className="line-badge">{methodLines(method, codebase)}行</span>
       </h2>
+      {owner === undefined ? null : <OwnerResponsibilities owner={owner} marks={marks} names={stage.responsibilityNames} />}
       <div className="method-editor__tabs" role="tablist" aria-label="メソッド表示">
         <button className="method-editor__tab" type="button" role="tab" aria-selected={activeTab === 'edit'} onClick={() => { setActiveTab('edit'); }}>編集</button>
         <button className="method-editor__tab" type="button" role="tab" aria-selected={activeTab === 'code'} onClick={() => { setActiveTab('code'); }}><span className="method-editor__tab-icon" aria-hidden="true">&lt;/&gt;</span>コード</button>
@@ -356,7 +371,7 @@ function MethodEditorBody({ method, showVisibility, stage }: Readonly<{ method: 
       {activeTab === 'code' ? <ClassCodePreview codebase={codebase} classId={owner?.id ?? ''} /> : (
         <div role="tabpanel" aria-label="編集">
           <div data-tour="extract-area">
-            <FragmentList codebase={codebase} marks={marks} method={method} selected={selected} onToggle={(id) => { setSelected(toggle(selected, id)); }} />
+            <FragmentList codebase={codebase} marks={marks} names={stage.responsibilityNames} method={method} selected={selected} onToggle={(id) => { setSelected(toggle(selected, id)); }} />
             <ExtractControls
               newName={newName}
               disabledReason={disabledReason}

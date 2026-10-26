@@ -24,6 +24,7 @@ function stageOf(id: string, lines: number): Stage {
     responsibilityLimit: 2,
     codebase: codebase(lines),
     classNames: {},
+    responsibilityNames: {},
     changeRequests: [],
   };
 }
