@@ -4,6 +4,11 @@ import type { Stage } from '../stage/Stage';
 import { stageFingerprint } from './stageFingerprint';
 
 export type Draft = { readonly fingerprint: string; readonly codebase: Codebase };
+/** 外から来た値が `Draft` の形をしているか確かめる。信頼境界の入力検証。 */
+export function isDraft(value: unknown): value is Draft {
+  return typeof value === 'object' && value !== null && 'fingerprint' in value && typeof value.fingerprint === 'string' && 'codebase' in value && isCodebase(value.codebase);
+}
+
 /** ステージID → 下書き。 */
 export type Drafts = Readonly<Partial<Record<string, Draft>>>;
 

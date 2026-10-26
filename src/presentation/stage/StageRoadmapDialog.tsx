@@ -5,6 +5,7 @@ import type { Progress } from '../../domain/progress/Progress';
 import type { Stage } from '../../domain/stage/Stage';
 import { useGameStore } from '../store/useGameStore';
 import { ConceptMasteryList } from './ConceptMasteryList';
+import { LearningRecordSection } from './LearningRecordSection';
 import { LEVEL_LABEL } from './levelLabel';
 import { MILESTONE_LABEL } from './milestoneLabel';
 
@@ -173,6 +174,7 @@ export function StageRoadmapDialog({ open, onClose }: StageRoadmapDialogProps) {
             onChoose={choose}
           />
         )}
+        <LearningRecordSection />
       </div>
     </dialog>
   );

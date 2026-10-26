@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Codebase } from '../codebase/Codebase';
 import type { Stage } from '../stage/Stage';
-import { putDraft, takeDraft, type Drafts } from './drafts';
+import { isDraft, putDraft, takeDraft, type Drafts } from './drafts';
 import { stageFingerprint } from './stageFingerprint';
 
 function codebase(lines: number): Codebase {
@@ -120,5 +120,23 @@ describe('putDraft / takeDraft', () => {
     // Assert
     expect(next).not.toBe(drafts);
     expect(drafts).toEqual({});
+  });
+});
+
+describe('isDraft', () => {
+  it('fingerprint が文字列で codebase が正しければ true', () => {
+    // Arrange
+    const value = { fingerprint: 'abc', codebase: codebase(3) };
+
+    // Act & Assert
+    expect(isDraft(value)).toBe(true);
+  });
+
+  it('null・fingerprint なし・fingerprint が数値・codebase が不正なら false', () => {
+    // Arrange・Act・Assert
+    expect(isDraft(null)).toBe(false);
+    expect(isDraft({ fingerprint: 'abc' })).toBe(false);
+    expect(isDraft({ fingerprint: 1, codebase: codebase(3) })).toBe(false);
+    expect(isDraft({ fingerprint: 'abc', codebase: {} })).toBe(false);
   });
 });
