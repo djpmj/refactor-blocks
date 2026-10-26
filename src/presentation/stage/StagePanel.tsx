@@ -14,6 +14,7 @@ import { HintPopover } from './HintPopover';
 import { RumorPopover } from './RumorPopover';
 import { togglePanel, type ToolbarPanel } from './usePopoverDismiss';
 import { ConceptCheckPanel } from './ConceptCheckPanel';
+import { MoveCountNote } from './MoveCountNote';
 import { UnusedPublicNote } from './UnusedPublicNote';
 import { RoomToImproveNote } from './RoomToImproveNote';
 import { ChangePainCard } from './ChangePainCard';
@@ -291,6 +292,7 @@ function StageSidebar({ stage, codebase, score, initialScore, investigating, hid
       </details>
       {!investigating && score.total >= 100 && <RoomToImproveNote stage={stage} codebase={codebase} />}
       {!investigating && score.total >= 100 && <UnusedPublicNote stage={stage} codebase={codebase} />}
+      {!investigating && score.total >= 100 && <MoveCountNote stage={stage} />}
       {!investigating && score.total >= 100 && <ConceptCheckPanel key={stage.id} checks={stage.checks} onAllCorrect={() => recordMilestone(stage.id, 'concept-check')} />}
       <StoryOutro stage={stage} perfect={!investigating && score.total >= 100} />
       <NextStageCard stage={stage} perfect={!investigating && score.total >= 100} />

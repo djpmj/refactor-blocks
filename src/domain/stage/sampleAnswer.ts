@@ -13,6 +13,7 @@ import { moveMethod } from '../codebase/moveMethod';
 import { publicizeCrossClassCalls } from '../codebase/publicizeCrossClassCalls';
 import { renameClass } from '../codebase/renameClass';
 import { addInterface, removeInterface, setSuperclass } from '../codebase/setSuperclass';
+import { scoreCodebase } from '../scoring/score';
 import type { Result } from '../shared/Result';
 import type { Stage } from './Stage';
 
@@ -516,4 +517,19 @@ export function sampleAnswerCodebase(
   const solution = steps[stage.id];
   if (solution === undefined) throw new Error(`ステージ ${stage.id} の模範解答が定義されていません`);
   return applySolutionSteps(stage.codebase, solution, { visibilityEnforced: stage.visibilityEnforced });
+}
+
+/**
+ * 模範解答の手順を順に適用して、初めて100点に届いた手の数(初期コードが100点なら0)。
+ * 手順が無い・空・最後まで100点に届かないなら undefined。手順全体の長さは、100点のあとの仕上げまで含むので使わない。
+ */
+export function sampleMovesToPerfect(
+  stage: Pick<Stage, 'id' | 'codebase' | 'limits' | 'dependencyLimit' | 'responsibilityLimit' | 'visibilityEnforced' | 'layers' | 'cohesiveResponsibilities'>,
+  steps: Partial<Record<string, readonly SolutionStep[]>> = sampleAnswerSteps,
+): number | undefined {
+  const solution = steps[stage.id];
+  if (solution === undefined || solution.length === 0) return undefined;
+  const snapshots = solutionSnapshots(stage.codebase, solution, { visibilityEnforced: stage.visibilityEnforced });
+  const index = snapshots.findIndex((snapshot) => scoreCodebase(snapshot, stage).total >= 100);
+  return index === -1 ? undefined : index;
 }

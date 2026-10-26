@@ -34,3 +34,13 @@ export function redoHistory(history: History, current: Codebase): Travel | undef
   if (next === undefined) return undefined;
   return { history: { past: [...history.past, current], future: history.future.slice(1) }, codebase: next };
 }
+
+/**
+ * 初期コード start から今のコード current までの手数。道のり [...past, current] の中で start(同じ参照)が
+ * 最後に現れた位置から数える。道のりに start が無ければ(下書きから再開したとき)undefined。
+ */
+export function movesSince(history: History, current: Codebase, start: Codebase): number | undefined {
+  const path = [...history.past, current];
+  const startIndex = path.lastIndexOf(start);
+  return startIndex === -1 ? undefined : path.length - 1 - startIndex;
+}
