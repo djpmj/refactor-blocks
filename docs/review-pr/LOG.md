@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-27 01:00 UTC PR #364 chore(deps): bump the development-dependencies group across 1 directory with 4 updates
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(2271件) / npm run lint ✅ / npm run typecheck ✅ / npm run build ✅(package.json/lockのみの変更。E2E未実行)
+- マージ: squash & delete-branch
+
 ## 2026-10-26 21:00 UTC PR #363 chore(deps): bump the production-dependencies group with 3 updates
 
 - 判定: 合格(blocker無し)
@@ -211,17 +217,4 @@
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(1963件) / npm run lint ✅ / npm run typecheck ✅。E2Eはレビュー環境で実行できず未実行(PR本文では全306件成功)。Issue #243・docs/specs/unused-public-member-notes.mdの、100点時のみ表示・入口/インターフェース役/部品置き場の除外・visibilityEnforced時の案内を差分で確認。点数は変えない
 - マージ: squash & delete-branch
-
-## 2026-10-24 14:30 UTC PR #296 初回ツアーが正しい抽出に導き、手直しの直し忘れを防ぐ (#216)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(1955件) / npm run lint ✅ / npm run typecheck ✅(E2Eはレビュー環境で実行できず未実行。PR本文では全305件成功)。Issue #216の手順・文言修正(manual-fix-started追加、click-inside削除、extract-area、スクロール)を差分で確認
-- マージ: squash & delete-branch
-
-## 2026-10-24 14:30 UTC PR #295 白紙設計の部品置き場を採点対象のクラスのように見せない (#222)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(lint・typecheck・Vitest 1955件)✅。E2Eはレビュー環境で実行できず未実行(PR本文では全308件成功)。Issue #222・docs/specs/blank-design-tray-display.mdの、部品置き場のバッジ/行数/警告の除去・見出し・矢印の除外(ユニットテスト付き)・問題文の文字サイズ・見えているキャンバスを測る自動フィット修正を差分で確認。domain変更はTRAY_CLASS_IDのexportのみ
-- マージ: squash & delete-branch
-
 
