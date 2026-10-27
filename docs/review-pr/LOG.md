@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-27 15:20 UTC PR #368 初回満点時のクリア画面と遷移選択を追加 (#315)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(2309件) / npm run lint ✅ / npm run typecheck ✅(前回指摘のe2e DOM型エラーは7dc2925で解消)。E2E(clear-screen)はレビュー環境にChromiumが無く未実行(PR本文では全466件成功)。Issue #315・docs/specs/clear-celebration-screen.mdの変更対象と差分を照合
+- マージ: squash & delete-branch
+
 ## 2026-10-27 12:50 UTC PR #366 助けの使用記録を保存し、弱点ステージの復習に反映する (#325)
 
 - 判定: 合格(blocker無し)
@@ -210,11 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm run check(lint・typecheck・Vitest 2005件)✅。保存IDの読み込み(空文字・存在しないID・localStorage例外は先頭ステージ)、saveDraftsOn=falseで従来どおり先頭、selectStageでの保存をIssue #282・docs/specs/resume-last-stage.mdと照合。E2Eはレビュー環境にChromiumが無く未実行(PR本文では全317件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-24 15:45 UTC PR #299 層を扱うステージで、層ごとに段を分けて並べ、層を飛ばす・逆らう矢印を目立たせる (#245)
-
-- 判定: 合格(blocker無し。suggestion: 帯幅が仕様の「キャンバス幅いっぱい」より狭い / E2Eが赤色表示と層なしステージの従来配置を直接断言していない)
-- 確認した内容: npm test ✅(2005件) / npm run lint ✅ / npm run typecheck ✅。E2Eはレビュー環境にChromiumが無く未実行(PR本文では全316件成功)。Issue #245・docs/specs/layered-stage-lanes.mdの、層ごとの段分け・帯と層名・層違反の赤い破線とラベル・層なしステージ不変を差分で確認。domain変更なし
 - マージ: squash & delete-branch
 

@@ -170,3 +170,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [operation-result-feedback](operation-result-feedback.md) | 操作の直後に、増えた減点・消えた減点を1〜2行の文でキャンバス上部に見せる |
 | [principle-labels](principle-labels.md) | ステージに設計原則(SRP・OCPなど)を付け、一覧と「なぜ分けるのか」に表示する |
 | [review-weak-stages](review-weak-stages.md) | 助けを使って100点にしたステージに「もう一度自力で」の印と復習のおすすめを出す |
+| [clear-celebration-screen](clear-celebration-screen.md) | 初めて100点にしたら全画面のクリア画面を出し、次の行き先を選ばせる |
