@@ -11,7 +11,7 @@ async function clearTutorial1(page: import('@playwright/test').Page, preserveFoc
   await page.getByLabel('新しいメソッド名').fill('aggregateSales');
   const extract = page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' });
   if (preserveFocus) {
-    await extract.evaluate((button: HTMLButtonElement) => button.click());
+    await extract.dispatchEvent('click');
   } else {
     await extract.click();
   }
