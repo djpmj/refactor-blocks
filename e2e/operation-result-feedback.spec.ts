@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { selectStage } from './selectStage.js';
+import { dismissClearScreen, selectStage } from './selectStage.js';
 
 async function extractFragments(page: Page, indexes: readonly number[], name: string) {
   await page.goto('/');
@@ -9,6 +9,7 @@ async function extractFragments(page: Page, indexes: readonly number[], name: st
   for (const index of indexes) await checks.nth(index).check();
   await page.getByLabel('新しいメソッド名').fill(name);
   await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+  await dismissClearScreen(page);
 }
 
 test('表の組み立てと出力を1つにまとめると、増えた減点が先に出て、お知らせと両方読める', async ({ page }) => {

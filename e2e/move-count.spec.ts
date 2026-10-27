@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { selectStage } from './selectStage.js';
+import { dismissClearScreen, selectStage } from './selectStage.js';
 
 const STAGE_1 = 'チュートリアル1: 長いメソッドを分ける';
 const MOVE_BESTS_KEY = 'refactor-blocks:move-bests';
@@ -11,6 +11,7 @@ async function extractAggregateSales(page: Page) {
   await page.getByLabel('新しいメソッド名').fill('aggregateSales');
   await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
   await expect(page.getByTestId('score-announcement')).toHaveText('100点');
+  await dismissClearScreen(page);
 }
 
 async function renameAggregateSales(page: Page) {
