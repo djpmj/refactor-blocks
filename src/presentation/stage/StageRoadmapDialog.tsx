@@ -5,6 +5,7 @@ import type { Progress } from '../../domain/progress/Progress';
 import type { Stage } from '../../domain/stage/Stage';
 import { DESIGN_PRINCIPLES } from '../../infrastructure/stages/designPrinciples';
 import { useGameStore } from '../store/useGameStore';
+import { GlossaryText } from '../glossary/GlossaryText';
 import { ConceptMasteryList } from './ConceptMasteryList';
 import { LearningRecordSection } from './LearningRecordSection';
 import { LEVEL_LABEL } from './levelLabel';
@@ -37,18 +38,27 @@ type StageCardProps = {
 
 function StageCard({ stage, current, recommended, status, onChoose }: StageCardProps) {
   return (
-    <button
-      type="button"
+    <div
       className={`stage-roadmap__card${current ? ' stage-roadmap__card--current' : ''}`}
-      aria-current={current ? 'true' : undefined}
-      data-testid={`roadmap-stage-${stage.id}`}
-      onClick={onChoose}
+      data-testid={`roadmap-card-${stage.id}`}
     >
-      <span className="stage-roadmap__card-title">{stage.title}</span>
+      <button
+        type="button"
+        className="stage-roadmap__choose"
+        aria-current={current ? 'true' : undefined}
+        data-testid={`roadmap-stage-${stage.id}`}
+        onClick={onChoose}
+      >
+        <span className="stage-roadmap__card-title">{stage.title}</span>
+        <span className="stage-roadmap__status">
+          {describeStatus(status)}
+          {recommended && <span className="stage-roadmap__recommend"> おすすめ</span>}
+        </span>
+      </button>
       <span className="stage-roadmap__learns">
         {stage.learns.map((item) => (
           <span key={item} className="stage-roadmap__tag">
-            {item}
+            <GlossaryText text={item} />
           </span>
         ))}
       </span>
@@ -62,11 +72,7 @@ function StageCard({ stage, current, recommended, status, onChoose }: StageCardP
           ))}
         </span>
       )}
-      <span className="stage-roadmap__status">
-        {describeStatus(status)}
-        {recommended && <span className="stage-roadmap__recommend"> おすすめ</span>}
-      </span>
-    </button>
+    </div>
   );
 }
 

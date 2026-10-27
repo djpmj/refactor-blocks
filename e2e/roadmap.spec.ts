@@ -24,7 +24,7 @@ test('ステージ一覧を開き、カードを選ぶとそのステージへ�
   await expect(dialog.getByRole('heading', { name: 'ステージ一覧' })).toBeVisible();
   await expect(dialog.getByTestId('roadmap-next')).toContainText('次のおすすめ');
   await expect(page.getByTestId('roadmap-stage-tutorial-extract-method')).toHaveAttribute('aria-current', 'true');
-  await expect(page.getByTestId('roadmap-stage-tutorial-extract-method')).toContainText('Extract Method');
+  await expect(page.getByTestId('roadmap-card-tutorial-extract-method')).toContainText('Extract Method');
   await expect(page.getByTestId('roadmap-principles-tutorial-extract-method')).toContainText('SRP(単一責任)');
   await expect(page.getByTestId('roadmap-principles-advanced-discount-strategy')).toContainText('OCP(開放閉鎖)');
 
