@@ -1,5 +1,6 @@
 import type { Stage } from '../stage/Stage';
 import type { Progress } from './Progress';
+import { retryMark, type Assists } from './assists';
 import { remainingMilestones, type Milestones, type StageMilestone } from './milestones';
 
 export type StageStatus =
@@ -61,4 +62,9 @@ export function conceptMastery(
     const remaining = related.filter((stage) => !isCleared(stage.id));
     return { concept, total: related.length, cleared: related.length - remaining.length, remaining };
   });
+}
+
+/** 並び順で最初の、自己ベスト100で「もう一度自力で」の印(retryMark)があるステージ。無ければ undefined。 */
+export function recommendReviewStage(stages: readonly Stage[], progress: Progress, assists: Assists): Stage | undefined {
+  return stages.find((stage) => isStageCleared(stage.id, progress) && retryMark(assists, stage.id) !== undefined);
 }

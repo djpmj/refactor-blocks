@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Stage } from '../stage/Stage';
-import { conceptMastery, isStageCleared, recommendNextStage, stageStatus } from './roadmap';
+import { conceptMastery, isStageCleared, recommendNextStage, recommendReviewStage, stageStatus } from './roadmap';
 
 function stageOf(id: string, learns: readonly string[] = ['Extract Method'], withSteps = false): Stage {
   return {
@@ -310,5 +310,40 @@ describe('conceptMastery', () => {
 
     // Assert
     expect(result[0]).toEqual({ concept: 'Extract Method', total: 2, cleared: 1, remaining: [a] });
+  });
+});
+
+describe('recommendReviewStage', () => {
+  const stages = [stageOf('a'), stageOf('b'), stageOf('c')];
+
+  it('記録が空なら undefined', () => {
+    // Act & Assert
+    expect(recommendReviewStage(stages, { a: 100 }, {})).toBeUndefined();
+  });
+
+  it('並び順で最初の、100点で clearedWith があるステージを返す', () => {
+    // Arrange
+    const progress = { a: 100, b: 100, c: 100 };
+    const assists = { b: { clearedWith: 'step' }, c: { clearedWith: 'answer' } } as const;
+
+    // Act
+    const review = recommendReviewStage(stages, progress, assists);
+
+    // Assert
+    expect(review?.id).toBe('b');
+  });
+
+  it('自己ベストが100未満のステージと、attempt だけのステージは選ばない', () => {
+    // Arrange
+    const progress = { a: 80, b: 100 };
+    const assists = { a: { clearedWith: 'step' }, b: { attempt: 'answer' } } as const;
+
+    // Act & Assert
+    expect(recommendReviewStage(stages, progress, assists)).toBeUndefined();
+  });
+
+  it('stages が空なら undefined', () => {
+    // Act & Assert
+    expect(recommendReviewStage([], { a: 100 }, { a: { clearedWith: 'step' } })).toBeUndefined();
   });
 });
