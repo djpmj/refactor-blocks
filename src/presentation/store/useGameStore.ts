@@ -127,6 +127,9 @@ type GameState = {
   layoutResetCount: number;
   codebase: Codebase;
   celebration: { readonly seq: number; readonly scoreBefore: number; readonly scoreAfter: number; readonly deductedBefore: number; readonly deductedAfter: number; readonly resolved: ViolationTarget } | null;
+  clearScreen: { readonly stageId: string } | null;
+  clearShownStages: readonly string[];
+  dismissClearScreen: () => void;
   /** 直前のプレイヤーの操作で増えた・消えた減点。8秒(NOTICE_VISIBLE_MS)で消える。 */
   operationResult: OperationResult | null;
   dismissOperationResult: () => void;
@@ -303,13 +306,20 @@ function celebrationFor(state: GameState, codebase: Codebase, before: Score, aft
 /** コードが変わったら、そのコードに対する案内だった光り(ヒント・「どこが問題?」)を消す。 */
 const HIGHLIGHT_RESET: Partial<GameState> = { focusedRule: null, hintTarget: null, hintTargetKey: null };
 
+function clearScreenAfterCommit(state: GameState, celebration: GameState['celebration'] | undefined): Partial<GameState> {
+  const showClear = celebration != null && celebration.scoreBefore < 100 && celebration.scoreAfter === 100
+    && state.changeSession === null && state.manualFix === null && state.tourStep === null
+    && !state.clearShownStages.includes(state.stage.id);
+  return showClear ? { clearScreen: { stageId: state.stage.id }, clearShownStages: [...state.clearShownStages, state.stage.id] } : {};
+}
+
 /** プレイヤーの操作の前後を採点して、演出と操作の結果を作る。1回の操作で採点は前後1回ずつ。 */
 function scoredOperation(state: GameState, codebase: Codebase, celebrate: boolean): Partial<GameState> {
   if (!celebrate || state.changeSession !== null) return { operationResult: null };
   const before = scoreCodebase(state.codebase, state.stage);
   const after = scoreCodebase(codebase, state.stage);
   const celebration = celebrationFor(state, codebase, before, after);
-  return { operationResult: describeOperationResult(before, after), ...(celebration === undefined ? {} : { celebration }) };
+  return { operationResult: describeOperationResult(before, after), ...(celebration === undefined ? {} : { celebration }), ...clearScreenAfterCommit(state, celebration) };
 }
 
 function commit(state: GameState, codebase: Codebase, celebrate = true): Partial<GameState> {
@@ -1004,7 +1014,7 @@ export function createGameStore(allStages: readonly Stage[], saveDraftsOn = true
       stages: allStages,
       stage: firstStage, layoutResetCount: 0,
       codebase: restored ?? firstStage.codebase,
-      celebration: null, operationResult: null,
+      celebration: null, operationResult: null, clearScreen: null, clearShownStages: [], dismissClearScreen: () => set({ clearScreen: null }),
       restoredDraft: restored !== undefined,
       ...initialManualFixState(firstStage, restored),
       openingFixEnabled,
@@ -1040,7 +1050,7 @@ export function createGameStore(allStages: readonly Stage[], saveDraftsOn = true
           if (get().stage.id !== stageId) get().endTour();
           if (saveDraftsOn) saveLastStageId(stageId);
           const existingOpeningFixes = get().openingFixes;
-          set({ ...next, openingFixes: existingOpeningFixes, layoutResetCount: get().layoutResetCount + 1, ghost: null });
+          set({ ...next, openingFixes: existingOpeningFixes, layoutResetCount: get().layoutResetCount + 1, ghost: null, clearScreen: null });
           if (next.openingFixes !== undefined) {
             set({ openingFixes: { ...existingOpeningFixes, ...next.openingFixes, [stageId]: existingOpeningFixes[stageId] ?? next.openingFixes[stageId] } });
           }

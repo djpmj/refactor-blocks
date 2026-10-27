@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { selectStage, startChangeRequests } from './selectStage.js';
+import { dismissClearScreen, selectStage, startChangeRequests } from './selectStage.js';
 
 async function extractAggregation(page: Page) {
   await page.getByRole('button', { name: 'Fit View' }).click();
@@ -20,6 +20,7 @@ test('チュートリアル1: 責務Aだけ抽出して100点になると「さ�
 
   // Act
   await extractAggregation(page);
+  await dismissClearScreen(page);
 
   // Assert: 点数・他のカードは今までどおり、理解度チェックは今までどおり出る
   await expect(page.getByTestId('score-value')).toHaveText('100点');

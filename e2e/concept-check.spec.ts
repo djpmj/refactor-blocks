@@ -1,5 +1,5 @@
 ﻿import { expect, test, type Page } from '@playwright/test';
-import { selectStage, startChangeRequests } from './selectStage.js';
+import { dismissClearScreen, selectStage, startChangeRequests } from './selectStage.js';
 
 async function dragMethodToClass(page: Page, methodId: string, classId: string) {
   const source = await page.getByTestId(methodId).boundingBox();
@@ -28,6 +28,7 @@ async function clearTutorial2(page: Page) {
   await extract(page, '確認メールを送る', 'sendConfirmationMail');
   await extract(page, '在庫があるか検証する', 'validateStock');
   await expect(page.getByTestId('score-value')).toContainText('100');
+  await dismissClearScreen(page);
 }
 
 test('100点未満では出ず、100点で出る。キーボードで答えると解説が出て、もう一度で戻る', async ({ page }) => {

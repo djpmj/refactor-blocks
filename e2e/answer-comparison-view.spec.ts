@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { selectStage } from './selectStage.js';
+import { dismissClearScreen, selectStage } from './selectStage.js';
 
 async function stableBoundingBox(page: Page, locator: Locator) {
   const deadline = Date.now() + 3000;
@@ -34,6 +34,7 @@ async function dragMethodToClass(page: Page, method: Locator, target: Locator) {
 
 async function dragToEmptyCanvas(page: Page, method: Locator) {
   await dragTo(page, method, (box) => ({ x: box.x + box.width - 20, y: box.y + box.height - 20 }), page.locator('.react-flow__pane'));
+  await dismissClearScreen(page);
   await page.getByRole('button', { name: 'Fit View' }).click();
 }
 
@@ -46,6 +47,7 @@ async function extract(page: Page, method: string, labels: string[], name: strin
 
 /** 初級2を、送信履歴の記録以外は解答例どおり(責務ごとにクラスを分ける)に組み替える。 */
 async function arrangeInvoiceStage(page: Page) {
+  await dismissClearScreen(page);
   await extract(page, 'method-issueInvoice', ['明細の金額を合計する', '割引を適用する'], 'calculateTotal');
   await extract(page, 'method-issueInvoice', ['請求書のPDFを描画する'], 'renderPdf');
   await extract(page, 'method-issueInvoice', ['PDFをストレージに保存する'], 'storePdf');
@@ -68,6 +70,7 @@ async function moveRecordHistoryToStorage(page: Page) {
 }
 
 async function openSampleDiagram(page: Page) {
+  await dismissClearScreen(page);
   await page.getByTestId('reference-menu-button').click();
   await page.getByTestId('reference-sample').click();
   const confirmation = page.getByTestId('answer-confirm');

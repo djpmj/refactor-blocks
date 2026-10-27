@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { finishAndAdvance, releaseAllManualFixSites, selectStage, startChangeRequests } from './selectStage.js';
+import { dismissClearScreen, finishAndAdvance, releaseAllManualFixSites, selectStage, startChangeRequests } from './selectStage.js';
 
 const STAGE_1 = 'チュートリアル1: 長いメソッドを分ける';
 const STAGE_1_ID = 'tutorial-extract-method';
@@ -30,6 +30,7 @@ async function clearTutorial1(page: Page) {
   await page.getByLabel('新しいメソッド名').fill('aggregateSales');
   await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
   await expect(page.getByTestId('score-announcement')).toHaveText('100点');
+  await dismissClearScreen(page);
 }
 
 /** ステージ一覧を開いて、チュートリアル1の状態と「次のおすすめ」を読み、閉じる。 */

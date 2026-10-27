@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { selectStage } from './selectStage.js';
+import { dismissClearScreen, selectStage } from './selectStage.js';
 
 const TUTORIAL = 'チュートリアル1: 長いメソッドを分ける';
 
@@ -30,6 +30,7 @@ async function reachImpactReview(page: Page, leaveOpeningMissed: boolean) {
   if (leaveOpeningMissed) await expect(page.getByRole('region', { name: '手で直すシミュレーション' })).toContainText('直し忘れ 1 か所');
   await page.getByRole('button', { name: '組み替えを始める' }).click();
   await refactorTutorial1(page);
+  await dismissClearScreen(page);
   await page.locator('.change-pain').getByRole('button', { name: '実際に直してみる' }).click();
   await page.getByRole('checkbox', { name: 'ReportService.aggregateSales() を直した' }).check();
   await page.getByRole('button', { name: 'リリースする' }).click();

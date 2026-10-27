@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { startChangeRequests, selectStage } from './selectStage.js';
+import { dismissClearScreen, startChangeRequests, selectStage } from './selectStage.js';
 
 const STAGE_1 = 'チュートリアル1: 長いメソッドを分ける';
 const STAGE_2 = 'チュートリアル2: 太った placeOrder';
@@ -15,6 +15,7 @@ async function clearTutorial1(page: Page) {
   await page.getByLabel('新しいメソッド名').fill('summarizeSales');
   await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
   await expect(page.getByTestId('score-announcement')).toHaveText('100点');
+  await dismissClearScreen(page);
 }
 
 async function setStory(page: Page, on: boolean) {
@@ -140,6 +141,7 @@ test('仕上げの手直しを始めるとカードが消え、手直しを閉�
   await expect(page.getByTestId('next-stage-card')).toBeVisible();
 
   // Act
+  await dismissClearScreen(page);
   await page.locator('.change-pain').getByRole('button', { name: '実際に直してみる' }).click();
 
   // Assert

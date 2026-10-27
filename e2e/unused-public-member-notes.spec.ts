@@ -1,8 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
-import { selectStage } from './selectStage.js';
+import { dismissClearScreen, selectStage } from './selectStage.js';
 
 /** 右クリックメニューの「別のクラスへ移動」で、メソッド・フィールドを別クラスへ移す。 */
 async function moveViaMenu(page: Page, memberTestId: string, className: string) {
+  await dismissClearScreen(page);
   await page.getByRole('button', { name: 'Fit View' }).click();
   await page.getByTestId(memberTestId).click({ button: 'right' });
   const menu = page.getByTestId('context-menu');
@@ -12,6 +13,7 @@ async function moveViaMenu(page: Page, memberTestId: string, className: string) 
 }
 
 async function extractMethod(page: Page, from: string, labels: readonly string[], name: string) {
+  await dismissClearScreen(page);
   await page.getByRole('button', { name: 'Fit View' }).click();
   await page.getByTestId(`method-${from}`).click();
   for (const label of labels) await page.getByLabel(label).check();
@@ -47,6 +49,7 @@ test('中級7: 100点になる前は出ず、解答例どおりに100点にす�
 
   // Assert
   await expect(page.getByTestId('score-value')).toHaveText('100点');
+  await dismissClearScreen(page);
   await expect(note).toBeVisible();
   await expect(note).toContainText('外から使われていない公開メンバーがあります。隠せるものは隠すと、あとで中身を変えても外に影響しません');
   await expect(note).toContainText('メソッドエディタの「可視性」で private にできます');
@@ -85,6 +88,7 @@ test('中級6: 解答例どおりに100点にすると Subscription の外から
 
   // Assert
   await expect(page.getByTestId('score-value')).toHaveText('100点');
+  await dismissClearScreen(page);
   await expect(note).toBeVisible();
   await expect(note.getByRole('listitem')).toHaveText([
     'Subscription.status(フィールド)',

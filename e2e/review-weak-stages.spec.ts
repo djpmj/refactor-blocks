@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { openHints } from './hintPopover.js';
 import { openReferenceItem } from './referenceMenuActions.js';
-import { completeOpeningFix, selectStage } from './selectStage.js';
+import { completeOpeningFix, dismissClearScreen, selectStage } from './selectStage.js';
 
 const STAGE_1 = 'チュートリアル1: 長いメソッドを分ける';
 const ID_1 = 'tutorial-extract-method';
@@ -28,6 +28,7 @@ async function extractTo100(page: Page) {
   await page.getByLabel('新しいメソッド名').fill('summarizeSales');
   await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
   await expect(page.getByTestId('score-announcement')).toHaveText('100点');
+  await dismissClearScreen(page);
 }
 
 async function openRoadmap(page: Page) {

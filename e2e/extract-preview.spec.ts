@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { selectStage } from './selectStage.js';
+import { dismissClearScreen, selectStage } from './selectStage.js';
 
 test('手直し中もメソッド行数のバッジは一行で表示する', async ({ page }) => {
   // Arrange
@@ -96,6 +96,7 @@ test('抽出の選択中に結果をプレビューし、抽出・Undo・ステ�
   await expect(summary).toHaveCount(0);
   await expect(page.getByTestId('method-summarizeSales').locator('.method-chip__lines')).toHaveText('19行');
   await expect(sourceLines).toHaveText('25行');
+  await dismissClearScreen(page);
 
   // Act: 元メソッドでプレビューを出し、別メソッドを選択して下書きを閉じる
   await checks.nth(0).check();

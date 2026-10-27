@@ -1,5 +1,5 @@
 ﻿import { expect, test } from '@playwright/test';
-import { releaseAllManualFixSites, selectStage, startChangeRequests } from './selectStage.js';
+import { dismissClearScreen, releaseAllManualFixSites, selectStage, startChangeRequests } from './selectStage.js';
 
 async function perfectOrderRefactor(page: import('@playwright/test').Page) {
   await page.getByTestId('method-placeOrder').click();
@@ -14,6 +14,7 @@ async function perfectOrderRefactor(page: import('@playwright/test').Page) {
     await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
   }
   await expect(page.getByTestId('score-value')).toContainText('100');
+  await dismissClearScreen(page);
 }
 
 async function extract(page: import('@playwright/test').Page, fragment: string, name: string) {
@@ -61,6 +62,7 @@ test('冒頭の手直しを終えるまで編集を止め、仕上げを正解�
   const card = page.locator('.change-pain');
   await expect(card).toContainText('もし、この変更が来たら?(もう一度)');
   await expect(card).not.toContainText('か所 →');
+  await dismissClearScreen(page);
 
   await card.getByRole('button', { name: '実際に直してみる' }).click();
   const closing = page.getByRole('region', { name: '手で直すシミュレーション' });
