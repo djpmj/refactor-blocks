@@ -43,16 +43,17 @@ function ClearScreenDialog() {
     if (dialog === null) return;
     dialog.showModal();
     primaryRef.current?.focus();
-    return () => dialog.close();
+    return () => { if (dialog.open) dialog.close(); };
   }, []);
+  function close() { if (dialogRef.current?.open) { dialogRef.current.close(); } dismiss(); }
   function choose(choice: ClearChoice) {
-    dismiss();
+    close();
     if (choice.kind === 'accept-change-request') startChangeRequests();
     if (choice.kind === 'closing-fix') startManualFix();
     if (choice.kind === 'next-stage') selectStage(choice.stageId);
   }
   return (
-    <dialog ref={dialogRef} className="clear-screen" data-testid="clear-screen" aria-labelledby="clear-screen-title" onCancel={dismiss}>
+    <dialog ref={dialogRef} className="clear-screen" data-testid="clear-screen" aria-labelledby="clear-screen-title" onCancel={(event) => { event.preventDefault(); close(); }}>
       <div className="clear-screen__confetti-layer" aria-hidden="true">
         {Array.from({ length: 24 }, (_, index) => {
           const style = { '--i': index, color: 'inherit' };

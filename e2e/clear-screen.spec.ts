@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { selectStage } from './selectStage.js';
 
-async function clearTutorial1(page: import('@playwright/test').Page) {
+async function clearTutorial1(page: import('@playwright/test').Page, preserveFocus = false) {
   await page.goto('/');
   await selectStage(page, 'チュートリアル1: 長いメソッドを分ける');
   await page.getByTestId('method-printMonthlyReport').click();
@@ -9,7 +9,12 @@ async function clearTutorial1(page: import('@playwright/test').Page) {
   await checks.nth(0).check();
   await checks.nth(1).check();
   await page.getByLabel('新しいメソッド名').fill('aggregateSales');
-  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+  const extract = page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' });
+  if (preserveFocus) {
+    await extract.evaluate((button: HTMLButtonElement) => button.click());
+  } else {
+    await extract.click();
+  }
   await expect(page.getByTestId('clear-screen')).toBeVisible();
 }
 
@@ -26,6 +31,18 @@ test('初めて100点にするとクリア画面が出て、戻ると再表示�
   await page.getByRole('button', { name: '元に戻す' }).click();
   await page.getByRole('button', { name: 'やり直し' }).click();
   await expect(screen).toHaveCount(0);
+});
+
+test('閉じると開く前の要素へフォーカスが戻る', async ({ page }) => {
+  await clearTutorial1(page, true);
+  await page.getByTestId('clear-choice-back').click();
+  await expect(page.getByLabel('新しいメソッド名')).toBeFocused();
+});
+
+test('再読み込みではクリア画面を再表示しない', async ({ page }) => {
+  await clearTutorial1(page);
+  await page.reload();
+  await expect(page.getByTestId('clear-screen')).toHaveCount(0);
 });
 
 test('仕上げの手直しを選ぶと手直しが始まる', async ({ page }) => {
