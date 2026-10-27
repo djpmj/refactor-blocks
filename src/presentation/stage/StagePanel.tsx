@@ -324,6 +324,7 @@ function useStagePanelEffects(stageId: string, score: number, actions: Readonly<
 
 function useStageHintState(stageId: string, score: Score) {
   const focusRule = useGameStore((state) => state.focusRule);
+  const recordAssist = useGameStore((state) => state.recordAssist);
   const [state, setState] = useState({ stageId, count: 0, problemRevealed: false });
   if (state.stageId !== stageId) setState({ stageId, count: 0, problemRevealed: false });
   const rule = biggestProblem(score);
@@ -336,7 +337,10 @@ function useStageHintState(stageId: string, score: Score) {
         setState({ ...state, problemRevealed: true });
       }
     },
-    revealStep: () => setState({ ...state, count: state.count + 1 }),
+    revealStep: () => {
+      recordAssist('step');
+      setState({ ...state, count: state.count + 1 });
+    },
   };
 }
 

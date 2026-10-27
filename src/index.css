@@ -639,6 +639,7 @@ input.class-node__name { width: 14ch; }
 .change-pain__principle { font-size: 13px; }
 .stage-roadmap__status { font-size: 12px; }
 .stage-roadmap__recommend { font-weight: bold; color: var(--accent); }
+.stage-roadmap__retry { font-weight: bold; color: var(--accent); }
 .learning-record { margin-top: 16px; padding-top: 8px; border-top: 1px solid var(--border); font-size: 13px; }
 .learning-record h3 { margin: 4px 0 6px; font-size: 14px; }
 .learning-record fieldset { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; }

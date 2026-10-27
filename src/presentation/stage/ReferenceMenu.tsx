@@ -136,6 +136,12 @@ function ReferenceMenuPopups({ stage, preview, codebase, comparison, replaying, 
 }
 
 function useReferenceAnswer(setMenuOpen: (open: boolean) => void, setPreview: (preview: PreviewKind) => void, setReplaying: (replaying: boolean) => void) {
+  const recordAssist = useGameStore((state) => state.recordAssist);
+  // 答えを実際に開いたときだけ助けに数える(確認ダイアログを開いただけ・やめるは数えない)
+  const showAnswer = (answer: AnswerKind) => {
+    if (answer === 'sample') setPreview('sample');
+    else setReplaying(true);
+  };
   const [confirmed, setConfirmed] = useState(false);
   const [pendingAnswer, setPendingAnswer] = useState<AnswerKind | null>(null);
   const closeConfirmation = (restoreFocus: boolean, buttonRef: RefObject<HTMLButtonElement | null>) => {
@@ -145,18 +151,18 @@ function useReferenceAnswer(setMenuOpen: (open: boolean) => void, setPreview: (p
   const openAnswer = (answer: AnswerKind) => {
     setMenuOpen(false);
     if (confirmed) {
-      if (answer === 'sample') setPreview('sample');
-      else setReplaying(true);
+      recordAssist('answer');
+      showAnswer(answer);
     } else setPendingAnswer(answer);
   };
   const chooseAnswer = () => {
     const answer = pendingAnswer;
     setConfirmed(true);
     setPendingAnswer(null);
-    requestAnimationFrame(() => {
-      if (answer === 'sample') setPreview('sample');
-      if (answer === 'replay') setReplaying(true);
-    });
+    if (answer === null) return;
+    // 記録と表示を同じ同期処理で行い、再読み込みで記録だけ・表示だけが残らないようにする
+    recordAssist('answer');
+    showAnswer(answer);
   };
   return { pendingAnswer, openAnswer, closeConfirmation, chooseAnswer };
 }

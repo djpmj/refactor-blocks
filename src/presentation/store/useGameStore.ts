@@ -63,9 +63,12 @@ import type { Result } from '../../domain/shared/Result';
 import { stages } from '../../infrastructure/stages/stageCatalog';
 import type { Progress } from '../../domain/progress/Progress';
 import { putDraft, takeDraft, type Drafts } from '../../domain/progress/drafts';
+import { markAssist, recordClear, resetAttempt, type Assists, type AssistLevel } from '../../domain/progress/assists';
 import { addMilestone, type Milestones, type StageMilestone } from '../../domain/progress/milestones';
 import { updateMoveBest, type MoveBests } from '../../domain/progress/moveBests';
+import { isStageCleared } from '../../domain/progress/roadmap';
 import { updateProgress } from '../../domain/progress/updateProgress';
+import { loadAssists, saveAssists } from '../../infrastructure/progress/assistStorage';
 import { loadDrafts, saveDrafts } from '../../infrastructure/progress/draftStorage';
 import { loadLastStageId, saveLastStageId } from '../../infrastructure/progress/lastStageStorage';
 import { loadMoveBests, saveMoveBests } from '../../infrastructure/progress/moveBestStorage';
@@ -205,6 +208,10 @@ type GameState = {
   draftStageIds: readonly string[];
   progress: Progress;
   recordProgress: (stageId: string, score: number) => void;
+  /** ステージごとの、100点に向けて使った助け(次の一手・動きで見る・答え)の記録。一覧の「もう一度自力で」の印に使う。保存される。 */
+  assists: Assists;
+  /** 今のステージで助けを使ったことを記録する。 */
+  recordAssist: (level: AssistLevel) => void;
   /** ステージごとの、100点に届いた最少の手数。progress とは別のキーに保存する。 */
   moveBests: MoveBests;
   recordMoveBest: (stageId: string, moves: number) => void;
@@ -481,7 +488,10 @@ function resetActions(set: (partial: Partial<GameState>) => void, get: () => Gam
   return {
     resetStage: () => {
       if (get().changeSession !== null) return;
-      set({ ...commit(get(), get().stage.codebase, false), layoutResetCount: get().layoutResetCount + 1, celebration: null, operationResult: null, ghost: null, manualFix: null, closingFixSolved: false, impactReviewOpen: false, extractDraft: null, focusedRule: null, hintTarget: null, hintTargetKey: null, previewRule: null, hoverPreviewRule: null, focusPreviewRule: null, selectedMethodId: null, selectedFieldId: null, message: null, notice: null });
+      // ponytail: 最初に戻すのあとの元に戻すで attempt は戻らない。抜け道として問題になったら、履歴の各コードに attempt を持たせる
+      const assists = resetAttempt(get().assists, get().stage.id);
+      if (assists !== get().assists) saveAssists(assists);
+      set({ assists, ...commit(get(), get().stage.codebase, false), layoutResetCount: get().layoutResetCount + 1, celebration: null, operationResult: null, ghost: null, manualFix: null, closingFixSolved: false, impactReviewOpen: false, extractDraft: null, focusedRule: null, hintTarget: null, hintTargetKey: null, previewRule: null, hoverPreviewRule: null, focusPreviewRule: null, selectedMethodId: null, selectedFieldId: null, message: null, notice: null });
     },
   };
 }
@@ -859,7 +869,7 @@ function replaceMethodActions(
 }
 
 /** ステージごとの自己ベストの読み込みと記録、ストーリーのオン/オフ(どちらも閲覧者ごとに保存される)。 */
-function progressActions(set: (partial: Partial<GameState>) => void, get: () => GameState): Pick<GameState, 'progress' | 'recordProgress' | 'moveBests' | 'recordMoveBest' | 'milestones' | 'recordMilestone' | 'storyEnabled' | 'setStoryEnabled'> {
+function progressActions(set: (partial: Partial<GameState>) => void, get: () => GameState): Pick<GameState, 'progress' | 'recordProgress' | 'assists' | 'recordAssist' | 'moveBests' | 'recordMoveBest' | 'milestones' | 'recordMilestone' | 'storyEnabled' | 'setStoryEnabled'> {
   return {
     storyEnabled: loadStoryEnabled(),
     setStoryEnabled: (enabled) => {
@@ -870,10 +880,24 @@ function progressActions(set: (partial: Partial<GameState>) => void, get: () => 
     recordProgress: (stageId, score) => {
       const stage = get().stages.find((candidate) => candidate.id === stageId);
       if (stage === undefined) return;
+      if (score >= 100) {
+        const assists = recordClear(get().assists, stageId, isStageCleared(stageId, get().progress));
+        if (assists !== get().assists) {
+          saveAssists(assists);
+          set({ assists });
+        }
+      }
       const next = updateProgress(get().progress, stageId, score, scoreCodebase(stage.codebase, stage).total);
       if (next === get().progress) return;
       saveProgress(next);
       set({ progress: next });
+    },
+    assists: loadAssists(),
+    recordAssist: (level) => {
+      const next = markAssist(get().assists, get().stage.id, level);
+      if (next === get().assists) return;
+      saveAssists(next);
+      set({ assists: next });
     },
     moveBests: loadMoveBests(),
     recordMoveBest: (stageId, moves) => {
