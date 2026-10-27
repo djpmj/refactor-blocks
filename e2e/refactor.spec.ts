@@ -1,5 +1,5 @@
 ﻿import { expect, test, type Locator, type Page } from '@playwright/test';
-import { finishAndAdvance, selectStage, startChangeRequests } from './selectStage.js';
+import { dismissClearScreen, finishAndAdvance, selectStage, startChangeRequests } from './selectStage.js';
 import { expectDeduction, expectDeductions, expectNoDeduction } from './scoreBreakdown.js';
 
 test('右サイドバーの幅をドラッグとキーボードで調整し、白紙設計でも使える', async ({ page }) => {
@@ -353,6 +353,7 @@ test('中級12: OrderManagerファイル削除で処理を戻した案内を出�
   await expect(notice).toContainText('ℹ');
   await expect(notice).toHaveClass(/error-toast--info/);
   await expect(page.getByTestId('score-value')).toContainText('100点');
+  await dismissClearScreen(page);
   await page.getByRole('button', { name: 'メッセージを閉じる' }).click();
   await expect(page.locator('.error-toast[role="status"]')).toHaveCount(0);
   await page.keyboard.press('Control+z');
@@ -2498,6 +2499,7 @@ test('上級8: 呼び出しだけの importOrders を似た処理を持つメソ
       await page.getByLabel(label).check();
       await page.getByLabel('新しいメソッド名').fill(name);
       await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+      await dismissClearScreen(page);
     }
   }
   for (const name of ['readLines', 'validateOrders', 'saveOrders']) {
@@ -2524,6 +2526,7 @@ test('上級8: 呼び出しだけの importOrders を似た処理を持つメソ
   await expect(page.getByTestId('method-importOrders')).toHaveCount(1);
   await expect(page.getByLabel('メソッド importOrders の可視性')).toHaveValue('public');
   for (const name of ['importOrders', 'readLines', 'validateOrders', 'saveOrders']) {
+    await dismissClearScreen(page);
     await page.getByTestId(`method-${name}`).click({ button: 'right' });
     const menu = page.getByTestId('context-menu');
     await menu.getByRole('menuitem', { name: '別のクラスへ移動' }).click();

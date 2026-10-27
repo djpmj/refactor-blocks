@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { selectStage } from './selectStage.js';
+import { dismissClearScreen, selectStage } from './selectStage.js';
 
 test('コードタブにチュートリアル1のクラスソースを表示する', async ({ page }) => {
   // Arrange
@@ -56,6 +56,7 @@ test('コードタブにチュートリアル1のクラスソースを表示す�
   await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
   await expect(page.locator('.method-editor__title .line-badge')).toHaveText('28行');
   await expect(page.getByTestId('class-ReportService').locator('.line-badge')).toHaveText('54行');
+  await dismissClearScreen(page);
   await page.getByRole('tab', { name: 'コード' }).click();
   await expect(page.getByRole('tabpanel', { name: 'コード' }).locator('.code-preview__line').last()).toHaveAttribute('data-line-number', '54');
   await page.getByTestId('method-compareWithLastMonth').click();

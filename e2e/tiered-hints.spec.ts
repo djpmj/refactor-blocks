@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { openHints } from './hintPopover.js';
-import { selectStage } from './selectStage.js';
+import { dismissClearScreen, selectStage } from './selectStage.js';
 
 const STAGE = '中級1: 循環依存を断ち切る';
 
@@ -74,6 +74,7 @@ test('100点では問題ヒントを使えない', async ({ page }) => {
 
   // Assert
   await expect(page.getByTestId('score-value')).toContainText('100点');
+  await dismissClearScreen(page);
   await openHints(page);
   await expect(problem).toBeDisabled();
 });

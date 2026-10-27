@@ -120,6 +120,9 @@ type GameState = {
   layoutResetCount: number;
   codebase: Codebase;
   celebration: { readonly seq: number; readonly scoreBefore: number; readonly scoreAfter: number; readonly deductedBefore: number; readonly deductedAfter: number; readonly resolved: ViolationTarget } | null;
+  clearScreen: { readonly stageId: string } | null;
+  clearShownStages: readonly string[];
+  dismissClearScreen: () => void;
   ghost: GhostMove | null;
   playGhost: (move: GhostMove) => void;
   clearGhost: () => void;
@@ -285,6 +288,13 @@ function celebrationFor(state: GameState, codebase: Codebase, enabled: boolean):
 /** コードが変わったら、そのコードに対する案内だった光り(ヒント・「どこが問題?」)を消す。 */
 const HIGHLIGHT_RESET: Partial<GameState> = { focusedRule: null, hintTarget: null, hintTargetKey: null };
 
+function clearScreenAfterCommit(state: GameState, celebration: GameState['celebration'] | undefined): Partial<GameState> {
+  const showClear = celebration != null && celebration.scoreBefore < 100 && celebration.scoreAfter === 100
+    && state.changeSession === null && state.manualFix === null && state.tourStep === null
+    && !state.clearShownStages.includes(state.stage.id);
+  return showClear ? { clearScreen: { stageId: state.stage.id }, clearShownStages: [...state.clearShownStages, state.stage.id] } : {};
+}
+
 function commit(state: GameState, codebase: Codebase, celebrate = true): Partial<GameState> {
   if (codebase === state.codebase) return {};
   const namedCodebase = autoNameClasses(codebase, state.stage.classNames);
@@ -293,6 +303,7 @@ function commit(state: GameState, codebase: Codebase, celebrate = true): Partial
   return {
     codebase: namedCodebase,
     ...(celebration === undefined ? {} : { celebration }),
+    ...clearScreenAfterCommit(state, celebration),
     extractDraft: null,
     ghost: null,
     ...HIGHLIGHT_RESET,
@@ -928,7 +939,7 @@ export function createGameStore(allStages: readonly Stage[], saveDraftsOn = true
       stages: allStages,
       stage: firstStage, layoutResetCount: 0,
       codebase: restored ?? firstStage.codebase,
-      celebration: null,
+      celebration: null, clearScreen: null, clearShownStages: [], dismissClearScreen: () => set({ clearScreen: null }),
       restoredDraft: restored !== undefined,
       ...initialManualFixState(firstStage, restored),
       openingFixEnabled,
@@ -964,7 +975,7 @@ export function createGameStore(allStages: readonly Stage[], saveDraftsOn = true
           if (get().stage.id !== stageId) get().endTour();
           if (saveDraftsOn) saveLastStageId(stageId);
           const existingOpeningFixes = get().openingFixes;
-          set({ ...next, openingFixes: existingOpeningFixes, layoutResetCount: get().layoutResetCount + 1, ghost: null });
+          set({ ...next, openingFixes: existingOpeningFixes, layoutResetCount: get().layoutResetCount + 1, ghost: null, clearScreen: null });
           if (next.openingFixes !== undefined) {
             set({ openingFixes: { ...existingOpeningFixes, ...next.openingFixes, [stageId]: existingOpeningFixes[stageId] ?? next.openingFixes[stageId] } });
           }

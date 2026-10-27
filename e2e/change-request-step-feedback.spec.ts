@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { finishAndAdvance, releaseAllManualFixSites, selectStage, startChangeRequests } from './selectStage.js';
+import { dismissClearScreen, finishAndAdvance, releaseAllManualFixSites, selectStage, startChangeRequests } from './selectStage.js';
 
 async function stableBoundingBox(page: Page, locator: Locator) {
   const deadline = Date.now() + 3000;
@@ -34,6 +34,7 @@ async function dragMethodToClass(page: Page, method: Locator, target: Locator) {
 
 async function dragToEmptyCanvas(page: Page, method: Locator) {
   await dragTo(page, method, (box) => ({ x: box.x + box.width - 20, y: box.y + box.height - 20 }), page.locator('.react-flow__pane'));
+  await dismissClearScreen(page);
   await page.getByRole('button', { name: 'Fit View' }).click();
 }
 

@@ -22,6 +22,7 @@ import { StoryOutro } from './StoryOutro';
 import { NextStageCard } from './NextStageCard';
 import { ManualFixPanel } from './ManualFixPanel';
 import { SpotlightTour } from '../tour/SpotlightTour';
+import { ClearScreen } from './ClearScreen';
 import { TOUR_STAGE_ID } from '../tour/tourSteps';
 import { StageRoadmapDialog } from './StageRoadmapDialog';
 import { TestStatus } from './TestStatus';
@@ -381,6 +382,7 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
   return (
     <>
       <SpotlightTour />
+      <ClearScreen />
       <StageHeader stage={stage} codebase={codebase} score={score} investigating={investigating} />
       <CritiqueResult />
       <ManualFixSidebarOpener setSidebarOpen={setSidebarOpen} />

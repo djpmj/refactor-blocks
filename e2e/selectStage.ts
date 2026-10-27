@@ -1,6 +1,12 @@
 import { expect, type Page } from '@playwright/test';
 
+export async function dismissClearScreen(page: Page): Promise<void> {
+  const screen = page.getByTestId('clear-screen');
+  if (await screen.isVisible()) await page.getByTestId('clear-choice-back').click();
+}
+
 export async function releaseAllManualFixSites(page: Page, options: { readonly restoreSidebar?: boolean } = {}): Promise<void> {
+  await dismissClearScreen(page);
   const wasCollapsed = await page.getByRole('button', { name: 'サイドバーを開く' }).count() > 0;
   if (wasCollapsed) await page.getByRole('button', { name: 'サイドバーを開く' }).evaluate((element) => (element as { click(): void }).click());
   const card = page.locator('.change-pain');
@@ -61,6 +67,7 @@ export async function releaseAllManualFixSites(page: Page, options: { readonly r
 }
 
 export async function completeManualFix(page: Page): Promise<void> {
+  await dismissClearScreen(page);
   await releaseAllManualFixSites(page);
   const panel = page.getByRole('region', { name: '手で直すシミュレーション' });
   if (await panel.getByRole('button', { name: '組み替えを始める' }).count() > 0) {
@@ -92,6 +99,7 @@ export async function completeOpeningFix(page: Page): Promise<void> {
 }
 
 export async function selectStage(page: Page, title: string, options: { readonly completeOpeningFix?: boolean } = {}): Promise<void> {
+  await dismissClearScreen(page);
   const openButton = page.getByTestId('roadmap-open');
   // 負荷が高いとき(複数worktreeの並列実行など)、goto直後は描画前でヘッダーが見つからないことが稀にある。待つ上限だけ延ばす
   await expect(openButton).toBeEnabled({ timeout: 15_000 });
@@ -108,6 +116,7 @@ export async function selectStage(page: Page, title: string, options: { readonly
 }
 
 export async function startChangeRequests(page: Page): Promise<void> {
+  await dismissClearScreen(page);
   const button = page.getByTestId('change-request-start');
   if (await button.isDisabled() && (await button.getAttribute('title'))?.includes('もう一度解いて')) {
     await completeManualFix(page);

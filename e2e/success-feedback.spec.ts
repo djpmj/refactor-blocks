@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { selectStage } from './selectStage.js';
+import { dismissClearScreen, selectStage } from './selectStage.js';
 
 async function resolveTutorialMethod(page: Page) {
   await page.goto('/');
@@ -42,6 +42,7 @@ test('成功した操作では点数と解決したメソッドを演出し、Un
   await expect(method).toHaveClass(/method-chip-button--resolved/);
 
   // Act: カウントアップ中に Undo する
+  await dismissClearScreen(page);
   await page.getByRole('button', { name: '元に戻す' }).click();
 
   // Assert

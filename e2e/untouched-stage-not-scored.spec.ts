@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { selectStage } from './selectStage.js';
+import { dismissClearScreen, selectStage } from './selectStage.js';
 
 const STAGE = 'チュートリアル1: 長いメソッドを分ける';
 
@@ -19,6 +19,7 @@ async function extractOnce(page: Page) {
 }
 
 async function stageCardText(page: Page): Promise<string> {
+  await dismissClearScreen(page);
   await page.getByTestId('roadmap-open').click();
   const dialog = page.getByTestId('stage-roadmap');
   await expect(dialog).toBeVisible();
