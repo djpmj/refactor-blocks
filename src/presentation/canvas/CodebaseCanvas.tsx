@@ -43,6 +43,7 @@ import { autoViewport } from './autoViewport';
 import { DETAIL_ZOOM, useShowDetails } from './semanticZoom';
 import { shouldRefit, type AutoFitState } from './autoFit';
 import { OpeningFixBanner } from './OpeningFixBanner';
+import { OperationResult } from './OperationResult';
 import { panToReveal } from './panToReveal';
 
 const CANVAS_MIN_ZOOM = 0.3;
@@ -380,11 +381,12 @@ type CanvasFlowProps = {
 };
 
 function CanvasFlow({ nodes, edges, onNodesChange, setFlow, contextMenu, selectMethod, stageId, visibleFileCount, codebase, layers, layoutResetCount, arrangeVersion, arrange, autoFitStateRef, onMoveStart, onManualFit, onControlZoom, dragInteractionActive, revealFileId, inert }: CanvasFlowProps & { readonly layoutResetCount: number; readonly arrangeVersion: number; readonly arrange: () => void }) {
+  const marking = useGameStore((state) => state.manualFix !== null && !state.manualFix.released);
   return (
     <WarningEdgeStateProvider>
       <div className="canvas-column">
       <OpeningFixBanner />
-      <div className="canvas-column__flow" inert={inert}>
+      <div className={marking ? 'canvas-column__flow canvas-column__flow--marking' : 'canvas-column__flow'} inert={inert}>
       <ReactFlow colorMode="system"
         nodes={nodes} edges={edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes}
         onNodesChange={onNodesChange} onInit={setFlow} nodesConnectable={false} minZoom={CANVAS_MIN_ZOOM}
@@ -397,6 +399,7 @@ function CanvasFlow({ nodes, edges, onNodesChange, setFlow, contextMenu, selectM
         <Panel position="top-right">
           <button type="button" className="nodrag nopan" data-testid="canvas-arrange" aria-label="依存の向きに沿って並べ直す" onClick={arrange}>整列</button>
         </Panel>
+        <Panel position="top-center"><OperationResult /></Panel>
         <DetailZoomNotice onZoom={onControlZoom} />
         <GhostAnimation nodes={nodes} />
         <FitViewOnLayoutChange stageId={stageId} fileCount={visibleFileCount} layoutResetCount={layoutResetCount} arrangeVersion={arrangeVersion} autoFitStateRef={autoFitStateRef} />

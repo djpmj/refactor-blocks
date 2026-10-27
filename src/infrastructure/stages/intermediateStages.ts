@@ -6,6 +6,7 @@ import type { Stage } from '../../domain/stage/Stage';
  * calculateOrderTotal を Order に、countOrdersOf を Customer に置いて初めて循環が消える。
  */
 const cyclicDependencyStage: Stage = {
+  responsibilityNames: { inventory: '在庫の確保', pricing: '金額の計算', discount: '割引', payment: '支払い', history: '注文履歴', membership: '会員ランク' },
   classNames: {
     "inventory": "InventoryHandler",
     "pricing": "PricingHandler",
@@ -27,6 +28,7 @@ const cyclicDependencyStage: Stage = {
   level: 'intermediate',
   title: '中級1: 循環依存を断ち切る',
   learns: ['循環依存', 'Move Method'],
+  principles: ['adp', 'encapsulation'],
   checks: [
     {
       id: 'check-1',
@@ -156,6 +158,7 @@ const cyclicDependencyStage: Stage = {
 
 /** 中級2: 3つのクラスが1ファイルに同居している。メソッドを持ち主へ返し、クラスごとにファイルを分ける。 */
 const godFileStage: Stage = {
+  responsibilityNames: { validation: '入力の検証', pricing: '小計の計算', shipping: '送料の計算', points: 'ポイント付与' },
   classNames: {
     "validation": "Validator",
     "pricing": "PriceCalculator",
@@ -173,6 +176,7 @@ const godFileStage: Stage = {
   level: 'intermediate',
   title: '中級2: 何でも入った1つのファイル',
   learns: ['ファイル分割', '責務の分離'],
+  principles: ['srp'],
   checks: [
     {
       id: 'check-1',
@@ -305,6 +309,7 @@ const godFileStage: Stage = {
  * public にするだけでは依存が残るよう、依存先の上限を0にしている(メソッドエディタの「可視性」で public にするだけでは解決させない)。
  */
 const misplacedPrivateStage: Stage = {
+  responsibilityNames: { notification: '通知の準備', delivery: 'メール送信', logging: '送信ログ', rendering: '本文の組み立て' },
   classNames: {
     "notification": "InvoiceMailer",
     "delivery": "DeliveryHandler",
@@ -322,6 +327,7 @@ const misplacedPrivateStage: Stage = {
   level: 'intermediate',
   title: '中級3: 越境する private メソッド',
   learns: ['カプセル化', 'private'],
+  principles: ['encapsulation'],
   checks: [
     {
       id: 'check-1',
@@ -492,6 +498,7 @@ const salesReportGoal = 'メソッドは17行・クラスは60行以内、1フ�
 
 /** 中級4: 税の計算がよく変わる。税の計算を別クラスへ出すのが正解。 */
 const volatileTaxStage: Stage = {
+  responsibilityNames: { aggregation: '売上の集計', tax: '税の計算', formatting: '帳票の整形', http: '帳票の振り分け' },
   classNames: {
     "aggregation": "AggregationHandler",
     "tax": "CopyTaxCalculator",
@@ -509,6 +516,7 @@ const volatileTaxStage: Stage = {
   level: 'intermediate',
   title: '中級4: 変わるのは税の計算',
   learns: ['変わる部分の分離', '責務の分離'],
+  principles: ['srp'],
   checks: [
     {
       id: 'check-1',
@@ -547,6 +555,7 @@ const volatileTaxStage: Stage = {
 
 /** 中級5: 中級4と同じコードで、帳票の形式がよく変わる。整形を別クラスへ出すのが正解。 */
 const volatileFormatStage: Stage = {
+  responsibilityNames: { aggregation: '売上の集計', tax: '税の計算', formatting: '帳票の整形', http: '帳票の振り分け' },
   classNames: {
     "aggregation": "AggregationHandler",
     "tax": "TaxCalculator",
@@ -564,6 +573,7 @@ const volatileFormatStage: Stage = {
   level: 'intermediate',
   title: '中級5: 変わるのは帳票の形式',
   learns: ['変わる部分の分離', '責務の分離'],
+  principles: ['srp'],
   checks: [
     {
       id: 'check-1',
@@ -607,6 +617,7 @@ const volatileFormatStage: Stage = {
  * Extract Method してから Subscription へ Move Method し、一緒に使うフィールドを Move Field で運ぶ。
  */
 const featureEnvyStage: Stage = {
+  responsibilityNames: { trial: 'トライアル判定', pricing: '請求額の計算', payment: 'カード決済', notification: '請求書メール', cancellation: '解約の判定' },
   classNames: {
     "trial": "TrialHandler",
     "pricing": "MemberPriceCalculator",
@@ -626,6 +637,7 @@ const featureEnvyStage: Stage = {
   level: 'intermediate',
   title: '中級6: 他人のデータばかり触るメソッド',
   learns: ['Feature Envy', 'Move Method'],
+  principles: ['encapsulation'],
   checks: [
     {
       id: 'check-1',
@@ -778,6 +790,7 @@ const featureEnvyStage: Stage = {
  * アクセサ越しのアクセスも Feature Envy・カプセル化の破れに数え、visibilityEnforced で「移したメソッドを public にする」必要を見せる。
  */
 const anemicDomainModelStage: Stage = {
+  responsibilityNames: { accessor: '残高の参照', 'account-status': '口座状態の確認', 'withdrawal-limit': '引き出し上限', balance: '残高の更新', history: '取引履歴', notification: 'メール通知' },
   classNames: {
     "accessor": "AccessorHandler",
     "account-status": "AccountStatusHandler",
@@ -799,6 +812,7 @@ const anemicDomainModelStage: Stage = {
   level: 'intermediate',
   title: '中級7: getter/setter だけの口座クラス',
   learns: ['貧血ドメインモデル', 'カプセル化'],
+  principles: ['encapsulation'],
   checks: [
     {
       id: 'check-1',
@@ -992,6 +1006,7 @@ const anemicDomainModelStage: Stage = {
  * 互いに使わないフィールドの塊を抱えており、凝集度(cohesion)で検出できる。responsibilityLimit を4にして二重に減点しない。
  */
 const extractClassStage: Stage = {
+  responsibilityNames: { payroll: '残業代の計算', withholding: '控除の計算', transfer: '振込データ', address: '宛名ラベル' },
   classNames: {
     "payroll": "PayrollHandler",
     "withholding": "WithholdingHandler",
@@ -1009,6 +1024,7 @@ const extractClassStage: Stage = {
   level: 'intermediate',
   title: '中級8: 給与と住所を抱えた社員クラス',
   learns: ['Extract Class', '責務の分離'],
+  principles: ['srp'],
   checks: [
     {
       id: 'check-1',
@@ -1147,6 +1163,7 @@ const extractClassStage: Stage = {
  * Extract Method → 統合(Merge Methods)→ TaxCalculator へ移動、の既存の操作だけで解ける。
  */
 const copyPasteTaxStage: Stage = {
+  responsibilityNames: { ordering: '注文の確認', tax: '税の計算', invoicing: '請求明細', quoting: '見積の集計' },
   classNames: {
     "ordering": "OrderingHandler",
     "tax": "CopyTaxCalculator",
@@ -1164,6 +1181,7 @@ const copyPasteTaxStage: Stage = {
   level: 'intermediate',
   title: '中級9: コピペされた消費税計算を1か所にまとめる',
   learns: ['重複の排除', 'Merge Methods'],
+  principles: ['dry'],
   checks: [
     {
       id: 'check-1',
@@ -1285,6 +1303,7 @@ const copyPasteTaxStage: Stage = {
  * 上級3(割引のStrategy、受け皿は1メソッド)と違い、1クラスが価格と送料の2メソッドを持つ。既存の操作だけで解ける。
  */
 const memberRankBranchingStage: Stage = {
+  responsibilityNames: { 'price-regular': '通常会員の価格', 'premium-rank': 'プレミアムの価格', 'shipping-regular': '通常会員の送料', validation: '入力の検証', pricing: '価格の取りまとめ', ordering: '注文の確定', 'rank-gold': 'ゴールドの価格' },
   classNames: {
     "price-regular": "RegularRank",
     "premium-rank": "PremiumRank",
@@ -1306,6 +1325,7 @@ const memberRankBranchingStage: Stage = {
   level: 'intermediate',
   title: '中級10: 会員ランクごとのif分岐をクラスに分ける',
   learns: ['分岐の分離', '継承'],
+  principles: ['ocp'],
   checks: [
     {
       id: 'check-1',
@@ -1435,6 +1455,7 @@ const memberRankBranchingStage: Stage = {
  * 層はファイルのパスではなく、処理の責務から決める。既存の操作(Extract Method / Move Method)だけで解ける。
  */
 const layeredOrderApiStage: Stage = {
+  responsibilityNames: { http: 'リクエストの検証', 'order-rule': '注文のルール', persistence: 'DBへの保存' },
   classNames: {
     "http": "HttpHandler",
     "order-rule": "OrderRuleHandler",
@@ -1450,6 +1471,7 @@ const layeredOrderApiStage: Stage = {
   level: 'intermediate',
   title: '中級11: Controller に全部書いてある注文API',
   learns: ['層(Controller/Service/Repository)', '依存の向き'],
+  principles: ['srp', 'adp'],
   checks: [
     {
       id: 'check-1',
@@ -1554,6 +1576,7 @@ const layeredOrderApiStage: Stage = {
 };
 
 const middleManStage: Stage = {
+  responsibilityNames: { http: 'リクエストの検証', 'order-rule': '注文のルール' },
   classNames: {
     "http": "HttpHandler",
     "order-rule": "OrderRuleHandler",
@@ -1567,6 +1590,7 @@ const middleManStage: Stage = {
   level: 'intermediate',
   title: '中級12: 横流しするだけの OrderManager',
   learns: ['Middle Man', 'Inline Method / Inline Class'],
+  principles: ['yagni'],
   checks: [
     {
       id: 'check-1',

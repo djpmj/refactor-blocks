@@ -38,6 +38,60 @@
 
 ## ログ一覧
 
+## 2026-10-27 01:00 UTC PR #364 chore(deps): bump the development-dependencies group across 1 directory with 4 updates
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(2271件) / npm run lint ✅ / npm run typecheck ✅ / npm run build ✅(package.json/lockのみの変更。E2E未実行)
+- マージ: squash & delete-branch
+
+## 2026-10-26 21:00 UTC PR #363 chore(deps): bump the production-dependencies group with 3 updates
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅(package.json/lockのみの変更。E2E未実行)
+- マージ: squash & delete-branch
+
+## 2026-10-26 11:10 UTC PR #342 ステージに設計原則を紐づけて表示する (#322)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(2271件) / npm run lint ✅ / npm run typecheck ✅。E2Eはこの環境で実行不可(PR本文では440件成功)。仕様書principle-labelsと差分を照合
+- マージ: squash & delete-branch
+
+## 2026-10-26 11:00 UTC PR #340 操作結果のフィードバックを表示する (#320)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint・typecheck・Vitest 2222件)✅。差分をIssue #320の設計判断と照合(domain層は無変更)。E2Eはこの環境にChromiumが無く未実行(PR本文では446件成功・1件は単独再実行で成功)
+- マージ: squash & delete-branch
+
+## 2026-10-26 10:50 UTC PR #341 学習記録をロードマップに表示する (#323)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test(2228件)✅ / npm run lint ✅ / npm run typecheck ✅。差分をIssue #323・docs/specs/progress-export-import.mdと照合(入力検証・層境界)。E2Eはこの環境で実行できず未実行(PR本文では446件成功)
+- マージ: squash & delete-branch
+
+## 2026-10-26 10:30 UTC PR #339 手数チャレンジ: 最少手数との比較とベスト記録を追加 (#319)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test(2205件)✅ / npm run lint ✅ / npm run typecheck ✅。差分をIssue #319・docs/specs/move-count-challenge.mdの設計判断と照合。E2Eはこの環境でブラウザ未導入のため未実行(PR本文では440件成功)
+- マージ: squash & delete-branch
+
+## 2026-10-26 09:45 UTC PR #338 手で直す最中の「読む」クリックと「直した」印を別の操作に分ける (#318)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test(2154件)✅ / npm run lint ✅ / npm run typecheck ✅。差分をIssue #318・docs/specs/manual-fix-read-vs-mark.mdの設計判断と照合。E2Eはこの環境でブラウザ未導入のため未実行(PR本文では429件成功)
+- マージ: squash & delete-branch
+
+## 2026-10-26 09:30 UTC PR #337 クリアを習得として扱い、マイルストーン表示を追加する (#316)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test(2177件)✅ / npm run lint ✅ / npm run typecheck ✅。差分をIssue #316・docs/specs/clear-means-learned.mdと照合(DDD層境界・isMilestonesの入力検証を確認)。E2Eはこの環境で実行許可が無く未実行(PR本文では434件成功)
+- マージ: squash & delete-branch
+
+## 2026-10-26 03:22 UTC PR #336 責務マークの表示ラベルを整備し、関連ステージ・ツアーを更新する (#324)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test(2150件)✅ / npm run lint ✅ / npm run typecheck ✅。差分をIssue #324・docs/specs/responsibility-label-names.mdの設計判断と照合。E2Eはこの環境で実行許可が無く未実行(PR本文では428件成功)
+- マージ: squash & delete-branch
+
 ## 2026-10-25 16:15 UTC PR #335 仕様書の例を実機に合わせて訂正する (#327の後始末)
 
 - 判定: 合格(blocker無し)
@@ -163,59 +217,4 @@
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(1963件) / npm run lint ✅ / npm run typecheck ✅。E2Eはレビュー環境で実行できず未実行(PR本文では全306件成功)。Issue #243・docs/specs/unused-public-member-notes.mdの、100点時のみ表示・入口/インターフェース役/部品置き場の除外・visibilityEnforced時の案内を差分で確認。点数は変えない
 - マージ: squash & delete-branch
-
-## 2026-10-24 14:30 UTC PR #296 初回ツアーが正しい抽出に導き、手直しの直し忘れを防ぐ (#216)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(1955件) / npm run lint ✅ / npm run typecheck ✅(E2Eはレビュー環境で実行できず未実行。PR本文では全305件成功)。Issue #216の手順・文言修正(manual-fix-started追加、click-inside削除、extract-area、スクロール)を差分で確認
-- マージ: squash & delete-branch
-
-## 2026-10-24 14:30 UTC PR #295 白紙設計の部品置き場を採点対象のクラスのように見せない (#222)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(lint・typecheck・Vitest 1955件)✅。E2Eはレビュー環境で実行できず未実行(PR本文では全308件成功)。Issue #222・docs/specs/blank-design-tray-display.mdの、部品置き場のバッジ/行数/警告の除去・見出し・矢印の除外(ユニットテスト付き)・問題文の文字サイズ・見えているキャンバスを測る自動フィット修正を差分で確認。domain変更はTRAY_CLASS_IDのexportのみ
-- マージ: squash & delete-branch
-
-## 2026-10-24 14:00 UTC PR #293 ブラウザのタブ名を今のモードとステージに合わせる (#291)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(1958件) / npm run lint ✅ / npm run typecheck ✅。E2Eはレビュー環境で実行できず未実行(PR本文では全件成功)。Issue #291・docs/specs/page-title-by-view.mdの受け入れ基準1〜3を差分とE2E spec で確認。domain/application変更なし
-- マージ: squash & delete-branch
-
-## 2026-10-24 UTC PR #264 インターフェースと抽象クラスの役割を表示する (#228)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(1954件) / npm run lint ✅ / npm run typecheck ✅(E2Eはこの環境では未実行、PR本文の結果に依拠)
-- マージ: squash & delete-branch
-
-## 2026-10-24 13:10 UTC PR #292 実機プレイから仕様化・実装までの作業を効率化する道具を追加
-
-- 判定: 合格(blocker無し。前回指摘したvite.configのexplore/**除外が68c3d43で解消)
-- 確認した内容: npm test(1951件)✅ / npm run lint ✅ / npm run typecheck ✅。.github/workflows配下の変更なし。spec-publish.shはPR本文どおり未実行。E2Eはこの環境で未実行(PR記載の301件成功を参照)
-- マージ: squash & delete-branch
-
-## 2026-10-24 07:55 UTC PR #280 解答例の図を、自分の設計と並べて違いが分かるように見せる (#246)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(1926件)✅ / npm run lint ✅ / npm run typecheck ✅。designDiff・describeDesignDiff・ComparisonPanesを仕様(2列表示・責務ごとの違い一覧・同じ置き方の文言・減点は事実のみ)と照合。E2EはChromiumを入れられず未実行(PR記載の298件成功を参照)
-- マージ: squash & delete-branch
-
-## 2026-10-24 07:50 UTC PR #279 ヒント「次の一手」を方針のまとまりごとに見せる (#248)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(1924件)✅ / npm run lint ✅ / npm run typecheck ✅。方針の表・見出しは方針の最初の手順でのみ表示・8手未満は出さない点を仕様と照合。E2Eはこの環境で実行の承認が得られず未実行(PR記載の297件成功を参照)
-- マージ: squash & delete-branch
-
-## 2026-10-24 07:40 UTC PR #278 親のメソッドを上書きして公開範囲を狭めたら約束違反に数える (#249)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(1929件)✅ / npm run lint ✅ / npm run typecheck ✅。findNarrowedOverrides・可視性欄のあるステージのみ採点・violationTargets・ruleWhy文言をIssue #249と照合。E2Eはこの環境で実行の承認が得られず未実行(PR記載の296件成功を参照)
-- マージ: squash & delete-branch
-
-## 2026-10-24 07:15 UTC PR #277 実装するインターフェースの候補をインターフェース役のクラスに絞る (#244)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(1899件)✅ / npm run lint ✅ / npm run typecheck ✅。候補の絞り込み・実装済みの相手を残す・説明項目を仕様と照合。E2Eはこの環境にChromiumが無く未実行(PR記載の293件成功を参照)
-- マージ: squash & delete-branch
-
 

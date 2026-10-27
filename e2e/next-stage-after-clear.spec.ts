@@ -35,7 +35,8 @@ test('ストーリーオフで100点にすると、次のおすすめへ進む�
 
   // Assert
   const card = page.getByTestId('next-stage-card');
-  await expect(card.getByRole('heading', { name: 'ステージクリア' })).toBeVisible();
+  await expect(card.getByRole('heading', { name: '100点達成' })).toBeVisible();
+  await expect(page.getByTestId('next-stage-remaining')).toHaveText('このステージの残り: 理解度チェック・変更依頼');
   await expect(card).toContainText(`次のおすすめ: ${STAGE_2}`);
   await expect(page.getByTestId('next-stage-go')).toHaveText('次のステージへ');
   await expect(page.getByTestId('story-outro')).toHaveCount(0);
@@ -85,7 +86,11 @@ test('全ステージをクリア済みなら「全ステージをクリアし�
   const testIds = await page.locator('[data-testid^="roadmap-stage-"]').evaluateAll((cards) => cards.map((card) => card.getAttribute('data-testid') ?? ''));
   const cleared = Object.fromEntries(testIds.map((testId) => [testId.replace('roadmap-stage-', ''), 100]));
   expect(Object.keys(cleared).length).toBeGreaterThan(10);
-  await page.evaluate((progress) => localStorage.setItem('refactor-blocks:progress', JSON.stringify(progress)), cleared);
+  const milestones = Object.fromEntries(Object.keys(cleared).map((id) => [id, ['concept-check', 'change-request']]));
+  await page.evaluate(([progress, done]) => {
+    localStorage.setItem('refactor-blocks:progress', JSON.stringify(progress));
+    localStorage.setItem('refactor-blocks:milestones', JSON.stringify(done));
+  }, [cleared, milestones]);
   await page.reload();
   await setStory(page, false);
 

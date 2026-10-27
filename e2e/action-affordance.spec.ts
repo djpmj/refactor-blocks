@@ -64,5 +64,6 @@ test('ブロックのホバー説明と空状態の案内を出し、手動修�
   await page.getByRole('button', { name: '実際に直してみる' }).click();
 
   // Assert
-  await expect(page.getByTestId('method-confirm')).toHaveAttribute('title', 'クリックで「直した」印を付け外し');
+  await expect(page.getByTestId('method-confirm')).toHaveAttribute('title', 'クリックで中身を右に表示');
+  await expect(page.locator('label.manual-fix-check').first()).toHaveAttribute('title', 'チェックで「直した」印を付け外し');
 });

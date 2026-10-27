@@ -317,12 +317,17 @@ input.class-node__name { width: 14ch; }
 .method-chip__lines-after { color: #287a45; font-weight: 700; }
 .method-chip__lines-after--over { color: var(--danger); }
 .method-chip-row { display: contents; }
+.method-chip-row--manual-fix { display: flex; align-items: center; gap: 4px; }
+.method-chip-row--manual-fix > .method-chip-button { flex: 1; min-width: 0; }
+.manual-fix-check { display: inline-grid; place-items: center; flex: none; width: 24px; height: 24px; cursor: pointer; }
 .extract-preview-chip { pointer-events: none; opacity: 0.5; }
 .extract-preview-chip .method-chip { border-style: dashed; }
 
 .line-badge { font-size: 12px; font-weight: 400; color: var(--muted); }
 .line-badge--over { color: var(--danger); font-weight: 700; }
 .responsibility-mark { display: inline-grid; place-items: center; width: 16px; height: 16px; flex: none; border-radius: 50%; background: var(--responsibility-color); color: #fff; font-size: 10px; font-weight: 800; line-height: 1; }
+.responsibility-mark__name { flex: none; color: var(--muted); font-size: 11px; }
+.method-editor__responsibilities { margin: 4px 0 8px; color: var(--muted); font-size: 12px; }
 .responsibility-count { flex: none; color: var(--muted); font-size: 11px; font-weight: 500; }
 .responsibility-count--over { color: var(--danger); font-weight: 700; }
 .fragment-list__item label { display: flex; align-items: center; gap: 7px; }
@@ -382,6 +387,14 @@ input.class-node__name { width: 14ch; }
   color: var(--text);
   pointer-events: none;
 }
+.operation-result { display: flex; align-items: flex-start; gap: 10px; max-width: min(560px, calc(100vw - 32px)); padding: 8px 10px; border-left: 5px solid var(--warning); border-radius: 8px; background: var(--surface); box-shadow: 0 3px 14px rgb(0 0 0 / 20%); color: var(--text); font-size: 13px; line-height: 1.5; }
+.operation-result--better { border-left-color: var(--success); }
+.operation-result--worse { border-left-color: var(--danger); }
+.operation-result__mark { font-weight: 700; }
+.operation-result__lines { flex: 1; overflow-wrap: anywhere; }
+.operation-result__lines p { margin: 0; }
+.operation-result__close { flex: none; padding: 0 4px; border: 0; background: transparent; color: var(--text); font-size: 20px; line-height: 1; cursor: pointer; }
+.operation-result__close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .error-toast__icon { color: var(--danger); font-weight: 700; }
 .error-toast--info { border-left-color: var(--accent); }
 .error-toast--info .error-toast__icon { color: var(--accent); }
@@ -450,6 +463,9 @@ input.class-node__name { width: 14ch; }
 .react-flow__edgelabel-renderer { z-index: 1001; }
 .warning-edge { position: absolute; pointer-events: all; z-index: 10; display: flex; flex-direction: column; align-items: center; }
 .warning-edge--open { z-index: 30; }
+/* 手で直す間は、矢印ラベルをノードの背面に回し矢印の当たり判定も外して、チップ右隣の「直した」チェックボックスをマウスで押せるようにする */
+.canvas-column__flow--marking .react-flow__edgelabel-renderer { z-index: 0; }
+.canvas-column__flow--marking .react-flow__edge-interaction { pointer-events: none; }
 .warning-edge__button { display: inline-flex; align-items: center; gap: 4px; min-height: 28px; padding: 3px 7px; border: 1px solid var(--warning); border-radius: 14px; background: var(--surface); color: var(--text); box-shadow: 0 2px 8px rgb(0 0 0 / 20%); cursor: pointer; font-family: inherit; font-size: 12px; font-weight: 700; line-height: 1.2; white-space: nowrap; }
 .warning-edge__button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .warning-edge__button > span:first-child { color: var(--warning); font-size: 16px; }
@@ -617,8 +633,20 @@ input.class-node__name { width: 14ch; }
 .stage-roadmap__card-title { font-weight: bold; }
 .stage-roadmap__learns { display: flex; flex-wrap: wrap; gap: 4px; }
 .stage-roadmap__tag { font-size: 11px; padding: 1px 6px; border: 1px solid var(--border); border-radius: 999px; }
+.stage-roadmap__principles { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.stage-roadmap__principles-heading { font-size: 11px; color: var(--muted); }
+.stage-roadmap__tag--principle { border-color: var(--accent); }
+.change-pain__principle { font-size: 13px; }
 .stage-roadmap__status { font-size: 12px; }
 .stage-roadmap__recommend { font-weight: bold; color: var(--accent); }
+.stage-roadmap__retry { font-weight: bold; color: var(--accent); }
+.learning-record { margin-top: 16px; padding-top: 8px; border-top: 1px solid var(--border); font-size: 13px; }
+.learning-record h3 { margin: 4px 0 6px; font-size: 14px; }
+.learning-record fieldset { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; }
+.learning-record__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.learning-record__confirm { margin-top: 8px; padding: 8px; border: 1px solid var(--border); border-radius: 8px; }
+.learning-record__warning, .learning-record__error { font-weight: bold; color: var(--danger); }
+.learning-record__note { font-size: 12px; }
 .stage-roadmap__views { display: flex; gap: 4px; margin-bottom: 8px; }
 .stage-roadmap__views button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
 .concept-mastery { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; }
@@ -893,3 +921,4 @@ input.class-node__name { width: 14ch; }
 @keyframes clear-glow { 50% { box-shadow: 0 0 70px 20px var(--accent); } }
 @keyframes clear-choices-in { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { .clear-screen__confetti { display: none; } .clear-screen__title, .clear-screen__ring--complete, .clear-screen__choices { animation: none; } }
+.move-count { margin: 8px 0; color: var(--muted); font-size: 12px; }

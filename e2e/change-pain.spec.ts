@@ -65,6 +65,7 @@ test('100点で理由を見せてサイドバーを一度だけ自動で開く',
   await expect(page.getByRole('region', { name: 'もし、この変更が来たら?(もう一度)' })).toBeVisible();
   await releaseAllManualFixSites(page);
   await expect(reason).toContainText('税率');
+  await expect(reason).toContainText('関係する原則: SRP(単一責任)');
   await expect(reason).toContainText('読む量は');
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
 
@@ -123,7 +124,7 @@ test('冒頭の手直し結果に読み行数を示し、画面内へ操作ボ�
   await banner.getByRole('button', { name: '実際に直してみる' }).click();
   const release = page.getByRole('button', { name: 'リリースする' });
   await expect(release).toBeInViewport();
-  await page.getByTestId('method-printMonthlyReport').click();
+  await page.getByRole('checkbox', { name: 'ReportService.printMonthlyReport() を直した' }).check();
   await page.getByRole('button', { name: 'リリースする' }).click();
   await expect(page.getByRole('button', { name: '組み替えを始める' })).toBeInViewport();
   await page.getByRole('button', { name: '組み替えを始める' }).click();

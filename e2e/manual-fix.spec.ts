@@ -14,19 +14,45 @@ test('一部にしか印を付けずにリリースすると、直し忘れが�
   const panel = page.getByRole('region', { name: '手で直すシミュレーション' });
   await expect(panel).toContainText('軽減税率8%に対応して');
 
-  await page.getByTestId('method-confirm').click();
-  await page.getByTestId('method-issue').click();
+  await page.getByRole('checkbox', { name: 'OrderService.confirm() を直した' }).check();
+  await page.getByRole('checkbox', { name: 'InvoiceService.issue() を直した' }).check();
   await expect(page.getByTestId('fixed-mark')).toHaveCount(2);
   await expect(panel).toContainText('直した印: 2 個');
-  await expect(page.locator('.method-chip--selected')).toHaveCount(0);
+  await expect(page.locator('.method-chip--selected')).toHaveCount(1);
 
   await panel.getByRole('button', { name: 'リリースする' }).click();
   await expect(panel).toContainText('⚠ 直し忘れ 1 か所');
   await expect(panel).toContainText('QuoteService.create');
   await expect(panel).toContainText('3 か所(3 クラス)を直す必要があります');
 
+  await expect(page.getByRole('checkbox')).toHaveCount(0);
   await page.getByTestId('method-create').click();
   await expect(page.getByTestId('fixed-mark')).toHaveCount(2);
+});
+
+test('読むためのクリックでは印が付かず、チェックボックスだけで付け外しできる', async ({ page }) => {
+  await openCopyPasteTax(page);
+  const panel = page.getByRole('region', { name: '手で直すシミュレーション' });
+  const viewer = page.getByRole('region', { name: '手で直す中のメソッドの内容' });
+  const create = page.getByTestId('method-create');
+
+  await create.click();
+  await create.click();
+  await expect(page.getByTestId('fixed-mark')).toHaveCount(0);
+  await expect(panel).toContainText('直した印: 0 個');
+  await expect(viewer).toContainText('QuoteService.create()');
+  await expect(create).toHaveAttribute('aria-pressed', 'true');
+  await expect(create.locator('.method-chip--selected')).toHaveCount(1);
+
+  const check = page.getByRole('checkbox', { name: 'QuoteService.create() を直した' });
+  await check.check();
+  await expect(page.getByTestId('fixed-mark')).toHaveCount(1);
+  await expect(panel).toContainText('直した印: 1 個');
+
+  await create.click();
+  await expect(page.getByTestId('fixed-mark')).toHaveCount(1);
+  await check.uncheck();
+  await expect(page.getByTestId('fixed-mark')).toHaveCount(0);
 });
 
 test('3つとも印を付ければ直し忘れなし。印はキーボードでも付け外しでき、閉じるとボタンが戻る', async ({ page }) => {
@@ -35,14 +61,17 @@ test('3つとも印を付ければ直し忘れなし。印はキーボードで�
 
   await page.getByTestId('method-confirm').focus();
   await page.keyboard.press('Enter');
-  await expect(page.getByTestId('fixed-mark')).toHaveCount(1);
+  await expect(page.getByTestId('fixed-mark')).toHaveCount(0);
   const viewer = page.getByRole('region', { name: '手で直す中のメソッドの内容' });
   await expect(viewer).toContainText('OrderService.confirm()');
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('checkbox', { name: 'OrderService.confirm() を直した' })).toBeFocused();
+  await page.keyboard.press('Space');
+  await expect(page.getByTestId('fixed-mark')).toHaveCount(1);
   await page.keyboard.press('Space');
   await expect(page.getByTestId('fixed-mark')).toHaveCount(0);
-  await expect(viewer).toContainText('OrderService.confirm()');
 
-  for (const name of ['confirm', 'issue', 'create']) await page.getByTestId(`method-${name}`).click();
+  for (const name of ['OrderService.confirm', 'InvoiceService.issue', 'QuoteService.create']) await page.getByRole('checkbox', { name: `${name}() を直した` }).check();
   await panel.getByRole('button', { name: 'リリースする' }).click();
   await expect(panel).toContainText('✅ 直し忘れなし。3 か所すべてを直せました');
 
@@ -90,10 +119,10 @@ test('クリックしたメソッドの処理を読み取り専用で表示し�
   const simulation = page.getByRole('region', { name: '手で直すシミュレーション' });
   await simulation.getByRole('button', { name: 'リリースする' }).click();
   await expect(simulation).toContainText('直し忘れ');
-  const fixedCount = await page.getByTestId('fixed-mark').count();
+  await expect(page.getByTestId('fixed-mark')).toHaveCount(0);
   await page.getByTestId('method-issue').click();
   await expect(viewer).toContainText('InvoiceService.issue()');
-  await expect(page.getByTestId('fixed-mark')).toHaveCount(fixedCount);
+  await expect(page.getByTestId('fixed-mark')).toHaveCount(0);
 
   await simulation.getByRole('button', { name: '閉じる' }).click();
   await expect(page.locator('.method-editor')).toContainText('InvoiceService.issue()');

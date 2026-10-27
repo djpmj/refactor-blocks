@@ -15,6 +15,7 @@ export function GhostHintButton({ stage, score, investigating, unlocked, onPlay 
   const ghost = useGameStore((state) => state.ghost);
   const manualFixing = useGameStore((state) => state.manualFix !== null);
   const playGhost = useGameStore((state) => state.playGhost);
+  const recordAssist = useGameStore((state) => state.recordAssist);
   const move = nextGhostMove(codebase, sampleAnswerSteps[stage.id] ?? []);
   const disabled = investigating || manualFixing || ghost !== null || move === undefined || score >= 100;
   const title = ghostHintTitle(unlocked, move !== undefined);
@@ -28,6 +29,7 @@ export function GhostHintButton({ stage, score, investigating, unlocked, onPlay 
       onClick={() => {
         if (move === undefined) return;
         playGhost(move);
+        recordAssist('ghost');
         onPlay?.();
       }}
     >

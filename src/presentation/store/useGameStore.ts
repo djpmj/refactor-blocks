@@ -1,6 +1,6 @@
 ﻿import { createContext, useContext, type Context } from 'react';
 import { createStore, useStore, type StoreApi } from 'zustand';
-import { evaluateImplementationUseCase, type ChangeOutcome } from '../../application/ChangeRequestUseCases';
+import { evaluateImplementationUseCase, isChangeChallengeCleared, type ChangeOutcome } from '../../application/ChangeRequestUseCases';
 import { describeCritiqueError, requestCritiqueUseCase } from '../../application/CritiqueUseCases';
 import { withoutTray } from '../../domain/blank/tray';
 import { withChangePart } from '../../domain/change/changePart';
@@ -10,7 +10,8 @@ import { stageStep, type StageStep } from '../../domain/change/stageStep';
 import { allClasses, findClassOfMethod, findField, findMethod, type Codebase, type Visibility } from '../../domain/codebase/Codebase';
 import { autoNameClasses } from '../../domain/codebase/autoNameClasses';
 import { emptyHistory, recordChange, redoHistory, undoHistory, type History, type Travel } from '../../domain/codebase/history';
-import { scoreCodebase, type ScoreRule } from '../../domain/scoring/score';
+import { scoreCodebase, type Score, type ScoreRule } from '../../domain/scoring/score';
+import { describeOperationResult, type OperationResult } from '../stage/describeOperationResult';
 import { resolvedTargets } from '../../domain/scoring/resolvedTargets';
 import type { ViolationTarget } from '../../domain/scoring/violationTargets';
 import type { Stage } from '../../domain/stage/Stage';
@@ -62,10 +63,16 @@ import type { Result } from '../../domain/shared/Result';
 import { stages } from '../../infrastructure/stages/stageCatalog';
 import type { Progress } from '../../domain/progress/Progress';
 import { putDraft, takeDraft, type Drafts } from '../../domain/progress/drafts';
+import { markAssist, recordClear, resetAttempt, type Assists, type AssistLevel } from '../../domain/progress/assists';
+import { addMilestone, type Milestones, type StageMilestone } from '../../domain/progress/milestones';
+import { updateMoveBest, type MoveBests } from '../../domain/progress/moveBests';
+import { isStageCleared } from '../../domain/progress/roadmap';
 import { updateProgress } from '../../domain/progress/updateProgress';
+import { loadAssists, saveAssists } from '../../infrastructure/progress/assistStorage';
 import { loadDrafts, saveDrafts } from '../../infrastructure/progress/draftStorage';
 import { loadLastStageId, saveLastStageId } from '../../infrastructure/progress/lastStageStorage';
-import { loadProgress, saveProgress } from '../../infrastructure/progress/progressStorage';
+import { loadMoveBests, saveMoveBests } from '../../infrastructure/progress/moveBestStorage';
+import { loadMilestones, loadProgress, saveMilestones, saveProgress } from '../../infrastructure/progress/progressStorage';
 import { loadStoryEnabled, saveStoryEnabled } from '../../infrastructure/story/storyPreference';
 import { loadTourSeen, saveTourSeen } from '../../infrastructure/tour/tourPreference';
 import { nextTourStep, TOUR_STEPS, TOUR_STAGE_ID, tourResultOf, type TourEvent, type TourResult, type TourScore } from '../tour/tourSteps';
@@ -123,6 +130,9 @@ type GameState = {
   clearScreen: { readonly stageId: string } | null;
   clearShownStages: readonly string[];
   dismissClearScreen: () => void;
+  /** 直前のプレイヤーの操作で増えた・消えた減点。8秒(NOTICE_VISIBLE_MS)で消える。 */
+  operationResult: OperationResult | null;
+  dismissOperationResult: () => void;
   ghost: GhostMove | null;
   playGhost: (move: GhostMove) => void;
   clearGhost: () => void;
@@ -151,6 +161,7 @@ type GameState = {
   closeImpactReview: () => void;
   startManualFix: () => void;
   toggleFixed: (methodId: string) => void;
+  viewManualFixMethod: (methodId: string) => void;
   releaseManualFix: () => void;
   restartManualFix: () => void;
   endManualFix: () => void;
@@ -200,6 +211,16 @@ type GameState = {
   draftStageIds: readonly string[];
   progress: Progress;
   recordProgress: (stageId: string, score: number) => void;
+  /** ステージごとの、100点に向けて使った助け(次の一手・動きで見る・答え)の記録。一覧の「もう一度自力で」の印に使う。保存される。 */
+  assists: Assists;
+  /** 今のステージで助けを使ったことを記録する。 */
+  recordAssist: (level: AssistLevel) => void;
+  /** ステージごとの、100点に届いた最少の手数。progress とは別のキーに保存する。 */
+  moveBests: MoveBests;
+  recordMoveBest: (stageId: string, moves: number) => void;
+  /** 100点のあとに終えた段階(理解度チェック・変更依頼)。一覧の「クリア」の判定に使う。保存される。 */
+  milestones: Milestones;
+  recordMilestone: (stageId: string, milestone: StageMilestone) => void;
   /** ストーリー(章の導入・結び)を出すか。保存される閲覧者の好み。 */
   storyEnabled: boolean;
   setStoryEnabled: (enabled: boolean) => void;
@@ -272,10 +293,7 @@ function methodSelectionActions(set: (partial: Partial<GameState>) => void, get:
 }
 
 /** コードベースが変わったときだけ、変更前のものを履歴に積んで差し替える。何も変わらない操作は1手に数えない。 */
-function celebrationFor(state: GameState, codebase: Codebase, enabled: boolean): GameState['celebration'] | undefined {
-  if (!enabled || state.changeSession !== null) return undefined;
-  const before = scoreCodebase(state.codebase, state.stage);
-  const after = scoreCodebase(codebase, state.stage);
+function celebrationFor(state: GameState, codebase: Codebase, before: Score, after: Score): GameState['celebration'] | undefined {
   const scoreBefore = before.total;
   const scoreAfter = after.total;
   const resolved = resolvedTargets(state.codebase, codebase, state.stage);
@@ -295,15 +313,22 @@ function clearScreenAfterCommit(state: GameState, celebration: GameState['celebr
   return showClear ? { clearScreen: { stageId: state.stage.id }, clearShownStages: [...state.clearShownStages, state.stage.id] } : {};
 }
 
+/** プレイヤーの操作の前後を採点して、演出と操作の結果を作る。1回の操作で採点は前後1回ずつ。 */
+function scoredOperation(state: GameState, codebase: Codebase, celebrate: boolean): Partial<GameState> {
+  if (!celebrate || state.changeSession !== null) return { operationResult: null };
+  const before = scoreCodebase(state.codebase, state.stage);
+  const after = scoreCodebase(codebase, state.stage);
+  const celebration = celebrationFor(state, codebase, before, after);
+  return { operationResult: describeOperationResult(before, after), ...(celebration === undefined ? {} : { celebration }), ...clearScreenAfterCommit(state, celebration) };
+}
+
 function commit(state: GameState, codebase: Codebase, celebrate = true): Partial<GameState> {
   if (codebase === state.codebase) return {};
   const namedCodebase = autoNameClasses(codebase, state.stage.classNames);
   const fieldStillThere = state.selectedFieldId !== null && findField(namedCodebase, state.selectedFieldId) !== undefined;
-  const celebration = celebrationFor(state, namedCodebase, celebrate);
   return {
     codebase: namedCodebase,
-    ...(celebration === undefined ? {} : { celebration }),
-    ...clearScreenAfterCommit(state, celebration),
+    ...scoredOperation(state, namedCodebase, celebrate),
     extractDraft: null,
     ghost: null,
     ...HIGHLIGHT_RESET,
@@ -342,7 +367,7 @@ function travelTo(state: GameState, travel: Travel | undefined): Partial<GameSta
   const { codebase, history } = travel;
   const stillThere = state.selectedMethodId !== null && findMethod(codebase, state.selectedMethodId) !== undefined;
   const fieldStillThere = state.selectedFieldId !== null && findField(codebase, state.selectedFieldId) !== undefined;
-  return { codebase, history, celebration: null, ghost: null, ...HIGHLIGHT_RESET, selectedMethodId: stillThere ? state.selectedMethodId : null, selectedFieldId: fieldStillThere ? state.selectedFieldId : null, extractDraft: null, message: null, notice: null };
+  return { codebase, history, celebration: null, operationResult: null, ghost: null, ...HIGHLIGHT_RESET, selectedMethodId: stillThere ? state.selectedMethodId : null, selectedFieldId: fieldStillThere ? state.selectedFieldId : null, extractDraft: null, message: null, notice: null };
 }
 
 const UNPLACED_MESSAGE = '部品がまだ部品置き場にあります。置き場所へドラッグしてください';
@@ -402,6 +427,13 @@ function advanceChangeRequest(state: GameState): Partial<GameState> {
   };
 }
 
+/** 最後の変更依頼を確定し、どの依頼も解答例と同じ点以上なら「変更依頼」の段階を記録する。 */
+function recordChangeMilestone(state: GameState): void {
+  const { changeSession, stage } = state;
+  if (changeSession === null || changeSession.index !== stage.changeRequests.length) return;
+  if (isChangeChallengeCleared(changeSession.outcomes, stage.changeRequests.length)) state.recordMilestone(stage.id, 'change-request');
+}
+
 function endChangeRequests(state: GameState): Partial<GameState> {
   const session = state.changeSession;
   if (session === null) return {};
@@ -432,8 +464,11 @@ function historyActions(set: (partial: Partial<GameState>) => void, get: () => G
   };
 }
 
-function messageActions(set: (partial: Partial<GameState>) => void): Pick<GameState, 'dismissMessage'> {
+function messageActions(set: (partial: Partial<GameState>) => void): Pick<GameState, 'dismissMessage' | 'dismissOperationResult'> {
   return {
+    dismissOperationResult: () => {
+      set({ operationResult: null });
+    },
     dismissMessage: () => {
       set({ message: null, notice: null });
     },
@@ -463,7 +498,10 @@ function resetActions(set: (partial: Partial<GameState>) => void, get: () => Gam
   return {
     resetStage: () => {
       if (get().changeSession !== null) return;
-      set({ ...commit(get(), get().stage.codebase, false), layoutResetCount: get().layoutResetCount + 1, celebration: null, ghost: null, manualFix: null, closingFixSolved: false, impactReviewOpen: false, extractDraft: null, focusedRule: null, hintTarget: null, hintTargetKey: null, previewRule: null, hoverPreviewRule: null, focusPreviewRule: null, selectedMethodId: null, selectedFieldId: null, message: null, notice: null });
+      // ponytail: 最初に戻すのあとの元に戻すで attempt は戻らない。抜け道として問題になったら、履歴の各コードに attempt を持たせる
+      const assists = resetAttempt(get().assists, get().stage.id);
+      if (assists !== get().assists) saveAssists(assists);
+      set({ assists, ...commit(get(), get().stage.codebase, false), layoutResetCount: get().layoutResetCount + 1, celebration: null, operationResult: null, ghost: null, manualFix: null, closingFixSolved: false, impactReviewOpen: false, extractDraft: null, focusedRule: null, hintTarget: null, hintTargetKey: null, previewRule: null, hoverPreviewRule: null, focusPreviewRule: null, selectedMethodId: null, selectedFieldId: null, message: null, notice: null });
     },
   };
 }
@@ -490,6 +528,7 @@ function changeSessionActions(
         hoverPreviewRule: null,
         focusPreviewRule: null,
         ghost: null,
+        operationResult: null,
         manualFix: null,
         changeSession: { index: 0, inspected: null, reviewing: null, outcomes: [], base: codebase, carried: codebase, sampleCarried: codebase, baseHistory: history },
         codebase: withChangePart(codebase, first),
@@ -513,6 +552,7 @@ function changeSessionActions(
     },
     advanceChangeRequest: () => {
       set({ ...advanceChangeRequest(get()), ghost: null });
+      recordChangeMilestone(get());
     },
     endChangeRequests: () => {
       set(endChangeRequests(get()));
@@ -524,7 +564,7 @@ function changeSessionActions(
 function manualFixActions(
   set: (partial: Partial<GameState>) => void,
   get: () => GameState,
-): Pick<GameState, 'startManualFix' | 'toggleFixed' | 'releaseManualFix' | 'restartManualFix' | 'endManualFix' | 'openImpactReview' | 'closeImpactReview'> {
+): Pick<GameState, 'startManualFix' | 'toggleFixed' | 'viewManualFixMethod' | 'releaseManualFix' | 'restartManualFix' | 'endManualFix' | 'openImpactReview' | 'closeImpactReview'> {
   return {
     startManualFix: () => {
       const state = get();
@@ -534,15 +574,16 @@ function manualFixActions(
     },
     toggleFixed: (methodId) => {
       const { manualFix } = get();
-      if (manualFix === null) return;
-      if (manualFix.released) {
-        set({ manualFix: { ...manualFix, viewedMethodId: methodId } });
-        return;
-      }
+      if (manualFix === null || manualFix.released) return;
       const fixedIds = manualFix.fixedIds.includes(methodId)
         ? manualFix.fixedIds.filter((id) => id !== methodId)
         : [...manualFix.fixedIds, methodId];
       set({ manualFix: { ...manualFix, fixedIds, viewedMethodId: methodId } });
+    },
+    viewManualFixMethod: (methodId) => {
+      const { manualFix } = get();
+      if (manualFix === null) return;
+      set({ manualFix: { ...manualFix, viewedMethodId: methodId } });
     },
     releaseManualFix: () => {
       const state = get();
@@ -609,6 +650,7 @@ function selectStageState(allStages: readonly Stage[], stageId: string, drafts: 
     stage,
     codebase: draft ?? stage.codebase,
     celebration: null,
+    operationResult: null,
     restoredDraft: draft !== undefined,
     ...(draft !== undefined && painRequestsOf(stage).modify !== undefined ? { openingFixes: { [stage.id]: null } } : {}),
     closingFixSolved: false,
@@ -837,7 +879,7 @@ function replaceMethodActions(
 }
 
 /** ステージごとの自己ベストの読み込みと記録、ストーリーのオン/オフ(どちらも閲覧者ごとに保存される)。 */
-function progressActions(set: (partial: Partial<GameState>) => void, get: () => GameState): Pick<GameState, 'progress' | 'recordProgress' | 'storyEnabled' | 'setStoryEnabled'> {
+function progressActions(set: (partial: Partial<GameState>) => void, get: () => GameState): Pick<GameState, 'progress' | 'recordProgress' | 'assists' | 'recordAssist' | 'moveBests' | 'recordMoveBest' | 'milestones' | 'recordMilestone' | 'storyEnabled' | 'setStoryEnabled'> {
   return {
     storyEnabled: loadStoryEnabled(),
     setStoryEnabled: (enabled) => {
@@ -848,10 +890,38 @@ function progressActions(set: (partial: Partial<GameState>) => void, get: () => 
     recordProgress: (stageId, score) => {
       const stage = get().stages.find((candidate) => candidate.id === stageId);
       if (stage === undefined) return;
+      if (score >= 100) {
+        const assists = recordClear(get().assists, stageId, isStageCleared(stageId, get().progress));
+        if (assists !== get().assists) {
+          saveAssists(assists);
+          set({ assists });
+        }
+      }
       const next = updateProgress(get().progress, stageId, score, scoreCodebase(stage.codebase, stage).total);
       if (next === get().progress) return;
       saveProgress(next);
       set({ progress: next });
+    },
+    assists: loadAssists(),
+    recordAssist: (level) => {
+      const next = markAssist(get().assists, get().stage.id, level);
+      if (next === get().assists) return;
+      saveAssists(next);
+      set({ assists: next });
+    },
+    moveBests: loadMoveBests(),
+    recordMoveBest: (stageId, moves) => {
+      const next = updateMoveBest(get().moveBests, stageId, moves);
+      if (next === get().moveBests) return;
+      saveMoveBests(next);
+      set({ moveBests: next });
+    },
+    milestones: loadMilestones(),
+    recordMilestone: (stageId, milestone) => {
+      const next = addMilestone(get().milestones, stageId, milestone);
+      if (next === get().milestones) return;
+      saveMilestones(next);
+      set({ milestones: next });
     },
   };
 }
@@ -877,10 +947,11 @@ export const NOTICE_VISIBLE_MS = 8000;
  * 役目を終えたトーストを消す。
  * 失敗の理由(message)は、前の状態と比べて状況(コード・選択・手直し・変更依頼)が変わったときに消す。
  * その set で出た message(prev と違う)は、出した操作自身では消さない。
- * お知らせ(notice)は、置き換わるたびに数え直して NOTICE_VISIBLE_MS 後に消す。
+ * お知らせ(notice)と操作の結果(operationResult)は、置き換わるたびに数え直して NOTICE_VISIBLE_MS 後に消す。
  */
 function clearStaleToasts(store: GameStore): void {
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let resultTimer: ReturnType<typeof setTimeout> | undefined;
   store.subscribe((state, prev) => {
     const situationChanged = state.codebase !== prev.codebase
       || state.selectedMethodId !== prev.selectedMethodId
@@ -888,6 +959,10 @@ function clearStaleToasts(store: GameStore): void {
       || (state.manualFix === null) !== (prev.manualFix === null)
       || (state.changeSession === null) !== (prev.changeSession === null);
     if (state.message !== null && state.message === prev.message && situationChanged) store.setState({ message: null });
+    if (state.operationResult !== prev.operationResult) {
+      clearTimeout(resultTimer);
+      if (state.operationResult !== null) resultTimer = setTimeout(() => { store.setState({ operationResult: null }); }, NOTICE_VISIBLE_MS);
+    }
     if (state.notice === prev.notice) return;
     clearTimeout(timer);
     if (state.notice !== null) timer = setTimeout(() => { store.setState({ notice: null }); }, NOTICE_VISIBLE_MS);
@@ -939,7 +1014,7 @@ export function createGameStore(allStages: readonly Stage[], saveDraftsOn = true
       stages: allStages,
       stage: firstStage, layoutResetCount: 0,
       codebase: restored ?? firstStage.codebase,
-      celebration: null, clearScreen: null, clearShownStages: [], dismissClearScreen: () => set({ clearScreen: null }),
+      celebration: null, operationResult: null, clearScreen: null, clearShownStages: [], dismissClearScreen: () => set({ clearScreen: null }),
       restoredDraft: restored !== undefined,
       ...initialManualFixState(firstStage, restored),
       openingFixEnabled,

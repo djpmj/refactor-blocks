@@ -10,10 +10,12 @@ export function loadStoryEnabled(): boolean {
 }
 
 /** ストーリーのオン/オフを保存する。localStorageが使えない環境でも画面を壊さない。 */
-export function saveStoryEnabled(enabled: boolean): void {
+export function saveStoryEnabled(enabled: boolean): boolean {
   try {
     localStorage.setItem(STORAGE_KEY, String(enabled));
+    return true;
   } catch {
     // 書き込めなくても、好みが保存されないだけで遊べるようにする
+    return false;
   }
 }

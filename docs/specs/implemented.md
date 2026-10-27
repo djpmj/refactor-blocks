@@ -162,3 +162,10 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [state-pattern-stage](state-pattern-stage.md) | 上級9「注文の状態ごとの分岐を State パターンへ組み替える」ステージを追加する |
 | [concept-mastery-map](concept-mastery-map.md) | ステージ一覧に「学べることごと」の習得状況(件数・進み具合・未クリアへのリンク)を出す |
 | [tour-step-follows-state](tour-step-follows-state.md) | 初回ツアーの最後の文を抽出の結果(点数の増減)で出し分け、手順4を飛ばさない |
+| [responsibility-label-names](responsibility-label-names.md) | 責務の印(A/B/C)に、その責務の日本語名を添えて表示する |
+| [manual-fix-read-vs-mark](manual-fix-read-vs-mark.md) | 手で直す間のメソッドのクリック(読む)と「直した」印(チェックボックス)を別の操作に分ける |
+| [clear-means-learned](clear-means-learned.md) | 「✅ クリア」を100点・理解度チェック・変更依頼をすべて終えたステージにだけ付ける |
+| [move-count-challenge](move-count-challenge.md) | 100点にしたとき、自分の手数と模範解答の手数をサイドバーに1行で出し、手数の自己ベストを保存する |
+| [progress-export-import](progress-export-import.md) | 学習記録(自己ベスト・下書き・設定)をJSONファイルで書き出し・読み込みし、ロードマップに表示する |
+| [operation-result-feedback](operation-result-feedback.md) | 操作の直後に、増えた減点・消えた減点を1〜2行の文でキャンバス上部に見せる |
+| [principle-labels](principle-labels.md) | ステージに設計原則(SRP・OCPなど)を付け、一覧と「なぜ分けるのか」に表示する |

@@ -1,10 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
-import { conceptMastery, isStageCleared, recommendNextStage, stageStatus, type StageStatus } from '../../domain/progress/roadmap';
+import { retryMark, type AssistLevel } from '../../domain/progress/assists';
+import { conceptMastery, isStageCleared, recommendNextStage, recommendReviewStage, stageStatus, type StageStatus } from '../../domain/progress/roadmap';
+import type { Milestones } from '../../domain/progress/milestones';
 import type { Progress } from '../../domain/progress/Progress';
 import type { Stage } from '../../domain/stage/Stage';
+import { DESIGN_PRINCIPLES } from '../../infrastructure/stages/designPrinciples';
 import { useGameStore } from '../store/useGameStore';
 import { ConceptMasteryList } from './ConceptMasteryList';
+import { LearningRecordSection } from './LearningRecordSection';
 import { LEVEL_LABEL } from './levelLabel';
+import { MILESTONE_LABEL } from './milestoneLabel';
 
 const TITLE_ID = 'stage-roadmap-title';
 
@@ -16,20 +21,30 @@ function describeStatus(status: StageStatus): string {
       return '挑戦中';
     case 'scored':
       return `${String(status.best)}点`;
+    case 'perfect':
+      return `100点(あと: ${status.remaining.map((milestone) => MILESTONE_LABEL[milestone]).join('・')})`;
     case 'cleared':
       return '✅ クリア';
   }
 }
 
+const RETRY_LABEL: Readonly<Record<AssistLevel, string>> = {
+  step: 'もう一度自力で(次の一手を見てクリア)',
+  ghost: 'もう一度自力で(動きで見てクリア)',
+  answer: 'もう一度自力で(答えを見てクリア)',
+};
+
 type StageCardProps = {
   readonly stage: Stage;
   readonly current: boolean;
   readonly recommended: boolean;
+  readonly reviewRecommended: boolean;
+  readonly retry: AssistLevel | undefined;
   readonly status: StageStatus;
   readonly onChoose: () => void;
 };
 
-function StageCard({ stage, current, recommended, status, onChoose }: StageCardProps) {
+function StageCard({ stage, current, recommended, reviewRecommended, retry, status, onChoose }: StageCardProps) {
   return (
     <button
       type="button"
@@ -46,9 +61,23 @@ function StageCard({ stage, current, recommended, status, onChoose }: StageCardP
           </span>
         ))}
       </span>
+      {stage.principles !== undefined && stage.principles.length > 0 && (
+        <span className="stage-roadmap__principles" data-testid={`roadmap-principles-${stage.id}`}>
+          <span className="stage-roadmap__principles-heading">原則</span>
+          {stage.principles.map((p) => (
+            <span key={p} className="stage-roadmap__tag stage-roadmap__tag--principle">
+              {DESIGN_PRINCIPLES[p].label}
+            </span>
+          ))}
+        </span>
+      )}
       <span className="stage-roadmap__status">
         {describeStatus(status)}
+        {retry !== undefined && (
+          <span className="stage-roadmap__retry" data-testid={`roadmap-retry-${stage.id}`}> {RETRY_LABEL[retry]}</span>
+        )}
         {recommended && <span className="stage-roadmap__recommend"> おすすめ</span>}
+        {reviewRecommended && <span className="stage-roadmap__recommend"> 復習</span>}
       </span>
     </button>
   );
@@ -59,11 +88,14 @@ type StageLevelsProps = {
   readonly currentId: string;
   readonly nextId: string | undefined;
   readonly progress: Progress;
+  readonly milestones: Milestones;
   readonly draftStageIds: readonly string[];
   readonly onChoose: (stageId: string) => void;
 };
 
-function StageLevels({ stages, currentId, nextId, progress, draftStageIds, onChoose }: StageLevelsProps) {
+function StageLevels({ stages, currentId, nextId, progress, milestones, draftStageIds, onChoose }: StageLevelsProps) {
+  const assists = useGameStore((state) => state.assists);
+  const reviewId = recommendReviewStage(stages, progress, assists)?.id;
   // ステージは難易度順に並んでいるので、出てきた順に難易度をまとめる
   const levels = [...new Set(stages.map((stage) => stage.level))];
   return levels.map((level) => (
@@ -78,7 +110,9 @@ function StageLevels({ stages, currentId, nextId, progress, draftStageIds, onCho
               stage={stage}
               current={stage.id === currentId}
               recommended={stage.id === nextId}
-              status={stageStatus(stage.id, progress, draftStageIds.includes(stage.id))}
+              reviewRecommended={stage.id === reviewId}
+              retry={isStageCleared(stage.id, progress) ? retryMark(assists, stage.id) : undefined}
+              status={stageStatus(stage, progress, milestones, draftStageIds.includes(stage.id))}
               onChoose={() => {
                 onChoose(stage.id);
               }}
@@ -109,6 +143,17 @@ function ViewSwitch({ view, onChange }: ViewSwitchProps) {
   );
 }
 
+function ReviewNotice({ stages, progress }: Readonly<{ stages: readonly Stage[]; progress: Progress }>) {
+  const assists = useGameStore((state) => state.assists);
+  const review = recommendReviewStage(stages, progress, assists);
+  if (review === undefined) return null;
+  return (
+    <p className="stage-roadmap__next" data-testid="roadmap-review">
+      {`復習のおすすめ: ${review.title}(もう一度自力で)`}
+    </p>
+  );
+}
+
 type StageRoadmapDialogProps = {
   /** false なら表示しない。ネイティブの dialog に Esc・背景の上乗せ・フォーカスの復帰を任せる。 */
   readonly open: boolean;
@@ -121,6 +166,7 @@ export function StageRoadmapDialog({ open, onClose }: StageRoadmapDialogProps) {
   const stages = useGameStore((state) => state.stages);
   const currentId = useGameStore((state) => state.stage.id);
   const progress = useGameStore((state) => state.progress);
+  const milestones = useGameStore((state) => state.milestones);
   const draftStageIds = useGameStore((state) => state.draftStageIds);
   const selectStage = useGameStore((state) => state.selectStage);
   useEffect(() => {
@@ -128,7 +174,7 @@ export function StageRoadmapDialog({ open, onClose }: StageRoadmapDialogProps) {
     if (dialog !== null && !dialog.open) dialog.showModal();
   }, [open]);
   if (!open) return null;
-  const next = recommendNextStage(stages, progress);
+  const next = recommendNextStage(stages, progress, milestones);
   const close = () => ref.current?.close();
   // 常時マウントされているので、閉じるときに表示切替を初期値へ戻す(開いた直後は「ステージ順」)
   const handleClosed = () => {
@@ -153,6 +199,7 @@ export function StageRoadmapDialog({ open, onClose }: StageRoadmapDialogProps) {
         <p className="stage-roadmap__next" data-testid="roadmap-next">
           {next === undefined ? '全ステージをクリアしました' : `次のおすすめ: ${next.title}`}
         </p>
+        <ReviewNotice stages={stages} progress={progress} />
         <ViewSwitch view={view} onChange={setView} />
         {view === 'concepts' ? (
           <ConceptMasteryList mastery={conceptMastery(stages, (id) => isStageCleared(id, progress))} onChoose={choose} />
@@ -162,10 +209,12 @@ export function StageRoadmapDialog({ open, onClose }: StageRoadmapDialogProps) {
             currentId={currentId}
             nextId={next?.id}
             progress={progress}
+            milestones={milestones}
             draftStageIds={draftStageIds}
             onChoose={choose}
           />
         )}
+        <LearningRecordSection />
       </div>
     </dialog>
   );

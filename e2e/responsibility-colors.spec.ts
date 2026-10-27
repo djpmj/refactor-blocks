@@ -81,3 +81,59 @@ test('上級3の長いクラス名と責務バッジは間隔を空けて折り�
   const overlapY = nameBox.y < badgeBox.y + badgeBox.height && badgeBox.y < nameBox.y + nameBox.height;
   expect(overlapX && overlapY).toBe(false);
 });
+
+test('処理の一覧の印に責務の名前が付き、見出しの下にクラスの内訳が出る', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/');
+  await selectStage(page, 'チュートリアル1: 長いメソッドを分ける');
+  await page.getByTestId('method-printMonthlyReport').click();
+
+  const list = page.locator('.fragment-list');
+  await expect(list.locator('li').filter({ hasText: '今月の売上を集計する' }).locator('.responsibility-mark__name')).toHaveText('集計');
+  await expect(list.locator('li').filter({ hasText: '画面に出力する' }).locator('.responsibility-mark__name')).toHaveText('出力');
+  await expect(list.locator('.responsibility-mark__name').filter({ hasText: '集計' })).toHaveCount(2);
+  await expect(list.locator('.responsibility-mark__name').filter({ hasText: '表の組み立て' })).toHaveCount(2);
+  await expect(list.locator('.responsibility-mark__name').filter({ hasText: '出力' })).toHaveCount(1);
+  const checkbox = page.getByRole('checkbox', { name: /集計.*今月の売上を集計する/ });
+  await checkbox.focus();
+  await page.keyboard.press('Space');
+  await expect(checkbox).toBeChecked();
+  await checkbox.uncheck();
+
+  const owner = page.getByTestId('owner-responsibilities');
+  await expect(owner).toHaveText('ReportService の責務: A 集計・B 表の組み立て・C 出力');
+  for (const colorScheme of ['light', 'dark'] as const) {
+    await page.emulateMedia({ colorScheme });
+    await expect(list.locator('.responsibility-mark__name').first()).toBeVisible();
+  }
+
+  const aggregationChecks = page.getByRole('checkbox', { name: /^責務 A 集計/ });
+  await expect(aggregationChecks).toHaveCount(2);
+  await aggregationChecks.nth(0).check();
+  await aggregationChecks.nth(1).check();
+  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+  // 抽出したメソッドはクラスの末尾に入るので並びは変わりうるが、責務の種類は変わらない
+  await expect(owner).toContainText('A 集計');
+  await expect(owner).toContainText('B 表の組み立て');
+  await expect(owner).toContainText('C 出力');
+  const call = list.locator('li').filter({ hasText: '() を呼び出す' });
+  await expect(call).toHaveCount(1);
+  await expect(call.getByLabel(/^責務 /)).toHaveCount(0);
+  await expect(call.locator('.responsibility-mark__name')).toHaveCount(0);
+});
+
+test('クラスのバッジの内訳に責務の名前が入り、メソッドを移すと内訳も動く', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/');
+  await selectStage(page, '中級1: 循環依存を断ち切る');
+  const orderBadge = page.getByTestId('class-responsibilities-Order');
+  await expect(orderBadge).toHaveAttribute('title', '責務 A 在庫の確保・B 金額の計算・C 割引・D 支払い・E 注文履歴');
+  await expect(page.getByTestId('class-responsibility-names-Order')).toHaveText('(内訳: A 在庫の確保・B 金額の計算・C 割引・D 支払い・E 注文履歴)');
+
+  await moveMethod(page, 'method-countOrdersOf', 'class-Customer');
+  await expect(page.getByTestId('class-responsibility-names-Order')).not.toContainText('E 注文履歴');
+  await expect(page.getByTestId('class-responsibility-names-Customer')).toContainText('E 注文履歴');
+  await page.getByTestId('method-countOrdersOf').click();
+  await expect(page.getByTestId('owner-responsibilities')).toContainText('Customer の責務');
+  await expect(page.getByTestId('owner-responsibilities')).toContainText('E 注文履歴');
+});

@@ -1,7 +1,8 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { changePart, withChangePart } from '../../domain/change/changePart';
 import { withoutTray } from '../../domain/blank/tray';
 import { allClasses, findMethod } from '../../domain/codebase/Codebase';
+import { movesSince } from '../../domain/codebase/history';
 import { moveMethod } from '../../domain/codebase/moveMethod';
 import { checkManualFix } from '../../domain/change/checkManualFix';
 import { painRequestsOf } from '../../domain/change/changePain';
@@ -631,7 +632,7 @@ describe('manual fix method viewer state', () => {
     expect(store.getState().manualFix?.viewedMethodId).toBe('method-b');
   });
 
-  it('updates the viewed method after release without changing fixed marks', () => {
+  it('does not change fixed marks or the viewed method when toggling after release', () => {
     // Arrange
     const store = createGameStore(stages, false);
     store.getState().startManualFix();
@@ -643,7 +644,65 @@ describe('manual fix method viewer state', () => {
 
     // Assert
     expect(store.getState().manualFix?.fixedIds).toEqual(['method-a']);
+    expect(store.getState().manualFix?.viewedMethodId).toBe('method-a');
+  });
+
+  it('views a method without touching fixed marks, even when read repeatedly', () => {
+    // Arrange
+    const store = createGameStore(stages, false);
+    store.getState().startManualFix();
+
+    // Act
+    store.getState().viewManualFixMethod('method-a');
+    store.getState().viewManualFixMethod('method-a');
+
+    // Assert
+    expect(store.getState().manualFix?.viewedMethodId).toBe('method-a');
+    expect(store.getState().manualFix?.fixedIds).toEqual([]);
+  });
+
+  it('keeps a fixed mark when the method is read again', () => {
+    // Arrange
+    const store = createGameStore(stages, false);
+    store.getState().startManualFix();
+    store.getState().toggleFixed('method-a');
+
+    // Act
+    store.getState().viewManualFixMethod('method-a');
+
+    // Assert
+    expect(store.getState().manualFix?.fixedIds).toEqual(['method-a']);
+  });
+
+  it('does not change the selected method when viewing during manual fix', () => {
+    // Arrange
+    const store = createGameStore(stages, false);
+    store.getState().selectMethod('method-place-order');
+    store.getState().startManualFix();
+
+    // Act
+    store.getState().viewManualFixMethod('method-confirm-order');
+
+    // Assert
+    expect(store.getState().selectedMethodId).toBe('method-place-order');
+  });
+
+  it('can view a method after release without changing fixed marks, and does nothing when inactive', () => {
+    // Arrange
+    const store = createGameStore(stages, false);
+    store.getState().startManualFix();
+    store.getState().toggleFixed('method-a');
+    store.getState().releaseManualFix();
+
+    // Act
+    store.getState().viewManualFixMethod('method-b');
+
+    // Assert
     expect(store.getState().manualFix?.viewedMethodId).toBe('method-b');
+    expect(store.getState().manualFix?.fixedIds).toEqual(['method-a']);
+    store.getState().endManualFix();
+    store.getState().viewManualFixMethod('method-c');
+    expect(store.getState().manualFix).toBeNull();
   });
 
   it('clears the viewed method when restarted and does nothing when inactive', () => {
@@ -1007,5 +1066,213 @@ describe('コードが変わったらヒントの光りを消す', () => {
 
     // Assert
     expect(store.getState().focusedRule).toBeNull();
+  });
+});
+
+describe('recordMilestone', () => {
+  const stage = stages[0];
+
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  function placeLikeSample(store: ReturnType<typeof createGameStore>): void {
+    const session = store.getState().changeSession;
+    const request = session === null ? undefined : stage.changeRequests[session.index];
+    if (session === null || request === undefined) throw new Error('変更依頼の最中が必要です');
+    const sample = sampleImplementation(session.sampleCarried, request);
+    if (sample === undefined) throw new Error('解答例が必要です');
+    store.setState({ codebase: sample.codebase });
+    store.getState().finishImplementation();
+  }
+
+  it('同じ段階を2回記録しても参照が変わらない', () => {
+    // Arrange
+    const store = createGameStore([stage], false, false);
+    store.getState().recordMilestone(stage.id, 'concept-check');
+    const before = store.getState().milestones;
+
+    // Act
+    store.getState().recordMilestone(stage.id, 'concept-check');
+
+    // Assert
+    expect(before[stage.id]).toEqual(['concept-check']);
+    expect(store.getState().milestones).toBe(before);
+  });
+
+  it('変更依頼を全件解答例どおりに置いて最後まで確定すると記録される', () => {
+    // Arrange
+    const store = createGameStore([stage], false, false);
+    store.setState({ codebase: sampleAnswerCodebase(stage) });
+    store.getState().startChangeRequests();
+
+    // Act
+    for (let i = 0; i < stage.changeRequests.length; i += 1) {
+      placeLikeSample(store);
+      store.getState().advanceChangeRequest();
+    }
+
+    // Assert
+    expect(store.getState().milestones[stage.id]).toContain('change-request');
+  });
+
+  it('途中で endChangeRequests すると記録されない', () => {
+    // Arrange
+    const store = createGameStore([stage], false, false);
+    store.setState({ codebase: sampleAnswerCodebase(stage) });
+    store.getState().startChangeRequests();
+    placeLikeSample(store);
+    store.getState().advanceChangeRequest();
+
+    // Act
+    store.getState().endChangeRequests();
+
+    // Assert
+    expect(store.getState().milestones[stage.id]).toBeUndefined();
+  });
+});
+
+describe('operation result (増えた・消えた減点)', () => {
+  const tutorial = stages.find((candidate) => candidate.id === 'tutorial-extract-method');
+  if (tutorial === undefined) throw new Error('tutorial-extract-method が見つからない');
+  const source = 'method-print-monthly-report';
+  const tableAndPrint = { sourceMethodId: source, fragmentIds: ['frag-table-header', 'frag-table-rows', 'frag-print'], newMethodName: 'renderReport' };
+  const renderReportId = (store: ReturnType<typeof createGameStore>) => allClasses(store.getState().codebase).flatMap((codeClass) => codeClass.methods).find((method) => method.name === 'renderReport')?.id ?? '';
+  const newStore = () => createGameStore([tutorial, stages[1]], false, false);
+
+  it('表の組み立てと出力を1つにまとめると、責務の混ざったメソッドの増加が出る', () => {
+    // Arrange
+    const store = newStore();
+    // Act
+    store.getState().extractMethod(tableAndPrint);
+    // Assert
+    expect(store.getState().operationResult?.lines).toContain('「責務の混ざったメソッド」の減点が1件増えました(-10)');
+  });
+
+  it('集計だけを抽出すると better で、「増えました」の行がない', () => {
+    // Arrange
+    const store = newStore();
+    // Act
+    store.getState().extractMethod({ sourceMethodId: source, fragmentIds: ['frag-aggregate-sales', 'frag-compare-last-month'], newMethodName: 'aggregate' });
+    // Assert
+    const result = store.getState().operationResult;
+    expect(result?.tone).toBe('better');
+    expect(result?.lines.some((line) => line.includes('増えました'))).toBe(false);
+  });
+
+  it('減点が変わらない操作の後は null になる', () => {
+    // Arrange
+    const store = newStore();
+    store.getState().extractMethod(tableAndPrint);
+    // Act
+    store.getState().renameClass('class-report-service', 'Renamed');
+    // Assert
+    expect(store.getState().operationResult).toBeNull();
+  });
+
+  it('undo / redo の後は null', () => {
+    // Arrange
+    const store = newStore();
+    store.getState().extractMethod(tableAndPrint);
+    // Act & Assert
+    store.getState().undo();
+    expect(store.getState().operationResult).toBeNull();
+    store.getState().redo();
+    expect(store.getState().operationResult).toBeNull();
+  });
+
+  it('resetStage・selectStage の後は null', () => {
+    // Arrange
+    const store = newStore();
+    store.getState().extractMethod(tableAndPrint);
+    // Act
+    store.getState().resetStage();
+    // Assert
+    expect(store.getState().operationResult).toBeNull();
+    store.getState().extractMethod(tableAndPrint);
+    store.getState().selectStage(stages[1].id);
+    expect(store.getState().operationResult).toBeNull();
+  });
+
+  it('失敗した操作・selectMethod では前の結果が残り、dismissOperationResult で消える', () => {
+    // Arrange
+    const store = newStore();
+    store.getState().extractMethod(tableAndPrint);
+    const result = store.getState().operationResult;
+    // Act
+    store.getState().extractMethod({ sourceMethodId: 'no-such-method', fragmentIds: ['x'], newMethodName: 'y' });
+    // Assert
+    expect(store.getState().message).not.toBeNull();
+    expect(store.getState().operationResult).toBe(result);
+    store.getState().selectMethod(source);
+    expect(store.getState().operationResult).toBe(result);
+    store.getState().dismissOperationResult();
+    expect(store.getState().operationResult).toBeNull();
+  });
+
+  describe('自動で消える', () => {
+    beforeEach(() => { vi.useFakeTimers(); });
+    afterEach(() => { vi.useRealTimers(); });
+
+    it('NOTICE_VISIBLE_MS 後に null になり、置き換わると数え直す', () => {
+      // Arrange
+      const store = newStore();
+      store.getState().extractMethod(tableAndPrint);
+      vi.advanceTimersByTime(NOTICE_VISIBLE_MS - 1000);
+      // Act
+      store.getState().inlineMethod(renderReportId(store));
+      vi.advanceTimersByTime(NOTICE_VISIBLE_MS - 1000);
+      // Assert
+      expect(store.getState().operationResult).not.toBeNull();
+      vi.advanceTimersByTime(1000);
+      expect(store.getState().operationResult).toBeNull();
+    });
+  });
+});
+
+describe('move count', () => {
+  const tutorial1 = () => {
+    const stage = stages.find((candidate) => candidate.id === 'tutorial-extract-method');
+    if (stage === undefined) throw new Error('チュートリアル1が必要です');
+    return stage;
+  };
+
+  it('抽出1回で1手、最初に戻すと0手、undoで1手に戻る', () => {
+    // Arrange
+    const stage = tutorial1();
+    const store = createGameStore([stage], false, false);
+    const moves = () => movesSince(store.getState().history, store.getState().codebase, stage.codebase);
+
+    // Act
+    store.getState().extractMethod({ sourceMethodId: 'method-print-monthly-report', fragmentIds: ['frag-aggregate-sales', 'frag-compare-last-month'], newMethodName: 'aggregateSales' });
+
+    // Assert
+    expect(moves()).toBe(1);
+
+    // Act
+    store.getState().resetStage();
+
+    // Assert
+    expect(moves()).toBe(0);
+
+    // Act
+    store.getState().undo();
+
+    // Assert
+    expect(moves()).toBe(1);
+  });
+
+  it('自己ベストは少ないほうを残し、localStorageにも保存する', () => {
+    // Arrange
+    localStorage.removeItem('refactor-blocks:move-bests');
+    const store = createGameStore([tutorial1()], false, false);
+
+    // Act
+    store.getState().recordMoveBest('x', 3);
+    store.getState().recordMoveBest('x', 5);
+
+    // Assert
+    expect(store.getState().moveBests.x).toBe(3);
+    expect(localStorage.getItem('refactor-blocks:move-bests')).toBe('{"x":3}');
   });
 });

@@ -27,6 +27,9 @@ export type StageLayer = {
   readonly responsibilities: readonly string[];
 };
 
+/** ステージに関係する設計原則。表示のみに使い、採点には使わない。 */
+export type DesignPrinciple = 'srp' | 'ocp' | 'dip' | 'isp' | 'dry' | 'adp' | 'encapsulation' | 'yagni';
+
 export type Stage = {
   readonly id: string;
   readonly level: StageLevel;
@@ -40,6 +43,8 @@ export type Stage = {
   readonly description: string;
   /** ステージ一覧に出す「学べること」。1〜3個の短い名前。 */
   readonly learns: readonly string[];
+  /** このステージで練習する組み替えの背骨になる設計原則。1〜2個。表示のみ(採点に使わない)。 */
+  readonly principles?: readonly DesignPrinciple[];
   /** 100点になったときに出す理解度チェック。2〜3問。 */
   readonly checks: readonly ConceptCheck[];
   readonly limits: LineLimits;
@@ -54,6 +59,8 @@ export type Stage = {
   readonly codebase: Codebase;
   /** 責務(Fragment.responsibility)ごとの自動命名先。 */
   readonly classNames: Readonly<Record<string, string>>;
+  /** 責務(Fragment.responsibility)ごとの画面に出す日本語名。例: { aggregation: '集計' }。'call' には書かない。 */
+  readonly responsibilityNames: Readonly<Record<string, string>>;
   /** 責務(Fragment.responsibility)ごとの自動メソッド名。 */
   readonly methodNames?: Readonly<Record<string, string>>;
   /** リファクタリング後に出す変更依頼。責務は初期のコードベースに存在するものを選ぶ。 */

@@ -3,6 +3,7 @@
 /** 初級1: 保存とメール送信まで抱えた UserController から、用意されたクラスへ処理を移す。 */
 const userControllerStage: Stage = {
   methodNames: { http: 'handleRequest', persistence: 'saveUser', notification: 'sendNotification' },
+  responsibilityNames: { http: '入力の検証', persistence: 'DBへの保存', notification: 'メール通知' },
   classNames: {
     "http": "HttpHandler",
     "persistence": "PersistenceHandler",
@@ -13,6 +14,7 @@ const userControllerStage: Stage = {
   level: 'beginner',
   title: '初級1: 何でも屋の UserController',
   learns: ['責務の分離', 'Move Method'],
+  principles: ['srp'],
   checks: [
     {
       id: 'check-1',
@@ -101,6 +103,7 @@ const userControllerStage: Stage = {
 /** 初級2: 移動先のクラスが用意されていない。責務ごとのクラスを自分で作ってから移す。 */
 const invoiceServiceStage: Stage = {
   methodNames: { pricing: 'calculateInvoiceTotal', rendering: 'renderInvoice', storage: 'storeInvoice', notification: 'sendInvoice' },
+  responsibilityNames: { pricing: '金額の計算', rendering: 'PDFの描画', storage: 'PDFの保管', notification: 'メール通知' },
   classNames: {
     "pricing": "InvoicePricing",
     "rendering": "InvoicePdfRenderer",
@@ -112,6 +115,7 @@ const invoiceServiceStage: Stage = {
   level: 'beginner',
   title: '初級2: クラスを自分で作る',
   learns: ['クラスの追加', '責務の分離'],
+  principles: ['srp'],
   checks: [
     {
       id: 'check-1',

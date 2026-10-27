@@ -18,7 +18,7 @@ import { findRoomToImprove } from '../../domain/scoring/roomToImprove';
 import { findVisibilityViolations } from '../../domain/scoring/visibility';
 import { behaviorTests, runBehaviorTests } from '../../domain/testing/behaviorTests';
 import type { Result } from '../../domain/shared/Result';
-import { applySolutionSteps, sampleAnswerCodebase, sampleAnswerSteps, solutionSnapshots, type SolutionStep } from '../../domain/stage/sampleAnswer';
+import { applySolutionSteps, sampleAnswerCodebase, sampleAnswerSteps, sampleMovesToPerfect, solutionSnapshots, type SolutionStep } from '../../domain/stage/sampleAnswer';
 import { sampleImplementation } from '../../domain/change/sampleImplementation';
 import type { Stage } from '../../domain/stage/Stage';
 import { findScatteredResponsibilities } from '../../domain/stage/scatteredResponsibilities';
@@ -26,6 +26,7 @@ import { methodNamingOf } from '../../domain/stage/methodNaming';
 import { blankDesignProblems } from '../blankDesigns/blankDesignProblems';
 import { validateCheck } from '../../domain/stage/conceptCheck';
 import { stages } from './stageCatalog';
+import { DESIGN_PRINCIPLES } from './designPrinciples';
 import { storyChapters } from '../story/storyChapters';
 import { solutionPhaseTable } from './solutionPhaseTable';
 
@@ -115,6 +116,27 @@ function classNameFailures(stage: Stage): string[] {
   }
   for (const [responsibility, name] of Object.entries(stage.classNames)) {
     if (existingNames.has(name)) failures.push(`${stage.id}: ${responsibility} uses initial name ${name}`);
+  }
+  return failures;
+}
+
+/** 初期コードと変更依頼に出てくる責務(call を除く)すべてに、画面に出す日本語名があるか。 */
+function responsibilityNameFailures(stage: Stage): string[] {
+  const responsibilities = stageResponsibilities(stage);
+  for (const request of stage.changeRequests) {
+    if (request.responsibility !== 'call') responsibilities.add(request.responsibility);
+  }
+  const identifiers = new Set([...Object.values(stage.classNames), ...Object.values(stage.methodNames ?? {})]);
+  const failures: string[] = [];
+  for (const responsibility of responsibilities) {
+    if (!Object.hasOwn(stage.responsibilityNames, responsibility)) failures.push(`${stage.id}: missing ${responsibility}`);
+  }
+  const seen = new Set<string>();
+  for (const [responsibility, name] of Object.entries(stage.responsibilityNames)) {
+    if (name.length < 1 || name.length > 10) failures.push(`${stage.id}: invalid ${responsibility}`);
+    if (name === responsibility || identifiers.has(name)) failures.push(`${stage.id}: identifier ${responsibility}`);
+    if (seen.has(name)) failures.push(`${stage.id}: duplicate ${name}`);
+    seen.add(name);
   }
   return failures;
 }
@@ -1061,6 +1083,14 @@ describe('stageCatalog', () => {
     expect(failures).toEqual([]);
   });
 
+  it('全ステージと白紙設計の問題の責務に、重ならない日本語名が付いている', () => {
+    // Arrange / Act
+    const failures = [...stages, ...blankDesignProblems].flatMap(responsibilityNameFailures);
+
+    // Assert
+    expect(failures).toEqual([]);
+  });
+
   it('自動命名で名前だけ変わっても採点結果は変わらない', () => {
     // Arrange
     const stage = stages.find((candidate) => candidate.id === 'beginner-invoice-service');
@@ -1422,5 +1452,55 @@ describe('模範解答の方針', () => {
 
     // Assert
     expect(unknown).toEqual([]);
+  });
+});
+
+describe('模範解答で100点に届く手数', () => {
+  it('模範解答を持つ全ステージで、1以上かつ手順の長さ以下', () => {
+    // Arrange
+    const withAnswer = stages.filter((stage) => sampleAnswerSteps[stage.id] !== undefined);
+
+    // Act
+    const invalid = withAnswer.filter((stage) => {
+      const moves = sampleMovesToPerfect(stage);
+      return moves === undefined || moves < 1 || moves > (sampleAnswerSteps[stage.id] ?? []).length;
+    }).map((stage) => stage.id);
+
+    // Assert
+    expect(withAnswer.length).toBeGreaterThan(0);
+    expect(invalid).toEqual([]);
+  });
+
+  it('チュートリアル1は最初の抽出1手で100点になる', () => {
+    // Arrange
+    const stage = stages.find((candidate) => candidate.id === 'tutorial-extract-method');
+    if (stage === undefined) throw new Error('チュートリアル1がありません');
+
+    // Act & Assert
+    expect(sampleMovesToPerfect(stage)).toBe(1);
+  });
+});
+
+describe('設計原則(principles)', () => {
+  it.each(stages.map((stage) => [stage.id, stage] as const))('%s: 関係する原則が1〜2個あり、重複しない', (_id, stage) => {
+    // Arrange
+    const principles = stage.principles ?? [];
+
+    // Act & Assert
+    expect(principles.length).toBeGreaterThanOrEqual(1);
+    expect(principles.length).toBeLessThanOrEqual(2);
+    expect(new Set(principles).size).toBe(principles.length);
+  });
+
+  it('原則の表は全原則に空でない表示名と40文字以内の説明を持つ', () => {
+    // Arrange
+    const entries = Object.entries(DESIGN_PRINCIPLES);
+
+    // Act & Assert
+    for (const [, info] of entries) {
+      expect(info.label.trim()).not.toBe('');
+      expect(info.summary.trim()).not.toBe('');
+      expect(info.summary.length).toBeLessThanOrEqual(40);
+    }
   });
 });

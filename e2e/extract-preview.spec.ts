@@ -12,7 +12,7 @@ test('手直し中もメソッド行数のバッジは一行で表示する', as
   const openSidebar = page.getByRole('button', { name: 'サイドバーを開く' });
   if (await openSidebar.count() > 0) await openSidebar.click();
   await page.getByTestId('opening-fix-banner').getByRole('button', { name: '実際に直してみる' }).click();
-  await method.click();
+  await page.getByRole('checkbox', { name: 'ReportService.printMonthlyReport() を直した' }).check();
 
   // Assert
   await expect(method.locator('.method-chip__fixed-mark')).toBeVisible();

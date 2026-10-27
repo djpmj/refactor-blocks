@@ -1,10 +1,15 @@
 import type { Stage } from '../stage/Stage';
 import type { Progress } from './Progress';
+import { retryMark, type Assists } from './assists';
+import { remainingMilestones, type Milestones, type StageMilestone } from './milestones';
 
 export type StageStatus =
   | { readonly kind: 'not-started' }
   | { readonly kind: 'in-progress' }
   | { readonly kind: 'scored'; readonly best: number }
+  /** 自己ベスト100点だが、残りの段階がある(remaining は空でない)。 */
+  | { readonly kind: 'perfect'; readonly remaining: readonly StageMilestone[] }
+  /** 自己ベスト100点で、残りの段階も無い。 */
   | { readonly kind: 'cleared' };
 
 /** そのステージをクリアしたか(自己ベストが100点)。クリアの定義を変えるときはここだけ直す。 */
@@ -13,15 +18,22 @@ export function isStageCleared(stageId: string, progress: Progress): boolean {
 }
 
 /** ステージ一覧に出す状態。 */
-export function stageStatus(stageId: string, progress: Progress, hasDraft: boolean): StageStatus {
-  const best = progress[stageId];
+export function stageStatus(
+  stage: Pick<Stage, 'id' | 'checks' | 'changeRequests'>,
+  progress: Progress,
+  milestones: Milestones,
+  hasDraft: boolean,
+): StageStatus {
+  const best = progress[stage.id];
   if (best === undefined) return hasDraft ? { kind: 'in-progress' } : { kind: 'not-started' };
-  return isStageCleared(stageId, progress) ? { kind: 'cleared' } : { kind: 'scored', best };
+  if (!isStageCleared(stage.id, progress)) return { kind: 'scored', best };
+  const remaining = remainingMilestones(stage, milestones);
+  return remaining.length === 0 ? { kind: 'cleared' } : { kind: 'perfect', remaining };
 }
 
-/** 並び順で最初の、クリアしていない(自己ベストが100でない)ステージ。全部クリアしていれば undefined。 */
-export function recommendNextStage(stages: readonly Stage[], progress: Progress): Stage | undefined {
-  return stages.find((stage) => !isStageCleared(stage.id, progress));
+/** 並び順で最初の、クリア(100点かつ残りの段階なし)していないステージ。全部クリアしていれば undefined。 */
+export function recommendNextStage(stages: readonly Stage[], progress: Progress, milestones: Milestones): Stage | undefined {
+  return stages.find((stage) => stageStatus(stage, progress, milestones, false).kind !== 'cleared');
 }
 
 /** 1つの学べること(概念)の習得状況。 */
@@ -50,4 +62,9 @@ export function conceptMastery(
     const remaining = related.filter((stage) => !isCleared(stage.id));
     return { concept, total: related.length, cleared: related.length - remaining.length, remaining };
   });
+}
+
+/** 並び順で最初の、自己ベスト100で「もう一度自力で」の印(retryMark)があるステージ。無ければ undefined。 */
+export function recommendReviewStage(stages: readonly Stage[], progress: Progress, assists: Assists): Stage | undefined {
+  return stages.find((stage) => isStageCleared(stage.id, progress) && retryMark(assists, stage.id) !== undefined);
 }
