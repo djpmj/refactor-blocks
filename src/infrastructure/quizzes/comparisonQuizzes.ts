@@ -18,6 +18,13 @@ function firstRequest(stage: Stage): ChangeRequest {
   return request;
 }
 
+/** 先頭以外の変更依頼を使う問題のため。 */
+function requestById(stage: Stage, id: string): ChangeRequest {
+  const request = stage.changeRequests.find((candidate) => candidate.id === id);
+  if (request === undefined) throw new Error(`ステージ ${stage.id} に変更依頼 ${id} がありません`);
+  return request;
+}
+
 /** 出題用に、メソッドの無いクラスとクラスの無いファイルを取り除く(空の受け皿が「中身を入れる先」のヒントになるため)。 */
 function withoutEmptyShells(codebase: Codebase): Codebase {
   const files = codebase.files.map((file) => ({ ...file, classes: file.classes.filter((codeClass) => codeClass.methods.length > 0) }));
@@ -32,6 +39,10 @@ const userController = stageById('beginner-user-controller');
 const volatileTax = stageById('intermediate-volatile-tax');
 const volatileFormat = stageById('intermediate-volatile-format');
 const collapseHierarchy = stageById('advanced-collapse-hierarchy');
+const discountStrategy = stageById('advanced-discount-strategy');
+const orderState = stageById('advanced-order-state');
+const interfaceSegregation = stageById('advanced-interface-segregation');
+const valueObject = stageById('advanced-value-object');
 
 // 2問目と3問目は同じ2つの設計で、依頼だけが違う(どこが変わるかで良し悪しが入れ替わる)
 const formatSplitDesign = design('帳票の整形を ReportFormatter に分けた設計', sampleAnswerCodebase(volatileFormat));
@@ -84,5 +95,57 @@ export const comparisonQuizzes: readonly ComparisonQuiz[] = [
     changeRequest: firstRequest(collapseHierarchy),
     explanation:
       '子が1つしかない継承は、CSVという1つの概念を2クラスに分けてしまい、区切り文字の変更でも BaseExporter と CsvExporter の両方を直すことになる。拡張ポイントは、2つ目の出力形式が本当に必要になってから作れば間に合う。',
+  },
+  {
+    id: 'quiz-discount-strategy',
+    title: '5問目: プレミアム会員の割引率が変わるなら',
+    description: 'ネットショップの注文で、会員ランク(通常・プレミアム・VIP)ごとに割引を計算するコード。同じ機能を2通りに書いた設計がある。',
+    limits: discountStrategy.limits,
+    designs: {
+      a: design('割引の計算を、ランクごとのクラス RegularDiscount・PremiumDiscount・VipDiscount に分けた設計', sampleAnswerCodebase(discountStrategy)),
+      b: design('ランクごとの割引を、DiscountService の calculateDiscount の中の if 分岐で切り替える設計', discountStrategy.codebase),
+    },
+    changeRequest: requestById(discountStrategy, 'req-premium-discount'),
+    explanation:
+      'ランクごとのクラスに分けた設計なら、プレミアムの割引率の変更は PremiumDiscount の中で済む。if 分岐の設計では、通常・VIPの計算や入力の検証が同居する14行の calculateDiscount に+5行が入り、メソッドの上限18行を超えてしまう。方式ごとにクラスを分けるのが Strategy パターン。',
+  },
+  {
+    id: 'quiz-order-state',
+    title: '6問目: 支払済みの注文の取り消しが変わるなら',
+    description: 'ネットショップの注文の支払い・発送・取り消し。注文の状態(未払い・支払済み・発送済み)で振る舞いが変わる処理を、2通りに書いた設計がある。',
+    limits: orderState.limits,
+    designs: {
+      a: design('状態ごとの分岐を、Order の pay・ship・cancel のそれぞれの中に書いた設計', orderState.codebase),
+      b: design('状態ごとの処理を、UnpaidState・PaidState・ShippedState のクラスに分けた設計', sampleAnswerCodebase(orderState)),
+    },
+    changeRequest: requestById(orderState, 'req-paid-refund-fee'),
+    explanation:
+      '状態ごとのクラスに分けた設計なら、支払済みの注文の扱いは PaidState の中を読めば済む。分岐を Order の各メソッドに書いた設計では、pay・ship・cancel のどれを直すときも、未払い・発送済みの分岐を一緒に読んで巻き込むことになる。状態そのものをクラスにするのが State パターン。',
+  },
+  {
+    id: 'quiz-interface-segregation',
+    title: '7問目: タスクの登録が変わるなら',
+    description: '障害対応の連絡を Slack・Teams・Backlog・Chatwork へ送るコード。チャットへの投稿とタスク管理の約束(インターフェース)を、2通りに作った設計がある。',
+    limits: interfaceSegregation.limits,
+    designs: {
+      a: design('投稿は ChatClient、タスク管理は TaskTracker と、インターフェースを役割ごとに分けた設計', sampleAnswerCodebase(interfaceSegregation)),
+      b: design('投稿とタスク管理を、1つのインターフェース CollaborationTool にまとめた設計', interfaceSegregation.codebase),
+    },
+    changeRequest: requestById(interfaceSegregation, 'req-task-assignee'),
+    explanation:
+      '役割ごとに分けた設計なら、タスクの登録を直すのは、本当にタスクを扱う Backlog と Chatwork のクラスで済む。1つにまとめた設計では、タスクを扱えない Slack・Teams の空実装(createTask)まで直す対象になり、投稿の処理と同じクラスで巻き込みも増える。使わない約束を押し付けないのがインターフェース分離の原則。',
+  },
+  {
+    id: 'quiz-value-object',
+    title: '8問目: 金額の表示が変わるなら',
+    description: '経費精算システム。申請・承認・精算の3つのサービスが、外貨を含む経費の金額を扱う。金額と通貨の持ち方を2通りに作った設計がある。',
+    limits: valueObject.limits,
+    designs: {
+      a: design('金額を数値、通貨を文字列のまま、各サービスで扱う設計', valueObject.codebase),
+      b: design('金額と通貨を Money クラスにまとめた設計', sampleAnswerCodebase(valueObject)),
+    },
+    changeRequest: requestById(valueObject, 'req-hide-yen-decimals'),
+    explanation:
+      'Money にまとめた設計なら、金額の表示の変更は Money の format の中で済む(呼び出し元のサービスは動作確認だけ)。数値と文字列のまま扱う設計では、申請と精算の2つのサービスに同じ表示の処理があり、両方を直したうえ、承認依頼や振込の処理を巻き込む。値とそのルールを1か所にまとめるのが値オブジェクト。',
   },
 ];
