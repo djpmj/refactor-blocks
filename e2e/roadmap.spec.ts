@@ -134,3 +134,93 @@ test('学べることごとに切り替えて閉じ、再度開くと「ステ�
   await expect(page.getByTestId('roadmap-view-stages')).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByTestId('roadmap-view-concepts')).toHaveAttribute('aria-pressed', 'false');
 });
+
+test('コードの臭い図鑑で症状・弊害・直し方と練習できるステージが読める', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await page.getByTestId('roadmap-open').click();
+  await expect(page.getByTestId('roadmap-view-stages')).toHaveAttribute('aria-pressed', 'true');
+
+  // Act
+  await page.getByTestId('roadmap-view-gallery').click();
+
+  // Assert
+  await expect(page.getByTestId('roadmap-view-gallery')).toHaveAttribute('aria-pressed', 'true');
+  const gallery = page.getByTestId('antipattern-gallery');
+  await expect(gallery.getByRole('heading', { name: 'コードの臭い' })).toBeVisible();
+  await expect(gallery.getByRole('heading', { name: '設計の原則' })).toBeVisible();
+  const envy = page.getByTestId('gallery-entry-feature-envy');
+  await expect(envy.getByText('症状')).toBeVisible();
+  await expect(envy.getByText('弊害')).toBeVisible();
+  await expect(envy.getByText('直し方')).toBeVisible();
+  await expect(envy.getByRole('button', { name: '中級6: 他人のデータばかり触るメソッド' })).toBeVisible();
+  const longMethodButtons = page.getByTestId('gallery-entry-long-method').getByRole('button');
+  await expect(longMethodButtons.nth(0)).toHaveText('チュートリアル1: 長いメソッドを分ける');
+  await expect(longMethodButtons.nth(1)).toHaveText('チュートリアル2: 太った placeOrder');
+});
+
+test('図鑑のステージボタンで移動し、今いるステージなら閉じるだけ', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await page.getByTestId('roadmap-open').click();
+  await page.getByTestId('roadmap-view-gallery').click();
+
+  // Act
+  await page.getByTestId('gallery-entry-middle-man').getByRole('button', { name: /中級12: 横流しするだけの OrderManager/ }).click();
+
+  // Assert
+  await expect(page.getByTestId('stage-roadmap')).toHaveCount(0);
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('中級12');
+
+  // Act(今いるステージ)
+  await page.getByTestId('roadmap-open').click();
+  await page.getByTestId('roadmap-view-gallery').click();
+  await page.getByTestId('gallery-entry-middle-man').getByRole('button', { name: /中級12/ }).click();
+
+  // Assert
+  await expect(page.getByTestId('stage-roadmap')).toHaveCount(0);
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('中級12');
+});
+
+test('図鑑に切り替えて Esc で閉じ、再度開くと「ステージ順」に戻り、進捗は変わらない', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  const before = await page.evaluate(() => localStorage.getItem('refactor-blocks:progress'));
+  await page.getByTestId('roadmap-open').click();
+  await page.getByTestId('roadmap-view-gallery').click();
+  await expect(page.getByTestId('antipattern-gallery')).toBeVisible();
+
+  // Act
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('stage-roadmap')).toHaveCount(0);
+  await page.getByTestId('roadmap-open').click();
+
+  // Assert
+  await expect(page.getByTestId('roadmap-view-stages')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('roadmap-view-gallery')).toHaveAttribute('aria-pressed', 'false');
+  expect(await page.evaluate(() => localStorage.getItem('refactor-blocks:progress'))).toBe(before);
+});
+
+test('図鑑の切り替えとステージボタンをキーボードだけで操作できる', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await page.getByTestId('roadmap-open').click();
+  await page.getByTestId('roadmap-view-concepts').focus();
+
+  // Act
+  await page.keyboard.press('Tab');
+  await expect(page.getByTestId('roadmap-view-gallery')).toBeFocused();
+  await page.keyboard.press('Enter');
+
+  // Assert
+  await expect(page.getByTestId('antipattern-gallery')).toBeVisible();
+
+  // Act
+  const button = page.getByTestId('gallery-entry-feature-envy').getByRole('button').first();
+  await button.focus();
+  await page.keyboard.press('Space');
+
+  // Assert
+  await expect(page.getByTestId('stage-roadmap')).toHaveCount(0);
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('中級6');
+});
