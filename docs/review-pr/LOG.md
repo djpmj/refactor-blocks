@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-28 12:30 UTC PR #370 設計くらべを4問から8問に増やす (#347)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint / typecheck / vitest 2332件)✅。Issue #347の仕様と差分を照合(5〜8問目のデータ・requestById・E2Eの8問対応・domain変更なし)。E2Eはレビュー環境にChromiumが無く未実行(PR本文では473件成功)
+- マージ: squash & delete-branch
+
 ## 2026-10-28 UTC PR #369 白紙設計の答え合わせが押せない理由を表示する (#344)
 
 - 判定: 合格(blocker無し)
@@ -210,17 +216,5 @@
 
 - 判定: 合格(blocker無し。suggestion: e2e/toast-clears-when-stale.spec.ts の固定800ms待機を状態待ちへ)
 - 確認した内容: npm run check(lint・typecheck・Vitest 2030件)✅。messageは状況変化で消し出した操作自身では残す・noticeは8秒で自動消去し置換で数え直す、をIssue #286・docs/specs/toast-clears-when-stale.mdと照合。E2Eはこの環境で実行許可が無く未実行(PR本文では全352件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-25 02:40 UTC PR #304 離れた処理は1つのメソッドに抽出できないようにする (#285)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(lint・typecheck・Vitest 2024件)✅。連続判定(isContiguous)をdomainの検証順序・application日本語メッセージ・MethodEditorの無効理由で仕様どおりに実装していることをIssue #285・docs/specs/extract-contiguous-only.mdと照合。E2Eはこの環境で実行許可が無く未実行(PR本文では全348件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-25 01:15 UTC PR #301 ヒント・うわさ・参考をツールバーのポップオーバーに移す (#281)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(2016件)✅ / npm run lint ✅ / npm run typecheck ✅。仕様(toolbar-hint-rumor-popovers)どおりの移設、開くパネル1つへの集約、Escでの閉じ・フォーカス復帰を差分で確認。E2Eはレビュー環境にPlaywrightブラウザが無く未実行(PR本文では346件成功)
 - マージ: squash & delete-branch
 

@@ -173,3 +173,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [clear-celebration-screen](clear-celebration-screen.md) | 初めて100点にしたら全画面のクリア画面を出し、次の行き先を選ばせる |
 | [term-glossary-popover](term-glossary-popover.md) | 専門用語を用語ボタンで包み、押すとその場で短い定義を引けるようにする |
 | [blank-check-unplaced-feedback](blank-check-unplaced-feedback.md) | 白紙設計で答え合わせが押せない理由と未配置の部品名をボタンの下に出す |
+| [comparison-quiz-more-questions](comparison-quiz-more-questions.md) | 設計くらべに Strategy・State・インターフェース分離・Money の4問を足して8問にする |
