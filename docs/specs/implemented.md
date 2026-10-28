@@ -171,3 +171,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [principle-labels](principle-labels.md) | ステージに設計原則(SRP・OCPなど)を付け、一覧と「なぜ分けるのか」に表示する |
 | [review-weak-stages](review-weak-stages.md) | 助けを使って100点にしたステージに「もう一度自力で」の印と復習のおすすめを出す |
 | [clear-celebration-screen](clear-celebration-screen.md) | 初めて100点にしたら全画面のクリア画面を出し、次の行き先を選ばせる |
+| [term-glossary-popover](term-glossary-popover.md) | 専門用語を用語ボタンで包み、押すとその場で短い定義を引けるようにする |

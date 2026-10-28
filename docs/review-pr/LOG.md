@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-28 UTC PR #365 用語ボタン(用語集)を追加し、目標文・採点の用語から意味を引けるようにする (#326)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(2326件) / npm run lint ✅ / npm run typecheck ✅。仕様書term-glossary-popoverと照合し、masterとの競合解消コミット(StageCardの用語ボタン構成とretry・復習バッジの統合)も確認。E2Eはレビュー環境にChromiumが無く未実行(PR本文では460件成功)
+- マージ: squash & delete-branch
+
 ## 2026-10-27 15:20 UTC PR #368 初回満点時のクリア画面と遷移選択を追加 (#315)
 
 - 判定: 合格(blocker無し)
@@ -210,11 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test(2016件)✅ / npm run lint ✅ / npm run typecheck ✅。仕様(toolbar-hint-rumor-popovers)どおりの移設、開くパネル1つへの集約、Escでの閉じ・フォーカス復帰を差分で確認。E2Eはレビュー環境にPlaywrightブラウザが無く未実行(PR本文では346件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-25 00:10 UTC PR #300 再読み込みしても、最後に遊んでいたステージから続ける (#282)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(lint・typecheck・Vitest 2005件)✅。保存IDの読み込み(空文字・存在しないID・localStorage例外は先頭ステージ)、saveDraftsOn=falseで従来どおり先頭、selectStageでの保存をIssue #282・docs/specs/resume-last-stage.mdと照合。E2Eはレビュー環境にChromiumが無く未実行(PR本文では全317件成功)
 - マージ: squash & delete-branch
 
