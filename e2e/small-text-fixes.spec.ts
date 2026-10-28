@@ -27,7 +27,7 @@ test('チュートリアル2の100点後は読む量だけを表示し、空条�
   await extract(page, 'placeOrder', '確認メールを送る', 'sendConfirmationMail');
   await extract(page, 'placeOrder', '在庫があるか検証する', 'validateStock');
   await expect(page.getByTestId('score-value')).toContainText('100');
-  await expect(page.getByText('空のクラス・ファイル: 0件にする(中身を入れるか、消す)', { exact: true })).toBeVisible();
+  await expect(page.locator('.clear-conditions li[aria-label="達成: 空のクラス・ファイル: 0件にする(中身を入れるか、消す)"]')).toBeVisible();
   await releaseAllManualFixSites(page);
 
   const reason = page.getByRole('region', { name: 'なぜ分けるのか' });

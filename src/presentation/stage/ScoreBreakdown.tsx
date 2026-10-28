@@ -10,6 +10,7 @@ import { findLineLimitViolations } from '../../domain/scoring/lineLimits';
 import { violationDependencies } from '../../domain/scoring/violationDependencies';
 import { violationTargets } from '../../domain/scoring/violationTargets';
 import type { Stage } from '../../domain/stage/Stage';
+import { GlossaryTermsRow } from '../glossary/GlossaryText';
 import { describeDependencies, describeTargets, type DescribedTargets } from './describeTargets';
 
 function MisplacedViolationDetails({ codebase }: Readonly<{ codebase: Codebase }>) {
@@ -88,6 +89,7 @@ function WhyText({ rule, lineWhy }: Readonly<{ rule: ScoreRule; lineWhy: ReturnT
     ))}</>;
   }
   return <>
+    <GlossaryTermsRow text={RULE_LABEL[rule]} className="score-breakdown__terms" />
     <p><strong>こう困ります:</strong>{RULE_WHY[rule].trouble}</p>
     <p><strong>だから:</strong>{RULE_WHY[rule].because}</p>
   </>;

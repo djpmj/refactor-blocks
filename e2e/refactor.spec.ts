@@ -797,7 +797,7 @@ test('ステージを選ぶと、そのステージのコードベースと目�
   await expect(page.getByTestId('score-value')).toContainText('60点');
   await expectDeduction(page, '循環依存 1組(矢印2本)');
   await page.getByRole('button', { name: 'サイドバーを開く' }).click();
-  await expect(page.locator('.clear-condition__goal', { hasText: '循環依存: 輪を0組にする' })).toBeVisible();
+  await expect(page.locator('.clear-conditions li[aria-label*="循環依存: 輪を0組にする"]')).toBeVisible();
   await expect(page.locator('.clear-condition__current', { hasText: '今: 1組(Order ⇄ Customer)' })).toBeVisible();
   await expect(page.getByTestId('class-Order').getByTestId('cyclic-mark')).toBeVisible();
   await expect(page.getByTestId('class-Customer').getByTestId('cyclic-mark')).toBeVisible();
@@ -821,7 +821,7 @@ test('循環依存を断ち切ると、循環依存の減点とクラスの印�
   await expectNoDeduction(page, '循環依存');
   await expect(page.getByRole('button', { name: /循環依存/ })).toHaveCount(0);
   await page.getByRole('button', { name: 'サイドバーを開く' }).click();
-  const cycleCondition = page.locator('li.clear-condition--met', { has: page.locator('.clear-condition__goal', { hasText: '循環依存: 輪を0組にする' }) });
+  const cycleCondition = page.locator('li.clear-condition--met[aria-label*="循環依存: 輪を0組にする"]');
   await expect(cycleCondition).toBeVisible();
   await expect(page.getByTestId('class-Order').getByTestId('cyclic-mark')).toHaveCount(0);
   await expect(page.getByTestId('class-Customer').getByTestId('cyclic-mark')).toHaveCount(0);
@@ -1878,9 +1878,9 @@ test('中級3: renderTemplate を public にするとアクセス制御の減点
   await page.goto('/');
   await selectStage(page, '中級3: 越境する private メソッド');
   await page.getByRole('button', { name: 'サイドバーを開く' }).click();
-  const couplingCondition = page.getByText('結合度: 依存先は0クラスまで', { exact: false });
+  const couplingCondition = page.locator('.clear-conditions li[aria-label*="結合度: 依存先は0クラスまで"]');
   await expect(couplingCondition).toBeVisible();
-  await expect(couplingCondition.locator('..')).toContainText('理由: private を public にして呼べるようにするのではなく、処理を使う側のクラスへ移して、ほかのクラスを呼ばずに済む形を目指すため');
+  await expect(couplingCondition).toContainText('理由: private を public にして呼べるようにするのではなく、処理を使う側のクラスへ移して、ほかのクラスを呼ばずに済む形を目指すため');
   await expect(page.getByTestId('score-value')).toContainText('70点');
   await expectDeductions(page, [['行数 ×1', 10], ['アクセス制御 ×1', 10], ['結合度 ×1', 10]]);
 

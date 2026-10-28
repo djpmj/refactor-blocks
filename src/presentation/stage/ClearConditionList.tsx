@@ -6,6 +6,7 @@ import type { Stage } from '../../domain/stage/Stage';
 import type { History } from '../../domain/codebase/history';
 import { useGameStore } from '../store/useGameStore';
 import { findLineLimitViolations } from '../../domain/scoring/lineLimits';
+import { GlossaryText } from '../glossary/GlossaryText';
 import { describeCondition } from './describeCondition';
 
 type PreviousConditions = {
@@ -134,7 +135,7 @@ export function ClearConditionList({ stage, codebase, initial, current }: Readon
             >
               <span className="clear-condition__badge" aria-hidden="true">{achieved ? '✓' : '✗'}</span>
               <span className="clear-condition__description">
-                <span className="clear-condition__goal">{description.goal}</span>
+                <span className="clear-condition__goal"><GlossaryText text={description.goal} /></span>
                 {description.current !== null && <span className="clear-condition__current">{description.current}</span>}
                 {stage.conditionNotes?.[condition.rule] === undefined ? null : (
                   <small className="clear-condition__note">理由: {stage.conditionNotes[condition.rule]}</small>
