@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-28 UTC PR #369 白紙設計の答え合わせが押せない理由を表示する (#344)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint / typecheck / vitest 2326件)✅。Issue #344の仕様と差分を照合(理由文・aria-describedby・全配置後は非表示・CSS再利用・domain変更なし)。E2Eはレビュー環境にChromiumが無く未実行(PR本文では468件成功)、追加E2Eの期待値はコードと整合を目視確認
+- マージ: squash & delete-branch
+
 ## 2026-10-28 UTC PR #365 用語ボタン(用語集)を追加し、目標文・採点の用語から意味を引けるようにする (#326)
 
 - 判定: 合格(blocker無し)

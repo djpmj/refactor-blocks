@@ -172,3 +172,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [review-weak-stages](review-weak-stages.md) | 助けを使って100点にしたステージに「もう一度自力で」の印と復習のおすすめを出す |
 | [clear-celebration-screen](clear-celebration-screen.md) | 初めて100点にしたら全画面のクリア画面を出し、次の行き先を選ばせる |
 | [term-glossary-popover](term-glossary-popover.md) | 専門用語を用語ボタンで包み、押すとその場で短い定義を引けるようにする |
+| [blank-check-unplaced-feedback](blank-check-unplaced-feedback.md) | 白紙設計で答え合わせが押せない理由と未配置の部品名をボタンの下に出す |
