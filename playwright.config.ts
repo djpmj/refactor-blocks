@@ -7,11 +7,19 @@ if (!Number.isInteger(PORT) || PORT < 1024 || PORT > 65535) {
 }
 const ORIGIN = `http://localhost:${PORT}`;
 
+// ローカルは既定で1並列(複数ブラウザでPCが固まるため)。CIは Playwright の既定に任せる
+const rawWorkers = process.env.E2E_WORKERS;
+const WORKERS = rawWorkers === undefined ? (process.env.CI ? undefined : 1) : Number(rawWorkers);
+if (WORKERS !== undefined && (!Number.isInteger(WORKERS) || WORKERS < 1)) {
+  throw new Error(`E2E_WORKERS は 1 以上の整数で指定してください(受け取った値: ${String(rawWorkers)})`);
+}
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
+  workers: WORKERS,
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',
   use: {
     baseURL: ORIGIN,

@@ -18,6 +18,93 @@ import { saveLastStageId } from '../../infrastructure/progress/lastStageStorage'
 
 const ghost = { kind: 'method' as const, methodId: 'method-example', toClassId: 'class-example' };
 
+describe('クリア画面', () => {
+  const stage = stages.find((candidate) => candidate.id === 'tutorial-extract-method');
+  if (stage === undefined) throw new Error('チュートリアル1が必要です');
+  const complete = (store: ReturnType<typeof createGameStore>) => store.getState().extractMethod({ sourceMethodId: 'method-print-monthly-report', fragmentIds: ['frag-aggregate-sales', 'frag-compare-last-month'], newMethodName: 'aggregateSales' });
+
+  it('初めて100点にした操作で一度だけ出し、閉じても記録を残す', () => {
+    // Arrange
+    const stage = stages.find((candidate) => candidate.title === 'チュートリアル1: 長いメソッドを分ける');
+    if (stage === undefined) throw new Error('チュートリアル1が必要です');
+    const store = createGameStore([stage], false, false);
+    expect(store.getState().clearScreen).toBeNull();
+
+    // Act
+    expect(store.getState().extractMethod({ sourceMethodId: 'method-print-monthly-report', fragmentIds: ['frag-aggregate-sales', 'frag-compare-last-month'], newMethodName: 'aggregateSales' })).toBe(true);
+
+    // Assert
+    expect(scoreCodebase(store.getState().codebase, stage).total).toBe(100);
+    expect(store.getState().clearScreen).toEqual({ stageId: stage.id });
+    expect(store.getState().clearShownStages).toEqual([stage.id]);
+    store.getState().dismissClearScreen();
+    expect(store.getState().clearScreen).toBeNull();
+    store.getState().undo();
+    store.getState().redo();
+    expect(store.getState().clearScreen).toBeNull();
+    expect(store.getState().clearShownStages).toEqual([stage.id]);
+  });
+
+  it('ツアー中の100点では出さず、ステージ移動では表示だけを閉じる', () => {
+    // Arrange
+    const first = stages.find((candidate) => candidate.id === 'tutorial-extract-method');
+    const second = stages.find((candidate) => candidate.id === 'tutorial-order-service');
+    if (first === undefined || second === undefined) throw new Error('チュートリアルが必要です');
+    const store = createGameStore([first, second], false, false);
+    store.setState({ tourStep: 0 });
+
+    // Act
+    store.getState().extractMethod({ sourceMethodId: 'method-print-monthly-report', fragmentIds: ['frag-aggregate-sales', 'frag-compare-last-month'], newMethodName: 'aggregateSales' });
+
+    // Assert
+    expect(store.getState().clearScreen).toBeNull();
+    expect(store.getState().clearShownStages).toEqual([]);
+    store.getState().undo();
+    store.setState({ tourStep: null });
+    store.getState().extractMethod({ sourceMethodId: 'method-print-monthly-report', fragmentIds: ['frag-aggregate-sales', 'frag-compare-last-month'], newMethodName: 'aggregateSales' });
+    expect(store.getState().clearScreen).toEqual({ stageId: first.id });
+    store.getState().selectStage(second.id);
+    expect(store.getState().clearScreen).toBeNull();
+    expect(store.getState().clearShownStages).toEqual([first.id]);
+  });
+
+  it('resetStage と redo では100点になっても表示しない', () => {
+    // Arrange
+    const store = createGameStore([stage], false, false);
+    expect(complete(store)).toBe(true);
+    store.getState().dismissClearScreen();
+
+    // Act
+    store.getState().undo();
+    store.getState().redo();
+    store.getState().resetStage();
+
+    // Assert
+    expect(store.getState().clearScreen).toBeNull();
+    expect(store.getState().clearShownStages).toEqual([stage.id]);
+  });
+
+  it.each(['manualFix', 'changeSession'] as const)('%s 中に100点にしても表示も記録もしない', (mode) => {
+    // Arrange
+    const store = createGameStore([stage], false, false);
+    if (mode === 'manualFix') {
+      store.getState().startManualFix();
+      expect(store.getState().manualFix).not.toBeNull();
+    } else {
+      const codebase = store.getState().codebase;
+      store.setState({ changeSession: { index: 0, inspected: null, reviewing: null, outcomes: [], base: codebase, carried: codebase, sampleCarried: codebase, baseHistory: store.getState().history } });
+    }
+
+    // Act
+    expect(complete(store)).toBe(true);
+
+    // Assert
+    expect(scoreCodebase(store.getState().codebase, stage).total).toBe(100);
+    expect(store.getState().clearScreen).toBeNull();
+    expect(store.getState().clearShownStages).toEqual([]);
+  });
+});
+
 describe('move visibility notice', () => {
   it('抽出メソッドを別クラスへ移すとpublic化を知らせ、undoでprivateと通知を戻す', () => {
     // Arrange

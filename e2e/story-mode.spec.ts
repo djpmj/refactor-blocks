@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { releaseAllManualFixSites, selectStage } from './selectStage.js';
+import { dismissClearScreen, releaseAllManualFixSites, selectStage } from './selectStage.js';
 
 async function dragMethodToClass(page: Page, methodId: string, classId: string) {
   const source = await page.getByTestId(methodId).boundingBox();
@@ -28,6 +28,7 @@ async function clearTutorial2(page: Page) {
   await extract(page, '確認メールを送る', 'sendConfirmationMail');
   await extract(page, '在庫があるか検証する', 'validateStock');
   await expect(page.getByTestId('score-value')).toContainText('100');
+  await dismissClearScreen(page);
 }
 
 test('保存値が無ければオンで始まり、導入と押下中の色が出る。オフにするとリロード後も残る', async ({ page }) => {

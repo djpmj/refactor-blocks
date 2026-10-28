@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { conceptMastery, isStageCleared, recommendNextStage, stageStatus, type StageStatus } from '../../domain/progress/roadmap';
+import { retryMark, type AssistLevel } from '../../domain/progress/assists';
+import { conceptMastery, isStageCleared, recommendNextStage, recommendReviewStage, stageStatus, type StageStatus } from '../../domain/progress/roadmap';
 import type { Milestones } from '../../domain/progress/milestones';
 import type { Progress } from '../../domain/progress/Progress';
 import type { Stage } from '../../domain/stage/Stage';
@@ -28,15 +29,23 @@ function describeStatus(status: StageStatus): string {
   }
 }
 
+const RETRY_LABEL: Readonly<Record<AssistLevel, string>> = {
+  step: 'もう一度自力で(次の一手を見てクリア)',
+  ghost: 'もう一度自力で(動きで見てクリア)',
+  answer: 'もう一度自力で(答えを見てクリア)',
+};
+
 type StageCardProps = {
   readonly stage: Stage;
   readonly current: boolean;
   readonly recommended: boolean;
+  readonly reviewRecommended: boolean;
+  readonly retry: AssistLevel | undefined;
   readonly status: StageStatus;
   readonly onChoose: () => void;
 };
 
-function StageCard({ stage, current, recommended, status, onChoose }: StageCardProps) {
+function StageCard({ stage, current, recommended, reviewRecommended, retry, status, onChoose }: StageCardProps) {
   return (
     <div
       className={`stage-roadmap__card${current ? ' stage-roadmap__card--current' : ''}`}
@@ -52,7 +61,11 @@ function StageCard({ stage, current, recommended, status, onChoose }: StageCardP
         <span className="stage-roadmap__card-title">{stage.title}</span>
         <span className="stage-roadmap__status">
           {describeStatus(status)}
+          {retry !== undefined && (
+            <span className="stage-roadmap__retry" data-testid={`roadmap-retry-${stage.id}`}> {RETRY_LABEL[retry]}</span>
+          )}
           {recommended && <span className="stage-roadmap__recommend"> おすすめ</span>}
+          {reviewRecommended && <span className="stage-roadmap__recommend"> 復習</span>}
         </span>
       </button>
       <span className="stage-roadmap__learns">
@@ -87,6 +100,8 @@ type StageLevelsProps = {
 };
 
 function StageLevels({ stages, currentId, nextId, progress, milestones, draftStageIds, onChoose }: StageLevelsProps) {
+  const assists = useGameStore((state) => state.assists);
+  const reviewId = recommendReviewStage(stages, progress, assists)?.id;
   // ステージは難易度順に並んでいるので、出てきた順に難易度をまとめる
   const levels = [...new Set(stages.map((stage) => stage.level))];
   return levels.map((level) => (
@@ -101,6 +116,8 @@ function StageLevels({ stages, currentId, nextId, progress, milestones, draftSta
               stage={stage}
               current={stage.id === currentId}
               recommended={stage.id === nextId}
+              reviewRecommended={stage.id === reviewId}
+              retry={isStageCleared(stage.id, progress) ? retryMark(assists, stage.id) : undefined}
               status={stageStatus(stage, progress, milestones, draftStageIds.includes(stage.id))}
               onChoose={() => {
                 onChoose(stage.id);
@@ -129,6 +146,17 @@ function ViewSwitch({ view, onChange }: ViewSwitchProps) {
         学べることごと
       </button>
     </div>
+  );
+}
+
+function ReviewNotice({ stages, progress }: Readonly<{ stages: readonly Stage[]; progress: Progress }>) {
+  const assists = useGameStore((state) => state.assists);
+  const review = recommendReviewStage(stages, progress, assists);
+  if (review === undefined) return null;
+  return (
+    <p className="stage-roadmap__next" data-testid="roadmap-review">
+      {`復習のおすすめ: ${review.title}(もう一度自力で)`}
+    </p>
   );
 }
 
@@ -177,6 +205,7 @@ export function StageRoadmapDialog({ open, onClose }: StageRoadmapDialogProps) {
         <p className="stage-roadmap__next" data-testid="roadmap-next">
           {next === undefined ? '全ステージをクリアしました' : `次のおすすめ: ${next.title}`}
         </p>
+        <ReviewNotice stages={stages} progress={progress} />
         <ViewSwitch view={view} onChange={setView} />
         {view === 'concepts' ? (
           <ConceptMasteryList mastery={conceptMastery(stages, (id) => isStageCleared(id, progress))} onChoose={choose} />

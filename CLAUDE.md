@@ -109,6 +109,7 @@ npm run test:e2e     # Playwright(初回は npx playwright install chromium)
                      # 既定のポートで新しくサーバーを立て、使用中ならエラーで止まる。
                      # 複数worktreeで並行して走らせるときは worktreeごとに別の E2E_PORT を指定する(例: E2E_PORT=5191 npm run test:e2e)。
                      # E2E_REUSE_SERVER=1 を付けると、そのポートに立っている既存サーバーを再利用する
+                     # ローカルの既定は1並列。重くならない範囲で E2E_WORKERS=2 などに上げられる
 npm run check        # lint + typecheck + test をまとめて実行
 npm run stage-report  # 全ステージの一覧表 docs/stages/report.md を再生成
 npm run build        # 本番ビルド

@@ -23,6 +23,7 @@ import { StoryOutro } from './StoryOutro';
 import { NextStageCard } from './NextStageCard';
 import { ManualFixPanel } from './ManualFixPanel';
 import { SpotlightTour } from '../tour/SpotlightTour';
+import { ClearScreen } from './ClearScreen';
 import { TOUR_STAGE_ID } from '../tour/tourSteps';
 import { StageRoadmapDialog } from './StageRoadmapDialog';
 import { TestStatus } from './TestStatus';
@@ -324,6 +325,7 @@ function useStagePanelEffects(stageId: string, score: number, actions: Readonly<
 
 function useStageHintState(stageId: string, score: Score) {
   const focusRule = useGameStore((state) => state.focusRule);
+  const recordAssist = useGameStore((state) => state.recordAssist);
   const [state, setState] = useState({ stageId, count: 0, problemRevealed: false });
   if (state.stageId !== stageId) setState({ stageId, count: 0, problemRevealed: false });
   const rule = biggestProblem(score);
@@ -336,7 +338,10 @@ function useStageHintState(stageId: string, score: Score) {
         setState({ ...state, problemRevealed: true });
       }
     },
-    revealStep: () => setState({ ...state, count: state.count + 1 }),
+    revealStep: () => {
+      recordAssist('step');
+      setState({ ...state, count: state.count + 1 });
+    },
   };
 }
 
@@ -384,6 +389,7 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
   return (
     <>
       <SpotlightTour />
+      <ClearScreen />
       <StageHeader stage={stage} codebase={codebase} score={score} investigating={investigating} />
       <CritiqueResult />
       <ManualFixSidebarOpener setSidebarOpen={setSidebarOpen} />

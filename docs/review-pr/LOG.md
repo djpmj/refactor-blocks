@@ -38,6 +38,24 @@
 
 ## ログ一覧
 
+## 2026-10-27 15:20 UTC PR #368 初回満点時のクリア画面と遷移選択を追加 (#315)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(2309件) / npm run lint ✅ / npm run typecheck ✅(前回指摘のe2e DOM型エラーは7dc2925で解消)。E2E(clear-screen)はレビュー環境にChromiumが無く未実行(PR本文では全466件成功)。Issue #315・docs/specs/clear-celebration-screen.mdの変更対象と差分を照合
+- マージ: squash & delete-branch
+
+## 2026-10-27 12:50 UTC PR #366 助けの使用記録を保存し、弱点ステージの復習に反映する (#325)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(2300件) / npm run lint ✅ / npm run typecheck ✅。E2E(review-weak-stages)はレビュー環境にChromiumが無く未実行(PR本文では全462件成功)。Issue #325の設計判断との整合を差分で確認
+- マージ: squash & delete-branch
+
+## 2026-10-27 12:46 UTC PR #367 ローカルのE2E並列数を既定で1にしてPCの負荷を下げる
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(2271件) / npm run lint ✅ / npm run typecheck ✅(playwright.config.tsとCLAUDE.mdのみの変更。E2Eは未実行)
+- マージ: squash & delete-branch
+
 ## 2026-10-27 01:00 UTC PR #364 chore(deps): bump the development-dependencies group across 1 directory with 4 updates
 
 - 判定: 合格(blocker無し)
@@ -198,23 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm run check(lint・typecheck・Vitest 2005件)✅。保存IDの読み込み(空文字・存在しないID・localStorage例外は先頭ステージ)、saveDraftsOn=falseで従来どおり先頭、selectStageでの保存をIssue #282・docs/specs/resume-last-stage.mdと照合。E2Eはレビュー環境にChromiumが無く未実行(PR本文では全317件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-24 15:45 UTC PR #299 層を扱うステージで、層ごとに段を分けて並べ、層を飛ばす・逆らう矢印を目立たせる (#245)
-
-- 判定: 合格(blocker無し。suggestion: 帯幅が仕様の「キャンバス幅いっぱい」より狭い / E2Eが赤色表示と層なしステージの従来配置を直接断言していない)
-- 確認した内容: npm test ✅(2005件) / npm run lint ✅ / npm run typecheck ✅。E2Eはレビュー環境にChromiumが無く未実行(PR本文では全316件成功)。Issue #245・docs/specs/layered-stage-lanes.mdの、層ごとの段分け・帯と層名・層違反の赤い破線とラベル・層なしステージ不変を差分で確認。domain変更なし
-- マージ: squash & delete-branch
-
-## 2026-10-24 15:10 UTC PR #298 上級7のapproveの戻り値を、合計を使う記録の文に置き換える (#247)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(lint・typecheck・Vitest 1988件)✅。E2Eはレビュー環境にChromiumが無く実行できず未実行(PR本文では全301件成功)。Issue #247の、解答例で同じ責務が継承関係にない複数クラスに散らばらないこと(findScatteredResponsibilitiesと例外表のテスト)、中級1のreserveStock抽出・移動、上級7のreturn置き換え、E2E期待値の更新を差分で確認。UIコードの変更なし
-- マージ: squash & delete-branch
-
-## 2026-10-24 15:05 UTC PR #297 100点のあとに、外から使われていない公開メンバーを知らせる (#243)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(1963件) / npm run lint ✅ / npm run typecheck ✅。E2Eはレビュー環境で実行できず未実行(PR本文では全306件成功)。Issue #243・docs/specs/unused-public-member-notes.mdの、100点時のみ表示・入口/インターフェース役/部品置き場の除外・visibilityEnforced時の案内を差分で確認。点数は変えない
 - マージ: squash & delete-branch
 
