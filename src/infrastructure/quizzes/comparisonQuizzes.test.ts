@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { changeKindOf } from '../../domain/change/ChangeRequest';
 import { findChangeSites } from '../../domain/change/findChangeSites';
 import { allClasses, type Codebase } from '../../domain/codebase/Codebase';
 import type { ComparisonQuiz, QuizDesign } from '../../domain/quiz/ComparisonQuiz';
@@ -34,6 +35,51 @@ describe('comparisonQuizzes', () => {
 
     // Assert
     expect(answers).toEqual(new Set(['a', 'b']));
+  });
+
+  it('クイズIDが決まった順に並んでいる', () => {
+    // Arrange
+    const expected = [
+      'quiz-user-controller-mail',
+      'quiz-sales-report-tax',
+      'quiz-sales-report-format',
+      'quiz-collapse-hierarchy',
+      'quiz-discount-strategy',
+      'quiz-order-state',
+      'quiz-interface-segregation',
+      'quiz-value-object',
+    ];
+
+    // Act
+    const ids = comparisonQuizzes.map((quiz) => quiz.id);
+
+    // Assert
+    expect(ids).toEqual(expected);
+  });
+
+  it('どの問題の変更依頼も、既存コードを直す依頼(modify)になっている', () => {
+    // Arrange
+    const kinds = comparisonQuizzes.map((quiz) => changeKindOf(quiz.changeRequest));
+
+    // Act
+    const notModify = kinds.filter((kind) => kind !== 'modify');
+
+    // Assert
+    expect(notModify).toEqual([]);
+  });
+
+  it('5問目以降の正解の側は A, B, A, B', () => {
+    // Arrange
+    const laterQuizzes = comparisonQuizzes.slice(4);
+
+    // Act
+    const answers = laterQuizzes.map((quiz) => {
+      const verdict = judgeComparison(quiz, 'a');
+      return verdict.ok ? verdict.value.answer : null;
+    });
+
+    // Assert
+    expect(answers).toEqual(['a', 'b', 'a', 'b']);
   });
 
   describe.each(comparisonQuizzes.map((quiz) => [quiz.title, quiz] as const))('%s', (_title, quiz) => {

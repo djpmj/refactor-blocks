@@ -196,7 +196,7 @@ async function previewScale(page: Page, choice: 'a' | 'b'): Promise<number> {
   return Number(match?.[1] ?? 'NaN');
 }
 
-for (const questionNumber of [1, 2, 3, 4]) {
+for (const questionNumber of [1, 2, 3, 4, 5, 6, 7, 8]) {
   test(`設計くらべ${questionNumber}問目は、設計A・Bのプレビューが同じ縮尺で、読める大きさになっている`, async ({ page }) => {
     // Arrange
     await page.goto('/');
@@ -215,14 +215,14 @@ for (const questionNumber of [1, 2, 3, 4]) {
 async function answerAllFirstWrong(page: Page) {
   await page.goto('/');
   await page.getByTestId('mode-quiz').click();
-  for (let question = 0; question < 3; question += 1) {
+  for (let question = 0; question < 7; question += 1) {
     await page.getByTestId(question === 0 ? 'quiz-choose-b' : 'quiz-choose-a').click();
     await page.getByTestId('quiz-next').click();
   }
   await page.getByTestId('quiz-choose-a').click();
 }
 
-test('4問とも答えて「結果を見る」を押すと、N問中M問正解と不正解の問題の一覧が出る', async ({ page }) => {
+test('8問とも答えて「結果を見る」を押すと、N問中M問正解と不正解の問題の一覧が出る', async ({ page }) => {
   // Arrange
   await answerAllFirstWrong(page);
 
@@ -231,7 +231,7 @@ test('4問とも答えて「結果を見る」を押すと、N問中M問正解�
 
   // Assert
   const summary = page.getByTestId('quiz-summary');
-  await expect(summary).toContainText(/4問中\d問正解/);
+  await expect(summary).toContainText(/8問中\d問正解/);
   await expect(summary.getByRole('button', { name: /問目:/ }).first()).toBeVisible();
 });
 
@@ -239,7 +239,7 @@ test('答えていない問題があるまま「結果を見る」を押すと�
   // Arrange
   await page.goto('/');
   await page.getByTestId('mode-quiz').click();
-  await page.getByLabel('クイズ').selectOption({ index: 3 });
+  await page.getByLabel('クイズ').selectOption({ index: 7 });
   await page.getByTestId('quiz-choose-a').click();
 
   // Act
@@ -248,6 +248,21 @@ test('答えていない問題があるまま「結果を見る」を押すと�
   // Assert
   await expect(page.getByTestId('quiz-unanswered')).toContainText('まだ答えていない問題があります: 1問目');
   await expect(page.getByTestId('quiz-summary')).toHaveCount(0);
+});
+
+test('5問目で設計Aを選ぶと、正解になる', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await page.getByTestId('mode-quiz').click();
+  await page.getByLabel('クイズ').selectOption({ index: 4 });
+
+  // Act
+  await page.getByTestId('quiz-choose-a').click();
+
+  // Assert
+  await expect(page.getByTestId('quiz-verdict')).toContainText('楽なのは設計A');
+  await expect(page.getByTestId('quiz-verdict')).toContainText('正解');
+  await expect(page.getByTestId('quiz-verdict')).not.toContainText('不正解');
 });
 
 test('2問目に答えてから1問目へ戻り、また2問目を開くと、答えと解説が残っていて、プルダウンに(✓)か(✗)が付く', async ({ page }) => {
