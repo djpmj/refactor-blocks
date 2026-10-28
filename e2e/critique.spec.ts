@@ -15,6 +15,7 @@ test('AIの講評をもらうと、講評文が表示される', async ({ page }
 
   // Assert
   await expect(page.getByTestId('critique-text')).toHaveText('よく分解できています。');
+  await expect(page.getByTestId('critique-fallback-text')).toHaveCount(0);
 });
 
 test('取得中は「AIが講評中…」を表示する', async ({ page }) => {
@@ -47,6 +48,11 @@ test('講評の取得に失敗したら、エラーメッセージを表示す�
   const error = page.locator('.critique-panel__error');
   await expect(error).toHaveText('AI講評を取得できませんでした。しばらくしてからもう一度お試しください');
   await expect(error).toHaveAttribute('role', 'status');
+  await expect(page.locator('.critique-panel__details summary')).toHaveText('簡易講評(AI講評ではありません)');
+  const fallback = page.getByTestId('critique-fallback-text');
+  await expect(fallback).toContainText('※ AIの講評ではありません。採点の内訳から自動で作った簡易講評です。');
+  expect((await fallback.innerText()).split('\n')[0]).toBe('※ AIの講評ではありません。採点の内訳から自動で作った簡易講評です。');
+  await expect(page.getByTestId('critique-text')).toHaveCount(0);
 });
 
 test('400が返ったら、リクエスト形式の不具合を知らせる', async ({ page }) => {

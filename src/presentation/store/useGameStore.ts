@@ -16,6 +16,7 @@ import { resolvedTargets } from '../../domain/scoring/resolvedTargets';
 import type { ViolationTarget } from '../../domain/scoring/violationTargets';
 import type { Stage } from '../../domain/stage/Stage';
 import type { GhostMove } from '../../domain/stage/ghostMove';
+import { describeFallbackCritique } from '../critique/describeFallbackCritique';
 import { fetchCritique } from '../../infrastructure/critique/critiqueClient';
 import {
   addClassUseCase,
@@ -110,9 +111,11 @@ export type CritiqueState = {
   readonly text: string | null;
   readonly loading: boolean;
   readonly error: string | null;
+  /** AI講評を取れなかったときだけ入る、採点結果から作った簡易講評。AI講評ではない。 */
+  readonly fallback: string | null;
 };
 
-const EMPTY_CRITIQUE: CritiqueState = { text: null, loading: false, error: null };
+const EMPTY_CRITIQUE: CritiqueState = { text: null, loading: false, error: null, fallback: null };
 const EMPTY_RULE_PREVIEW = { previewRule: null, hoverPreviewRule: null, focusPreviewRule: null };
 
 /** 変更依頼を「手で直す」シミュレーション。fixedIds は「直した」印、viewedMethodId は最後にクリックしたメソッド。 */
@@ -629,12 +632,16 @@ function critiqueActions(set: (partial: Partial<GameState>) => void, get: () => 
     requestCritique: () => {
       const { codebase, stage } = get();
       const score = scoreCodebase(codebase, stage);
-      set({ critique: { text: null, loading: true, error: null } });
+      set({ critique: { ...EMPTY_CRITIQUE, loading: true } });
       void requestCritiqueUseCase(codebase, stage, score, fetchCritique).then((result) => {
         set({
           critique: result.ok
-            ? { text: result.value, loading: false, error: null }
-            : { text: null, loading: false, error: describeCritiqueError(result.error) },
+            ? { ...EMPTY_CRITIQUE, text: result.value }
+            : {
+              ...EMPTY_CRITIQUE,
+              error: describeCritiqueError(result.error),
+              fallback: describeFallbackCritique({ stage, codebase, initial: scoreCodebase(stage.codebase, stage), current: score }),
+            },
         });
       });
     },
