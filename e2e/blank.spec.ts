@@ -111,6 +111,10 @@ test('「白紙設計」に切り替えると、要求文と部品置き場の7�
   }
   await expect(view.getByTestId('blank-unplaced')).toContainText('あと7個');
   await expect(view.getByTestId('blank-review')).toBeDisabled();
+  await expect(view.getByTestId('blank-review')).toHaveAttribute('aria-describedby', 'blank-review-disabled-reason');
+  await expect(view.getByTestId('blank-review-disabled-reason')).toHaveText(
+    `答え合わせは、部品置き場の部品をすべてクラスへ置くと押せます。まだ置いていない部品: ${ALL_PARTS.join('、')}`,
+  );
 });
 
 test('部品を1つ空いている所へドラッグすると、新しいクラスにその部品が入り、未配置が「あと6個」になる', async ({ page }) => {
@@ -124,6 +128,9 @@ test('部品を1つ空いている所へドラッグすると、新しいクラ�
   // Assert
   await expect(view.getByTestId('class-OrderService').getByTestId('method-placeOrder')).toBeVisible();
   await expect(view.getByTestId('blank-unplaced')).toContainText('あと6個');
+  await expect(view.getByTestId('blank-review-disabled-reason')).toHaveText(
+    `答え合わせは、部品置き場の部品をすべてクラスへ置くと押せます。まだ置いていない部品: ${ALL_PARTS.slice(1).join('、')}`,
+  );
 });
 
 test('白紙設計では本体のあるメソッドを選ぶと可視性欄が表示される', async ({ page }) => {
@@ -201,6 +208,9 @@ test('全部品を配置すると答え合わせができ、両者の設計ス�
   const view = blankView(page);
   await placeAllParts(page, view);
   await expect(view.getByTestId('blank-unplaced')).toContainText('全部品を配置しました');
+  await expect(view.getByTestId('blank-review-disabled-reason')).toHaveCount(0);
+  await expect(view.getByTestId('blank-review')).not.toHaveAttribute('aria-describedby');
+  await expect(view.getByTestId('blank-review')).toBeEnabled();
 
   // Act
   await view.getByTestId('blank-review').click();

@@ -34,7 +34,7 @@ export function BlankDesignPanel({ problem, reviewButtonRef, onReview }: Readonl
         {unplaced.length === 0 ? '全部品を配置しました' : `部品置き場に残っている部品: あと${String(unplaced.length)}個`}
       </div>
       <div className="stage-panel__actions">
-        <button ref={reviewButtonRef} type="button" data-testid="blank-review" onClick={onReview} disabled={unplaced.length > 0}>
+        <button ref={reviewButtonRef} type="button" data-testid="blank-review" onClick={onReview} disabled={unplaced.length > 0} aria-describedby={unplaced.length > 0 ? 'blank-review-disabled-reason' : undefined}>
           答え合わせ
         </button>
         <button type="button" onClick={undo} disabled={!canUndo} title="Ctrl+Z">
@@ -47,6 +47,11 @@ export function BlankDesignPanel({ problem, reviewButtonRef, onReview }: Readonl
           最初に戻す
         </button>
       </div>
+      {unplaced.length > 0 && (
+        <p id="blank-review-disabled-reason" data-testid="blank-review-disabled-reason" className="method-editor__extract-hint">
+          答え合わせは、部品置き場の部品をすべてクラスへ置くと押せます。まだ置いていない部品: {unplaced.join('、')}
+        </p>
+      )}
     </header>
   );
 }
