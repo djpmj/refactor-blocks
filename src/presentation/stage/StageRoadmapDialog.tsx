@@ -4,9 +4,11 @@ import { conceptMastery, isStageCleared, recommendNextStage, recommendReviewStag
 import type { Milestones } from '../../domain/progress/milestones';
 import type { Progress } from '../../domain/progress/Progress';
 import type { Stage } from '../../domain/stage/Stage';
+import { antipatterns } from '../../infrastructure/gallery/antipatterns';
 import { DESIGN_PRINCIPLES } from '../../infrastructure/stages/designPrinciples';
 import { useGameStore } from '../store/useGameStore';
 import { GlossaryText } from '../glossary/GlossaryText';
+import { AntipatternGallery } from './AntipatternGallery';
 import { ConceptMasteryList } from './ConceptMasteryList';
 import { LearningRecordSection } from './LearningRecordSection';
 import { LEVEL_LABEL } from './levelLabel';
@@ -129,7 +131,7 @@ function StageLevels({ stages, currentId, nextId, progress, milestones, draftSta
   ));
 }
 
-type RoadmapView = 'stages' | 'concepts';
+type RoadmapView = 'stages' | 'concepts' | 'gallery';
 
 type ViewSwitchProps = {
   readonly view: RoadmapView;
@@ -144,6 +146,9 @@ function ViewSwitch({ view, onChange }: ViewSwitchProps) {
       </button>
       <button type="button" aria-pressed={view === 'concepts'} data-testid="roadmap-view-concepts" onClick={() => { onChange('concepts'); }}>
         学べることごと
+      </button>
+      <button type="button" aria-pressed={view === 'gallery'} data-testid="roadmap-view-gallery" onClick={() => { onChange('gallery'); }}>
+        コードの臭い図鑑
       </button>
     </div>
   );
@@ -207,9 +212,11 @@ export function StageRoadmapDialog({ open, onClose }: StageRoadmapDialogProps) {
         </p>
         <ReviewNotice stages={stages} progress={progress} />
         <ViewSwitch view={view} onChange={setView} />
-        {view === 'concepts' ? (
+        {view === 'concepts' && (
           <ConceptMasteryList mastery={conceptMastery(stages, (id) => isStageCleared(id, progress))} onChoose={choose} />
-        ) : (
+        )}
+        {view === 'gallery' && <AntipatternGallery entries={antipatterns} stages={stages} onChoose={choose} />}
+        {view === 'stages' && (
           <StageLevels
             stages={stages}
             currentId={currentId}

@@ -662,6 +662,13 @@ input.class-node__name { width: 14ch; }
 .concept-mastery__count { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 6px; font-size: 12px; }
 .concept-mastery__done { margin: 0; font-size: 12px; }
 .concept-mastery__stages { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.antipattern-gallery { display: grid; gap: 8px; }
+.antipattern-gallery__entry { padding: 10px; margin-bottom: 8px; border: 1px solid var(--border); border-radius: 8px; }
+.antipattern-gallery__entry h4 { margin: 0 0 4px; font-size: 14px; }
+.antipattern-gallery__entry dl { margin: 0 0 6px; font-size: 12px; }
+.antipattern-gallery__entry dt { font-weight: 700; }
+.antipattern-gallery__entry dd { margin: 0 0 4px; }
+.antipattern-gallery__stages { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; font-size: 12px; }
 @media (width <= 600px) { .stage-roadmap__cards { grid-template-columns: 1fr; } .concept-mastery { grid-template-columns: 1fr; } }
 .sample-replay__status { display: flex; gap: 16px; padding: 8px 16px 0; font-weight: 700; }
 .sample-replay__description { margin: 0; padding: 4px 16px; }
