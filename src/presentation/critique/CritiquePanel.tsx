@@ -14,7 +14,7 @@ export function CritiqueButton({ disabled }: Readonly<{ disabled: boolean }>) {
 /** AIの講評の結果(講評文・エラー)の表示。ヘッダーの下に出し、サイドバーを閉じていても見えるようにする。 */
 export function CritiqueResult() {
   const critique = useGameStore((state) => state.critique);
-  if (critique.error === null && critique.text === null) return null;
+  if (critique.error === null && critique.text === null && critique.fallback === null) return null;
   return (
     <div className="critique-panel">
       {critique.error !== null && (
@@ -27,6 +27,14 @@ export function CritiqueResult() {
           <summary>講評</summary>
           <p className="critique-panel__text" data-testid="critique-text">
             {critique.text}
+          </p>
+        </details>
+      )}
+      {critique.fallback !== null && (
+        <details className="critique-panel__details" open>
+          <summary>簡易講評(AI講評ではありません)</summary>
+          <p className="critique-panel__text" data-testid="critique-fallback-text">
+            {critique.fallback}
           </p>
         </details>
       )}
