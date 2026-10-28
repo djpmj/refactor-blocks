@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-28 13:15 UTC PR #372 AI講評の失敗時にルールベースの簡易講評を出す (#350)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(2356件) / npm run lint ✅ / npm run typecheck ✅ / 仕様(critique-failure-fallback)と差分を照合(fallback状態・describeFallbackCritique・CritiquePanel表示・E2E追加)。E2Eはレビュー環境で実行できず未実行(PR本文では全件480件成功)
+- マージ: squash & delete-branch
+
 ## 2026-10-28 12:55 UTC PR #371 コードの臭い図鑑を追加 (#343)
 
 - 判定: 合格(blocker無し)
@@ -210,17 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm run check(lint・typecheck・Vitest 2047件)✅。表示する理由と aria-invalid を blockOf の1つの判定から導くこと、優先順(選択なし>非連続>名前が空>重複)、aria-describedby の参照先idをIssue #289・docs/specs/extract-name-inline-error.md と照合。E2Eはこの環境で実行許可が無く未実行(PR本文では関係する14件成功、CIのe2eは確認時点で実行中)
-- マージ: squash & delete-branch
-
-## 2026-10-25 UTC PR #306 E2Eの最初の描画待ちを15秒まで延ばす(roadmap-open の間欠失敗対策)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅(e2e/selectStage.tsの1行変更のみ。アサーションは弱めずtimeoutだけ延長)
-- マージ: squash & delete-branch
-
-## 2026-10-25 03:15 UTC PR #305 役目を終えた通知トーストを消す (#286)
-
-- 判定: 合格(blocker無し。suggestion: e2e/toast-clears-when-stale.spec.ts の固定800ms待機を状態待ちへ)
-- 確認した内容: npm run check(lint・typecheck・Vitest 2030件)✅。messageは状況変化で消し出した操作自身では残す・noticeは8秒で自動消去し置換で数え直す、をIssue #286・docs/specs/toast-clears-when-stale.mdと照合。E2Eはこの環境で実行許可が無く未実行(PR本文では全352件成功)
 - マージ: squash & delete-branch
 
