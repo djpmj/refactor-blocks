@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-29 10:50 UTC PR #375 単一処理の抽出にも模範解答の名前を適用する (#352)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(2381件) / npm run lint ✅ / npm run typecheck ✅ / 仕様(hint-extract-name-mismatch)と差分を照合(methodNamingOfのフィルタ撤去・suggestMethodNameの一致優先・ヒント文変更・E2E追加)。E2EはChromium未導入で実行不可(PR本文では487件成功)
+- マージ: squash & delete-branch
+
 ## 2026-10-29 10:20 UTC PR #374 設計くらべに2段目「理由の3択」を追加する (#348)
 
 - 判定: 合格(blocker無し)
@@ -210,11 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm run check(lint・typecheck・Vitest 2054件)✅。手動修正中かつchange-request以外で本文を描かない点をIssue #314・docs/specs/change-pain-card-fold-while-fixing.mdと照合。E2Eはこの環境にChromiumが無く未実行(PR本文では374件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-25 11:10 UTC PR #310 コードが変わったらヒントの光りを消す (#290)
-
-- 判定: 合格(blocker無し。前回指摘したe2e失敗は、#289に合わせて失敗操作を「最後の1ファイルの削除」に作り直したことで解消)
-- 確認した内容: npm test(2054件)✅ / npm run lint ✅ / npm run typecheck ✅。共通のHIGHLIGHT_RESETをcommit・travelTo・CHANGE_STEP_RESETに適用し、失敗した操作では消さない点をIssue #290・docs/specs/hint-highlight-clears-on-change.mdと照合。CIのcheck・e2e(2回とも)・jscpd・knipが成功。E2Eはこの環境で実行許可が無くCI結果に依拠
 - マージ: squash & delete-branch
 
