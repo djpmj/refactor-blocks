@@ -1,6 +1,13 @@
 import { expect, test, type Page } from '@playwright/test';
 import { selectStage } from './selectStage.js';
 
+/** 設計(1段目)を選び、理由(2段目)を添字で選んで「答える」まで進める。 */
+async function answerQuiz(page: Page, design: 'a' | 'b', reason = 0) {
+  await page.getByTestId(`quiz-choose-${design}`).click();
+  await page.getByTestId('quiz-reason').getByRole('radio').nth(reason).check();
+  await page.getByTestId('quiz-reason-submit').click();
+}
+
 test('「設計くらべ」に切り替えると、1問目の設計A・Bが表示される', async ({ page }) => {
   // Arrange
   await page.goto('/');
@@ -29,8 +36,11 @@ test('答える前は設計Bに空のクラスも赤枠も出ず、答えたあ�
   await expect(page.getByTestId('quiz-design-a').locator('.method-chip--over')).toHaveCount(0);
   await expect(designB.locator('.method-chip--over')).toHaveCount(0);
 
-  // Act
+  // Act: 設計だけ選んだ段階ではまだ出ない
   await page.getByTestId('quiz-choose-a').click();
+  await expect(designB.locator('.method-chip--over')).toHaveCount(0);
+  await page.getByTestId('quiz-reason').getByRole('radio').nth(1).check();
+  await page.getByTestId('quiz-reason-submit').click();
 
   // Assert: 答えたあと
   await expect(designB.locator('.method-chip--over').first()).toBeVisible();
@@ -42,11 +52,12 @@ test('変更が楽な設計を選ぶと正解になり、それぞれの設計�
   await page.getByTestId('mode-quiz').click();
 
   // Act
-  await page.getByTestId('quiz-choose-a').click();
+  await answerQuiz(page, 'a', 1);
 
   // Assert
   const verdict = page.getByTestId('quiz-verdict');
-  await expect(verdict).toContainText('正解');
+  await expect(verdict).toContainText('⭕ 正解!');
+  await expect(verdict).toContainText('解説:');
   await expect(verdict).toHaveClass(/quiz__verdict--correct/);
   await expect(verdict.locator('.answer-verdict')).toHaveCSS('color', 'rgb(23, 107, 68)');
   await expect(verdict.locator('.answer-verdict__label')).toHaveCSS('font-weight', '700');
@@ -63,10 +74,10 @@ test('変更が大変な設計を選ぶと不正解になる', async ({ page }) 
   await page.getByTestId('mode-quiz').click();
 
   // Act
-  await page.getByTestId('quiz-choose-b').click();
+  await answerQuiz(page, 'b');
 
   // Assert
-  await expect(page.getByTestId('quiz-verdict')).toContainText('不正解');
+  await expect(page.getByTestId('quiz-verdict')).toContainText('❌ 不正解(楽なのは設計A)');
   await expect(page.getByTestId('quiz-verdict')).toHaveClass(/quiz__verdict--incorrect/);
   await expect(page.getByTestId('quiz-verdict').locator('.answer-verdict')).toHaveCSS('color', 'rgb(166, 31, 31)');
   await expect(page.getByTestId('quiz-verdict').locator('.answer-verdict__confetti')).toHaveCount(0);
@@ -76,13 +87,13 @@ test('ダークテーマでも正誤の文字色に十分なコントラスト�
   await page.emulateMedia({ colorScheme: 'dark' });
   await page.goto('/');
   await page.getByTestId('mode-quiz').click();
-  await page.getByTestId('quiz-choose-a').click();
+  await answerQuiz(page, 'a', 1);
   const correctLabel = page.getByTestId('quiz-verdict').locator('.answer-verdict__label');
   await expect(correctLabel).toHaveCSS('color', 'rgb(117, 227, 176)');
   await expect(correctLabel).toHaveCSS('font-weight', '700');
 
   await page.getByTestId('quiz-next').click();
-  await page.getByTestId('quiz-choose-a').click();
+  await answerQuiz(page, 'a');
   await expect(page.getByTestId('quiz-verdict').locator('.answer-verdict')).toHaveCSS('color', 'rgb(255, 138, 138)');
 });
 
@@ -90,7 +101,7 @@ test('「次のクイズへ」で2問目に進み、回答がリセットされ�
   // Arrange
   await page.goto('/');
   await page.getByTestId('mode-quiz').click();
-  await page.getByTestId('quiz-choose-a').click();
+  await answerQuiz(page, 'a', 1);
 
   // Act
   await page.getByTestId('quiz-next').click();
@@ -111,8 +122,85 @@ test('キーボードだけでモードを切り替えて回答できる', async
   await page.getByTestId('quiz-choose-a').focus();
   await page.keyboard.press('Enter');
 
+  // Assert: 1段目を押したあと、フォーカスが理由の欄に移る
+  await expect(page.getByTestId('quiz-reason')).toBeFocused();
+
+  // Act: 理由のラジオ(矢印キー)→「答える」
+  await page.getByTestId('quiz-reason').getByRole('radio').first().focus();
+  await page.keyboard.press('ArrowDown');
+  await expect(page.getByTestId('quiz-reason').getByRole('radio').nth(1)).toBeChecked();
+  await page.getByTestId('quiz-reason-submit').focus();
+  await page.keyboard.press('Enter');
+
   // Assert
   await expect(page.getByTestId('quiz-verdict')).toContainText('正解');
+});
+
+test('設計だけ選ぶと、理由の3択が出て、判定・警告色はまだ出ず、A・Bのボタンは無効でAが押された状態になる', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await page.getByTestId('mode-quiz').click();
+
+  // Act
+  await page.getByTestId('quiz-choose-a').click();
+
+  // Assert
+  await expect(page.getByTestId('quiz-reason').getByRole('radio')).toHaveCount(3);
+  await expect(page.getByTestId('quiz-verdict')).toHaveCount(0);
+  await expect(page.getByTestId('quiz-choose-a')).toBeDisabled();
+  await expect(page.getByTestId('quiz-choose-b')).toBeDisabled();
+  await expect(page.getByTestId('quiz-choose-a')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('quiz-reason-submit')).toBeDisabled();
+  await page.getByTestId('quiz-reason').getByRole('radio').first().check();
+  await expect(page.getByTestId('quiz-reason-submit')).toBeEnabled();
+});
+
+test('設計は合っていても理由がちがうと不正解になり、選んだ理由と正解の理由の解説が出る', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await page.getByTestId('mode-quiz').click();
+
+  // Act
+  await answerQuiz(page, 'a', 0);
+
+  // Assert
+  const verdict = page.getByTestId('quiz-verdict');
+  await expect(verdict).toContainText('設計は合っているが、理由がちがう');
+  await expect(verdict).toContainText('あなたの理由について:');
+  await expect(verdict).toContainText('正解の理由:');
+  await expect(verdict).toHaveClass(/quiz__verdict--incorrect/);
+});
+
+test('設計だけ選んで別の問題へ移ると、戻ったときに1段目から答え直せる', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await page.getByTestId('mode-quiz').click();
+  await page.getByTestId('quiz-choose-a').click();
+
+  // Act
+  await page.getByLabel('クイズ').selectOption({ index: 1 });
+  await page.getByLabel('クイズ').selectOption({ index: 0 });
+
+  // Assert
+  await expect(page.getByTestId('quiz-choose-a')).toBeEnabled();
+  await expect(page.getByTestId('quiz-choose-b')).toBeEnabled();
+  await expect(page.getByTestId('quiz-reason')).toHaveCount(0);
+});
+
+test('答え済みの問題を開き直すと、選んだ理由にチェックが付いたまま、判定と解説が出ている', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await page.getByTestId('mode-quiz').click();
+  await answerQuiz(page, 'a', 2);
+
+  // Act
+  await page.getByLabel('クイズ').selectOption({ index: 1 });
+  await page.getByLabel('クイズ').selectOption({ index: 0 });
+
+  // Assert
+  await expect(page.getByTestId('quiz-reason').getByRole('radio').nth(2)).toBeChecked();
+  await expect(page.getByTestId('quiz-reason').getByRole('radio').nth(2)).toBeDisabled();
+  await expect(page.getByTestId('quiz-verdict')).toContainText('あなたの理由について:');
 });
 
 /** チュートリアル2で税の計算を抽出する(リファクタリング側の状態を作る)。 */
@@ -162,9 +250,9 @@ test('リファクタリングへ行って戻っても、クイズの何問目�
   // Arrange
   await page.goto('/');
   await page.getByTestId('mode-quiz').click();
-  await page.getByTestId('quiz-choose-a').click();
+  await answerQuiz(page, 'a');
   await page.getByTestId('quiz-next').click();
-  await page.getByTestId('quiz-choose-b').click();
+  await answerQuiz(page, 'b');
 
   // Act
   await page.getByTestId('mode-refactor').click();
@@ -216,10 +304,10 @@ async function answerAllFirstWrong(page: Page) {
   await page.goto('/');
   await page.getByTestId('mode-quiz').click();
   for (let question = 0; question < 7; question += 1) {
-    await page.getByTestId(question === 0 ? 'quiz-choose-b' : 'quiz-choose-a').click();
+    await answerQuiz(page, question === 0 ? 'b' : 'a');
     await page.getByTestId('quiz-next').click();
   }
-  await page.getByTestId('quiz-choose-a').click();
+  await answerQuiz(page, 'a');
 }
 
 test('8問とも答えて「結果を見る」を押すと、N問中M問正解と不正解の問題の一覧が出る', async ({ page }) => {
@@ -235,12 +323,29 @@ test('8問とも答えて「結果を見る」を押すと、N問中M問正解�
   await expect(summary.getByRole('button', { name: /問目:/ }).first()).toBeVisible();
 });
 
+test('5問目で設計は正解・理由は誤答のとき、プルダウンに(✗)が付き、まとめの不正解の一覧に5問目が出る', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await page.getByTestId('mode-quiz').click();
+  for (let question = 0; question < 8; question += 1) {
+    await page.getByLabel('クイズ').selectOption({ index: question });
+    await answerQuiz(page, 'a', question === 4 ? 0 : 2);
+  }
+
+  // Act
+  await expect(page.getByLabel('クイズ').locator('option').nth(4)).toHaveText(/\(✗\)$/);
+  await page.getByRole('button', { name: '結果を見る' }).click();
+
+  // Assert
+  await expect(page.getByTestId('quiz-summary').getByRole('button', { name: /^5問目:/ })).toBeVisible();
+});
+
 test('答えていない問題があるまま「結果を見る」を押すと、まとめの代わりに未回答の問題を知らせる', async ({ page }) => {
   // Arrange
   await page.goto('/');
   await page.getByTestId('mode-quiz').click();
   await page.getByLabel('クイズ').selectOption({ index: 7 });
-  await page.getByTestId('quiz-choose-a').click();
+  await answerQuiz(page, 'a');
 
   // Act
   await page.getByRole('button', { name: '結果を見る' }).click();
@@ -257,7 +362,7 @@ test('5問目で設計Aを選ぶと、正解になる', async ({ page }) => {
   await page.getByLabel('クイズ').selectOption({ index: 4 });
 
   // Act
-  await page.getByTestId('quiz-choose-a').click();
+  await answerQuiz(page, 'a', 2);
 
   // Assert
   await expect(page.getByTestId('quiz-verdict')).toContainText('楽なのは設計A');
@@ -270,7 +375,7 @@ test('2問目に答えてから1問目へ戻り、また2問目を開くと、�
   await page.goto('/');
   await page.getByTestId('mode-quiz').click();
   await page.getByLabel('クイズ').selectOption({ index: 1 });
-  await page.getByTestId('quiz-choose-a').click();
+  await answerQuiz(page, 'a');
   await expect(page.getByTestId('quiz-verdict')).toBeVisible();
 
   // Act
