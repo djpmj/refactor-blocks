@@ -1,16 +1,50 @@
 import type { RefObject } from 'react';
 import type { BlankDesignProblem } from '../../domain/blank/BlankDesignProblem';
 import { findUnplacedParts } from '../../domain/blank/tray';
+import { allClasses } from '../../domain/codebase/Codebase';
+import { blankDesignProblems } from '../../infrastructure/blankDesigns/blankDesignProblems';
 import { useGameStore } from '../store/useGameStore';
 
 type BlankDesignPanelProps = {
   readonly problem: BlankDesignProblem;
   readonly reviewButtonRef: RefObject<HTMLButtonElement | null>;
   readonly onReview: () => void;
+  /** 問題を切り替えたあとに呼ぶ(答え合わせの結果パネルを閉じるため)。 */
+  readonly onProblemChange: () => void;
 };
 
+/** 問題の選択欄。配置を始めていたら、切り替えて消える前に確かめる(キャンセルなら選択欄は controlled なので元の値のまま)。 */
+function ProblemSelect({ problem, onProblemChange }: Readonly<{ problem: BlankDesignProblem; onProblemChange: () => void }>) {
+  const codebase = useGameStore((state) => state.codebase);
+  const selectStage = useGameStore((state) => state.selectStage);
+  const partCount = allClasses(problem.codebase).flatMap((codeClass) => codeClass.methods).length;
+  const changeProblem = (id: string) => {
+    if (findUnplacedParts(problem.codebase, codebase).length < partCount && !window.confirm('今の配置は消えます。別の問題に切り替えますか?')) return;
+    selectStage(id);
+    onProblemChange();
+  };
+  return (
+    <label className="method-editor__hint">
+      問題{' '}
+      <select
+        data-testid="blank-problem-select"
+        value={problem.id}
+        onChange={(event) => {
+          changeProblem(event.target.value);
+        }}
+      >
+        {blankDesignProblems.map((candidate) => (
+          <option key={candidate.id} value={candidate.id}>
+            {candidate.title}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 /** 白紙設計の上部パネル。要求文・目標・未配置の数と、答え合わせ・取り消し系のボタンを並べる。 */
-export function BlankDesignPanel({ problem, reviewButtonRef, onReview }: Readonly<BlankDesignPanelProps>) {
+export function BlankDesignPanel({ problem, reviewButtonRef, onReview, onProblemChange }: Readonly<BlankDesignPanelProps>) {
   const codebase = useGameStore((state) => state.codebase);
   const resetStage = useGameStore((state) => state.resetStage);
   const undo = useGameStore((state) => state.undo);
@@ -34,6 +68,8 @@ export function BlankDesignPanel({ problem, reviewButtonRef, onReview }: Readonl
         {unplaced.length === 0 ? '全部品を配置しました' : `部品置き場に残っている部品: あと${String(unplaced.length)}個`}
       </div>
       <div className="stage-panel__actions">
+        {/* 見出しの上に置くと panel が1行高くなり、Fit View の倍率が下がってメソッドが隠れるため、ボタンと同じ行に置く */}
+        <ProblemSelect problem={problem} onProblemChange={onProblemChange} />
         <button ref={reviewButtonRef} type="button" data-testid="blank-review" onClick={onReview} disabled={unplaced.length > 0} aria-describedby={unplaced.length > 0 ? 'blank-review-disabled-reason' : undefined}>
           答え合わせ
         </button>
