@@ -179,3 +179,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [critique-failure-fallback](critique-failure-fallback.md) | AI講評が取れないとき、採点の内訳から作った簡易講評を代わりに出す |
 | [clear-reflection-note](clear-reflection-note.md) | 100点のあとに一言(140字まで)の振り返りメモを書き残し、ステージ一覧から読み返せるようにする |
 | [hint-extract-name-mismatch](hint-extract-name-mismatch.md) | ヒントどおりに抽出すると、ヒントに出てくる模範解答の名前が自動で付く |
+| [blank-design-more-problems](blank-design-more-problems.md) | 白紙設計の問題を2問足し、問題を選べるようにする |

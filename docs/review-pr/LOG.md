@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-29 11:10 UTC PR #376 白紙設計の問題を増やし、問題を選べるようにする (#345)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(2391件) / npm run lint ✅ / npm run typecheck ✅ / 仕様(blank-design-more-problems)と差分を照合(検証関数・白紙2/3・問題select・配置済み時の確認・E2E追加)。E2EはChromium未導入で実行不可(PR本文では482件成功)
+- マージ: squash & delete-branch
+
 ## 2026-10-29 10:50 UTC PR #375 単一処理の抽出にも模範解答の名前を適用する (#352)
 
 - 判定: 合格(blocker無し)
@@ -210,11 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm run check(lint・typecheck・Vitest 2056件)✅。実寸法(fileSizeOf)で既存ファイルと重ならない位置へ右にずらす点をIssue #287・docs/specs/new-file-no-overlap.mdと照合。E2Eはこの環境にChromiumが無く未実行(PR本文では関係9 spec成功)
-- マージ: squash & delete-branch
-
-## 2026-10-25 14:15 UTC PR #329 手動修正中はChangePainCardの本文を畳む (#314)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(lint・typecheck・Vitest 2054件)✅。手動修正中かつchange-request以外で本文を描かない点をIssue #314・docs/specs/change-pain-card-fold-while-fixing.mdと照合。E2Eはこの環境にChromiumが無く未実行(PR本文では374件成功)
 - マージ: squash & delete-branch
 
