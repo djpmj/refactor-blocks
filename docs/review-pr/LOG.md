@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-29 11:15 UTC PR #377 設計くらべの成績を保存し、ステージ一覧に表示する (#349)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint・typecheck・Vitest 2426件)✅ / 仕様(comparison-quiz-score-record)と差分を照合(quizRecord・入力検証つき保存・roadmap-quiz表示・E2E追加)。E2EはChromium未導入で実行不可(PR本文では496件成功)
+- マージ: squash & delete-branch
+
 ## 2026-10-29 11:10 UTC PR #376 白紙設計の問題を増やし、問題を選べるようにする (#345)
 
 - 判定: 合格(blocker無し)
@@ -210,11 +216,5 @@
 
 - 判定: 合格(blocker無し。suggestion: 1000pxの切替境界が固定値で脆い)
 - 確認した内容: npm run check(lint・typecheck・Vitest 2047件)✅。バナーを通常フローの帯にして図と重ならない点、ドロワー表示時もバナーのみ操作可能な点をIssue #284・docs/specs/opening-fix-banner-fit.mdと照合。E2Eはこの環境にChromiumが無く未実行(PR本文では380件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-25 14:20 UTC PR #312 余白へのドロップで作る新しいファイルが既存のファイルと重ならないようにする (#287)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(lint・typecheck・Vitest 2056件)✅。実寸法(fileSizeOf)で既存ファイルと重ならない位置へ右にずらす点をIssue #287・docs/specs/new-file-no-overlap.mdと照合。E2Eはこの環境にChromiumが無く未実行(PR本文では関係9 spec成功)
 - マージ: squash & delete-branch
 

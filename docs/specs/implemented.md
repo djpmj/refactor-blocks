@@ -180,3 +180,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [clear-reflection-note](clear-reflection-note.md) | 100点のあとに一言(140字まで)の振り返りメモを書き残し、ステージ一覧から読み返せるようにする |
 | [hint-extract-name-mismatch](hint-extract-name-mismatch.md) | ヒントどおりに抽出すると、ヒントに出てくる模範解答の名前が自動で付く |
 | [blank-design-more-problems](blank-design-more-problems.md) | 白紙設計の問題を2問足し、問題を選べるようにする |
+| [comparison-quiz-score-record](comparison-quiz-score-record.md) | 設計くらべの正答状況を保存し、ステージ一覧に表示する |
