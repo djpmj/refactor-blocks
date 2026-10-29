@@ -13,6 +13,7 @@ export function OperationResult() {
       <span className="operation-result__mark" aria-hidden="true">{TONE_MARK[result.tone]}</span>
       <div className="operation-result__lines">
         {result.lines.map((line) => <p key={line} data-testid="operation-result-line">{line}</p>)}
+        {result.nextStep === undefined ? null : <p className="operation-result__next-step" data-testid="operation-result-next-step"><strong>次の段階:</strong> {result.nextStep}</p>}
       </div>
       <button type="button" className="operation-result__close" aria-label="操作の結果を閉じる" onClick={dismiss}>×</button>
     </div>
