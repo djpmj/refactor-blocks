@@ -3,6 +3,7 @@ import { retryMark, type AssistLevel } from '../../domain/progress/assists';
 import { conceptMastery, isStageCleared, recommendNextStage, recommendReviewStage, stageStatus, type StageStatus } from '../../domain/progress/roadmap';
 import type { Milestones } from '../../domain/progress/milestones';
 import type { Progress } from '../../domain/progress/Progress';
+import type { ReflectionNotes } from '../../domain/progress/reflectionNotes';
 import type { Stage } from '../../domain/stage/Stage';
 import { antipatterns } from '../../infrastructure/gallery/antipatterns';
 import { DESIGN_PRINCIPLES } from '../../infrastructure/stages/designPrinciples';
@@ -44,10 +45,11 @@ type StageCardProps = {
   readonly reviewRecommended: boolean;
   readonly retry: AssistLevel | undefined;
   readonly status: StageStatus;
+  readonly note: string | undefined;
   readonly onChoose: () => void;
 };
 
-function StageCard({ stage, current, recommended, reviewRecommended, retry, status, onChoose }: StageCardProps) {
+function StageCard({ stage, current, recommended, reviewRecommended, retry, status, note, onChoose }: StageCardProps) {
   return (
     <div
       className={`stage-roadmap__card${current ? ' stage-roadmap__card--current' : ''}`}
@@ -69,6 +71,7 @@ function StageCard({ stage, current, recommended, reviewRecommended, retry, stat
           {recommended && <span className="stage-roadmap__recommend"> おすすめ</span>}
           {reviewRecommended && <span className="stage-roadmap__recommend"> 復習</span>}
         </span>
+        {note !== undefined && <span className="stage-roadmap__note" data-testid={`roadmap-note-${stage.id}`} title={note}>メモ: {note}</span>}
       </button>
       <span className="stage-roadmap__learns">
         {stage.learns.map((item) => (
@@ -96,12 +99,13 @@ type StageLevelsProps = {
   readonly currentId: string;
   readonly nextId: string | undefined;
   readonly progress: Progress;
+  readonly reflectionNotes: ReflectionNotes;
   readonly milestones: Milestones;
   readonly draftStageIds: readonly string[];
   readonly onChoose: (stageId: string) => void;
 };
 
-function StageLevels({ stages, currentId, nextId, progress, milestones, draftStageIds, onChoose }: StageLevelsProps) {
+function StageLevels({ stages, currentId, nextId, progress, reflectionNotes, milestones, draftStageIds, onChoose }: StageLevelsProps) {
   const assists = useGameStore((state) => state.assists);
   const reviewId = recommendReviewStage(stages, progress, assists)?.id;
   // ステージは難易度順に並んでいるので、出てきた順に難易度をまとめる
@@ -121,6 +125,7 @@ function StageLevels({ stages, currentId, nextId, progress, milestones, draftSta
               reviewRecommended={stage.id === reviewId}
               retry={isStageCleared(stage.id, progress) ? retryMark(assists, stage.id) : undefined}
               status={stageStatus(stage, progress, milestones, draftStageIds.includes(stage.id))}
+              note={reflectionNotes[stage.id]}
               onChoose={() => {
                 onChoose(stage.id);
               }}
@@ -177,6 +182,7 @@ export function StageRoadmapDialog({ open, onClose }: StageRoadmapDialogProps) {
   const stages = useGameStore((state) => state.stages);
   const currentId = useGameStore((state) => state.stage.id);
   const progress = useGameStore((state) => state.progress);
+  const reflectionNotes = useGameStore((state) => state.reflectionNotes);
   const milestones = useGameStore((state) => state.milestones);
   const draftStageIds = useGameStore((state) => state.draftStageIds);
   const selectStage = useGameStore((state) => state.selectStage);
@@ -212,9 +218,7 @@ export function StageRoadmapDialog({ open, onClose }: StageRoadmapDialogProps) {
         </p>
         <ReviewNotice stages={stages} progress={progress} />
         <ViewSwitch view={view} onChange={setView} />
-        {view === 'concepts' && (
-          <ConceptMasteryList mastery={conceptMastery(stages, (id) => isStageCleared(id, progress))} onChoose={choose} />
-        )}
+        {view === 'concepts' && <ConceptMasteryList mastery={conceptMastery(stages, (id) => isStageCleared(id, progress))} onChoose={choose} />}
         {view === 'gallery' && <AntipatternGallery entries={antipatterns} stages={stages} onChoose={choose} />}
         {view === 'stages' && (
           <StageLevels
@@ -222,6 +226,7 @@ export function StageRoadmapDialog({ open, onClose }: StageRoadmapDialogProps) {
             currentId={currentId}
             nextId={next?.id}
             progress={progress}
+            reflectionNotes={reflectionNotes}
             milestones={milestones}
             draftStageIds={draftStageIds}
             onChoose={choose}

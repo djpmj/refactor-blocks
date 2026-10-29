@@ -67,12 +67,14 @@ import { putDraft, takeDraft, type Drafts } from '../../domain/progress/drafts';
 import { markAssist, recordClear, resetAttempt, type Assists, type AssistLevel } from '../../domain/progress/assists';
 import { addMilestone, type Milestones, type StageMilestone } from '../../domain/progress/milestones';
 import { updateMoveBest, type MoveBests } from '../../domain/progress/moveBests';
+import { updateReflectionNote, type ReflectionNotes } from '../../domain/progress/reflectionNotes';
 import { isStageCleared } from '../../domain/progress/roadmap';
 import { updateProgress } from '../../domain/progress/updateProgress';
 import { loadAssists, saveAssists } from '../../infrastructure/progress/assistStorage';
 import { loadDrafts, saveDrafts } from '../../infrastructure/progress/draftStorage';
 import { loadLastStageId, saveLastStageId } from '../../infrastructure/progress/lastStageStorage';
 import { loadMoveBests, saveMoveBests } from '../../infrastructure/progress/moveBestStorage';
+import { loadReflectionNotes, saveReflectionNotes } from '../../infrastructure/progress/reflectionNoteStorage';
 import { loadMilestones, loadProgress, saveMilestones, saveProgress } from '../../infrastructure/progress/progressStorage';
 import { loadStoryEnabled, saveStoryEnabled } from '../../infrastructure/story/storyPreference';
 import { loadTourSeen, saveTourSeen } from '../../infrastructure/tour/tourPreference';
@@ -221,6 +223,9 @@ type GameState = {
   /** ステージごとの、100点に届いた最少の手数。progress とは別のキーに保存する。 */
   moveBests: MoveBests;
   recordMoveBest: (stageId: string, moves: number) => void;
+  /** ステージごとの一言メモ。保存される。点数・クリア判定には使わない。 */
+  reflectionNotes: ReflectionNotes;
+  saveReflectionNote: (stageId: string, text: string) => void;
   /** 100点のあとに終えた段階(理解度チェック・変更依頼)。一覧の「クリア」の判定に使う。保存される。 */
   milestones: Milestones;
   recordMilestone: (stageId: string, milestone: StageMilestone) => void;
@@ -886,7 +891,7 @@ function replaceMethodActions(
 }
 
 /** ステージごとの自己ベストの読み込みと記録、ストーリーのオン/オフ(どちらも閲覧者ごとに保存される)。 */
-function progressActions(set: (partial: Partial<GameState>) => void, get: () => GameState): Pick<GameState, 'progress' | 'recordProgress' | 'assists' | 'recordAssist' | 'moveBests' | 'recordMoveBest' | 'milestones' | 'recordMilestone' | 'storyEnabled' | 'setStoryEnabled'> {
+function progressActions(set: (partial: Partial<GameState>) => void, get: () => GameState): Pick<GameState, 'progress' | 'recordProgress' | 'assists' | 'recordAssist' | 'moveBests' | 'recordMoveBest' | 'reflectionNotes' | 'saveReflectionNote' | 'milestones' | 'recordMilestone' | 'storyEnabled' | 'setStoryEnabled'> {
   return {
     storyEnabled: loadStoryEnabled(),
     setStoryEnabled: (enabled) => {
@@ -922,6 +927,13 @@ function progressActions(set: (partial: Partial<GameState>) => void, get: () => 
       if (next === get().moveBests) return;
       saveMoveBests(next);
       set({ moveBests: next });
+    },
+    reflectionNotes: loadReflectionNotes(),
+    saveReflectionNote: (stageId, text) => {
+      const next = updateReflectionNote(get().reflectionNotes, stageId, text);
+      if (next === get().reflectionNotes) return;
+      saveReflectionNotes(next);
+      set({ reflectionNotes: next });
     },
     milestones: loadMilestones(),
     recordMilestone: (stageId, milestone) => {

@@ -20,6 +20,7 @@ import { RoomToImproveNote } from './RoomToImproveNote';
 import { ChangePainCard } from './ChangePainCard';
 import { StoryIntro } from './StoryIntro';
 import { StoryOutro } from './StoryOutro';
+import { ReflectionNoteCard } from './ReflectionNoteCard';
 import { NextStageCard } from './NextStageCard';
 import { ManualFixPanel } from './ManualFixPanel';
 import { SpotlightTour } from '../tour/SpotlightTour';
@@ -277,6 +278,7 @@ function StageSidebar({ stage, codebase, score, initialScore, investigating, hid
   sidebarRef: RefObject<HTMLElement | null>;
 }>) {
   const recordMilestone = useGameStore((state) => state.recordMilestone);
+  const perfect = !investigating && score.total >= 100;
   return (
     <aside ref={sidebarRef} id="stage-sidebar" className="sidebar" aria-label="課題" hidden={hidden}>
       <h2 className="sidebar__title">課題</h2>
@@ -291,12 +293,13 @@ function StageSidebar({ stage, codebase, score, initialScore, investigating, hid
         <summary>どんなコード?</summary>
         <p data-testid="stage-description">{stage.description}</p>
       </details>
-      {!investigating && score.total >= 100 && <RoomToImproveNote stage={stage} codebase={codebase} />}
-      {!investigating && score.total >= 100 && <UnusedPublicNote stage={stage} codebase={codebase} />}
-      {!investigating && score.total >= 100 && <MoveCountNote stage={stage} />}
-      {!investigating && score.total >= 100 && <ConceptCheckPanel key={stage.id} checks={stage.checks} onAllCorrect={() => recordMilestone(stage.id, 'concept-check')} />}
-      <StoryOutro stage={stage} perfect={!investigating && score.total >= 100} />
-      <NextStageCard stage={stage} perfect={!investigating && score.total >= 100} />
+      {perfect && <RoomToImproveNote stage={stage} codebase={codebase} />}
+      {perfect && <UnusedPublicNote stage={stage} codebase={codebase} />}
+      {perfect && <MoveCountNote stage={stage} />}
+      {perfect && <ConceptCheckPanel key={stage.id} checks={stage.checks} onAllCorrect={() => recordMilestone(stage.id, 'concept-check')} />}
+      {perfect && <ReflectionNoteCard key={`reflection-note-${stage.id}`} stageId={stage.id} />}
+      <StoryOutro stage={stage} perfect={perfect} />
+      <NextStageCard stage={stage} perfect={perfect} />
     </aside>
   );
 }

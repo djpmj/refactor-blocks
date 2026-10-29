@@ -25,7 +25,7 @@ function downloadLearningRecord(): void {
 function summarize(record: LearningRecord): string {
   const scores = Object.values(record.progress);
   const cleared = scores.filter((score) => score === 100).length;
-  return `選んだファイル: 点数の記録 ${String(scores.length)} ステージ(うちクリア ${String(cleared)})、下書き ${String(Object.keys(record.drafts).length)} 件`;
+  return `選んだファイル: 点数の記録 ${String(scores.length)} ステージ(うちクリア ${String(cleared)})、下書き ${String(Object.keys(record.drafts).length)} 件、振り返りメモ ${String(Object.keys(record.reflectionNotes).length)} 件`;
 }
 
 type ConfirmProps = {
@@ -64,7 +64,7 @@ function ImportConfirm({ imported, onApply, onCancel }: ConfirmProps) {
   );
 }
 
-/** ステージ一覧の末尾に置く、学習記録(localStorage の5キー)をJSONファイルで書き出し・読み込みする欄。 */
+/** ステージ一覧の末尾に置く、学習記録(localStorage の6キー)をJSONファイルで書き出し・読み込みする欄。 */
 export function LearningRecordSection() {
   const titleId = useId();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -106,7 +106,7 @@ export function LearningRecordSection() {
   return (
     <section className="learning-record" aria-labelledby={titleId} data-testid="learning-record">
       <h3 id={titleId}>学習記録の持ち運び</h3>
-      <p>記録(自己ベスト・挑戦中の下書き・最後に遊んだステージ・設定)は、このブラウザにだけ保存されています。別のPCやブラウザで続けるとき、サイトデータを消す前に書き出しておいてください。</p>
+      <p>記録(自己ベスト・挑戦中の下書き・振り返りメモ・最後に遊んだステージ・設定)は、このブラウザにだけ保存されています。別のPCやブラウザで続けるとき、サイトデータを消す前に書き出しておいてください。</p>
       <div className="learning-record__actions">
         <button type="button" onClick={downloadLearningRecord} data-testid="learning-record-export">学習記録を書き出す</button>
         <button ref={importButtonRef} type="button" onClick={() => fileRef.current?.click()} data-testid="learning-record-import">学習記録を読み込む</button>
