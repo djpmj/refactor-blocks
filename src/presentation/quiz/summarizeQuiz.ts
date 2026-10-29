@@ -9,7 +9,7 @@ export type QuizSummary = {
   readonly unansweredIds: readonly string[];
 };
 
-function isCorrect(quiz: ComparisonQuiz, answer: QuizAnswer): boolean {
+export function isCorrect(quiz: ComparisonQuiz, answer: QuizAnswer): boolean {
   const judged = judgeQuizAnswer(quiz, answer);
   return judged.ok && judged.value.correct;
 }

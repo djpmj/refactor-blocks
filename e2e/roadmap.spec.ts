@@ -224,3 +224,14 @@ test('図鑑の切り替えとステージボタンをキーボードだけで�
   await expect(page.getByTestId('stage-roadmap')).toHaveCount(0);
   await expect(page.getByRole('heading', { level: 1 })).toContainText('中級6');
 });
+
+test('設計くらべを1問も答えていなければ、ステージ一覧に「未挑戦」と出る', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+
+  // Act
+  await page.getByTestId('roadmap-open').click();
+
+  // Assert
+  await expect(page.getByTestId('roadmap-quiz')).toHaveText('設計くらべ: 未挑戦');
+});

@@ -4,8 +4,11 @@ import { conceptMastery, isStageCleared, recommendNextStage, recommendReviewStag
 import type { Milestones } from '../../domain/progress/milestones';
 import type { Progress } from '../../domain/progress/Progress';
 import type { ReflectionNotes } from '../../domain/progress/reflectionNotes';
+import { summarizeQuizRecord } from '../../domain/quiz/quizRecord';
 import type { Stage } from '../../domain/stage/Stage';
 import { antipatterns } from '../../infrastructure/gallery/antipatterns';
+import { loadQuizRecord } from '../../infrastructure/progress/quizRecordStorage';
+import { comparisonQuizzes } from '../../infrastructure/quizzes/comparisonQuizzes';
 import { DESIGN_PRINCIPLES } from '../../infrastructure/stages/designPrinciples';
 import { useGameStore } from '../store/useGameStore';
 import { GlossaryText } from '../glossary/GlossaryText';
@@ -170,6 +173,27 @@ function ReviewNotice({ stages, progress }: Readonly<{ stages: readonly Stage[];
   );
 }
 
+/** 設計くらべの正答状況。開くたびに読み直す(設計くらべで答えたあとに開いても最新になる)。 */
+function QuizRecordNotice() {
+  const { correct, answered, total } = summarizeQuizRecord(comparisonQuizzes.map((quiz) => quiz.id), loadQuizRecord());
+  const mark = correct === total ? ' ✅' : '';
+  const label = answered === 0 ? '未挑戦' : `${String(total)}問中${String(correct)}問正解${mark}`;
+  return (
+    <p className="stage-roadmap__next" data-testid="roadmap-quiz">
+      設計くらべ: {label}
+    </p>
+  );
+}
+
+function Notices({ stages, progress }: Readonly<{ stages: readonly Stage[]; progress: Progress }>) {
+  return (
+    <>
+      <QuizRecordNotice />
+      <ReviewNotice stages={stages} progress={progress} />
+    </>
+  );
+}
+
 type StageRoadmapDialogProps = {
   /** false なら表示しない。ネイティブの dialog に Esc・背景の上乗せ・フォーカスの復帰を任せる。 */
   readonly open: boolean;
@@ -216,7 +240,7 @@ export function StageRoadmapDialog({ open, onClose }: StageRoadmapDialogProps) {
         <p className="stage-roadmap__next" data-testid="roadmap-next">
           {next === undefined ? '全ステージをクリアしました' : `次のおすすめ: ${next.title}`}
         </p>
-        <ReviewNotice stages={stages} progress={progress} />
+        <Notices stages={stages} progress={progress} />
         <ViewSwitch view={view} onChange={setView} />
         {view === 'concepts' && <ConceptMasteryList mastery={conceptMastery(stages, (id) => isStageCleared(id, progress))} onChoose={choose} />}
         {view === 'gallery' && <AntipatternGallery entries={antipatterns} stages={stages} onChoose={choose} />}

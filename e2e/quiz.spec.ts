@@ -424,3 +424,76 @@ test('まとめの「リファクタリングに戻る」「白紙設計に挑�
   // Assert
   await expect(page.getByTestId('mode-blank')).toHaveAttribute('aria-pressed', 'true');
 });
+
+const QUIZ_KEY = 'refactor-blocks:quiz-record';
+/** 各問の正解の設計と理由の添字(comparisonQuizzes の順)。 */
+const CORRECT_ANSWERS: readonly (readonly ['a' | 'b', number])[] = [['a', 1], ['b', 0], ['a', 2], ['b', 1], ['a', 2], ['b', 0], ['a', 2], ['b', 1]];
+
+/** 読み込み直してから設計くらべの1問目だけに答える。 */
+async function answerFirstQuiz(page: Page, correct: boolean) {
+  await page.goto('/');
+  await page.getByTestId('mode-quiz').click();
+  await answerQuiz(page, correct ? 'a' : 'b', correct ? 1 : 0);
+}
+
+/** 読み込み直してリファクタリングモードのステージ一覧を開き、設計くらべの行の文言を返す。 */
+async function roadmapQuizText(page: Page): Promise<string | null> {
+  await page.goto('/');
+  await page.getByTestId('roadmap-open').click();
+  return page.getByTestId('roadmap-quiz').textContent();
+}
+
+test('1問目で正解すると、読み込み直したステージ一覧に設計くらべの正答数が出る', async ({ page }) => {
+  // Arrange
+  await answerFirstQuiz(page, true);
+
+  // Act
+  const text = await roadmapQuizText(page);
+
+  // Assert
+  expect(text).toBe('設計くらべ: 8問中1問正解');
+});
+
+test('不正解は0問正解、一度正解した問題はあとでまちがえても正解のまま', async ({ page }) => {
+  // Arrange・Act・Assert
+  await answerFirstQuiz(page, false);
+  expect(await roadmapQuizText(page)).toBe('設計くらべ: 8問中0問正解');
+  await answerFirstQuiz(page, true);
+  expect(await roadmapQuizText(page)).toBe('設計くらべ: 8問中1問正解');
+  await answerFirstQuiz(page, false);
+  expect(await roadmapQuizText(page)).toBe('設計くらべ: 8問中1問正解');
+});
+
+test('全問正解するとステージ一覧に ✅ が付き、「もう一度解く」でも記録は消えず、おすすめも変わらない', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await page.getByTestId('roadmap-open').click();
+  const nextBefore = await page.getByTestId('roadmap-next').textContent();
+  await page.getByRole('button', { name: '閉じる' }).click();
+  await page.getByTestId('mode-quiz').click();
+  for (const [index, [design, reason]] of CORRECT_ANSWERS.entries()) {
+    await page.getByLabel('クイズ').selectOption({ index });
+    await answerQuiz(page, design, reason);
+  }
+
+  // Act
+  await page.getByRole('button', { name: '結果を見る' }).click();
+  await page.getByTestId('quiz-retry').click();
+
+  // Assert
+  await page.getByTestId('mode-refactor').click();
+  await page.getByTestId('roadmap-open').click();
+  await expect(page.getByTestId('roadmap-quiz')).toHaveText('設計くらべ: 8問中8問正解 ✅');
+  await expect(page.getByTestId('roadmap-next')).toHaveText(nextBefore ?? '');
+});
+
+test('記録の JSON が壊れていても、画面は壊れず未挑戦と出る', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await page.evaluate((key) => {
+    localStorage.setItem(key, '{broken');
+  }, QUIZ_KEY);
+
+  // Act・Assert
+  expect(await roadmapQuizText(page)).toBe('設計くらべ: 未挑戦');
+});
