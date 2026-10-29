@@ -62,14 +62,15 @@ export function suggestMethodName(
 ): string {
   if (fragments.length === 0) return '';
   const candidates = fragments.flatMap((fragment) => (fragment.suggestedName === undefined ? [] : [fragment.suggestedName]));
+  const selectedIds = fragments.map((fragment) => fragment.id);
+  const matchedGroup = naming.groups.find((group) => sameIds(group.fragmentIds, selectedIds));
   let base: string;
-  if (fragments.length === 1) {
+  if (matchedGroup !== undefined) {
+    base = matchedGroup.name;
+  } else if (fragments.length === 1) {
     base = fragments[0].suggestedName ?? FALLBACK_NAME;
   } else {
-    const selectedIds = fragments.map((fragment) => fragment.id);
-    const matchedGroup = naming.groups.find((group) => sameIds(group.fragmentIds, selectedIds));
-    base = matchedGroup?.name
-      ?? responsibilityName(fragments, naming)
+    base = responsibilityName(fragments, naming)
       ?? (candidates.length === 0 ? FALLBACK_NAME : combine(candidates));
   }
   const taken = new Set(existingNames);

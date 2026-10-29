@@ -7,7 +7,7 @@ export function methodNamingOf(
   steps: Partial<Record<string, readonly SolutionStep[]>> = sampleAnswerSteps,
 ): MethodNaming {
   const groups = (steps[stage.id] ?? []).flatMap((step) => {
-    if (!('extract' in step) || step.extract.fragmentIds.length < 2) return [];
+    if (!('extract' in step)) return [];
     return [{ fragmentIds: step.extract.fragmentIds, name: step.extract.name }];
   });
   return { groups, byResponsibility: stage.methodNames ?? {} };

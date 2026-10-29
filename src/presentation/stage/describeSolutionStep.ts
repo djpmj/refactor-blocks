@@ -85,7 +85,7 @@ export function describeSolutionStep(codebase: Codebase, step: SolutionStep): st
     const { from, fromClass, fragmentIds, name } = step.extract;
     const labels = fragmentIds.map((id) => fragmentLabel(codebase, id)).join('・');
     const source = fromClass === undefined ? from : `${fromClass} の ${from}`;
-    return `${source} から「${labels}」をExtract Methodで取り出し、${name} という名前にしよう`;
+    return `${source} から「${labels}」をExtract Methodで取り出そう(名前は自動で ${name} になる)`;
   }
   if ('inline' in step) {
     return describeInlineStep(step.inline);

@@ -1,6 +1,27 @@
 import { expect, test } from '@playwright/test';
 import { dismissClearScreen, selectStage } from './selectStage.js';
 
+test('チュートリアル1のヒントどおりに選ぶと模範解答の名前が自動で付く', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await selectStage(page, 'チュートリアル1: 長いメソッドを分ける');
+  await page.getByTestId('method-printMonthlyReport').click();
+  const name = page.getByLabel('新しいメソッド名');
+
+  // Act & Assert: 表の2処理
+  await page.getByLabel('表のヘッダーを組み立てる').check();
+  await page.getByLabel('表の行を組み立てる').check();
+  await expect(name).toHaveValue('buildSalesTable');
+  await page.getByLabel('表のヘッダーを組み立てる').uncheck();
+  await page.getByLabel('表の行を組み立てる').uncheck();
+
+  // Act & Assert: 出力の1処理を抽出
+  await page.getByLabel('画面に出力する').check();
+  await expect(name).toHaveValue('printSalesReport');
+  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+  await expect(page.getByTestId('method-printSalesReport')).toBeVisible();
+});
+
 test('手直し中もメソッド行数のバッジは一行で表示する', async ({ page }) => {
   // Arrange
   await page.setViewportSize({ width: 1800, height: 1400 });
