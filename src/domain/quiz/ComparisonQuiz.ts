@@ -1,6 +1,7 @@
 import type { ChangeRequest } from '../change/ChangeRequest';
 import type { Codebase } from '../codebase/Codebase';
 import type { LineLimits } from '../scoring/lineLimits';
+import type { ConceptCheck } from '../stage/Stage';
 
 export type DesignChoice = 'a' | 'b';
 
@@ -19,6 +20,9 @@ export type ComparisonQuiz = {
   readonly limits: LineLimits;
   readonly designs: Readonly<Record<DesignChoice, QuizDesign>>;
   readonly changeRequest: ChangeRequest;
-  /** 答え合わせで出す、なぜその設計が楽なのかの1〜2文。 */
-  readonly explanation: string;
+  /** 2段目: 楽な設計を選んだ理由の3択。選択肢ごとの explanation が、その理由を選んだときの解説になる。 */
+  readonly reason: ConceptCheck;
 };
+
+/** 1問への答え。設計(1段目)と理由の添字(2段目)の両方がそろって初めて「答えた」ことになる。 */
+export type QuizAnswer = { readonly design: DesignChoice; readonly reason: number };

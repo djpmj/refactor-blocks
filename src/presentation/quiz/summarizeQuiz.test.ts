@@ -1,25 +1,29 @@
 import { describe, expect, it } from 'vitest';
-import type { DesignChoice } from '../../domain/quiz/ComparisonQuiz';
+import type { ComparisonQuiz, DesignChoice, QuizAnswer } from '../../domain/quiz/ComparisonQuiz';
 import { judgeComparison } from '../../domain/quiz/judgeComparison';
 import { comparisonQuizzes } from '../../infrastructure/quizzes/comparisonQuizzes';
-import { summarizeQuiz } from './summarizeQuiz';
+import { answerMark, summarizeQuiz } from './summarizeQuiz';
 
-function correctChoice(index: number): DesignChoice {
-  const quiz = comparisonQuizzes.at(index);
-  const verdict = quiz === undefined ? null : judgeComparison(quiz, 'a');
-  if (verdict === null || !verdict.ok) throw new Error('判定できないクイズ');
+function correctDesign(quiz: ComparisonQuiz): DesignChoice {
+  const verdict = judgeComparison(quiz, 'a');
+  if (!verdict.ok) throw new Error('判定できないクイズ');
   return verdict.value.answer;
 }
 
-function wrongChoice(index: number): DesignChoice {
-  return correctChoice(index) === 'a' ? 'b' : 'a';
+function correctAnswer(quiz: ComparisonQuiz): QuizAnswer {
+  return { design: correctDesign(quiz), reason: quiz.reason.answer };
 }
 
-function answersWith(pick: (index: number) => DesignChoice | null): Record<string, DesignChoice> {
-  const answers: Record<string, DesignChoice> = {};
+/** 設計は合っているが、理由がちがう答え。 */
+function wrongReasonAnswer(quiz: ComparisonQuiz): QuizAnswer {
+  return { design: correctDesign(quiz), reason: (quiz.reason.answer + 1) % quiz.reason.choices.length };
+}
+
+function answersWith(pick: (quiz: ComparisonQuiz, index: number) => QuizAnswer | null): Record<string, QuizAnswer> {
+  const answers: Record<string, QuizAnswer> = {};
   comparisonQuizzes.forEach((quiz, index) => {
-    const choice = pick(index);
-    if (choice !== null) answers[quiz.id] = choice;
+    const answer = pick(quiz, index);
+    if (answer !== null) answers[quiz.id] = answer;
   });
   return answers;
 }
@@ -27,7 +31,7 @@ function answersWith(pick: (index: number) => DesignChoice | null): Record<strin
 describe('summarizeQuiz', () => {
   it('すべて正解なら、正解数が問題数と同じで一覧は空になる', () => {
     // Arrange
-    const answers = answersWith(correctChoice);
+    const answers = answersWith(correctAnswer);
 
     // Act
     const summary = summarizeQuiz(comparisonQuizzes, answers);
@@ -36,9 +40,9 @@ describe('summarizeQuiz', () => {
     expect(summary).toEqual({ correct: comparisonQuizzes.length, total: comparisonQuizzes.length, wrongIds: [], unansweredIds: [] });
   });
 
-  it('不正解の問題は wrongIds に入る', () => {
+  it('設計が合っていても理由がちがう問題は wrongIds に入る', () => {
     // Arrange
-    const answers = answersWith((index) => (index === 1 ? wrongChoice(index) : correctChoice(index)));
+    const answers = answersWith((quiz, index) => (index === 1 ? wrongReasonAnswer(quiz) : correctAnswer(quiz)));
 
     // Act
     const summary = summarizeQuiz(comparisonQuizzes, answers);
@@ -51,7 +55,7 @@ describe('summarizeQuiz', () => {
 
   it('未回答の問題は unansweredIds に入り、正解数は答えた問題だけで数える', () => {
     // Arrange
-    const answers = answersWith((index) => (index === 2 ? null : correctChoice(index)));
+    const answers = answersWith((quiz, index) => (index === 2 ? null : correctAnswer(quiz)));
 
     // Act
     const summary = summarizeQuiz(comparisonQuizzes, answers);
@@ -60,5 +64,43 @@ describe('summarizeQuiz', () => {
     expect(summary.unansweredIds).toEqual([comparisonQuizzes[2]?.id]);
     expect(summary.correct).toBe(comparisonQuizzes.length - 1);
     expect(summary.wrongIds).toEqual([]);
+  });
+});
+
+describe('answerMark', () => {
+  const quiz = comparisonQuizzes.at(0);
+  if (quiz === undefined) throw new Error('クイズがありません');
+
+  it('設計も理由も合っていれば (✓)', () => {
+    // Arrange
+    const answer = correctAnswer(quiz);
+
+    // Act
+    const mark = answerMark(quiz, answer);
+
+    // Assert
+    expect(mark).toBe('(✓)');
+  });
+
+  it('理由がちがえば (✗)', () => {
+    // Arrange
+    const answer = wrongReasonAnswer(quiz);
+
+    // Act
+    const mark = answerMark(quiz, answer);
+
+    // Assert
+    expect(mark).toBe('(✗)');
+  });
+
+  it('答えが無ければ空文字', () => {
+    // Arrange
+    const answer = Object.values<QuizAnswer>({}).at(0);
+
+    // Act
+    const mark = answerMark(quiz, answer);
+
+    // Assert
+    expect(mark).toBe('');
   });
 });
