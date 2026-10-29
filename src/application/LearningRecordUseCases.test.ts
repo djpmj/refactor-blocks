@@ -13,7 +13,7 @@ const codebase: Codebase = {
 };
 
 function record(overrides: Partial<LearningRecord> = {}): LearningRecord {
-  return { progress: { a: 40 }, drafts: { a: { fingerprint: 'fp', codebase } }, lastStageId: 'a', storyEnabled: true, tourSeen: true, ...overrides };
+  return { progress: { a: 40 }, drafts: { a: { fingerprint: 'fp', codebase } }, reflectionNotes: {}, lastStageId: 'a', storyEnabled: true, tourSeen: true, ...overrides };
 }
 
 function fileOf(overrides: Record<string, unknown>): string {
@@ -26,6 +26,25 @@ function errorOf(text: string): string | undefined {
 }
 
 describe('parseLearningRecord', () => {
+  it('メモを往復し、古いファイルでは空のメモを使う', () => {
+    // Arrange
+    const original = record({ reflectionNotes: { a: '気づき' } });
+
+    // Act
+    const roundTrip = parseLearningRecord(serializeLearningRecord(original));
+    const oldFile = parseLearningRecord(fileOf({}));
+
+    // Assert
+    expect(roundTrip).toEqual({ ok: true, value: original });
+    expect(oldFile.ok && oldFile.value.reflectionNotes).toEqual({});
+  });
+
+  it('メモの形が壊れていれば断る', () => {
+    // Arrange・Act・Assert
+    for (const reflectionNotes of [null, [], { a: '' }, { a: 1 }, { a: 'x'.repeat(141) }]) {
+      expect(errorOf(fileOf({ reflectionNotes }))).toBe('振り返りメモ(reflectionNotes)の形式が正しくありません');
+    }
+  });
   it('serialize の出力を往復できる', () => {
     // Arrange
     const original = record();
@@ -144,11 +163,20 @@ describe('serializeLearningRecord', () => {
     const parsed: unknown = JSON.parse(serializeLearningRecord(record({ lastStageId: null })));
 
     // Assert
-    expect(parsed).toEqual({ app: 'refactor-blocks', version: 1, progress: { a: 40 }, drafts: { a: { fingerprint: 'fp', codebase } }, lastStageId: null, storyEnabled: true, tourSeen: true });
+    expect(parsed).toEqual({ app: 'refactor-blocks', version: 1, progress: { a: 40 }, drafts: { a: { fingerprint: 'fp', codebase } }, reflectionNotes: {}, lastStageId: null, storyEnabled: true, tourSeen: true });
   });
 });
 
 describe('combineLearningRecords', () => {
+  it('merge はブラウザのメモを優先し、overwrite はファイルのメモに置き換える', () => {
+    // Arrange
+    const current = record({ reflectionNotes: { a: 'ブラウザ', x: '残す' } });
+    const imported = record({ reflectionNotes: { a: 'ファイル', b: '追加' } });
+
+    // Act・Assert
+    expect(combineLearningRecords(current, imported, 'merge').reflectionNotes).toEqual({ a: 'ブラウザ', b: '追加', x: '残す' });
+    expect(combineLearningRecords(current, imported, 'overwrite').reflectionNotes).toEqual(imported.reflectionNotes);
+  });
   it('merge: 点数はステージごとに高いほう', () => {
     // Arrange
     const current = record({ progress: { a: 40, b: 100 } });

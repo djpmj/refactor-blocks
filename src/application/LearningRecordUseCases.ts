@@ -1,12 +1,14 @@
 import { isDraft, type Drafts } from '../domain/progress/drafts';
 import { isProgress, type Progress } from '../domain/progress/Progress';
 import { updateProgress } from '../domain/progress/updateProgress';
+import { isReflectionNotes, type ReflectionNotes } from '../domain/progress/reflectionNotes';
 import { err, ok, type Result } from '../domain/shared/Result';
 
 /** ブラウザに保存している学習記録のすべて。ファイルに書き出す単位。 */
 export type LearningRecord = {
   readonly progress: Progress;
   readonly drafts: Drafts;
+  readonly reflectionNotes: ReflectionNotes;
   /** 最後に遊んだステージID。無ければ null。 */
   readonly lastStageId: string | null;
   readonly storyEnabled: boolean;
@@ -33,6 +35,11 @@ function isDrafts(value: unknown): value is Drafts {
   return isObject(value) && Object.values(value).every(isDraft);
 }
 
+function readReflectionNotes(value: unknown): Result<ReflectionNotes, string> {
+  if (value === undefined) return ok({});
+  return isReflectionNotes(value) ? ok(value) : err('振り返りメモ(reflectionNotes)の形式が正しくありません');
+}
+
 function checkHeader(data: unknown): Result<Record<string, unknown>, string> {
   if (!isObject(data) || data.app !== APP_NAME) return err('Refactor Blocks の学習記録ファイルではありません');
   const { version } = data;
@@ -54,12 +61,14 @@ export function parseLearningRecord(text: string): Result<LearningRecord, string
   }
   const header = checkHeader(data);
   if (!header.ok) return header;
-  const { progress, drafts, lastStageId, storyEnabled, tourSeen } = header.value;
+  const { progress, drafts, reflectionNotes, lastStageId, storyEnabled, tourSeen } = header.value;
   if (!isProgress(progress)) return err('自己ベスト点数(progress)の形式が正しくありません');
   if (!isDrafts(drafts)) return err('途中の下書き(drafts)の形式が正しくありません');
+  const notes = readReflectionNotes(reflectionNotes);
+  if (!notes.ok) return notes;
   if (lastStageId !== null && typeof lastStageId !== 'string') return err('最後に遊んだステージ(lastStageId)の形式が正しくありません');
   if (typeof storyEnabled !== 'boolean' || typeof tourSeen !== 'boolean') return err('設定(storyEnabled・tourSeen)の形式が正しくありません');
-  return ok({ progress, drafts, lastStageId, storyEnabled, tourSeen });
+  return ok({ progress, drafts, reflectionNotes: notes.value, lastStageId, storyEnabled, tourSeen });
 }
 
 function mergeProgress(current: Progress, imported: Progress): Progress {
@@ -74,6 +83,7 @@ export function combineLearningRecords(current: LearningRecord, imported: Learni
   return {
     progress: mergeProgress(current.progress, imported.progress),
     drafts: { ...imported.drafts, ...current.drafts },
+    reflectionNotes: { ...imported.reflectionNotes, ...current.reflectionNotes },
     lastStageId: current.lastStageId ?? imported.lastStageId,
     storyEnabled: current.storyEnabled,
     tourSeen,

@@ -1315,4 +1315,22 @@ describe('move count', () => {
     expect(store.getState().moveBests.x).toBe(3);
     expect(localStorage.getItem('refactor-blocks:move-bests')).toBe('{"x":3}');
   });
+
+  it('振り返りメモを保存し、空白だけなら消す', () => {
+    // Arrange
+    localStorage.removeItem('refactor-blocks:reflection-notes');
+    const store = createGameStore([tutorial1()], false, false);
+
+    // Act
+    store.getState().saveReflectionNote('x', ' メモ ');
+
+    // Assert
+    expect(store.getState().reflectionNotes.x).toBe('メモ');
+    expect(localStorage.getItem('refactor-blocks:reflection-notes')).toBe('{"x":"メモ"}');
+
+    // Act・Assert
+    store.getState().saveReflectionNote('x', '  ');
+    expect(store.getState().reflectionNotes.x).toBeUndefined();
+    expect(localStorage.getItem('refactor-blocks:reflection-notes')).toBe('{}');
+  });
 });
