@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { findClassOfMethod, findFileOfClass, findMethod, type Codebase } from '../domain/codebase/Codebase';
-import { METHOD_OVERHEAD_LINES, methodLines } from '../domain/codebase/lineCount';
+import { METHOD_OVERHEAD_LINES, classLines, methodLines } from '../domain/codebase/lineCount';
 import { sampleCodebase } from '../domain/codebase/testFixtures';
 import {
   addClassUseCase,
@@ -105,6 +105,7 @@ describe('previewExtractMethod', () => {
     const preview = previewExtractMethod(codebase, { sourceMethodId: 'source', fragmentIds: ['sales'], newMethodName: ' aggregateSales ' });
 
     // Assert
+    if (preview === undefined) throw new Error('preview missing');
     expect(preview).toEqual({
       sourceMethodId: 'source',
       sourceLinesBefore: methodLines(source),
@@ -113,9 +114,23 @@ describe('previewExtractMethod', () => {
       newMethodLines: 27,
       fileLinesBefore: 92,
       fileLinesAfter: 98,
+      classLinesBefore: classLines(codebase.files[0].classes[0], codebase),
+      classLinesAfter: classLines(codebase.files[0].classes[0], codebase) + 6,
     });
     expect(codebase).toEqual(before);
-    expect((preview?.fileLinesAfter ?? 0) - (preview?.fileLinesBefore ?? 0)).toBeGreaterThanOrEqual(METHOD_OVERHEAD_LINES + 1);
+    expect(preview.fileLinesAfter - preview.fileLinesBefore).toBeGreaterThanOrEqual(METHOD_OVERHEAD_LINES + 1);
+    expect(preview.classLinesAfter - preview.classLinesBefore).toBe(preview.fileLinesAfter - preview.fileLinesBefore);
+  });
+
+  it('同じファイルの別クラスを抽出元クラスの行数に含めない', () => {
+    // Arrange
+    const otherClass: Codebase['files'][number]['classes'][number] = { id: 'other', name: 'Other', methods: [{ id: 'other-method', name: 'run', visibility: 'public', fragments: [{ id: 'other-fragment', label: 'other', lines: 8, responsibility: 'other' }] }] };
+    const twoClasses: Codebase = { files: [{ ...codebase.files[0], classes: [...codebase.files[0].classes, otherClass] }] };
+    // Act
+    const preview = previewExtractMethod(twoClasses, { sourceMethodId: 'source', fragmentIds: ['sales'], newMethodName: 'aggregateSales' });
+    // Assert
+    expect(preview?.classLinesBefore).toBe(classLines(codebase.files[0].classes[0], codebase));
+    expect(preview?.classLinesBefore).toBeLessThan(preview?.fileLinesBefore ?? 0);
   });
 
   it('連続していない処理を選ぶとプレビューを出さない', () => {

@@ -4,7 +4,7 @@ import { describeExtractPreview } from './describeExtractPreview';
 describe('describeExtractPreview', () => {
   it('ファイル全体の行数が増える理由を添える', () => {
     // Arrange
-    const preview = { sourceMethodId: 'm', sourceLinesBefore: 39, sourceLinesAfter: 34, newMethodName: 'aggregateSales', newMethodLines: 10, fileLinesBefore: 42, fileLinesAfter: 48 };
+    const preview = { sourceMethodId: 'm', sourceLinesBefore: 39, sourceLinesAfter: 34, newMethodName: 'aggregateSales', newMethodLines: 10, fileLinesBefore: 42, fileLinesAfter: 48, classLinesBefore: 42, classLinesAfter: 48 };
 
     // Act
     const description = describeExtractPreview('printMonthlyReport', preview);
@@ -15,7 +15,7 @@ describe('describeExtractPreview', () => {
 
   it('行数が増えない場合は従来の文にする', () => {
     // Arrange
-    const preview = { sourceMethodId: 'm', sourceLinesBefore: 10, sourceLinesAfter: 7, newMethodName: 'helper', newMethodLines: 6, fileLinesBefore: 16, fileLinesAfter: 16 };
+    const preview = { sourceMethodId: 'm', sourceLinesBefore: 10, sourceLinesAfter: 7, newMethodName: 'helper', newMethodLines: 6, fileLinesBefore: 16, fileLinesAfter: 16, classLinesBefore: 16, classLinesAfter: 16 };
 
     // Act
     const description = describeExtractPreview('run', preview);

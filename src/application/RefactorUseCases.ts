@@ -7,7 +7,7 @@ import { deleteClass, type DeleteClassError, type DeleteResult } from '../domain
 import { deleteFile, type DeleteFileError } from '../domain/codebase/deleteFile';
 import { deleteMethod, type DeleteMethodError } from '../domain/codebase/deleteMethod';
 import { extractMethod, type ExtractMethodError } from '../domain/codebase/extractMethod';
-import { fileLines, methodLines } from '../domain/codebase/lineCount';
+import { classLines, fileLines, methodLines } from '../domain/codebase/lineCount';
 import { findCallerOf, inlineMethod, type InlineMethodError } from '../domain/codebase/inlineMethod';
 import { mergeMethods, type MergeMethodsError } from '../domain/codebase/mergeMethods';
 import { moveClass, type MoveClassError } from '../domain/codebase/moveClass';
@@ -45,6 +45,8 @@ export type ExtractPreview = {
   readonly newMethodLines: number;
   readonly fileLinesBefore: number;
   readonly fileLinesAfter: number;
+  readonly classLinesBefore: number;
+  readonly classLinesAfter: number;
 };
 
 function classEntityIds(codeClass: CodeClass): string[] {
@@ -77,9 +79,10 @@ export function previewExtractMethod(codebase: Codebase, input: ExtractMethodInp
   const extracted = findMethod(result.value, previewId);
   if (sourceAfter === undefined || extracted === undefined) return undefined;
   const sourceClass = findClassOfMethod(codebase, source.id);
+  const resultClass = findClassOfMethod(result.value, source.id);
   const sourceFile = sourceClass === undefined ? undefined : findFileOfClass(codebase, sourceClass.id);
   const resultFile = sourceFile === undefined ? undefined : result.value.files.find((file) => file.id === sourceFile.id);
-  if (sourceFile === undefined || resultFile === undefined) return undefined;
+  if (sourceClass === undefined || resultClass === undefined || sourceFile === undefined || resultFile === undefined) return undefined;
   return {
     sourceMethodId: source.id,
     sourceLinesBefore: methodLines(source, codebase),
@@ -88,6 +91,8 @@ export function previewExtractMethod(codebase: Codebase, input: ExtractMethodInp
     newMethodLines: methodLines(extracted, result.value),
     fileLinesBefore: fileLines(sourceFile, codebase),
     fileLinesAfter: fileLines(resultFile, result.value),
+    classLinesBefore: classLines(sourceClass, codebase),
+    classLinesAfter: classLines(resultClass, result.value),
   };
 }
 
