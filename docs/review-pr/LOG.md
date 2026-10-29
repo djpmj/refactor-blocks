@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-29 10:20 UTC PR #374 設計くらべに2段目「理由の3択」を追加する (#348)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(2397件) / npm run lint ✅ / npm run typecheck ✅ / E2Eはブラウザ未導入で実行不可(コードのみ確認)
+- マージ: squash & delete-branch
+
 ## 2026-10-29 10:00 UTC PR #373 100点後の振り返りメモを追加 (#346)
 
 - 判定: 合格(blocker無し)
@@ -210,17 +216,5 @@
 
 - 判定: 合格(blocker無し。前回指摘したe2e失敗は、#289に合わせて失敗操作を「最後の1ファイルの削除」に作り直したことで解消)
 - 確認した内容: npm test(2054件)✅ / npm run lint ✅ / npm run typecheck ✅。共通のHIGHLIGHT_RESETをcommit・travelTo・CHANGE_STEP_RESETに適用し、失敗した操作では消さない点をIssue #290・docs/specs/hint-highlight-clears-on-change.mdと照合。CIのcheck・e2e(2回とも)・jscpd・knipが成功。E2Eはこの環境で実行許可が無くCI結果に依拠
-- マージ: squash & delete-branch
-
-## 2026-10-25 10:13 UTC PR #309 100点のあと次のおすすめステージへ進むカードを出す (#288)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(lint・typecheck・Vitest 2047件)✅。受け入れ基準1〜4と手直し中・変更依頼中の非表示をE2E(6件)が網羅していることをIssue #288と照合。E2Eはこの環境で実行許可が無く未実行(CIのe2eは確認時点で実行中)
-- マージ: squash & delete-branch
-
-## 2026-10-25 07:40 UTC PR #311 抽出するメソッド名の重複を、押す前に入力欄のそばで伝える (#289)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(lint・typecheck・Vitest 2047件)✅。表示する理由と aria-invalid を blockOf の1つの判定から導くこと、優先順(選択なし>非連続>名前が空>重複)、aria-describedby の参照先idをIssue #289・docs/specs/extract-name-inline-error.md と照合。E2Eはこの環境で実行許可が無く未実行(PR本文では関係する14件成功、CIのe2eは確認時点で実行中)
 - マージ: squash & delete-branch
 
