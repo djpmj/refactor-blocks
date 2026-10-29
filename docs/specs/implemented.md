@@ -176,3 +176,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [comparison-quiz-more-questions](comparison-quiz-more-questions.md) | 設計くらべに Strategy・State・インターフェース分離・Money の4問を足して8問にする |
 | [antipattern-gallery](antipattern-gallery.md) | ステージ一覧に「コードの臭い図鑑」を足し、臭いごとに症状・弊害・直し方・練習ステージを読めるようにする |
 | [critique-failure-fallback](critique-failure-fallback.md) | AI講評が取れないとき、採点の内訳から作った簡易講評を代わりに出す |
+| [clear-reflection-note](clear-reflection-note.md) | 100点のあとに一言(140字まで)の振り返りメモを書き残し、ステージ一覧から読み返せるようにする |
