@@ -5,6 +5,7 @@ import { findUnplacedParts, TRAY_FILE_ID } from '../../domain/blank/tray';
 import { blankDesignProblems } from './blankDesignProblems';
 import { autoNameClasses } from '../../domain/codebase/autoNameClasses';
 import { moveMethodToNewClass } from '../../domain/codebase/moveToNewHome';
+import { validateBlankDesignProblem } from '../../domain/blank/validateBlankDesignProblem';
 
 function partResponsibilities(problem: (typeof blankDesignProblems)[number]): Set<string> {
   const responsibilities = partMethods(problem).flatMap((method) => method.fragments).map((fragment) => fragment.responsibility);
@@ -35,11 +36,9 @@ describe.each(blankDesignProblems)('$id', (problem) => {
 
   it('プレイヤー操作で作ったクラスには部品の責務から模範解答の名前が付く', () => {
     // Arrange
-    const methods = partMethods(problem);
-    const responsibility = methods.flatMap((method) => method.fragments)
-      .find((fragment) => fragment.responsibility !== 'order-flow')?.responsibility;
+    const responsibility = problem.changeRequests[0].responsibility;
     const part = partWithResponsibility(problem, responsibility);
-    if (part === undefined || responsibility === undefined) throw new Error('責務のある部品が見つかりません');
+    if (part === undefined) throw new Error('責務のある部品が見つかりません');
     const moved = moveMethodToNewClass(problem.codebase, part.id, { classId: 'new-class', fileId: 'new-file' });
     if (!moved.ok) throw new Error(moved.error);
 
@@ -49,6 +48,14 @@ describe.each(blankDesignProblems)('$id', (problem) => {
     // Assert
     const expectedClassName = problem.classNames[responsibility];
     expect(named.files.flatMap((file) => file.classes).find((codeClass) => codeClass.id === 'new-class')?.name).toBe(expectedClassName);
+  });
+
+  it('validateBlankDesignProblem が ok を返す', () => {
+    // Arrange & Act
+    const result = validateBlankDesignProblem(problem);
+
+    // Assert
+    expect(result.ok).toBe(true);
   });
 
   it('問題IDは重複しない', () => {
@@ -112,6 +119,50 @@ describe('blank-order-shipping', () => {
     // OrderService・ShippingServiceとも、流れ・税(または保存)・メールの3責務が同居して責務の混在×2(-20点)になる
     expect(grouped.value.player.score.total).toBe(80);
     expect(model.value.player.score.total).toBe(100);
+    expect(grouped.value.player.score.total).toBeLessThan(model.value.player.score.total);
+    expect(grouped.value.player.changeScore).toBeLessThanOrEqual(model.value.player.changeScore);
+  });
+});
+
+type FunctionGroup = { readonly file: string; readonly cls: string; readonly methods: readonly string[] };
+
+function moveStepsOf(group: FunctionGroup) {
+  return group.methods.map((method) => ({ move: { method, toClass: group.cls } }));
+}
+
+describe.each([
+  {
+    id: 'blank-room-reservation',
+    groups: [
+      { file: 'src/reservation/ReservationService.ts', cls: 'ReservationService', methods: ['reserveRoom', 'checkRoomAvailability', 'saveReservation', 'addToCalendar'] },
+      { file: 'src/reservation/CancellationService.ts', cls: 'CancellationService', methods: ['cancelReservation', 'deleteReservation', 'removeFromCalendar'] },
+    ],
+  },
+  {
+    id: 'blank-attendance',
+    groups: [
+      { file: 'src/attendance/ClockInService.ts', cls: 'ClockInService', methods: ['clockIn', 'saveClockIn'] },
+      { file: 'src/attendance/ClockOutService.ts', cls: 'ClockOutService', methods: ['clockOut', 'saveClockOut', 'calculateOvertime', 'alertOvertime', 'summarizeMonthlyOvertime'] },
+    ],
+  },
+])('$id', ({ id, groups }) => {
+  const problem = blankDesignProblems.find((candidate) => candidate.id === id);
+  if (problem === undefined) throw new Error(`${id} が見つかりません`);
+
+  it('機能ごとに部品をまとめた設計は、模範解答より設計スコアも変更容易性スコアも低い', () => {
+    // Arrange: 機能の流れ(2グループ)で、責務の違う部品をまとめてしまった設計
+    const functionGrouped = applySolutionSteps(problem.codebase, [
+      ...groups.map((group) => ({ addFile: group.file })),
+      ...groups.map((group) => ({ addClass: { name: group.cls, file: group.file } })),
+      ...groups.flatMap(moveStepsOf),
+    ]);
+
+    // Act
+    const grouped = reviewBlankDesign(problem, functionGrouped);
+    const model = reviewBlankDesign(problem, modelAnswerCodebase(problem));
+
+    // Assert
+    if (!grouped.ok || !model.ok) throw new Error('unexpected error');
     expect(grouped.value.player.score.total).toBeLessThan(model.value.player.score.total);
     expect(grouped.value.player.changeScore).toBeLessThanOrEqual(model.value.player.changeScore);
   });

@@ -305,3 +305,57 @@ test('キーボードだけで、モードの切り替え・答え合わせ・�
   await expect(result).toHaveCount(0);
   await expect(view.getByTestId('blank-review')).toBeFocused();
 });
+
+test('問題を切り替えると部品が入れ替わる', async ({ page }) => {
+  // Arrange
+  await openBlank(page);
+  const view = blankView(page);
+  const select = view.getByTestId('blank-problem-select');
+  await expect(select.locator('option')).toHaveText(['白紙1: 注文と発送', '白紙2: 会議室の予約', '白紙3: 勤怠の打刻']);
+  await expect(select).toHaveValue('blank-order-shipping');
+
+  // Act: 未配置のままなので、確認なしで切り替わる
+  await select.selectOption('blank-room-reservation');
+
+  // Assert
+  await expect(view.getByTestId('blank-requirement')).toContainText('会議室');
+  await expect(view.getByTestId('method-reserveRoom')).toBeVisible();
+  await expect(view.getByTestId('method-placeOrder')).toHaveCount(0);
+  await expect(view.getByTestId('blank-unplaced')).toContainText('あと7個');
+});
+
+test('配置済みで問題を切り替えると確認が出て、キャンセルで配置が残り、OKで入れ替わる', async ({ page }) => {
+  // Arrange
+  await openBlank(page);
+  const view = blankView(page);
+  const select = view.getByTestId('blank-problem-select');
+  await select.selectOption('blank-room-reservation');
+  await dragToEmptyCanvas(page, view, 'method-checkRoomAvailability');
+  await expect(view.getByTestId('class-RoomAvailability')).toBeVisible();
+  await expect(view.getByTestId('blank-unplaced')).toContainText('あと6個');
+
+  // Act: キャンセルする
+  const messages: string[] = [];
+  page.once('dialog', (dialog) => {
+    messages.push(dialog.message());
+    void dialog.dismiss();
+  });
+  await select.selectOption('blank-attendance');
+
+  // Assert: 配置も選択欄の値もそのまま
+  await expect.poll(() => messages).toEqual(['今の配置は消えます。別の問題に切り替えますか?']);
+  await expect(select).toHaveValue('blank-room-reservation');
+  await expect(view.getByTestId('class-RoomAvailability')).toBeVisible();
+  await expect(view.getByTestId('blank-unplaced')).toContainText('あと6個');
+
+  // Act: OKする
+  page.once('dialog', (dialog) => {
+    void dialog.accept();
+  });
+  await select.selectOption('blank-attendance');
+
+  // Assert: 白紙3の部品7つが並び、元に戻せない
+  await expect(view.getByTestId('method-clockIn')).toBeVisible();
+  await expect(view.getByTestId('blank-unplaced')).toContainText('あと7個');
+  await expect(view.getByRole('button', { name: '元に戻す' })).toBeDisabled();
+});
