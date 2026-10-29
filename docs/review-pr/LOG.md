@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-29 15:10 UTC PR #378 抽出時のクラス上限案内と操作結果を追加 (#351)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(2428件) / npm run lint ✅ / npm run typecheck ✅ / Issue #351の設計判断と差分を照合(新しく超えるときだけ・クラス優先・nextStepはoperationResultがnullなら足さない・domain無変更)。E2E(extract-class-limit-heads-up)はこの環境で実行許可が無く未実行(PR本文では成功と記載)
+- マージ: squash & delete-branch
+
 ## 2026-10-29 11:15 UTC PR #377 設計くらべの成績を保存し、ステージ一覧に表示する (#349)
 
 - 判定: 合格(blocker無し)
@@ -210,11 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm run check(lint・typecheck・Vitest 2055件)✅。updateProgressに初期点を渡し、初期点以下(100点除く)は記録しない点をIssue #283と照合。E2Eはこの環境にChromiumが無く未実行(PR本文では322件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-25 14:25 UTC PR #308 手直しの案内バナーを図に重ならない通常の帯にし、狭い幅でも操作できるようにする (#284)
-
-- 判定: 合格(blocker無し。suggestion: 1000pxの切替境界が固定値で脆い)
-- 確認した内容: npm run check(lint・typecheck・Vitest 2047件)✅。バナーを通常フローの帯にして図と重ならない点、ドロワー表示時もバナーのみ操作可能な点をIssue #284・docs/specs/opening-fix-banner-fit.mdと照合。E2Eはこの環境にChromiumが無く未実行(PR本文では380件成功)
 - マージ: squash & delete-branch
 
