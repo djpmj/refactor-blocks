@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ComparisonQuiz, DesignChoice, QuizAnswer } from '../../domain/quiz/ComparisonQuiz';
 import { judgeQuizAnswer, type ComparisonVerdict, type QuizAnswerVerdict } from '../../domain/quiz/judgeComparison';
+import { recordQuizAnswer } from '../../domain/quiz/quizRecord';
+import { loadQuizRecord, saveQuizRecord } from '../../infrastructure/progress/quizRecordStorage';
 import { comparisonQuizzes } from '../../infrastructure/quizzes/comparisonQuizzes';
 import { describeDeductions, siteNames } from '../change/describeChange';
 import { CodebasePreviewCanvas } from '../preview/CodebasePreviewCanvas';
 import { AnswerVerdict } from '../feedback/AnswerVerdict';
 import { sharedZoom } from './sharedZoom';
-import { answerMark, summarizeQuiz, type QuizSummary } from './summarizeQuiz';
+import { answerMark, isCorrect, summarizeQuiz, type QuizSummary } from './summarizeQuiz';
 
 const CHOICES: readonly DesignChoice[] = ['a', 'b'];
 const CHOICE_LABEL: Record<DesignChoice, string> = { a: 'A', b: 'B' };
@@ -328,7 +330,10 @@ export function ComparisonQuizView({ onLeave }: Readonly<{ onLeave: (mode: Leave
             key={quiz.id}
             quiz={quiz}
             answer={answers[quiz.id] ?? null}
-            onAnswer={(answer) => setAnswers((previous) => ({ ...previous, [quiz.id]: answer }))}
+            onAnswer={(answer) => {
+              saveQuizRecord(recordQuizAnswer(loadQuizRecord(), quiz.id, isCorrect(quiz, answer)));
+              setAnswers((previous) => ({ ...previous, [quiz.id]: answer }));
+            }}
             focusTitle={navigated}
             isLast={isLast}
             onNext={isLast ? () => setResultsRequested(true) : () => goTo(index + 1, true)}
