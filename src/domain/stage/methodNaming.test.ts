@@ -3,7 +3,7 @@ import { methodNamingOf } from './methodNaming';
 import type { SolutionStep } from './sampleAnswer';
 
 describe('methodNamingOf', () => {
-  it('複数処理のextractだけを名前の組として取り込み、責務名を返す', () => {
+  it('extractの処理数によらず名前の組として取り込み、責務名を返す', () => {
     // Arrange
     const steps: readonly SolutionStep[] = [
       { extract: { from: 'work', fragmentIds: ['a', 'b'], name: 'combine' } },
@@ -16,7 +16,7 @@ describe('methodNamingOf', () => {
     const naming = methodNamingOf({ id: 'custom', methodNames }, { custom: steps });
 
     // Assert
-    expect(naming).toEqual({ groups: [{ fragmentIds: ['a', 'b'], name: 'combine' }], byResponsibility: methodNames });
+    expect(naming).toEqual({ groups: [{ fragmentIds: ['a', 'b'], name: 'combine' }, { fragmentIds: ['c'], name: 'single' }], byResponsibility: methodNames });
   });
 
   it('模範解答も責務名も無ければ空の名前情報を返す', () => {

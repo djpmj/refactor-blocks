@@ -86,7 +86,7 @@ describe('suggestMethodName', () => {
     expect(name).toBe('printReport');
   });
 
-  it('選択が1処理なら模範解答や責務表よりsuggestedNameを優先する', () => {
+  it('1処理でも模範解答と一致すればその名前を優先する', () => {
     // Arrange
     const fragment = named('print');
     const naming = { groups: [{ fragmentIds: [fragment.id], name: 'otherName' }], byResponsibility: { misc: 'responsibilityName' } };
@@ -95,7 +95,42 @@ describe('suggestMethodName', () => {
     const name = suggestMethodName([fragment], [], naming);
 
     // Assert
+    expect(name).toBe('otherName');
+  });
+
+  it('1処理で模範解答と一致しなければ責務表より候補名を優先する', () => {
+    // Arrange
+    const fragment = named('print');
+    const naming = { groups: [{ fragmentIds: ['other'], name: 'otherName' }], byResponsibility: { misc: 'responsibilityName' } };
+
+    // Act
+    const name = suggestMethodName([fragment], [], naming);
+
+    // Assert
     expect(name).toBe('print');
+  });
+
+  it('1処理で候補名が無ければ汎用名を使う', () => {
+    // Arrange
+    const fragment = named();
+
+    // Act
+    const name = suggestMethodName([fragment], [], NO_METHOD_NAMING);
+
+    // Assert
+    expect(name).toBe('extractedMethod');
+  });
+
+  it('1処理の模範解答名が重なれば番号を付ける', () => {
+    // Arrange
+    const fragment = named('print');
+    const naming = { groups: [{ fragmentIds: [fragment.id], name: 'printSalesReport' }], byResponsibility: {} };
+
+    // Act
+    const name = suggestMethodName([fragment], ['printSalesReport'], naming);
+
+    // Assert
+    expect(name).toBe('printSalesReport2');
   });
 
   it('模範解答のID集合に一部しか一致しなければ責務表を使う', () => {
