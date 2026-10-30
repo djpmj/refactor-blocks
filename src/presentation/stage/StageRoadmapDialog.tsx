@@ -17,6 +17,7 @@ import { ConceptMasteryList } from './ConceptMasteryList';
 import { LearningRecordSection } from './LearningRecordSection';
 import { LEVEL_LABEL } from './levelLabel';
 import { MILESTONE_LABEL } from './milestoneLabel';
+import { PatternComparisonTable } from './PatternComparisonTable';
 
 const TITLE_ID = 'stage-roadmap-title';
 
@@ -139,7 +140,7 @@ function StageLevels({ stages, currentId, nextId, progress, reflectionNotes, mil
   ));
 }
 
-type RoadmapView = 'stages' | 'concepts' | 'gallery';
+type RoadmapView = 'stages' | 'concepts' | 'gallery' | 'patterns';
 
 type ViewSwitchProps = {
   readonly view: RoadmapView;
@@ -157,6 +158,9 @@ function ViewSwitch({ view, onChange }: ViewSwitchProps) {
       </button>
       <button type="button" aria-pressed={view === 'gallery'} data-testid="roadmap-view-gallery" onClick={() => { onChange('gallery'); }}>
         コードの臭い図鑑
+      </button>
+      <button type="button" aria-pressed={view === 'patterns'} data-testid="roadmap-view-patterns" onClick={() => { onChange('patterns'); }}>
+        パターン比較
       </button>
     </div>
   );
@@ -192,6 +196,27 @@ function Notices({ stages, progress }: Readonly<{ stages: readonly Stage[]; prog
       <ReviewNotice stages={stages} progress={progress} />
     </>
   );
+}
+
+type ReferenceViewProps = {
+  readonly view: RoadmapView;
+  readonly stages: readonly Stage[];
+  readonly progress: Progress;
+  readonly onChoose: (stageId: string) => void;
+};
+
+/** ステージカード以外の、見比べ・調べ物用の表示。 */
+function ReferenceView({ view, stages, progress, onChoose }: ReferenceViewProps) {
+  switch (view) {
+    case 'concepts':
+      return <ConceptMasteryList mastery={conceptMastery(stages, (id) => isStageCleared(id, progress))} onChoose={onChoose} />;
+    case 'gallery':
+      return <AntipatternGallery entries={antipatterns} stages={stages} onChoose={onChoose} />;
+    case 'patterns':
+      return <PatternComparisonTable stages={stages} onChoose={onChoose} />;
+    case 'stages':
+      return null;
+  }
 }
 
 type StageRoadmapDialogProps = {
@@ -242,8 +267,7 @@ export function StageRoadmapDialog({ open, onClose }: StageRoadmapDialogProps) {
         </p>
         <Notices stages={stages} progress={progress} />
         <ViewSwitch view={view} onChange={setView} />
-        {view === 'concepts' && <ConceptMasteryList mastery={conceptMastery(stages, (id) => isStageCleared(id, progress))} onChoose={choose} />}
-        {view === 'gallery' && <AntipatternGallery entries={antipatterns} stages={stages} onChoose={choose} />}
+        <ReferenceView view={view} stages={stages} progress={progress} onChoose={choose} />
         {view === 'stages' && (
           <StageLevels
             stages={stages}

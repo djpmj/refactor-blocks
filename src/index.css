@@ -959,3 +959,10 @@ input.class-node__name { width: 14ch; }
 @keyframes clear-choices-in { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { .clear-screen__confetti { display: none; } .clear-screen__title, .clear-screen__ring--complete, .clear-screen__choices { animation: none; } }
 .move-count { margin: 8px 0; color: var(--muted); font-size: 12px; }
+.pattern-comparison { overflow-x: auto; }
+.pattern-comparison table { border-collapse: collapse; font-size: 12px; }
+.pattern-comparison caption { text-align: left; font-weight: bold; margin-bottom: 6px; }
+.pattern-comparison th, .pattern-comparison td { min-width: 150px; padding: 6px; border: 1px solid var(--border); text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+.pattern-comparison tbody th { min-width: 80px; }
+.pattern-comparison__name { display: block; margin-bottom: 4px; }
+.pattern-comparison th button { font-size: 11px; text-align: left; }
