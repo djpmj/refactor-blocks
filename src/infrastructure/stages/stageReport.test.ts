@@ -243,6 +243,58 @@ describe('stageReportRows', () => {
     // Assert
     expect(warnings).toEqual(['依頼が機能追加だけ']);
   });
+
+  it('依頼が0件のステージには「依頼が機能追加だけ」が付かず、依頼がありルール変更が0件なら付く', () => {
+    // Arrange
+    const none = makeStage({ id: 'none', level: 'drill', violations: 3, kinds: [] });
+    const extendOnly = makeStage({ id: 'ext', violations: 3, kinds: ['extend', 'extend'] });
+
+    // Act
+    const noneWarnings = warningsOf(none, { none: stepsOf(1) });
+    const extendWarnings = warningsOf(extendOnly, { ext: stepsOf(1) });
+
+    // Assert
+    expect(noneWarnings).not.toContain('依頼が機能追加だけ');
+    expect(extendWarnings).toContain('依頼が機能追加だけ');
+  });
+
+  it('手数1のドリルを上級の後ろに置いても「中央値の手数が前のレベルより少ない」は付かない', () => {
+    // Arrange
+    const list = [
+      makeStage({ id: 'b1', level: 'beginner', violations: 3 }),
+      makeStage({ id: 'a1', level: 'advanced', violations: 3 }),
+      makeStage({ id: 'd1', level: 'drill', violations: 3, kinds: [] }),
+    ];
+    const solutions = { b1: stepsOf(3), a1: stepsOf(5), d1: stepsOf(1) };
+
+    // Act
+    const rows = stageReportRows(list, solutions);
+
+    // Assert
+    expect(rows.flatMap((row) => row.warnings)).toEqual([]);
+  });
+
+  it('ドリルは初期点が80以上でも「初期点が高い」が付かない', () => {
+    // Arrange
+    const drill = makeStage({ id: 'd', level: 'drill', violations: 1, kinds: [] });
+
+    // Act
+    const warnings = warningsOf(drill, { d: stepsOf(1) });
+
+    // Assert
+    expect(warnings).not.toContain('初期点が高い');
+  });
+
+  it('ドリルは手数が2手以上だと「手数が多い」が付く', () => {
+    // Arrange
+    const drill = makeStage({ id: 'd', level: 'drill', violations: 3, kinds: [] });
+
+    // Act
+    const warnings = warningsOf(drill, { d: stepsOf(2) });
+
+    // Assert
+    expect(warnings).toContain('手数が多い');
+  });
 });
 
 describe('renderStageReport', () => {
@@ -286,6 +338,17 @@ describe('renderStageReport', () => {
 
     // Assert
     for (const line of expected) expect(lines).toContain(line);
+  });
+
+  it('集計表にドリルの行が出る', () => {
+    // Arrange
+    const drillList = [...list, makeStage({ id: 'd', level: 'drill', violations: 3, kinds: [] })];
+
+    // Act
+    const lines = renderStageReport(stageReportRows(drillList, { ...solutions, d: stepsOf(1) })).split('\n');
+
+    // Assert
+    expect(lines).toContain('| ドリル | 1 | 1 | 70 |');
   });
 
   it('同じ入力なら同じ出力になる(日時を含まない)', () => {

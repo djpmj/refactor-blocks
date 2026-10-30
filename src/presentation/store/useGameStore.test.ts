@@ -18,6 +18,23 @@ import { saveLastStageId } from '../../infrastructure/progress/lastStageStorage'
 
 const ghost = { kind: 'method' as const, methodId: 'method-example', toClassId: 'class-example' };
 
+describe('ドリルの変更依頼', () => {
+  it('100点で呼ばれても、依頼0件ならセッションを開始しない', () => {
+    // Arrange
+    const stage = stages.find((candidate) => candidate.id === 'drill-extract-tail');
+    if (stage === undefined) throw new Error('ドリルが必要です');
+    const store = createGameStore([stage], false, false);
+    store.setState({ codebase: sampleAnswerCodebase(stage) });
+
+    // Act
+    store.getState().startChangeRequests();
+
+    // Assert
+    expect(scoreCodebase(store.getState().codebase, stage).total).toBe(100);
+    expect(store.getState().changeSession).toBeNull();
+  });
+});
+
 describe('クリア画面', () => {
   const stage = stages.find((candidate) => candidate.id === 'tutorial-extract-method');
   if (stage === undefined) throw new Error('チュートリアル1が必要です');

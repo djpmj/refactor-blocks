@@ -521,6 +521,7 @@ function changeSessionActions(
   return {
     startChangeRequests: () => {
       const state = get();
+      if (state.stage.changeRequests.length === 0) return;
       const { codebase, history, stage } = state;
       const step = currentStep(state);
       if (state.openingFixEnabled && step !== 'change-request') {
