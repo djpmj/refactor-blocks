@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-30 10:30 UTC PR #379 短い練習問題(マイクロドリル)をステージ一覧に追加する (#353)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(2562件) / npm run lint ✅ / npm run typecheck ✅ / docs/specs/micro-drills.md の変更対象一覧と差分を照合(application層無変更・checks/changeRequests 0件の守り・stageReportのドリル除外)。E2E(micro-drills/roadmap)はこの環境で実行許可が無く未実行(PR本文では既存specの1件のみ失敗、単独では通過と記載)
+- マージ: squash & delete-branch
+
 ## 2026-10-29 15:10 UTC PR #378 抽出時のクラス上限案内と操作結果を追加 (#351)
 
 - 判定: 合格(blocker無し)
@@ -210,11 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm run check(lint・typecheck・Vitest 2055件)✅。clearConditionKey導入・line-limitの3分割・describeCondition・ClearConditionListのkey切替をIssue #313・docs/specs/clear-condition-line-split.mdと照合。E2Eはこの環境にChromiumが無く未実行(PR本文では374件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-25 14:30 UTC PR #303 開いただけのステージを自己ベストにせず、未挑戦ステージのE2Eを基準どおりにする (#283)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(lint・typecheck・Vitest 2055件)✅。updateProgressに初期点を渡し、初期点以下(100点除く)は記録しない点をIssue #283と照合。E2Eはこの環境にChromiumが無く未実行(PR本文では322件成功)
 - マージ: squash & delete-branch
 
