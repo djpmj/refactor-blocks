@@ -19,6 +19,7 @@ import {
 import { changeVisibilityUseCase } from '../../application/RefactorUseCases';
 import { previewExtractMethod } from '../../application/RefactorUseCases';
 import { describeExtractPreview } from './describeExtractPreview';
+import { describeGrowthHeadsUp } from './describeGrowthHeadsUp';
 import { extractDisabledReason, extractNameInvalid } from './extractDisabledReason';
 import { findCallerOf } from '../../domain/codebase/inlineMethod';
 import { findMergeCandidates, type MergeCandidate } from '../../domain/codebase/mergeMethods';
@@ -161,6 +162,7 @@ function ExtractControls({
   onNameChange,
   onExtract,
   previewSummary,
+  growthHeadsUp,
 }: Readonly<{
   newName: string;
   disabledReason: string | null;
@@ -168,6 +170,7 @@ function ExtractControls({
   onNameChange: (name: string) => void;
   onExtract: () => void;
   previewSummary: string | undefined;
+  growthHeadsUp: string | undefined;
 }>) {
   return (
     <>
@@ -191,7 +194,7 @@ function ExtractControls({
           選んだ処理をメソッドとして抽出
         </button>
       </div>
-      {previewSummary === undefined ? null : <p className="method-editor__extract-preview" aria-live="polite">{previewSummary}</p>}
+      {previewSummary === undefined ? null : <div aria-live="polite"><p className="method-editor__extract-preview">{previewSummary}</p>{growthHeadsUp === undefined ? null : <p className="method-editor__growth-heads-up" data-testid="extract-growth-heads-up">{growthHeadsUp}</p>}</div>}
       {disabledReason === null ? null : (
         <p id="method-editor-extract-disabled-reason" className="method-editor__extract-hint">
           {disabledReason}
@@ -224,16 +227,17 @@ function implementsAbstractMethod(codebase: Codebase, method: Method): boolean {
   return false;
 }
 
-function useExtractPreviewSummary(method: Method, selected: ReadonlySet<string>, newName: string): string | undefined {
+function useExtractPreviewSummary(method: Method, selected: ReadonlySet<string>, newName: string): { summary: string | undefined; growthHeadsUp: string | undefined } {
   const setExtractDraft = useGameStore((state) => state.setExtractDraft);
   const codebase = useGameStore((state) => state.codebase);
   const draft = useGameStore((state) => state.extractDraft);
   const allowed = useGameStore((state) => state.changeSession === null && state.manualFix === null);
+  const limits = useGameStore((state) => state.stage.limits);
   const preview = useMemo(() => draft === null || !allowed ? undefined : previewExtractMethod(codebase, draft), [allowed, codebase, draft]);
   useEffect(() => {
     setExtractDraft(selected.size === 0 ? null : { sourceMethodId: method.id, fragmentIds: [...selected], newMethodName: newName });
   }, [method.id, newName, selected, setExtractDraft]);
-  return preview === undefined ? undefined : describeExtractPreview(method.name, preview);
+  return preview === undefined ? { summary: undefined, growthHeadsUp: undefined } : { summary: describeExtractPreview(method.name, preview), growthHeadsUp: describeGrowthHeadsUp(preview, limits) };
 }
 
 /** 可視性(public / protected / private)を選ぶ欄。選んでも前提条件を満たさない値は disabled にする。 */
@@ -348,7 +352,7 @@ function MethodEditorBody({ method, showVisibility, stage }: Readonly<{ method: 
     );
   const disabledReason = extractDisabledReason(method, selected, newName, existingNames);
 
-  const previewSummary = useExtractPreviewSummary(method, selected, newName);
+  const { summary: previewSummary, growthHeadsUp } = useExtractPreviewSummary(method, selected, newName);
 
   const handleExtract = () => {
     const succeeded = extractMethod({ sourceMethodId: method.id, fragmentIds: [...selected], newMethodName: newName });
@@ -379,6 +383,7 @@ function MethodEditorBody({ method, showVisibility, stage }: Readonly<{ method: 
               onNameChange={setCustomName}
               onExtract={handleExtract}
               previewSummary={previewSummary}
+              growthHeadsUp={growthHeadsUp}
             />
           </div>
           {mergeCandidates.length > 0 ? <MergeSection method={method} candidates={mergeCandidates} /> : null}
