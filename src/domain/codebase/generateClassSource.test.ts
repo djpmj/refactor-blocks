@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Codebase } from './Codebase';
 import { extractMethod } from './extractMethod';
-import { generateClassSource } from './generateClassSource';
+import { generateClassSource, generateClassSourceLines } from './generateClassSource';
 import { renameMethod } from './renameMethod';
 
 describe('generateClassSource', () => {
@@ -229,5 +229,38 @@ describe('generateClassSource', () => {
     const source = generateClassSource(codebase, 'missing', 'csharp');
     // Assert
     expect(source).toBe('');
+  });
+});
+
+describe('generateClassSourceLines(行ごとのソース)', () => {
+  const twoFragments: Codebase = { files: [{ id: 'f', path: 'x', classes: [{ id: 'c', name: 'Thing', fields: [{ id: 'fd', name: 'count', visibility: 'private', type: { csharp: 'int' } }], methods: [
+    { id: 'm', name: 'run', visibility: 'public', fragments: [
+      { id: 'a', label: 'first work', lines: 1, responsibility: 'x', code: { csharp: 'first();' } },
+      { id: 'b', label: 'second work', lines: 1, responsibility: 'x' },
+    ] },
+  ] }] }] };
+
+  it('行を連結すると generateClassSource と同じ文字列になる', () => {
+    // Arrange / Act
+    const text = generateClassSourceLines(twoFragments, 'c', 'csharp').map((line) => line.text).join('\n');
+    // Assert
+    expect(text).toBe(generateClassSource(twoFragments, 'c', 'csharp'));
+  });
+
+  it('処理の行にはFragment IDが付き、構造の行と空行には付かない', () => {
+    // Arrange / Act
+    const lines = generateClassSourceLines(twoFragments, 'c', 'csharp');
+    // Assert
+    const tagged = lines.map((line) => `${line.fragmentId ?? '-'}:${line.text.trim()}`);
+    expect(tagged).toEqual([
+      '-:public class Thing', '-:{', '-:private int count;', '-:', '-:public void run()', '-:{',
+      'a:// first work', 'a:first();', '-:', 'b:// 未入力: second work', '-:}', '-:}',
+    ]);
+  });
+
+  it('存在しないクラスでは行を返さない', () => {
+    // Arrange / Act / Assert
+    expect(generateClassSourceLines(twoFragments, 'none', 'csharp')).toEqual([]);
+    expect(generateClassSource(twoFragments, 'none', 'csharp')).toBe('');
   });
 });
