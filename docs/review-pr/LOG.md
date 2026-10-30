@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-30 11:20 UTC PR #381 似たパターンの使い分けを比較表で見られるようにする (#356)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(2575件) / npm run lint ✅ / npm run typecheck ✅ / docs/specs/pattern-comparison-table.md と差分を照合(presentationのみの変更・静的データとステージ定義のずれ検出テスト・E2E追加)。E2Eはこの環境で実行許可が無く未実行(PR本文ではroadmap.spec 14件通過と記載)
+- マージ: squash & delete-branch
+
 ## 2026-10-30 10:45 UTC PR #380 抽出・移動の前後のコード差分を表示する (#357)
 
 - 判定: 合格(blocker無し)
@@ -210,11 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test(2117件)✅ / npm run lint ✅ / npm run typecheck ✅ / stage-report差分なし。ステージ定義・模範解答・解説フェーズ・ストーリー章・近道テストをIssue #328・docs/specs/state-pattern-stage.mdと照合し、domain/application/presentation未変更を確認。E2Eはこの環境で未実行(PR本文では420件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-25 14:40 UTC PR #331 満点でも残る改善の余地をステージパネルに案内する (#321)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(2085件)✅ / npm run lint ✅ / npm run typecheck ✅。roomToImprove(mixed-method・crowded-class・解答例との比較・3件上限)・RoomToImproveNote・StagePanelの配置をIssue #321・docs/specs/perfect-room-left-note.mdと照合。E2Eはこの環境にChromiumを導入できず未実行(PR本文では420件成功)
 - マージ: squash & delete-branch
 
