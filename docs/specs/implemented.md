@@ -182,3 +182,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [blank-design-more-problems](blank-design-more-problems.md) | 白紙設計の問題を2問足し、問題を選べるようにする |
 | [comparison-quiz-score-record](comparison-quiz-score-record.md) | 設計くらべの正答状況を保存し、ステージ一覧に表示する |
 | [micro-drills](micro-drills.md) | 1操作で終わる3分ドリルを3本足し、ステージ一覧の「ドリル」区分に出す |
+| [refactor-code-diff-view](refactor-code-diff-view.md) | 組み替える前と今のコードを並べ、移動・追加・削除した処理を示す |
