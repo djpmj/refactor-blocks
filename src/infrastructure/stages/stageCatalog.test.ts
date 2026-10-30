@@ -1116,9 +1116,9 @@ describe('stageCatalog', () => {
     expect(problems.every((problem) => problem.length > 0 && problem.length <= 60)).toBe(true);
   });
 
-  it('チュートリアル・初級・中級・上級の順に、それぞれ1つ以上のステージが並んでいる', () => {
+  it('チュートリアル・初級・中級・上級・ドリルの順に、それぞれ1つ以上のステージが並んでいる', () => {
     // Arrange
-    const expectedOrder = ['tutorial', 'beginner', 'intermediate', 'advanced'];
+    const expectedOrder = ['tutorial', 'beginner', 'intermediate', 'advanced', 'drill'];
 
     // Act
     const levels = [...new Set(stages.map((stage) => stage.level))];
@@ -1151,7 +1151,7 @@ describe('stageCatalog', () => {
     expect(blanks).toEqual([]);
   });
 
-  const checkTargets = [...stages, ...blankDesignProblems].map((stage) => [stage.title, stage.checks] as const);
+  const checkTargets = [...stages.filter((stage) => stage.level !== 'drill'), ...blankDesignProblems].map((stage) => [stage.title, stage.checks] as const);
 
   it.each(checkTargets)('%s: 理解度チェックが2〜3問あり、すべて書き方の決まりを満たす', (_title, checks) => {
     // Arrange
@@ -1315,6 +1315,10 @@ describe('stageCatalog', () => {
     });
 
     it('依頼が2件以上あり、ルール変更の依頼は初期のコードに変更箇所がある', () => {
+      if (stage.level === 'drill') {
+        expect(stage.changeRequests).toEqual([]);
+        return;
+      }
       // Arrange
       const changeRequests = modifyRequests(stage);
 
@@ -1352,6 +1356,10 @@ describe('stageCatalog', () => {
     });
 
     it('模範解答にすると、変更依頼のコストが初期状態より下がる(変更容易性スコアが上がる)', () => {
+      if (stage.level === 'drill') {
+        expect(stage.changeRequests).toEqual([]);
+        return;
+      }
       // Arrange
       const solved = applySolutionSteps(stage.codebase, sampleAnswerSteps[stage.id] ?? [], { visibilityEnforced: stage.visibilityEnforced });
 

@@ -76,7 +76,7 @@ test('学べることごとの表示で習得状況が見え、未クリアの�
   // Arrange
   await page.goto('/');
   await page.evaluate(() =>
-    localStorage.setItem('refactor-blocks:progress', JSON.stringify({ 'tutorial-extract-method': 100, 'tutorial-order-service': 100 })),
+    localStorage.setItem('refactor-blocks:progress', JSON.stringify({ 'tutorial-extract-method': 100, 'tutorial-order-service': 100, 'drill-extract-tail': 100, 'drill-extract-middle': 100 })),
   );
   await page.reload();
   await page.getByTestId('roadmap-open').click();
@@ -90,7 +90,7 @@ test('学べることごとの表示で習得状況が見え、未クリアの�
   const rows = page.getByTestId('concept-mastery-row');
   await expect(rows.nth(0)).toHaveAttribute('data-concept', 'Extract Method');
   await expect(rows.nth(1)).toHaveAttribute('data-concept', 'Move Method');
-  await expect(rows.nth(0)).toContainText('2件中2件クリア');
+  await expect(rows.nth(0)).toContainText('4件中4件クリア');
   await expect(rows.nth(0)).toContainText('✅ すべてクリア');
   await expect(rows.nth(0).locator('button')).toHaveCount(0);
   await expect(rows.nth(1)).toContainText('件中1件クリア');

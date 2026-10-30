@@ -3,8 +3,8 @@ import type { Codebase } from '../codebase/Codebase';
 import type { LineLimits } from '../scoring/lineLimits';
 import type { ScoreRule } from '../scoring/score';
 
-/** ステージの難易度。ステージ選択ではこの順に並べる。 */
-export type StageLevel = 'tutorial' | 'beginner' | 'intermediate' | 'advanced';
+/** ステージの区分。ステージ選択ではこの順に並べる。drill は1操作の短い練習。 */
+export type StageLevel = 'tutorial' | 'beginner' | 'intermediate' | 'advanced' | 'drill';
 
 export type CheckChoice = {
   readonly text: string;
@@ -45,7 +45,7 @@ export type Stage = {
   readonly learns: readonly string[];
   /** このステージで練習する組み替えの背骨になる設計原則。1〜2個。表示のみ(採点に使わない)。 */
   readonly principles?: readonly DesignPrinciple[];
-  /** 100点になったときに出す理解度チェック。2〜3問。 */
+  /** 100点になったときに出す理解度チェック。ドリルは0問。 */
   readonly checks: readonly ConceptCheck[];
   readonly limits: LineLimits;
   /** 1クラスが依存してよいクラス数の上限。 */
@@ -63,7 +63,7 @@ export type Stage = {
   readonly responsibilityNames: Readonly<Record<string, string>>;
   /** 責務(Fragment.responsibility)ごとの自動メソッド名。 */
   readonly methodNames?: Readonly<Record<string, string>>;
-  /** リファクタリング後に出す変更依頼。責務は初期のコードベースに存在するものを選ぶ。 */
+  /** リファクタリング後に出す変更依頼。ドリルは0件。 */
   readonly changeRequests: readonly ChangeRequest[];
   /** private / protected のメソッドが届かないクラスから呼ばれていないかを採点するかどうか(protectedは持ち主と子孫クラスから呼べる)。省略時は false。
    *  越境は、呼ばれる側を public にしても消える(可視性の操作は全ステージで使える)。Move Method で直させたいステージは、
