@@ -36,7 +36,7 @@ describe('storyChapters', () => {
     // Arrange
     const chapterIds = storyChapters.map((chapter) => chapter.stageId);
     // Act
-    const missing = stages.filter((stage) => !chapterIds.includes(stage.id)).map((stage) => stage.id);
+    const missing = stages.filter((stage) => stage.level !== 'drill' && !chapterIds.includes(stage.id)).map((stage) => stage.id);
     // Assert
     expect(missing).toEqual([]);
   });

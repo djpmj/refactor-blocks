@@ -226,6 +226,9 @@ const salesReportExtractions: readonly SolutionStep[] = [
  * ステージの数値(行数上限など)を変えて解けなくなったら stageCatalog.test.ts が落ちる。
  */
 export const sampleAnswerSteps: Partial<Record<string, readonly SolutionStep[]>> = {
+  'drill-extract-tail': [{ extract: { from: 'registerMember', fragmentIds: ['frag-drill-mail-body', 'frag-drill-mail-send'], name: 'sendWelcomeMail' } }],
+  'drill-extract-middle': [{ extract: { from: 'issueInvoice', fragmentIds: ['frag-drill-subtotal', 'frag-drill-tax'], name: 'calculateInvoiceTotal' } }],
+  'drill-move-method': [{ move: { method: 'calculateShippingFee', toClass: 'ShippingCalculator' } }],
   'tutorial-extract-method': [
     { extract: { from: 'printMonthlyReport', fragmentIds: ['frag-aggregate-sales', 'frag-compare-last-month'], name: 'aggregateSales' } },
     { extract: { from: 'printMonthlyReport', fragmentIds: ['frag-table-header', 'frag-table-rows'], name: 'buildSalesTable' } },
