@@ -187,3 +187,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [operation-score-history](operation-score-history.md) | ツールバーの「操作の記録」に、操作ごとの点数の増減と変わった減点を時系列で並べる |
 | [mode-intro-guides](mode-intro-guides.md) | 設計くらべ・白紙設計を初めて開いたとき3ステップのミニガイドを出し、白紙設計の右パネルの文言をモードに合わせる |
 | [wrong-move-reason-hint](wrong-move-reason-hint.md) | 減点の件数が変わらなかった組み替えの直後に、「効いていません: 〜」と理由を1文で出す |
+| [start-score-untouched-label](start-score-untouched-label.md) | 点数が開いたときと同じ間、ヘッダーのゲージに「スタート時の点数」と注記する |
