@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-31 08:40 UTC PR #387 前提ステージが未クリアのとき、課題パネルに先にやるステージを案内する (#359)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(178ファイル/2626件) / npm run lint ✅ / npm run typecheck ✅。差分をIssue #359/仕様書stage-prerequisite-noteと照合(unclearedPrerequisitesをdomainにテスト先行で追加、presentationは表示のみ)。E2E(prerequisite-note.spec.ts)はこの環境でブラウザ未導入のため未実行(CIで確認)
+- マージ: squash & delete-branch
+
 ## 2026-10-31 07:45 UTC PR #386 ステージを開いた直後の点数に「スタート時の点数」の注記を出す (#361)
 
 - 判定: 合格(blocker無し)
@@ -210,11 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test(2177件)✅ / npm run lint ✅ / npm run typecheck ✅。差分をIssue #316・docs/specs/clear-means-learned.mdと照合(DDD層境界・isMilestonesの入力検証を確認)。E2Eはこの環境で実行許可が無く未実行(PR本文では434件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-26 03:22 UTC PR #336 責務マークの表示ラベルを整備し、関連ステージ・ツアーを更新する (#324)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(2150件)✅ / npm run lint ✅ / npm run typecheck ✅。差分をIssue #324・docs/specs/responsibility-label-names.mdの設計判断と照合。E2Eはこの環境で実行許可が無く未実行(PR本文では428件成功)
 - マージ: squash & delete-branch
 
