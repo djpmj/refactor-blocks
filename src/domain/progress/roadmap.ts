@@ -68,3 +68,32 @@ export function conceptMastery(
 export function recommendReviewStage(stages: readonly Stage[], progress: Progress, assists: Assists): Stage | undefined {
   return stages.find((stage) => isStageCleared(stage.id, progress) && retryMark(assists, stage.id) !== undefined);
 }
+
+export type Prerequisite = {
+  /** 先にやるとよいステージ。 */
+  readonly stage: Stage;
+  /** そのステージで先に学べる、今のステージの learns(今のステージの learns の並び順)。 */
+  readonly concepts: readonly string[];
+};
+
+/**
+ * 今のステージの learns のそれぞれについて、stages の並び順で今のステージより前にあり、
+ * その概念を最初に learns に持つステージを前提とする。そのうち isCleared が false のものを返す。
+ * 並びは stages の並び順、同じステージは1回だけ(concepts にまとめる)。今のステージが stages に無ければ空。
+ */
+export function unclearedPrerequisites(
+  stages: readonly Stage[],
+  stage: Pick<Stage, 'id' | 'learns'>,
+  isCleared: (stageId: string) => boolean,
+): readonly Prerequisite[] {
+  const currentIndex = stages.findIndex((candidate) => candidate.id === stage.id);
+  if (currentIndex < 0) return [];
+  const earlier = stages.slice(0, currentIndex);
+  return earlier.flatMap((candidate) => {
+    if (isCleared(candidate.id)) return [];
+    const concepts = stage.learns.filter(
+      (concept) => earlier.find((other) => other.learns.includes(concept)) === candidate,
+    );
+    return concepts.length === 0 ? [] : [{ stage: candidate, concepts }];
+  });
+}

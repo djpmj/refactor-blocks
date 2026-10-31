@@ -20,6 +20,7 @@ import { UnusedPublicNote } from './UnusedPublicNote';
 import { RoomToImproveNote } from './RoomToImproveNote';
 import { ChangePainCard } from './ChangePainCard';
 import { StoryIntro } from './StoryIntro';
+import { PrerequisiteNote } from './PrerequisiteNote';
 import { StoryOutro } from './StoryOutro';
 import { ReflectionNoteCard } from './ReflectionNoteCard';
 import { NextStageCard } from './NextStageCard';
@@ -285,6 +286,7 @@ function StageSidebar({ stage, codebase, score, initialScore, investigating, hid
     <aside ref={sidebarRef} id="stage-sidebar" className="sidebar" aria-label="課題" hidden={hidden}>
       <h2 className="sidebar__title">課題</h2>
       <StoryIntro key={`story-intro-${stage.id}`} stageId={stage.id} />
+      <PrerequisiteNote stage={stage} />
       <section className="stage-panel__problem" aria-labelledby="stage-problem-title">
         <h3 id="stage-problem-title">困っていること</h3>
         <p>{stage.problem}</p>

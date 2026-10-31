@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Stage } from '../stage/Stage';
-import { conceptMastery, isStageCleared, recommendNextStage, recommendReviewStage, stageStatus } from './roadmap';
+import { conceptMastery, isStageCleared, recommendNextStage, recommendReviewStage, stageStatus, unclearedPrerequisites } from './roadmap';
 
 function stageOf(id: string, learns: readonly string[] = ['Extract Method'], withSteps = false): Stage {
   return {
@@ -346,5 +346,83 @@ describe('recommendReviewStage', () => {
   it('stages が空なら undefined', () => {
     // Act & Assert
     expect(recommendReviewStage([], { a: 100 }, { a: { clearedWith: 'step' } })).toBeUndefined();
+  });
+});
+
+describe('unclearedPrerequisites', () => {
+  const none = () => false;
+
+  it('今のステージの概念を最初に学ぶ前のステージを前提にする', () => {
+    // Arrange
+    const [a, b, c] = [stageOf('a', ['X']), stageOf('b', ['Y']), stageOf('c', ['X', 'Z'])];
+    // Act
+    const result = unclearedPrerequisites([a, b, c], c, none);
+    // Assert
+    expect(result).toEqual([{ stage: a, concepts: ['X'] }]);
+  });
+
+  it('前提のステージがクリア済みなら出さない', () => {
+    // Arrange
+    const [a, c] = [stageOf('a', ['X']), stageOf('c', ['X'])];
+    // Act
+    const result = unclearedPrerequisites([a, c], c, (id) => id === 'a');
+    // Assert
+    expect(result).toEqual([]);
+  });
+
+  it('同じステージで最初に出る概念は1件にまとめ、今のステージの順で並べる', () => {
+    // Arrange
+    const [a, c] = [stageOf('a', ['X', 'Y']), stageOf('c', ['Y', 'X'])];
+    // Act
+    const result = unclearedPrerequisites([a, c], c, none);
+    // Assert
+    expect(result).toEqual([{ stage: a, concepts: ['Y', 'X'] }]);
+  });
+
+  it('別々のステージで最初に出る概念は stages の並び順で返す', () => {
+    // Arrange
+    const [a, b, c] = [stageOf('a', ['X']), stageOf('b', ['Y']), stageOf('c', ['Y', 'X'])];
+    // Act
+    const result = unclearedPrerequisites([a, b, c], c, none);
+    // Assert
+    expect(result).toEqual([{ stage: a, concepts: ['X'] }, { stage: b, concepts: ['Y'] }]);
+  });
+
+  it('今のステージが最初に学ぶステージなら前提なし', () => {
+    // Arrange
+    const [a, b] = [stageOf('a', ['X']), stageOf('b', ['X'])];
+    // Act
+    const result = [unclearedPrerequisites([a], a, none), unclearedPrerequisites([a, b], a, none)];
+    // Assert
+    expect(result).toEqual([[], []]);
+  });
+
+  it('同じ概念が前に2回出るときは最初のステージだけ', () => {
+    // Arrange
+    const [a, b, c] = [stageOf('a', ['X']), stageOf('b', ['X']), stageOf('c', ['X'])];
+    // Act
+    const uncleared = unclearedPrerequisites([a, b, c], c, none);
+    const aCleared = unclearedPrerequisites([a, b, c], c, (id) => id === 'a');
+    // Assert
+    expect(uncleared).toEqual([{ stage: a, concepts: ['X'] }]);
+    expect(aCleared).toEqual([]);
+  });
+
+  it('learns が空なら前提なし', () => {
+    // Arrange
+    const [a, c] = [stageOf('a', ['X']), stageOf('c', [])];
+    // Act
+    const result = unclearedPrerequisites([a, c], c, none);
+    // Assert
+    expect(result).toEqual([]);
+  });
+
+  it('今のステージが stages に無ければ空', () => {
+    // Arrange
+    const a = stageOf('a', ['X']);
+    // Act
+    const result = unclearedPrerequisites([a], { id: 'blank', learns: ['X'] }, none);
+    // Assert
+    expect(result).toEqual([]);
   });
 });
