@@ -1263,6 +1263,17 @@ describe('operation result (増えた・消えた減点)', () => {
     expect(result?.lines.some((line) => line.includes('増えました'))).toBe(false);
   });
 
+  it('出力だけを抽出すると、上限を超えたまま短くなったことを「効いていません」で出す', () => {
+    // Arrange
+    const store = newStore();
+    // Act
+    store.getState().extractMethod({ sourceMethodId: source, fragmentIds: ['frag-print'], newMethodName: 'printSalesReport' });
+    // Assert
+    const result = store.getState().operationResult;
+    expect(result?.tone).toBe('unchanged');
+    expect(result?.lines[0]).toMatch(/^効いていません: ReportService\.printMonthlyReport\(\) は\d+行→\d+行に減りましたが、上限28行をまだ\d+行超えています$/);
+  });
+
   it('減点が変わらない操作の後は null になる', () => {
     // Arrange
     const store = newStore();

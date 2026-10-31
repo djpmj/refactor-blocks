@@ -6,7 +6,7 @@ import type { OperationTone } from './describeOperationResult';
 import { operationTimeline, type OperationTimelineEntry } from './operationTimeline';
 import { useFocusOnOpen, usePopoverDismiss } from './usePopoverDismiss';
 
-const TONE_MARK: Record<OperationTone, string> = { better: '↑', worse: '↓', mixed: '↕' };
+const TONE_MARK: Record<OperationTone, string> = { better: '↑', worse: '↓', mixed: '↕', unchanged: '→' };
 
 function signed(diff: number): string {
   if (diff === 0) return '±0';
