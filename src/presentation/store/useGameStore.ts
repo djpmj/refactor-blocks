@@ -11,7 +11,7 @@ import { allClasses, findClassOfMethod, findField, findMethod, type Codebase, ty
 import { autoNameClasses } from '../../domain/codebase/autoNameClasses';
 import { emptyHistory, recordChange, redoHistory, undoHistory, type History, type Travel } from '../../domain/codebase/history';
 import { scoreCodebase, type Score, type ScoreRule } from '../../domain/scoring/score';
-import { describeOperationResult, type OperationResult } from '../stage/describeOperationResult';
+import { describeNoEffect, describeOperationResult, type OperationResult } from '../stage/describeOperationResult';
 import { describeGrowthHeadsUp } from '../editor/describeGrowthHeadsUp';
 import { resolvedTargets } from '../../domain/scoring/resolvedTargets';
 import type { ViolationTarget } from '../../domain/scoring/violationTargets';
@@ -331,7 +331,8 @@ function scoredOperation(state: GameState, codebase: Codebase, celebrate: boolea
   const before = scoreCodebase(state.codebase, state.stage);
   const after = scoreCodebase(codebase, state.stage);
   const celebration = celebrationFor(state, codebase, before, after);
-  return { operationResult: describeOperationResult(before, after), ...(celebration === undefined ? {} : { celebration }), ...clearScreenAfterCommit(state, celebration) };
+  const operationResult = describeOperationResult(before, after) ?? describeNoEffect({ before: state.codebase, after: codebase, limits: state.stage.limits, score: after });
+  return { operationResult, ...(celebration === undefined ? {} : { celebration }), ...clearScreenAfterCommit(state, celebration) };
 }
 
 function commit(state: GameState, codebase: Codebase, label: string, celebrate = true): Partial<GameState> {

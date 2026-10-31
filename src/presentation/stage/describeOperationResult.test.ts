@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Score, ScoreDeduction } from '../../domain/scoring/score';
-import { describeOperationResult, describeRuleChanges } from './describeOperationResult';
+import type { Codebase, Fragment, Method } from '../../domain/codebase/Codebase';
+import { TRAY_FILE_ID } from '../../domain/blank/tray';
+import { describeNoEffect, describeOperationResult, describeRuleChanges } from './describeOperationResult';
 
 function scoreOf(deductions: readonly ScoreDeduction[]): Score {
   const deducted = deductions.reduce((sum, deduction) => sum + deduction.points, 0);
@@ -145,5 +147,122 @@ describe('describeRuleChanges', () => {
     const sentences = describeRuleChanges(score, score);
     // Assert
     expect(sentences).toEqual([]);
+  });
+});
+
+describe('describeNoEffect', () => {
+  const limits = { method: 28, class: 100, file: 100 };
+  const fragment = (id: string, lines: number): Fragment => ({ id, label: id, lines, responsibility: 'x' });
+  const method = (id: string, lineList: readonly number[]): Method => ({
+    id, name: id, visibility: 'public', fragments: lineList.map((lines, index) => fragment(`${id}-f${index}`, lines)),
+  });
+  const codebaseOf = (classes: readonly { id: string; methods: readonly Method[] }[]): Codebase => ({
+    files: [{ id: 'file-1', path: 'A.cs', classes: classes.map(({ id, methods }) => ({ id, name: id, methods })) }],
+  });
+  // メソッドの行数 = 処理の合計 + 3(宣言分)
+  const none = (args: { before: Codebase; after: Codebase; score: Score }) => describeNoEffect({ ...args, limits });
+
+  it('上限を超えたまま短くなったメソッドを「何行→何行、上限をまだ何行超え」にする', () => {
+    // Arrange
+    const before = codebaseOf([{ id: 'Svc', methods: [method("run", [20, 20])] }]); // 44行
+    const after = codebaseOf([{ id: 'Svc', methods: [method('run', [28]), method('sub', [12])] }]); // 31行 + 15行
+    // Act
+    const result = none({ before, after, score: scoreOf([d('line-limit', 1)]) });
+    // Assert
+    expect(result).toEqual({ tone: 'unchanged', lines: ['効いていません: Svc.run() は44行→31行に減りましたが、上限28行をまだ3行超えています'] });
+  });
+
+  it('減った行数がいちばん多い対象を選ぶ', () => {
+    // Arrange
+    const before = codebaseOf([{ id: 'Svc', methods: [method('a', [40]), method('b', [40])] }]); // 43, 43
+    const after = codebaseOf([{ id: 'Svc', methods: [method('a', [35]), method('b', [30]), method('c', [])] }]); // 38, 33(新しいメソッドで配置が変わる)
+    // Act
+    const result = none({ before, after, score: scoreOf([d('line-limit', 2)]) });
+    // Assert
+    expect(result?.lines[0]).toContain('Svc.b() は43行→33行');
+  });
+
+  it('同じ行数だけ減ったときは、メソッドをクラスより先にする', () => {
+    // Arrange
+    const small = { method: 28, class: 40, file: 1000 };
+    const before = codebaseOf([{ id: 'Svc', methods: [method('a', [40])] }]); // メソッド43・クラス46
+    const after = codebaseOf([{ id: 'Svc', methods: [method('a', [35]), method('c', [])] }]); // メソッド38・クラス41前後
+    // Act
+    const result = describeNoEffect({ before, after, limits: small, score: scoreOf([d('line-limit', 2)]) });
+    // Assert
+    expect(result?.lines[0]).toContain('Svc.a() は43行→38行');
+  });
+
+  it('行数が減った対象がなければ、残っている減点を出す', () => {
+    // Arrange
+    const before = codebaseOf([{ id: 'A', methods: [method('run', [40])] }, { id: 'B', methods: [] }]);
+    const after = codebaseOf([{ id: 'A', methods: [] }, { id: 'B', methods: [method('run', [40])] }]);
+    // Act
+    const result = none({ before, after, score: scoreOf([d('line-limit', 1)]) });
+    // Assert
+    expect(result).toEqual({ tone: 'unchanged', lines: ['効いていません: 残っている減点(「行数」1件)は、この一手では減りませんでした'] });
+  });
+
+  it('残っている減点が3つ以上なら、2つまで出して「ほかN項目」を付ける', () => {
+    // Arrange
+    const before = codebaseOf([{ id: 'A', methods: [method('run', [5])] }, { id: 'B', methods: [] }]);
+    const after = codebaseOf([{ id: 'A', methods: [] }, { id: 'B', methods: [method('run', [5])] }]);
+    // Act
+    const result = none({ before, after, score: scoreOf([d('line-limit', 1), d('coupling', 1), d('cycle', 1), d('responsibility', 0)]) });
+    // Assert
+    expect(result?.lines[0]).toBe('効いていません: 残っている減点(「行数」1件・「結合度」1件・ほか1項目)は、この一手では減りませんでした');
+  });
+
+  it('操作の後に上限内に収まった対象は、行数の候補にしない', () => {
+    // Arrange
+    const before = codebaseOf([{ id: 'Svc', methods: [method('run', [40])] }]); // 43行
+    const after = codebaseOf([{ id: 'Svc', methods: [method('run', [20]), method('sub', [20])] }]); // 23行(上限内)
+    // Act
+    const result = none({ before, after, score: scoreOf([d('line-limit', 1)]) });
+    // Assert
+    expect(result?.lines[0]).toContain('残っている減点');
+  });
+
+  it('配置が同じ(名前だけ違う)ときは null', () => {
+    // Arrange
+    const before = codebaseOf([{ id: 'Svc', methods: [method('run', [40])] }]);
+    const after: Codebase = { files: [{ ...before.files[0], classes: [{ ...before.files[0].classes[0], name: 'Renamed' }] }] };
+    // Act
+    const result = none({ before, after, score: scoreOf([d('line-limit', 1)]) });
+    // Assert
+    expect(result).toBeNull();
+  });
+
+  it('白紙設計(部品置き場がある)では、部品を置くたびに出さず null', () => {
+    // Arrange
+    const before = codebaseOf([{ id: 'A', methods: [method('run', [5])] }, { id: 'B', methods: [] }]);
+    const after = codebaseOf([{ id: 'A', methods: [] }, { id: 'B', methods: [method('run', [5])] }]);
+    const withTray: Codebase = { files: [...before.files, { id: TRAY_FILE_ID, path: '部品置き場', classes: [] }] };
+    // Act
+    const result = none({ before: withTray, after, score: scoreOf([d('line-limit', 1)]) });
+    // Assert
+    expect(result).toBeNull();
+  });
+
+  it('減点が0のときは null', () => {
+    // Arrange
+    const before = codebaseOf([{ id: 'A', methods: [method('run', [5])] }, { id: 'B', methods: [] }]);
+    const after = codebaseOf([{ id: 'A', methods: [] }, { id: 'B', methods: [method('run', [5])] }]);
+    // Act
+    const result = none({ before, after, score: scoreOf([]) });
+    // Assert
+    expect(result).toBeNull();
+  });
+
+  it('引数を変更しない', () => {
+    // Arrange
+    const before = codebaseOf([{ id: 'Svc', methods: [method('run', [20, 20])] }]);
+    const after = codebaseOf([{ id: 'Svc', methods: [method('run', [28])] }]);
+    const score = scoreOf([d('line-limit', 1)]);
+    const snapshot = JSON.stringify([before, after, score]);
+    // Act
+    none({ before, after, score });
+    // Assert
+    expect(JSON.stringify([before, after, score])).toBe(snapshot);
   });
 });
