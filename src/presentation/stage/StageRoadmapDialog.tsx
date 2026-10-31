@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { retryMark, type AssistLevel } from '../../domain/progress/assists';
 import { conceptMastery, isStageCleared, recommendNextStage, recommendReviewStage, stageStatus, type StageStatus } from '../../domain/progress/roadmap';
 import type { Milestones } from '../../domain/progress/milestones';
 import type { Progress } from '../../domain/progress/Progress';
 import type { ReflectionNotes } from '../../domain/progress/reflectionNotes';
 import { summarizeQuizRecord } from '../../domain/quiz/quizRecord';
+import { sampleMovesToPerfect } from '../../domain/stage/sampleAnswer';
 import type { Stage } from '../../domain/stage/Stage';
 import { antipatterns } from '../../infrastructure/gallery/antipatterns';
 import { loadQuizRecord } from '../../infrastructure/progress/quizRecordStorage';
@@ -50,10 +51,12 @@ type StageCardProps = {
   readonly retry: AssistLevel | undefined;
   readonly status: StageStatus;
   readonly note: string | undefined;
+  /** 模範解答で初めて100点に届く手数。模範解答がなければ undefined。 */
+  readonly estimate: number | undefined;
   readonly onChoose: () => void;
 };
 
-function StageCard({ stage, current, recommended, reviewRecommended, retry, status, note, onChoose }: StageCardProps) {
+function StageCard({ stage, current, recommended, reviewRecommended, retry, status, note, estimate, onChoose }: StageCardProps) {
   return (
     <div
       className={`stage-roadmap__card${current ? ' stage-roadmap__card--current' : ''}`}
@@ -67,6 +70,7 @@ function StageCard({ stage, current, recommended, reviewRecommended, retry, stat
         onClick={onChoose}
       >
         <span className="stage-roadmap__card-title">{stage.title}</span>
+        <span className="stage-roadmap__outcome" data-testid="roadmap-outcome">{stage.outcome}</span>
         <span className="stage-roadmap__status">
           {describeStatus(status)}
           {retry !== undefined && (
@@ -75,6 +79,9 @@ function StageCard({ stage, current, recommended, reviewRecommended, retry, stat
           {recommended && <span className="stage-roadmap__recommend"> おすすめ</span>}
           {reviewRecommended && <span className="stage-roadmap__recommend"> 復習</span>}
         </span>
+        {estimate !== undefined && (
+          <span className="stage-roadmap__estimate" data-testid="roadmap-estimate">100点まで 目安{String(estimate)}手</span>
+        )}
         {note !== undefined && <span className="stage-roadmap__note" data-testid={`roadmap-note-${stage.id}`} title={note}>メモ: {note}</span>}
       </button>
       <span className="stage-roadmap__learns">
@@ -112,6 +119,8 @@ type StageLevelsProps = {
 function StageLevels({ stages, currentId, nextId, progress, reflectionNotes, milestones, draftStageIds, onChoose }: StageLevelsProps) {
   const assists = useGameStore((state) => state.assists);
   const reviewId = recommendReviewStage(stages, progress, assists)?.id;
+  // stages は変わらないので、目安の手数は最初の1回だけ計算する
+  const estimates = useMemo(() => new Map(stages.map((stage) => [stage.id, sampleMovesToPerfect(stage)])), [stages]);
   // ステージは難易度順に並んでいるので、出てきた順に難易度をまとめる
   const levels = [...new Set(stages.map((stage) => stage.level))];
   return levels.map((level) => (
@@ -130,6 +139,7 @@ function StageLevels({ stages, currentId, nextId, progress, reflectionNotes, mil
               retry={isStageCleared(stage.id, progress) ? retryMark(assists, stage.id) : undefined}
               status={stageStatus(stage, progress, milestones, draftStageIds.includes(stage.id))}
               note={reflectionNotes[stage.id]}
+              estimate={estimates.get(stage.id)}
               onChoose={() => {
                 onChoose(stage.id);
               }}

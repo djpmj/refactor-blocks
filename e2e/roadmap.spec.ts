@@ -276,3 +276,19 @@ test('パターン比較に切り替えて閉じ、再度開くと「ステー�
   await expect(page.getByTestId('roadmap-view-patterns')).toHaveAttribute('aria-pressed', 'false');
   await expect(page.getByTestId('pattern-comparison')).toHaveCount(0);
 });
+
+test('ステージ一覧の各カードに「できるようになること」と100点までの目安の手数が出る', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+
+  // Act
+  await page.getByTestId('roadmap-open').click();
+
+  // Assert
+  const card = page.getByTestId('roadmap-stage-tutorial-extract-method');
+  await expect(card.getByTestId('roadmap-outcome')).toHaveText('長いメソッドから、まとまった処理を別のメソッドとして取り出せる');
+  await expect(card.getByTestId('roadmap-estimate')).toHaveText('100点まで 目安1手');
+  const cardCount = await page.locator('[data-testid^="roadmap-stage-"]').count();
+  await expect(page.getByTestId('roadmap-outcome')).toHaveCount(cardCount);
+  await expect(page.getByTestId('roadmap-estimate')).toHaveCount(cardCount);
+});

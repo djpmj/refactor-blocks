@@ -12,6 +12,7 @@ function stageOf(id: string, learns: readonly string[]): Stage {
     problem: '',
     description: '',
     learns,
+    outcome: '',
     checks: [],
     limits: { method: 10, class: 20, file: 30 },
     dependencyLimit: 3,

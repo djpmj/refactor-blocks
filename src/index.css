@@ -641,6 +641,8 @@ input.class-node__name { width: 14ch; }
 .stage-roadmap__tag--principle { border-color: var(--accent); }
 .change-pain__principle { font-size: 13px; }
 .stage-roadmap__status { font-size: 12px; }
+.stage-roadmap__outcome { display: block; font-size: 12.5px; line-height: 1.4; white-space: normal; overflow-wrap: anywhere; }
+.stage-roadmap__estimate { display: block; font-size: 12px; color: var(--muted); }
 .stage-roadmap__note { display: block; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; color: var(--muted); }
 .reflection-note { margin: 12px 0; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); font-size: 13px; line-height: 1.5; }
 .reflection-note h3 { margin: 0 0 6px; font-size: 14px; }

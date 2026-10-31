@@ -13,6 +13,7 @@ const userControllerStage: Stage = {
   problem: 'ユーザー登録に保存とメール送信がまとまっている',
   level: 'beginner',
   title: '初級1: 何でも屋の UserController',
+  outcome: '何でも屋のクラスから、DBやメールの処理を担当のクラスに任せられる',
   learns: ['責務の分離', 'Move Method'],
   principles: ['srp'],
   checks: [
@@ -114,6 +115,7 @@ const invoiceServiceStage: Stage = {
   problem: '請求処理と明細計算が同じ場所にある',
   level: 'beginner',
   title: '初級2: クラスを自分で作る',
+  outcome: '受け皿のクラスを自分で追加して、責務ごとに分けられる',
   learns: ['クラスの追加', '責務の分離'],
   principles: ['srp'],
   checks: [

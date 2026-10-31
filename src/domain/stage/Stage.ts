@@ -43,6 +43,8 @@ export type Stage = {
   readonly description: string;
   /** ステージ一覧に出す「学べること」。1〜3個の短い名前。 */
   readonly learns: readonly string[];
+  /** ステージ一覧に出す「このステージでできるようになること」。1文・40文字以内・「〜できる」で終える。行数などの数値条件や解き方の手順は書かない。 */
+  readonly outcome: string;
   /** このステージで練習する組み替えの背骨になる設計原則。1〜2個。表示のみ(採点に使わない)。 */
   readonly principles?: readonly DesignPrinciple[];
   /** 100点になったときに出す理解度チェック。ドリルは0問。 */
