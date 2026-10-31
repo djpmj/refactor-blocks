@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-31 01:35 UTC PR #382 操作ごとの採点の推移を履歴として見られるようにする (#355)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint・typecheck・Vitest 2594件)✅。差分をIssue #355の設計判断と照合(operationLabelsのMap・Historyは不変・presentation層のみ)。E2Eはこの環境で実行許可が無く未実行(PR本文では関係E2E 70件成功)
+- マージ: squash & delete-branch
+
 ## 2026-10-30 11:20 UTC PR #381 似たパターンの使い分けを比較表で見られるようにする (#356)
 
 - 判定: 合格(blocker無し)
@@ -210,11 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test(2127件)✅ / npm run lint ✅ / npm run typecheck ✅。isStageCleared・conceptMastery・ConceptMasteryList・表示切替をIssue #317・docs/specs/concept-mastery-map.mdと照合。E2Eはこの環境で未実行(PR本文では423件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-25 15:15 UTC PR #332 上級9の注文状態ステージを追加 (#328)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(2117件)✅ / npm run lint ✅ / npm run typecheck ✅ / stage-report差分なし。ステージ定義・模範解答・解説フェーズ・ストーリー章・近道テストをIssue #328・docs/specs/state-pattern-stage.mdと照合し、domain/application/presentation未変更を確認。E2Eはこの環境で未実行(PR本文では420件成功)
 - マージ: squash & delete-branch
 
