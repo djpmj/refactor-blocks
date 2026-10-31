@@ -219,7 +219,7 @@ function ActionToolbar({ stage, isPerfect, active, revealedCount, onRevealHint, 
   useGuideShortcut(active, setGuideOpen);
   return (
     <div className="toolbar stage-panel__actions">
-      <button
+      {stage.changeRequests.length > 0 && <button
         type="button"
         className="toolbar__primary button--primary"
         data-testid="change-request-start"
@@ -228,7 +228,7 @@ function ActionToolbar({ stage, isPerfect, active, revealedCount, onRevealHint, 
         title={step === 'change-request' ? undefined : challengeTitle}
       >
         {challenged ? 'もう一度挑戦' : '変更依頼に挑戦'}
-      </button>
+      </button>}
       <button type="button" onClick={undo} disabled={!canUndo} title="Ctrl+Z">
         元に戻す
       </button>
@@ -298,7 +298,7 @@ function StageSidebar({ stage, codebase, score, initialScore, investigating, hid
       {perfect && <RoomToImproveNote stage={stage} codebase={codebase} />}
       {perfect && <UnusedPublicNote stage={stage} codebase={codebase} />}
       {perfect && <MoveCountNote stage={stage} />}
-      {perfect && <ConceptCheckPanel key={stage.id} checks={stage.checks} onAllCorrect={() => recordMilestone(stage.id, 'concept-check')} />}
+      {perfect && stage.checks.length > 0 && <ConceptCheckPanel key={stage.id} checks={stage.checks} onAllCorrect={() => recordMilestone(stage.id, 'concept-check')} />}
       {perfect && <ReflectionNoteCard key={`reflection-note-${stage.id}`} stageId={stage.id} />}
       <StoryOutro stage={stage} perfect={perfect} />
       <NextStageCard stage={stage} perfect={perfect} />

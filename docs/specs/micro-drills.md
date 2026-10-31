@@ -60,6 +60,7 @@ const LEVELS: readonly StageLevel[] = [...DIFFICULTY_LEVELS, 'drill'];
 const MAX_STEPS: Record<StageLevel, number> = { tutorial: 3, beginner: 8, intermediate: 15, advanced: 25, drill: 1 };
 // easierThanPreviousLevels は DIFFICULTY_LEVELS を回す。levelMedians・summaryLines は LEVELS のまま
 // warningsOf の「依頼が機能追加だけ」は stage.changeRequests.length > 0 のときだけ判定する(依頼0件のドリルに出さない)
+// warningsOf の「初期点が高い」はドリルには出さない(ドリルは初期から減点が少ないのが前提。stageReport.test.ts で確認)
 ```
 
 ### ドリル3本(`src/infrastructure/stages/drillStages.ts`)

@@ -38,6 +38,30 @@
 
 ## ログ一覧
 
+## 2026-10-30 11:20 UTC PR #381 似たパターンの使い分けを比較表で見られるようにする (#356)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(2575件) / npm run lint ✅ / npm run typecheck ✅ / docs/specs/pattern-comparison-table.md と差分を照合(presentationのみの変更・静的データとステージ定義のずれ検出テスト・E2E追加)。E2Eはこの環境で実行許可が無く未実行(PR本文ではroadmap.spec 14件通過と記載)
+- マージ: squash & delete-branch
+
+## 2026-10-30 10:45 UTC PR #380 抽出・移動の前後のコード差分を表示する (#357)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(2571件) / npm run lint ✅ / npm run typecheck ✅ / 差分をdocs/specs/refactor-code-diff-view.mdと照合(domain純粋関数・Fragment.id対応づけ・application無変更)。E2Eはこの環境にPlaywrightブラウザが無く未実行(PR本文の実測を参照)
+- マージ: squash & delete-branch
+
+## 2026-10-30 10:30 UTC PR #379 短い練習問題(マイクロドリル)をステージ一覧に追加する (#353)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(2562件) / npm run lint ✅ / npm run typecheck ✅ / docs/specs/micro-drills.md の変更対象一覧と差分を照合(application層無変更・checks/changeRequests 0件の守り・stageReportのドリル除外)。E2E(micro-drills/roadmap)はこの環境で実行許可が無く未実行(PR本文では既存specの1件のみ失敗、単独では通過と記載)
+- マージ: squash & delete-branch
+
+## 2026-10-29 15:10 UTC PR #378 抽出時のクラス上限案内と操作結果を追加 (#351)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(2428件) / npm run lint ✅ / npm run typecheck ✅ / Issue #351の設計判断と差分を照合(新しく超えるときだけ・クラス優先・nextStepはoperationResultがnullなら足さない・domain無変更)。E2E(extract-class-limit-heads-up)はこの環境で実行許可が無く未実行(PR本文では成功と記載)
+- マージ: squash & delete-branch
+
 ## 2026-10-29 11:15 UTC PR #377 設計くらべの成績を保存し、ステージ一覧に表示する (#349)
 
 - 判定: 合格(blocker無し)
@@ -192,29 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test(2117件)✅ / npm run lint ✅ / npm run typecheck ✅ / stage-report差分なし。ステージ定義・模範解答・解説フェーズ・ストーリー章・近道テストをIssue #328・docs/specs/state-pattern-stage.mdと照合し、domain/application/presentation未変更を確認。E2Eはこの環境で未実行(PR本文では420件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-25 14:40 UTC PR #331 満点でも残る改善の余地をステージパネルに案内する (#321)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(2085件)✅ / npm run lint ✅ / npm run typecheck ✅。roomToImprove(mixed-method・crowded-class・解答例との比較・3件上限)・RoomToImproveNote・StagePanelの配置をIssue #321・docs/specs/perfect-room-left-note.mdと照合。E2Eはこの環境にChromiumを導入できず未実行(PR本文では420件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-25 14:27 UTC PR #330 クリア条件の行数表示を分ける (#313)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(lint・typecheck・Vitest 2055件)✅。clearConditionKey導入・line-limitの3分割・describeCondition・ClearConditionListのkey切替をIssue #313・docs/specs/clear-condition-line-split.mdと照合。E2Eはこの環境にChromiumが無く未実行(PR本文では374件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-25 14:30 UTC PR #303 開いただけのステージを自己ベストにせず、未挑戦ステージのE2Eを基準どおりにする (#283)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(lint・typecheck・Vitest 2055件)✅。updateProgressに初期点を渡し、初期点以下(100点除く)は記録しない点をIssue #283と照合。E2Eはこの環境にChromiumが無く未実行(PR本文では322件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-25 14:25 UTC PR #308 手直しの案内バナーを図に重ならない通常の帯にし、狭い幅でも操作できるようにする (#284)
-
-- 判定: 合格(blocker無し。suggestion: 1000pxの切替境界が固定値で脆い)
-- 確認した内容: npm run check(lint・typecheck・Vitest 2047件)✅。バナーを通常フローの帯にして図と重ならない点、ドロワー表示時もバナーのみ操作可能な点をIssue #284・docs/specs/opening-fix-banner-fit.mdと照合。E2Eはこの環境にChromiumが無く未実行(PR本文では380件成功)
 - マージ: squash & delete-branch
 

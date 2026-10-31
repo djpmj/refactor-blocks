@@ -8,6 +8,7 @@ export type OperationResult = {
   readonly tone: OperationTone;
   /** 1〜2行。 */
   readonly lines: readonly string[];
+  readonly nextStep?: string;
 };
 
 type RuleChange = { readonly rule: ScoreRule; readonly diff: number; readonly points: number };

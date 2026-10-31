@@ -12,6 +12,7 @@ import { autoNameClasses } from '../../domain/codebase/autoNameClasses';
 import { emptyHistory, recordChange, redoHistory, undoHistory, type History, type Travel } from '../../domain/codebase/history';
 import { scoreCodebase, type Score, type ScoreRule } from '../../domain/scoring/score';
 import { describeOperationResult, type OperationResult } from '../stage/describeOperationResult';
+import { describeGrowthHeadsUp } from '../editor/describeGrowthHeadsUp';
 import { resolvedTargets } from '../../domain/scoring/resolvedTargets';
 import type { ViolationTarget } from '../../domain/scoring/violationTargets';
 import type { Stage } from '../../domain/stage/Stage';
@@ -525,6 +526,7 @@ function changeSessionActions(
   return {
     startChangeRequests: () => {
       const state = get();
+      if (state.stage.changeRequests.length === 0) return;
       const { codebase, history, stage } = state;
       const step = currentStep(state);
       if (state.openingFixEnabled && step !== 'change-request') {
@@ -716,6 +718,11 @@ function extractActions(
       const state = get();
       const preview = previewExtractMethod(state.codebase, input);
       const succeeded = apply(extractMethodUseCase(state.codebase, input, () => crypto.randomUUID()), describeExtractError, 'メソッドの抽出');
+      if (succeeded && preview !== undefined) {
+        const nextStep = describeGrowthHeadsUp(preview, state.stage.limits);
+        const operationResult = get().operationResult;
+        if (nextStep !== undefined && operationResult !== null) set({ operationResult: { ...operationResult, nextStep } });
+      }
       if (succeeded && preview !== undefined && !state.extractOverheadExplained && preview.fileLinesAfter > preview.fileLinesBefore) {
         set({ extractOverheadExplained: true, notice: '抽出すると、新しいメソッドの宣言と呼び出しの分だけ合計の行数は少し増えます。1つのメソッドが短くなり、読む範囲が絞れることが大事です' });
       }

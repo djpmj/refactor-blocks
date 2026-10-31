@@ -76,7 +76,7 @@ test('学べることごとの表示で習得状況が見え、未クリアの�
   // Arrange
   await page.goto('/');
   await page.evaluate(() =>
-    localStorage.setItem('refactor-blocks:progress', JSON.stringify({ 'tutorial-extract-method': 100, 'tutorial-order-service': 100 })),
+    localStorage.setItem('refactor-blocks:progress', JSON.stringify({ 'tutorial-extract-method': 100, 'tutorial-order-service': 100, 'drill-extract-tail': 100, 'drill-extract-middle': 100 })),
   );
   await page.reload();
   await page.getByTestId('roadmap-open').click();
@@ -90,7 +90,7 @@ test('学べることごとの表示で習得状況が見え、未クリアの�
   const rows = page.getByTestId('concept-mastery-row');
   await expect(rows.nth(0)).toHaveAttribute('data-concept', 'Extract Method');
   await expect(rows.nth(1)).toHaveAttribute('data-concept', 'Move Method');
-  await expect(rows.nth(0)).toContainText('2件中2件クリア');
+  await expect(rows.nth(0)).toContainText('4件中4件クリア');
   await expect(rows.nth(0)).toContainText('✅ すべてクリア');
   await expect(rows.nth(0).locator('button')).toHaveCount(0);
   await expect(rows.nth(1)).toContainText('件中1件クリア');
@@ -234,4 +234,45 @@ test('設計くらべを1問も答えていなければ、ステージ一覧に�
 
   // Assert
   await expect(page.getByTestId('roadmap-quiz')).toHaveText('設計くらべ: 未挑戦');
+});
+
+test('パターン比較に切り替えると比較表が出て、列のボタンでステージへ移れる', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await page.getByTestId('roadmap-open').click();
+  const table = page.getByTestId('pattern-comparison');
+
+  // Act
+  await page.getByTestId('roadmap-view-patterns').click();
+
+  // Assert
+  await expect(page.getByTestId('roadmap-view-patterns')).toHaveAttribute('aria-pressed', 'true');
+  await expect(table.getByRole('columnheader')).toHaveText([
+    /観点/, /Strategy/, /State/, /Template Method/, /Factory/, /ISP\(インターフェース分離\)/,
+  ]);
+  await expect(table.getByRole('rowheader')).toHaveText(['いつ使う', '何が変わる', 'クラス構成の特徴', '向かない場面']);
+
+  // Act
+  await page.getByTestId('pattern-stage-advanced-order-state').click();
+
+  // Assert
+  await expect(page.getByTestId('stage-roadmap')).toHaveCount(0);
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('上級9');
+});
+
+test('パターン比較に切り替えて閉じ、再度開くと「ステージ順」に戻る', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await page.getByTestId('roadmap-open').click();
+  await page.getByTestId('roadmap-view-patterns').click();
+  await expect(page.getByTestId('pattern-comparison')).toBeVisible();
+
+  // Act
+  await page.keyboard.press('Escape');
+  await page.getByTestId('roadmap-open').click();
+
+  // Assert
+  await expect(page.getByTestId('roadmap-view-stages')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('roadmap-view-patterns')).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.getByTestId('pattern-comparison')).toHaveCount(0);
 });

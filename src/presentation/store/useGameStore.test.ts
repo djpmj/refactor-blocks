@@ -19,6 +19,23 @@ import { operationTimeline } from '../stage/operationTimeline';
 
 const ghost = { kind: 'method' as const, methodId: 'method-example', toClassId: 'class-example' };
 
+describe('ドリルの変更依頼', () => {
+  it('100点で呼ばれても、依頼0件ならセッションを開始しない', () => {
+    // Arrange
+    const stage = stages.find((candidate) => candidate.id === 'drill-extract-tail');
+    if (stage === undefined) throw new Error('ドリルが必要です');
+    const store = createGameStore([stage], false, false);
+    store.setState({ codebase: sampleAnswerCodebase(stage) });
+
+    // Act
+    store.getState().startChangeRequests();
+
+    // Assert
+    expect(scoreCodebase(store.getState().codebase, stage).total).toBe(100);
+    expect(store.getState().changeSession).toBeNull();
+  });
+});
+
 describe('クリア画面', () => {
   const stage = stages.find((candidate) => candidate.id === 'tutorial-extract-method');
   if (stage === undefined) throw new Error('チュートリアル1が必要です');
@@ -1180,6 +1197,51 @@ describe('operation result (増えた・消えた減点)', () => {
   const tableAndPrint = { sourceMethodId: source, fragmentIds: ['frag-table-header', 'frag-table-rows', 'frag-print'], newMethodName: 'renderReport' };
   const renderReportId = (store: ReturnType<typeof createGameStore>) => allClasses(store.getState().codebase).flatMap((codeClass) => codeClass.methods).find((method) => method.name === 'renderReport')?.id ?? '';
   const newStore = () => createGameStore([tutorial, stages[1]], false, false);
+
+  it('3回目の抽出で初めてクラスの上限を超え、次の段階を表示し、Undoで消す', () => {
+    // Arrange
+    const store = newStore();
+    const extracts = [
+      { fragmentIds: ['frag-print'], newMethodName: 'printSalesReport' },
+      { fragmentIds: ['frag-aggregate-sales'], newMethodName: 'aggregateSales' },
+      { fragmentIds: ['frag-compare-last-month'], newMethodName: 'compareLastMonth' },
+    ];
+    // Act & Assert
+    for (const [index, input] of extracts.entries()) {
+      expect(store.getState().extractMethod({ sourceMethodId: source, ...input })).toBe(true);
+      if (index < 2) expect(store.getState().operationResult?.nextStep).toBeUndefined();
+    }
+    expect(store.getState().operationResult?.lines).toContain('「行数」の減点が1件増えました(-10)');
+    expect(store.getState().operationResult?.nextStep).toBe('クラスが 54行 → 60行 になり、上限(54行)を超えます。分けたメソッドは、次の段階で受け皿のクラスへ移しましょう');
+    store.getState().undo();
+    expect(store.getState().operationResult).toBeNull();
+  });
+
+  it('抽出に失敗したときは次の段階を追加しない', () => {
+    // Arrange
+    const store = newStore();
+    // Act
+    const succeeded = store.getState().extractMethod({ sourceMethodId: 'no-such-method', fragmentIds: ['frag-print'], newMethodName: 'printSalesReport' });
+    // Assert
+    expect(succeeded).toBe(false);
+    expect(store.getState().operationResult?.nextStep).toBeUndefined();
+  });
+
+  it('操作の結果が null のときは次の段階を追加しない', () => {
+    // Arrange
+    const store = newStore();
+    const codebase = store.getState().codebase;
+    store.setState({ changeSession: { index: 0, inspected: null, reviewing: null, outcomes: [], base: codebase, carried: codebase, sampleCarried: codebase, baseHistory: store.getState().history } });
+    for (const input of [
+      { fragmentIds: ['frag-print'], newMethodName: 'printSalesReport' },
+      { fragmentIds: ['frag-aggregate-sales'], newMethodName: 'aggregateSales' },
+      { fragmentIds: ['frag-compare-last-month'], newMethodName: 'compareLastMonth' },
+    ]) {
+      // Act & Assert
+      expect(store.getState().extractMethod({ sourceMethodId: source, ...input })).toBe(true);
+      expect(store.getState().operationResult).toBeNull();
+    }
+  });
 
   it('表の組み立てと出力を1つにまとめると、責務の混ざったメソッドの増加が出る', () => {
     // Arrange

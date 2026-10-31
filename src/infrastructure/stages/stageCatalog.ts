@@ -3,6 +3,7 @@ import { advancedStages } from './advancedStages';
 import { beginnerStages } from './beginnerStages';
 import { intermediateStages } from './intermediateStages';
 import { tutorialStages } from './tutorialStages';
+import { drillStages } from './drillStages';
 
 /** 遊べるステージの一覧。チュートリアル → 初級 → 中級 → 上級の順に並べる。 */
-export const stages: readonly Stage[] = [...tutorialStages, ...beginnerStages, ...intermediateStages, ...advancedStages];
+export const stages: readonly Stage[] = [...tutorialStages, ...beginnerStages, ...intermediateStages, ...advancedStages, ...drillStages];
