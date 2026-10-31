@@ -143,6 +143,9 @@ type GameState = {
   playGhost: (move: GhostMove) => void;
   clearGhost: () => void;
   history: History;
+  /** 各操作のあとのスナップショット → 操作名。Undo/Redo では触らず、ステージ切り替えで空にする。 */
+  // ponytail: operationLabels は History と同じく上限なし。ステージ切り替えで空になる。履歴に上限を付けるときは同時に古いキーを捨てる
+  operationLabels: ReadonlyMap<Codebase, string>;
   selectedMethodId: string | null;
   selectedFieldId: string | null;
   extractDraft: ExtractMethodInput | null;
@@ -331,7 +334,7 @@ function scoredOperation(state: GameState, codebase: Codebase, celebrate: boolea
   return { operationResult: describeOperationResult(before, after), ...(celebration === undefined ? {} : { celebration }), ...clearScreenAfterCommit(state, celebration) };
 }
 
-function commit(state: GameState, codebase: Codebase, celebrate = true): Partial<GameState> {
+function commit(state: GameState, codebase: Codebase, label: string, celebrate = true): Partial<GameState> {
   if (codebase === state.codebase) return {};
   const namedCodebase = autoNameClasses(codebase, state.stage.classNames);
   const fieldStillThere = state.selectedFieldId !== null && findField(namedCodebase, state.selectedFieldId) !== undefined;
@@ -342,6 +345,7 @@ function commit(state: GameState, codebase: Codebase, celebrate = true): Partial
     ghost: null,
     ...HIGHLIGHT_RESET,
     history: recordChange(state.history, state.codebase),
+    operationLabels: new Map(state.operationLabels).set(namedCodebase, label),
     selectedFieldId: fieldStillThere ? state.selectedFieldId : null,
   };
 }
@@ -364,10 +368,10 @@ function publicizedMoveNotice(after: Codebase, changes: readonly { readonly meth
 }
 
 /** 操作の結果を状態の更新にする。成功したらコードベースを差し替え、失敗したら理由を出す。 */
-function applyResult<E>(state: GameState, result: Result<Codebase, E>, describe: (error: E) => string): Partial<GameState> {
+function applyResult<E>(state: GameState, result: Result<Codebase, E>, describe: (error: E) => string, label: string): Partial<GameState> {
   const blocked = blockDuringOpeningFix(state);
   if (blocked !== null) return blocked;
-  return result.ok ? { ...commit(state, result.value), message: null, notice: null } : { message: describe(result.error), notice: null };
+  return result.ok ? { ...commit(state, result.value, label), message: null, notice: null } : { message: describe(result.error), notice: null };
 }
 
 /** 取り消し・やり直しの結果を状態にする。選択中のメソッドがなくなっていたら選択を外す。 */
@@ -510,7 +514,7 @@ function resetActions(set: (partial: Partial<GameState>) => void, get: () => Gam
       // ponytail: 最初に戻すのあとの元に戻すで attempt は戻らない。抜け道として問題になったら、履歴の各コードに attempt を持たせる
       const assists = resetAttempt(get().assists, get().stage.id);
       if (assists !== get().assists) saveAssists(assists);
-      set({ assists, ...commit(get(), get().stage.codebase, false), layoutResetCount: get().layoutResetCount + 1, celebration: null, operationResult: null, ghost: null, manualFix: null, closingFixSolved: false, impactReviewOpen: false, extractDraft: null, focusedRule: null, hintTarget: null, hintTargetKey: null, previewRule: null, hoverPreviewRule: null, focusPreviewRule: null, selectedMethodId: null, selectedFieldId: null, message: null, notice: null });
+      set({ assists, ...commit(get(), get().stage.codebase, '最初に戻す', false), layoutResetCount: get().layoutResetCount + 1, celebration: null, operationResult: null, ghost: null, manualFix: null, closingFixSolved: false, impactReviewOpen: false, extractDraft: null, focusedRule: null, hintTarget: null, hintTargetKey: null, previewRule: null, hoverPreviewRule: null, focusPreviewRule: null, selectedMethodId: null, selectedFieldId: null, message: null, notice: null });
     },
   };
 }
@@ -670,6 +674,7 @@ function selectStageState(allStages: readonly Stage[], stageId: string, drafts: 
     closingFixSolved: false,
     impactReviewOpen: false,
     history: emptyHistory(),
+    operationLabels: new Map(),
     selectedMethodId: null,
     selectedFieldId: null,
     extractDraft: null,
@@ -688,17 +693,17 @@ function selectStageState(allStages: readonly Stage[], stageId: string, drafts: 
   };
 }
 
-type Apply = <E>(result: Result<Codebase, E>, describe: (error: E) => string) => boolean;
+type Apply = <E>(result: Result<Codebase, E>, describe: (error: E) => string, label: string) => boolean;
 
 function createApply(set: (partial: Partial<GameState>) => void, get: () => GameState): Apply {
-  return <E>(result: Result<Codebase, E>, describe: (error: E) => string): boolean => {
+  return <E>(result: Result<Codebase, E>, describe: (error: E) => string, label: string): boolean => {
     const state = get();
     const blocked = blockDuringOpeningFix(state);
     if (blocked !== null) {
       set(blocked);
       return false;
     }
-    set(applyResult(state, result, describe));
+    set(applyResult(state, result, describe, label));
     return result.ok;
   };
 }
@@ -712,7 +717,7 @@ function extractActions(
     extractMethod: (input) => {
       const state = get();
       const preview = previewExtractMethod(state.codebase, input);
-      const succeeded = apply(extractMethodUseCase(state.codebase, input, () => crypto.randomUUID()), describeExtractError);
+      const succeeded = apply(extractMethodUseCase(state.codebase, input, () => crypto.randomUUID()), describeExtractError, 'メソッドの抽出');
       if (succeeded && preview !== undefined) {
         const nextStep = describeGrowthHeadsUp(preview, state.stage.limits);
         const operationResult = get().operationResult;
@@ -736,19 +741,19 @@ function renameActions(
 ): Pick<GameState, 'renameClass' | 'renameMethod' | 'setSuperclass' | 'addInterface' | 'removeInterface'> {
   return {
     renameClass: (classId, newName) => {
-      return apply(renameClassUseCase(get().codebase, classId, newName), describeRenameClassError);
+      return apply(renameClassUseCase(get().codebase, classId, newName), describeRenameClassError, 'クラス名の変更');
     },
     renameMethod: (methodId, newName) => {
-      return apply(renameMethodUseCase(get().codebase, methodId, newName), describeRenameMethodError);
+      return apply(renameMethodUseCase(get().codebase, methodId, newName), describeRenameMethodError, 'メソッド名の変更');
     },
     setSuperclass: (classId, superclassName) => {
-      return apply(setSuperclassUseCase(get().codebase, classId, superclassName), describeSetSuperclassError);
+      return apply(setSuperclassUseCase(get().codebase, classId, superclassName), describeSetSuperclassError, '継承元の変更');
     },
     addInterface: (classId, interfaceName) => {
-      return apply(addInterfaceUseCase(get().codebase, classId, interfaceName), (error) => describeAddInterfaceError(error, interfaceName));
+      return apply(addInterfaceUseCase(get().codebase, classId, interfaceName), (error) => describeAddInterfaceError(error, interfaceName), '実装先の追加');
     },
     removeInterface: (classId, interfaceName) => {
-      return apply(removeInterfaceUseCase(get().codebase, classId, interfaceName), describeRemoveInterfaceError);
+      return apply(removeInterfaceUseCase(get().codebase, classId, interfaceName), describeRemoveInterfaceError, '実装先の削除');
     },
   };
 }
@@ -765,7 +770,7 @@ function moveMethodAction(set: (partial: Partial<GameState>) => void, get: () =>
     const enforced = state.stage.visibilityEnforced === true;
     const result = moveMethodUseCase(state.codebase, methodId, targetClassId, { visibilityEnforced: enforced });
     const notice = result.ok ? publicizedMoveNotice(result.value.codebase, result.value.changed) : null;
-    set({ ...applyResult(state, result.ok ? { ok: true, value: result.value.codebase } : result, describeMoveError), ...(result.ok ? { notice } : {}) });
+    set({ ...applyResult(state, result.ok ? { ok: true, value: result.value.codebase } : result, describeMoveError, 'メソッドの移動'), ...(result.ok ? { notice } : {}) });
   };
 }
 
@@ -779,7 +784,7 @@ function moveMethodToNewClassInFileAction(set: (partial: Partial<GameState>) => 
     }
     const result = moveMethodToNewClassInFileUseCase(state.codebase, methodId, fileId, { generateId: newId, visibilityEnforced: state.stage.visibilityEnforced === true });
     const notice = result.ok ? publicizedMoveNotice(result.value.codebase, result.value.changed) : null;
-    set({ ...applyResult(state, result.ok ? { ok: true, value: result.value.codebase } : result, describeMoveOutError), ...(result.ok ? { notice } : {}) });
+    set({ ...applyResult(state, result.ok ? { ok: true, value: result.value.codebase } : result, describeMoveOutError, 'メソッドを新しいクラスへ移動'), ...(result.ok ? { notice } : {}) });
   };
 }
 
@@ -792,14 +797,14 @@ function moveActions(
   return {
     moveMethod: moveMethodAction(set, get),
     moveField: (fieldId, targetClassId) => {
-      apply(moveFieldUseCase(get().codebase, fieldId, targetClassId), describeMoveFieldError);
+      apply(moveFieldUseCase(get().codebase, fieldId, targetClassId), describeMoveFieldError, 'フィールドの移動');
     },
     changeVisibility: (methodId, visibility) => {
       const state = get();
-      apply(changeVisibilityUseCase(state.codebase, methodId, visibility, state.stage.codebase), describeChangeVisibilityError);
+      apply(changeVisibilityUseCase(state.codebase, methodId, visibility, state.stage.codebase), describeChangeVisibilityError, '可視性の変更');
     },
     moveClass: (classId, targetFileId) => {
-      apply(moveClassUseCase(get().codebase, classId, targetFileId), describeMoveClassError);
+      apply(moveClassUseCase(get().codebase, classId, targetFileId), describeMoveClassError, 'クラスの移動');
     },
     moveClassToNewFile: (classId) => {
       const blocked = blockDuringOpeningFix(get());
@@ -809,10 +814,10 @@ function moveActions(
       }
       const result = moveClassToNewFileUseCase(get().codebase, classId, newId);
       if (!result.ok) {
-        apply(result, describeMoveOutError);
+        apply(result, describeMoveOutError, 'クラスを新しいファイルへ移動');
         return null;
       }
-      set(applyResult(get(), { ok: true, value: result.value.codebase }, describeMoveOutError));
+      set(applyResult(get(), { ok: true, value: result.value.codebase }, describeMoveOutError, 'クラスを新しいファイルへ移動'));
       return result.value.fileId;
     },
     moveMethodToNewClass: (methodId) => {
@@ -824,12 +829,12 @@ function moveActions(
       const state = get();
       const result = moveMethodToNewClassUseCase(state.codebase, methodId, { generateId: newId, visibilityEnforced: state.stage.visibilityEnforced === true });
       if (!result.ok) {
-        apply(result, describeMoveOutError);
+        apply(result, describeMoveOutError, 'メソッドを新しいクラスへ移動');
         return null;
       }
       const notice = publicizedMoveNotice(result.value.codebase, result.value.changed);
       const codebase = autoNameClasses(result.value.codebase, state.stage.classNames);
-      set({ ...applyResult(state, { ok: true, value: codebase }, describeMoveOutError), notice });
+      set({ ...applyResult(state, { ok: true, value: codebase }, describeMoveOutError, 'メソッドを新しいクラスへ移動'), notice });
       return result.value.fileId;
     },
     moveMethodToNewClassInFile: moveMethodToNewClassInFileAction(set, get, newId),
@@ -838,7 +843,7 @@ function moveActions(
 
 /** クラス・ファイル・空実装メソッドを取り除く操作。 */
 function deleteActions(apply: Apply, set: (partial: Partial<GameState>) => void, get: () => GameState): Pick<GameState, 'deleteClass' | 'deleteFile' | 'deleteMethod'> {
-  const remove = <E>(result: Result<DeleteResult, E>, describe: (error: E) => string): boolean => {
+  const remove = <E>(result: Result<DeleteResult, E>, describe: (error: E) => string, label: string): boolean => {
     const blocked = blockDuringOpeningFix(get());
     if (blocked !== null) {
       set(blocked);
@@ -848,18 +853,18 @@ function deleteActions(apply: Apply, set: (partial: Partial<GameState>) => void,
       set({ message: describe(result.error), notice: null });
       return false;
     }
-    set({ ...commit(get(), result.value.codebase), message: null, notice: describeInlinedBeforeDelete(result.value.inlined) });
+    set({ ...commit(get(), result.value.codebase, label), message: null, notice: describeInlinedBeforeDelete(result.value.inlined) });
     return true;
   };
   return {
     deleteClass: (classId) => {
-      return remove(deleteClassUseCase(get().codebase, classId), describeDeleteClassError);
+      return remove(deleteClassUseCase(get().codebase, classId), describeDeleteClassError, 'クラスの削除');
     },
     deleteFile: (fileId) => {
-      return remove(deleteFileUseCase(get().codebase, fileId), describeDeleteFileError);
+      return remove(deleteFileUseCase(get().codebase, fileId), describeDeleteFileError, 'ファイルの削除');
     },
     deleteMethod: (methodId) => {
-      const succeeded = apply(deleteMethodUseCase(get().codebase, methodId), describeDeleteMethodError);
+      const succeeded = apply(deleteMethodUseCase(get().codebase, methodId), describeDeleteMethodError, 'メソッドの削除');
       if (succeeded && get().selectedMethodId === methodId) set({ selectedMethodId: null });
       return succeeded;
     },
@@ -879,7 +884,7 @@ function replaceMethodActions(
       const result = mergeMethodsUseCase(get().codebase, input, () => crypto.randomUUID());
       set(
         result.ok
-          ? { ...commit(get(), result.value.codebase), selectedMethodId: result.value.newMethodId, message: null, notice: null }
+          ? { ...commit(get(), result.value.codebase, 'メソッドの統合'), selectedMethodId: result.value.newMethodId, message: null, notice: null }
           : { message: describeMergeError(result.error), notice: null },
       );
       return result.ok;
@@ -890,7 +895,7 @@ function replaceMethodActions(
       const result = inlineMethodUseCase(get().codebase, methodId);
       set(
         result.ok
-          ? { ...commit(get(), result.value.codebase), selectedMethodId: result.value.callerId, message: null, notice: null }
+          ? { ...commit(get(), result.value.codebase, '呼び出し元へ戻す'), selectedMethodId: result.value.callerId, message: null, notice: null }
           : { message: describeInlineError(result.error), notice: null },
       );
     },
@@ -1007,8 +1012,8 @@ function restoreFirstDraft(holder: { drafts: Drafts }, firstStage: Stage): Codeb
 
 function basicClassActions(apply: Apply, get: () => GameState): Pick<GameState, 'addClass' | 'addFile'> {
   return {
-    addClass: (fileId, className) => apply(addClassUseCase(get().codebase, fileId, className, () => crypto.randomUUID()), describeAddClassError),
-    addFile: () => { apply(addNewFileUseCase(get().codebase, () => crypto.randomUUID()), () => ''); },
+    addClass: (fileId, className) => apply(addClassUseCase(get().codebase, fileId, className, () => crypto.randomUUID()), describeAddClassError, 'クラスの追加'),
+    addFile: () => { apply(addNewFileUseCase(get().codebase, () => crypto.randomUUID()), () => '', 'ファイルの追加'); },
   };
 }
 
@@ -1046,7 +1051,7 @@ export function createGameStore(allStages: readonly Stage[], saveDraftsOn = true
       openingFixEnabled,
       impactReviewOpen: false,
       draftStageIds: Object.keys(holder.drafts),
-      history: emptyHistory(),
+      history: emptyHistory(), operationLabels: new Map(),
       selectedMethodId: null,
       selectedFieldId: null,
       focusedRule: null,

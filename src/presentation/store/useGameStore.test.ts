@@ -15,6 +15,7 @@ import { putDraft } from '../../domain/progress/drafts';
 import { blankDesignProblems } from '../../infrastructure/blankDesigns/blankDesignProblems';
 import { saveDrafts } from '../../infrastructure/progress/draftStorage';
 import { saveLastStageId } from '../../infrastructure/progress/lastStageStorage';
+import { operationTimeline } from '../stage/operationTimeline';
 
 const ghost = { kind: 'method' as const, methodId: 'method-example', toClassId: 'class-example' };
 
@@ -1394,5 +1395,92 @@ describe('move count', () => {
     store.getState().saveReflectionNote('x', '  ');
     expect(store.getState().reflectionNotes.x).toBeUndefined();
     expect(localStorage.getItem('refactor-blocks:reflection-notes')).toBe('{}');
+  });
+});
+
+describe('operationLabels (操作の記録の操作名)', () => {
+  const tutorial = stages.find((candidate) => candidate.id === 'tutorial-extract-method');
+  if (tutorial === undefined) throw new Error('tutorial-extract-method が見つからない');
+  const aggregate = { sourceMethodId: 'method-print-monthly-report', fragmentIds: ['frag-aggregate-sales', 'frag-compare-last-month'], newMethodName: 'aggregate' };
+  const newStore = () => createGameStore([tutorial, stages[1]], false, false);
+
+  it('抽出すると、そのあとのコードベースに「メソッドの抽出」が記録される', () => {
+    // Arrange
+    const store = newStore();
+    // Act
+    store.getState().extractMethod(aggregate);
+    // Assert
+    expect(store.getState().operationLabels.get(store.getState().codebase)).toBe('メソッドの抽出');
+  });
+
+  it('抽出 → クラス名の変更のあと、操作の記録は操作名がその順に並ぶ', () => {
+    // Arrange
+    const store = newStore();
+    store.getState().extractMethod(aggregate);
+    // Act
+    store.getState().renameClass('class-report-service', 'Renamed');
+    // Assert
+    const { history, codebase, operationLabels, stage } = store.getState();
+    const entries = operationTimeline(history, codebase, (c) => scoreCodebase(c, stage), (c) => operationLabels.get(c));
+    expect(entries.map(({ label }) => label)).toEqual(['メソッドの抽出', 'クラス名の変更']);
+  });
+
+  it('undo / redo では operationLabels を変えず、undo 後の今のコードの操作名も保たれる', () => {
+    // Arrange
+    const store = newStore();
+    store.getState().extractMethod(aggregate);
+    store.getState().renameClass('class-report-service', 'Renamed');
+    const labels = store.getState().operationLabels;
+    // Act
+    store.getState().undo();
+    // Assert
+    expect(store.getState().operationLabels).toBe(labels);
+    expect(store.getState().operationLabels.get(store.getState().codebase)).toBe('メソッドの抽出');
+    store.getState().redo();
+    expect(store.getState().operationLabels).toBe(labels);
+  });
+
+  it('最初に戻すと、今のコードの操作名が「最初に戻す」になる', () => {
+    // Arrange
+    const store = newStore();
+    store.getState().extractMethod(aggregate);
+    // Act
+    store.getState().resetStage();
+    // Assert
+    expect(store.getState().operationLabels.get(store.getState().codebase)).toBe('最初に戻す');
+  });
+
+  it('失敗した操作では operationLabels が変わらない', () => {
+    // Arrange
+    const store = newStore();
+    const labels = store.getState().operationLabels;
+    // Act
+    const succeeded = store.getState().extractMethod({ ...aggregate, sourceMethodId: 'no-such-method' });
+    // Assert
+    expect(succeeded).toBe(false);
+    expect(store.getState().operationLabels).toBe(labels);
+  });
+
+  it('ステージを切り替えると空になる', () => {
+    // Arrange
+    const store = newStore();
+    store.getState().extractMethod(aggregate);
+    // Act
+    store.getState().selectStage(stages[1].id);
+    // Assert
+    expect(store.getState().operationLabels.size).toBe(0);
+  });
+
+  it('変更依頼を始めて終えたあとも、挑戦前の手の操作名が残る', () => {
+    // Arrange
+    const store = newStore();
+    store.getState().extractMethod(aggregate);
+    const before = store.getState().codebase;
+    // Act
+    store.getState().startChangeRequests();
+    store.getState().endChangeRequests();
+    // Assert
+    expect(store.getState().codebase).toBe(before);
+    expect(store.getState().operationLabels.get(before)).toBe('メソッドの抽出');
   });
 });

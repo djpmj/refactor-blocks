@@ -1,7 +1,7 @@
 import { useEffect, type RefObject } from 'react';
 
 /** ツールバーで同時に開けるのは1つだけ。開いているパネルを1つ持ち、どの開き方でも「それを開く」にする。 */
-export type ToolbarPanel = 'reference' | 'hint' | 'rumor' | null;
+export type ToolbarPanel = 'reference' | 'hint' | 'rumor' | 'history' | null;
 
 /** 自分が開いているときだけ閉じる(別のパネルが開いていたら触らない)。 */
 export function togglePanel(current: ToolbarPanel, name: Exclude<ToolbarPanel, null>, open: boolean): ToolbarPanel {

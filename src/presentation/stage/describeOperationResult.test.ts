@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Score, ScoreDeduction } from '../../domain/scoring/score';
-import { describeOperationResult } from './describeOperationResult';
+import { describeOperationResult, describeRuleChanges } from './describeOperationResult';
 
 function scoreOf(deductions: readonly ScoreDeduction[]): Score {
   const deducted = deductions.reduce((sum, deduction) => sum + deduction.points, 0);
@@ -114,5 +114,36 @@ describe('describeOperationResult', () => {
     describeOperationResult(before, after);
     // Assert
     expect(JSON.stringify([before, after])).toBe(snapshot);
+  });
+});
+
+describe('describeRuleChanges', () => {
+  it('増えたルールを1文にする', () => {
+    // Arrange
+    const before = scoreOf([d('mixed-method', 0)]);
+    const after = scoreOf([d('mixed-method', 1)]);
+    // Act
+    const sentences = describeRuleChanges(before, after);
+    // Assert
+    expect(sentences).toEqual(['「責務の混ざったメソッド」の減点が1件増えました(-10)']);
+  });
+
+  it('変わったルールが3つあっても切り詰めずすべて返し、増えたものが先', () => {
+    // Arrange
+    const before = scoreOf([d('cycle', 0), d('coupling', 0), d('line-limit', 1)]);
+    const after = scoreOf([d('cycle', 1), d('coupling', 2), d('line-limit', 0)]);
+    // Act
+    const sentences = describeRuleChanges(before, after);
+    // Assert
+    expect(sentences).toEqual(['「結合度」の減点が2件増えました(-20)', '「循環依存」の減点が1件増えました(-10)', '「行数」の減点が1件消えました(+10)']);
+  });
+
+  it('変化がなければ空配列', () => {
+    // Arrange
+    const score = scoreOf([d('line-limit', 1)]);
+    // Act
+    const sentences = describeRuleChanges(score, score);
+    // Assert
+    expect(sentences).toEqual([]);
   });
 });
