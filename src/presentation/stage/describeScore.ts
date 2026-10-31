@@ -42,3 +42,8 @@ export function describeScoreShort(score: Score): string {
   const ruleCount = score.deductions.filter((deduction) => deduction.points > 0).length;
   return ruleCount === 0 ? '✅ 減点なし' : `減点 ${ruleCount}項目(-${score.deducted})`;
 }
+
+/** 点数が、ステージを開いたとき(初期コード)と同じか。100点は対象外(初期点が100点でも注記は出さない)。 */
+export function isStartingScore(score: Score, initial: Score): boolean {
+  return score.total === initial.total && score.deducted === initial.deducted && score.total < 100;
+}

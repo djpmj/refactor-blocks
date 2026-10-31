@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { describeScore, describeScoreShort } from './describeScore';
+import { describeScore, describeScoreShort, isStartingScore } from './describeScore';
 
 describe('describeScoreShort', () => {
   it('減点なしでは「減点なし」だけを返す', () => {
@@ -84,5 +84,46 @@ describe('describeScore', () => {
 
     // Assert
     expect(description).toBe('70点(行数 -30)');
+  });
+});
+
+describe('isStartingScore', () => {
+  const initial = { total: 90, deducted: 10, deductions: [] };
+
+  it.each([
+    ['初期点と同じ', 90, 10, true],
+    ['点が上がった', 100, 10, false],
+    ['点が下がった', 80, 20, false],
+  ])('%s → %s', (_label, total, deducted, expected) => {
+    // Arrange
+    const score = { total, deducted, deductions: [] };
+
+    // Act
+    const result = isStartingScore(score, initial);
+
+    // Assert
+    expect(result).toBe(expected);
+  });
+
+  it('0点のまま減点の合計だけ減ったときは false', () => {
+    // Arrange
+    const score = { total: 0, deducted: 100, deductions: [] };
+
+    // Act
+    const result = isStartingScore(score, { total: 0, deducted: 120, deductions: [] });
+
+    // Assert
+    expect(result).toBe(false);
+  });
+
+  it('100点は初期点と同じでも対象外', () => {
+    // Arrange
+    const perfect = { total: 100, deducted: 0, deductions: [] };
+
+    // Act
+    const result = isStartingScore(perfect, perfect);
+
+    // Assert
+    expect(result).toBe(false);
   });
 });
