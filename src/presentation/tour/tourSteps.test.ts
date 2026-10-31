@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { nextTourStep, TOUR_STEPS, tourResultOf, tourResultText, type TourEvent, type TourResult, type TourStep } from './tourSteps';
+import { MODE_INTRO_STEPS, nextTourStep, TOUR_STEPS, tourResultOf, tourResultText, type TourEvent, type TourResult, type TourStep } from './tourSteps';
 
 const steps: readonly TourStep[] = [
   { target: '#sidebar', text: 'Review the task', advance: { kind: 'next' } },
@@ -167,5 +167,44 @@ describe('tourResultText', () => {
 
     // Assert
     expect(hasLineCount).toEqual([false, false, false, false]);
+  });
+});
+
+describe('MODE_INTRO_STEPS', () => {
+  it.each(['quiz', 'blank'] as const)('%s のミニガイドは2〜3ステップで、すべて「次へ」で進む', (kind) => {
+    // Arrange
+    const steps = MODE_INTRO_STEPS[kind];
+
+    // Act
+    const kinds = steps.map((step) => step.advance.kind);
+
+    // Assert
+    expect(steps.length).toBeGreaterThanOrEqual(2);
+    expect(steps.length).toBeLessThanOrEqual(3);
+    expect(kinds.every((kind) => kind === 'next')).toBe(true);
+  });
+
+  it('blank の対象はすべて白紙設計の画面の中を指す(隠れたリファクタリング画面を拾わない)', () => {
+    // Arrange
+    const targets = MODE_INTRO_STEPS.blank.map((step) => step.target);
+
+    // Act
+    const inside = targets.every((target) => target.startsWith('[data-testid="blank-view"]'));
+
+    // Assert
+    expect(inside).toBe(true);
+  });
+
+  it('次へで進み、最後のステップからは null を返す', () => {
+    // Arrange
+    const steps = MODE_INTRO_STEPS.quiz;
+
+    // Act
+    const next = nextTourStep(steps, 0, { kind: 'next' });
+    const finished = nextTourStep(steps, steps.length - 1, { kind: 'next' });
+
+    // Assert
+    expect(next).toBe(1);
+    expect(finished).toBeNull();
   });
 });

@@ -50,7 +50,7 @@ function BlankDesignBody({ active }: Readonly<{ active: boolean }>) {
               }}
             />
           ) : (
-            <MethodEditor alwaysShowVisibility />
+            <MethodEditor alwaysShowVisibility emptyMessage="blank" />
           )}
         </div>
       </main>

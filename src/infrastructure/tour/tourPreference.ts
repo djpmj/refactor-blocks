@@ -17,3 +17,23 @@ export function saveTourSeen(): boolean {
     return false;
   }
 }
+
+const modeIntroKey = (kind: 'quiz' | 'blank') => `refactor-blocks:mode-intro-seen:${kind}`;
+
+export function loadModeIntroSeen(kind: 'quiz' | 'blank'): boolean {
+  try {
+    return localStorage.getItem(modeIntroKey(kind)) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+export function saveModeIntroSeen(kind: 'quiz' | 'blank'): boolean {
+  try {
+    localStorage.setItem(modeIntroKey(kind), 'true');
+    return true;
+  } catch {
+    // The guide remains usable when browser storage is unavailable.
+    return false;
+  }
+}

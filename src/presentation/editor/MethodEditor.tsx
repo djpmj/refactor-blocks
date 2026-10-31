@@ -407,7 +407,7 @@ function MethodEditorBody({ method, showVisibility, stage }: Readonly<{ method: 
   );
 }
 
-export function MethodEditor({ alwaysShowVisibility = false }: Readonly<{ alwaysShowVisibility?: boolean }>) {
+export function MethodEditor({ alwaysShowVisibility = false, emptyMessage = 'refactor' }: Readonly<{ alwaysShowVisibility?: boolean; emptyMessage?: 'refactor' | 'blank' }>) {
   const stage = useGameStore((state) => state.stage);
   const selectedFieldId = useGameStore((state) => state.selectedFieldId);
   const method = useGameStore((state) =>
@@ -419,10 +419,21 @@ export function MethodEditor({ alwaysShowVisibility = false }: Readonly<{ always
     content = (
       <div className="method-editor__empty" data-testid="method-editor-empty">
         <span className="method-editor__empty-icon" aria-hidden="true">👈</span>
-        <h2>中央の図から、直したいメソッドをクリックしてみよう</h2>
-        <p>クリックすると、中の処理がここに並びます。まとまりを選んで「メソッドとして抽出」できます</p>
-        <p>メソッドはドラッグで別のクラスへ移せます</p>
-        <p>フィールドをクリックすると説明が出ます</p>
+        {emptyMessage === 'blank' ? (
+          <>
+            <h2>部品置き場の部品を、置きたいクラスへドラッグしよう</h2>
+            <p>キャンバスの空いている所へ落とすと新しいクラスができ、クラスへ落とすとそのクラスに入ります</p>
+            <p>置いたメソッドをクリックすると、中身と public / private がここに出ます</p>
+            <p>全部品を置いたら、上の「答え合わせ」を押そう</p>
+          </>
+        ) : (
+          <>
+            <h2>中央の図から、直したいメソッドをクリックしてみよう</h2>
+            <p>クリックすると、中の処理がここに並びます。まとまりを選んで「メソッドとして抽出」できます</p>
+            <p>メソッドはドラッグで別のクラスへ移せます</p>
+            <p>フィールドをクリックすると説明が出ます</p>
+          </>
+        )}
       </div>
     );
   }

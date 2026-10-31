@@ -12,6 +12,7 @@ import { useUndoRedoShortcut } from './useUndoRedoShortcut';
 import { useResizableSidebarWidth } from './useResizableSidebarWidth';
 import { ManualFixMethodViewer } from './stage/ManualFixMethodViewer';
 import { pageTitle } from './pageTitle';
+import { ModeIntroGuide } from './tour/SpotlightTour';
 
 type Mode = 'refactor' | 'quiz' | 'blank';
 
@@ -171,11 +172,13 @@ export function App() {
       {quizOpened ? (
         <div className="app__view" hidden={mode !== 'quiz'}>
           <ComparisonQuizView onLeave={changeMode} />
+          <ModeIntroGuide kind="quiz" active={mode === 'quiz'} />
         </div>
       ) : null}
       {blankOpened ? (
         <div className="app__view" hidden={mode !== 'blank'} data-testid="blank-view">
           <BlankDesignView active={mode === 'blank'} />
+          <ModeIntroGuide kind="blank" active={mode === 'blank'} />
         </div>
       ) : null}
     </div>

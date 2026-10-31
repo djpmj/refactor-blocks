@@ -32,6 +32,8 @@ export default defineConfig({
           localStorage: [
             { name: 'refactor-blocks:tour-seen', value: 'true' },
             { name: 'refactor-blocks:story', value: 'false' },
+            { name: 'refactor-blocks:mode-intro-seen:quiz', value: 'true' },
+            { name: 'refactor-blocks:mode-intro-seen:blank', value: 'true' },
           ],
         },
       ],
