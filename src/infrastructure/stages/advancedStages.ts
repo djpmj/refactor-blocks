@@ -26,6 +26,7 @@ const notifierHierarchyStage: Stage = {
   problem: '通知方式ごとに共通手順が重複している',
   level: 'advanced',
   title: '上級1: 通知クラスの共通処理を基底クラスへ集める',
+  outcome: '子クラスに散らばった共通処理を、基底クラスへ集められる',
   learns: ['継承', '共通処理の集約'],
   principles: ['dry'],
   checks: [
@@ -153,6 +154,7 @@ const paymentGatewayInterfaceStage: Stage = {
   problem: '決済処理が特定のゲートウェイに直接依存している',
   level: 'advanced',
   title: '上級2: 決済ゲートウェイをインターフェース越しに呼ぶ',
+  outcome: '具体的なクラスではなく、インターフェース越しに呼ぶ形にできる',
   learns: ['インターフェース', 'implements'],
   principles: ['dip'],
   checks: [
@@ -328,6 +330,7 @@ const discountStrategyStage: Stage = {
   problem: '会員ランクごとの割引計算が1つの処理に混在している',
   level: 'advanced',
   title: '上級3: 会員ランクの割引をStrategyパターンへ組み替える',
+  outcome: 'ランクごとの計算を、差し替えられる Strategy に組み替えられる',
   learns: ['Strategy', 'implements'],
   principles: ['ocp'],
   checks: [
@@ -434,6 +437,7 @@ const reportFactoryStage: Stage = {
   problem: '帳票ごとの生成方法が呼び出し側に散らばっている',
   level: 'advanced',
   title: '上級4: レポート生成処理をFactoryへ集約する',
+  outcome: 'あちこちにある生成の処理を、Factory の1か所に集められる',
   learns: ['Factory', '生成の集約'],
   principles: ['dry', 'srp'],
   checks: [
@@ -554,6 +558,7 @@ const collapseHierarchyStage: Stage = {
   problem: '子クラスが1つだけの基底クラスが残っている',
   level: 'advanced',
   title: '上級5: 子が1つしかない継承を畳む',
+  outcome: '子が1つしかない不要な継承を、畳んで1つのクラスにできる',
   learns: ['継承の見直し', 'Collapse Hierarchy'],
   principles: ['yagni'],
   checks: [
@@ -712,6 +717,7 @@ const interfaceSegregationStage: Stage = {
   problem: '通知とタスク管理の約束が1つに集まっている',
   level: 'advanced',
   title: '上級6: 太ったインターフェースを役割ごとに分ける',
+  outcome: '太ったインターフェースを、使う側の役割ごとに分けられる',
   learns: ['ISP', 'implements'],
   principles: ['isp'],
   checks: [
@@ -1016,6 +1022,7 @@ const valueObjectStage: Stage = {
   problem: '金額と通貨が別々の値として扱われている',
   level: 'advanced',
   title: '上級7: 金額と通貨を Money にまとめる',
+  outcome: '一緒に使う金額と通貨を、振る舞いを持つ値のクラスにまとめられる',
   learns: ['Value Object', 'カプセル化'],
   principles: ['encapsulation', 'dry'],
   checks: [
@@ -1273,6 +1280,7 @@ const templateMethodStage: Stage = {
   problem: '形式ごとの取り込み処理に共通手順が重複している',
   level: 'advanced',
   title: '上級8: 取り込みの手順を Template Method にまとめる',
+  outcome: '共通の手順は親に、違う1手順だけを子に書く形にできる',
   learns: ['Template Method', '継承'],
   principles: ['dry', 'ocp'],
   checks: [
@@ -1501,6 +1509,7 @@ const orderStateStage: Stage = {
   id: 'advanced-order-state', level: 'advanced',
   title: '上級9: 注文の状態ごとの分岐を State パターンへ組み替える',
   problem: '注文の状態ごとの分岐が、支払い・発送・取り消しの各メソッドに散らばっている',
+  outcome: '状態ごとの分岐を、状態そのものを表すクラスに組み替えられる',
   learns: ['State', '状態遷移'],
   principles: ['srp'],
   description: 'ネットショップの注文。Order の pay(支払い)・ship(発送)・cancel(取り消し)が、それぞれの中で注文の状態(未払い・支払済み・発送済み)ごとの if 分岐を重ねている。状態ごとの振る舞いと「次はどの状態へ移るか」が3つのメソッドに散らばっていて、ある状態で何ができるかを確かめるには3つとも読むことになる。注文画面の OrderController は、前任者が OrderState(インターフェース)経由で今の状態に任せる形に先に書き換えたが、状態ごとのクラスはまだ無い。取り消した注文は取り消し履歴へ移るので、取り消し済みの状態は Order には残らない。',

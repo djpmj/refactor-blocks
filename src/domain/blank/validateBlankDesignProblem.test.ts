@@ -28,6 +28,7 @@ const problem: BlankDesignProblem = {
   level: 'beginner',
   title: 'テスト用の白紙設計',
   learns: ['責務の分離'],
+  outcome: '',
   checks: [],
   why: '役割ごとに配置すると、変更先を見つけやすくなります。',
   goal: '全部品を配置しよう',

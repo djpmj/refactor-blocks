@@ -12,6 +12,7 @@ function stageOf(id: string, learns: readonly string[] = ['Extract Method'], wit
     problem: '',
     description: '',
     learns,
+    outcome: '',
     checks: withSteps ? [{ id: 'c', question: '?', choices: [{ text: 'a', explanation: '' }, { text: 'b', explanation: '' }], answer: 0 }] : [],
     limits: { method: 10, class: 20, file: 30 },
     dependencyLimit: 3,
