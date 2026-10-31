@@ -185,3 +185,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [refactor-code-diff-view](refactor-code-diff-view.md) | 組み替える前と今のコードを並べ、移動・追加・削除した処理を示す |
 | [pattern-comparison-table](pattern-comparison-table.md) | ステージ一覧に、似たデザインパターンを見比べる「パターン比較」表を足す |
 | [operation-score-history](operation-score-history.md) | ツールバーの「操作の記録」に、操作ごとの点数の増減と変わった減点を時系列で並べる |
+| [mode-intro-guides](mode-intro-guides.md) | 設計くらべ・白紙設計を初めて開いたとき3ステップのミニガイドを出し、白紙設計の右パネルの文言をモードに合わせる |
