@@ -27,7 +27,7 @@ async function tabOutOfPopover(page: Page, popoverId: string) {
   await expect(focusedInside).toHaveCount(0);
 }
 
-test('ツールバーが 挑戦・元に戻す・やり直し・最初に戻す・参考・答え・ヒント・うわさ・操作ガイド の順に並ぶ', async ({ page }) => {
+test('ツールバーが 挑戦・元に戻す・やり直し・操作の記録・最初に戻す・参考・答え・ヒント・うわさ・操作ガイド の順に並ぶ', async ({ page }) => {
   // Arrange
   await openTutorial1(page);
 
@@ -35,7 +35,7 @@ test('ツールバーが 挑戦・元に戻す・やり直し・最初に戻す�
   const names = await page.locator('.stage-panel__actions > button, .stage-panel__actions > div > button').evaluateAll((buttons) => buttons.map((button) => button.textContent.trim()));
 
   // Assert
-  expect(names).toEqual(['変更依頼に挑戦', '元に戻す', 'やり直し', '最初に戻す', '参考・答え ▾', 'ヒント ▾', 'うわさ(2) ▾', '操作ガイド']);
+  expect(names).toEqual(['変更依頼に挑戦', '元に戻す', 'やり直し', '操作の記録 ▾', '最初に戻す', '参考・答え ▾', 'ヒント ▾', 'うわさ(2) ▾', '操作ガイド']);
   await expect(page.locator('#stage-sidebar [data-testid="hint-problem"], #stage-sidebar [data-testid="rumor-list"]')).toHaveCount(0);
   await expect(page.getByRole('heading', { name: '課題', exact: true })).toBeVisible();
 });

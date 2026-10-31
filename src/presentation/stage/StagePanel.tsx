@@ -11,6 +11,7 @@ import { useGameStore } from '../store/useGameStore';
 import { describeScoreShort } from './describeScore';
 import { ScoreBreakdown } from './ScoreBreakdown';
 import { HintPopover } from './HintPopover';
+import { OperationHistoryPopover } from './OperationHistoryPopover';
 import { RumorPopover } from './RumorPopover';
 import { togglePanel, type ToolbarPanel } from './usePopoverDismiss';
 import { ConceptCheckPanel } from './ConceptCheckPanel';
@@ -234,6 +235,7 @@ function ActionToolbar({ stage, isPerfect, active, revealedCount, onRevealHint, 
       <button type="button" onClick={redo} disabled={!canRedo} title="Ctrl+Y">
         やり直し
       </button>
+      <OperationHistoryPopover key={`history-${stage.id}`} stage={stage} open={panel === 'history'} onOpenChange={(open) => onPanelChange('history', open)} />
       <button type="button" className="stage-panel__reset" onClick={resetStage} disabled={investigating}>
         最初に戻す
       </button>
