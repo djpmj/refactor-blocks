@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-10-31 02:15 UTC PR #384 クイズ・ブランクモードの初回紹介ガイドを追加する (#354)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint・typecheck・Vitest 2602件)✅。差分をIssue #354/仕様書mode-intro-guidesと照合(presentation/infrastructureのみ、SpotlightOverlayのtotal・testId化で既存ツアー維持、storageState追加)。E2Eはこの環境でブラウザ未導入のため未実行(PR本文では関係E2E 60件成功)
+- マージ: squash & delete-branch
+
 ## 2026-10-31 01:35 UTC PR #382 操作ごとの採点の推移を履歴として見られるようにする (#355)
 
 - 判定: 合格(blocker無し)

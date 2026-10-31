@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { Codebase } from '../../domain/codebase/Codebase';
 import { useGameStore } from '../store/useGameStore';
-import { TOUR_STEPS, tourResultText, type TourStep } from './tourSteps';
+import { loadModeIntroSeen, saveModeIntroSeen } from '../../infrastructure/tour/tourPreference';
+import { MODE_INTRO_STEPS, nextTourStep, TOUR_STEPS, tourResultText, type ModeIntroKind, type TourStep } from './tourSteps';
 
 type Spotlight = { readonly top: number; readonly right: number; readonly bottom: number; readonly left: number };
 type Callout = { readonly left: number; readonly top: number };
@@ -117,11 +118,14 @@ export function SpotlightTour() {
   useExtractAdvance(step, tourStep, codebase, advanceTour);
   useEscapeEnd(tourStep, endTour);
   if (tourStep === null || step === undefined || callout === null) return null;
-  return <SpotlightOverlay stepNumber={tourStep + 1} step={step} text={tourStep === TOUR_STEPS.length - 1 && tourResult !== null ? tourResultText(tourResult) : step.text} spotlight={spotlight} callout={callout} onAdvance={advanceTour} onEnd={endTour} />;
+  return <SpotlightOverlay stepNumber={tourStep + 1} total={TOUR_STEPS.length} testId="first-visit-tour" label="初回ガイド" step={step} text={tourStep === TOUR_STEPS.length - 1 && tourResult !== null ? tourResultText(tourResult) : step.text} spotlight={spotlight} callout={callout} onAdvance={advanceTour} onEnd={endTour} />;
 }
 
 function SpotlightOverlay({
   stepNumber,
+  total,
+  testId,
+  label,
   step,
   text,
   spotlight,
@@ -130,6 +134,9 @@ function SpotlightOverlay({
   onEnd,
 }: Readonly<{
   stepNumber: number;
+  total: number;
+  testId: string;
+  label: string;
   step: TourStep;
   text: string;
   spotlight: Spotlight | null;
@@ -154,8 +161,8 @@ function SpotlightOverlay({
           <div className="spotlight-tour__hole" style={{ left, top, width: Math.max(0, right - left), height: Math.max(0, bottom - top) }} />
         </>
       )}
-      <section className="spotlight-tour__callout" role="dialog" aria-label="初回ガイド" aria-live="polite" data-testid="first-visit-tour" style={{ left: callout.left, top: callout.top }}>
-        <p className="spotlight-tour__step">{stepNumber}/6</p>
+      <section className="spotlight-tour__callout" role="dialog" aria-label={label} aria-live="polite" data-testid={testId} style={{ left: callout.left, top: callout.top }}>
+        <p className="spotlight-tour__step">{stepNumber}/{total}</p>
         <p>{text}</p>
         <div className="spotlight-tour__actions">
           {advanceButtonVisible ? <button type="button" onClick={() => onAdvance({ kind: 'next' })}>次へ</button> : null}
@@ -164,4 +171,34 @@ function SpotlightOverlay({
       </section>
     </>
   );
+}
+
+export function ModeIntroGuide({ kind, active }: Readonly<{ kind: ModeIntroKind; active: boolean }>) {
+  const [started, setStarted] = useState<number | null>(null);
+  const [wasActive, setWasActive] = useState(false);
+  // 開いた瞬間に、見た印が無ければ手順1から始める(effect内の setState を避けて描画中に切り替える)
+  if (active !== wasActive) {
+    setWasActive(active);
+    if (active) setStarted(loadModeIntroSeen(kind) ? null : 0);
+  }
+  // 表示中に別のモードへ切り替えたら、見た印を付ける
+  useEffect(() => {
+    if (!active && started !== null) saveModeIntroSeen(kind);
+  }, [active, started, kind]);
+  const steps = MODE_INTRO_STEPS[kind];
+  const current = active ? started : null;
+  const step = current === null ? undefined : steps[current];
+  const end = useCallback(() => {
+    setStarted(null);
+    saveModeIntroSeen(kind);
+  }, [kind]);
+  const { spotlight, callout } = useSpotlightPosition(step, current);
+  useEscapeEnd(current, end);
+  if (current === null || step === undefined || callout === null) return null;
+  const advance = () => {
+    const next = nextTourStep(steps, current, { kind: 'next' });
+    if (next === null) end();
+    else setStarted(next);
+  };
+  return <SpotlightOverlay stepNumber={current + 1} total={steps.length} testId="mode-intro-guide" label="モードの案内" step={step} text={step.text} spotlight={spotlight} callout={callout} onAdvance={advance} onEnd={end} />;
 }

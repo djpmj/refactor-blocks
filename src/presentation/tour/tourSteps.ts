@@ -24,6 +24,22 @@ export const TOUR_STEPS: readonly TourStep[] = [
   { target: '.score-badge', text: '抽出の結果、点数とクリア条件がどう変わったか確かめよう。', advance: { kind: 'next' } },
 ];
 
+export type ModeIntroKind = 'quiz' | 'blank';
+
+export const MODE_INTRO_STEPS: Readonly<Record<ModeIntroKind, readonly TourStep[]>> = {
+  quiz: [
+    { target: '.quiz__question', text: '設計くらべでは、同じ機能を持つ2つの設計A・Bを見比べます。まず「依頼」(これから入れる変更)と行数の上限を読もう。', advance: { kind: 'next' } },
+    { target: '.quiz__designs', text: '左右の図が設計Aと設計Bです。依頼を入れるとき、触るクラスが少なく、行数の上限も超えにくいのはどちらかを比べよう。', advance: { kind: 'next' } },
+    { target: '.quiz__actions', text: '楽だと思う方のボタンを押すと、正解と、それぞれの設計に依頼を入れた結果(点数・触るクラス数)が出ます。', advance: { kind: 'next' } },
+  ],
+  // 隠れたリファクタリング画面の同じ要素を拾わないよう、白紙設計の画面の中に絞る
+  blank: [
+    { target: '[data-testid="blank-view"] .stage-panel__heading', text: '白紙設計では、要求文を読んで、クラスの分け方を一から組みます。まず要求文と目標を読もう。', advance: { kind: 'next' } },
+    { target: '[data-testid="blank-view"] .app__canvas', text: '部品置き場にメソッドの部品が並んでいます。部品をキャンバスの空いている所へドラッグすると新しいクラスができ、クラスへ落とすとそのクラスに入ります。クラス名は自動で付きます。', advance: { kind: 'next' } },
+    { target: '[data-testid="blank-view"] [data-testid="blank-review"]', text: '部品を全部置き終えると「答え合わせ」が押せます。自分の設計と模範解答の点数、変更依頼を入れたときの違いが出ます。', advance: { kind: 'next' } },
+  ],
+};
+
 export type TourEvent =
   | { readonly kind: 'next' }
   | { readonly kind: 'manual-fix-started' }
