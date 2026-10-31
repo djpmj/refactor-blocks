@@ -27,6 +27,7 @@ const cyclicDependencyStage: Stage = {
   problem: '注文と顧客の処理が互いを呼び合っている',
   level: 'intermediate',
   title: '中級1: 循環依存を断ち切る',
+  outcome: 'メソッドを本来の持ち主へ戻して、循環依存を断ち切れる',
   learns: ['循環依存', 'Move Method'],
   principles: ['adp', 'encapsulation'],
   checks: [
@@ -175,6 +176,7 @@ const godFileStage: Stage = {
   problem: '複数の業務クラスが1つのファイルに集まっている',
   level: 'intermediate',
   title: '中級2: 何でも入った1つのファイル',
+  outcome: '1つのファイルに詰まったクラスを、ファイルごとに分けられる',
   learns: ['ファイル分割', '責務の分離'],
   principles: ['srp'],
   checks: [
@@ -326,6 +328,7 @@ const misplacedPrivateStage: Stage = {
   problem: '通知クラスの非公開処理が別クラスから呼ばれている',
   level: 'intermediate',
   title: '中級3: 越境する private メソッド',
+  outcome: '他のクラスから呼ばれる private メソッドを、正しい持ち主へ移せる',
   learns: ['カプセル化', 'private'],
   principles: ['encapsulation'],
   checks: [
@@ -515,6 +518,7 @@ const volatileTaxStage: Stage = {
   problem: '売上処理の中に税率ごとの計算が混在している',
   level: 'intermediate',
   title: '中級4: 変わるのは税の計算',
+  outcome: 'よく変わる税の計算を、変更が1か所で済む場所へ切り出せる',
   learns: ['変わる部分の分離', '責務の分離'],
   principles: ['srp'],
   checks: [
@@ -572,6 +576,7 @@ const volatileFormatStage: Stage = {
   problem: '売上処理の中に帳票形式ごとの出力が混在している',
   level: 'intermediate',
   title: '中級5: 変わるのは帳票の形式',
+  outcome: 'よく変わる帳票の形式を、ほかの処理から切り離せる',
   learns: ['変わる部分の分離', '責務の分離'],
   principles: ['srp'],
   checks: [
@@ -636,6 +641,7 @@ const featureEnvyStage: Stage = {
   problem: '契約処理が別クラスのデータを多く読み書きしている',
   level: 'intermediate',
   title: '中級6: 他人のデータばかり触るメソッド',
+  outcome: '他のクラスのデータばかり触る処理を、データの持ち主へ移せる',
   learns: ['Feature Envy', 'Move Method'],
   principles: ['encapsulation'],
   checks: [
@@ -811,6 +817,7 @@ const anemicDomainModelStage: Stage = {
   problem: '口座の状態変更がサービス側に集まっている',
   level: 'intermediate',
   title: '中級7: getter/setter だけの口座クラス',
+  outcome: 'getter/setter だけのクラスに、データを使う振る舞いを持たせられる',
   learns: ['貧血ドメインモデル', 'カプセル化'],
   principles: ['encapsulation'],
   checks: [
@@ -1023,6 +1030,7 @@ const extractClassStage: Stage = {
   problem: '社員の給与と住所の情報が同じクラスにある',
   level: 'intermediate',
   title: '中級8: 給与と住所を抱えた社員クラス',
+  outcome: '1つのクラスに同居した無関係なデータを、別のクラスに分けられる',
   learns: ['Extract Class', '責務の分離'],
   principles: ['srp'],
   checks: [
@@ -1180,6 +1188,7 @@ const copyPasteTaxStage: Stage = {
   problem: '同じ消費税計算が複数の場所に書かれている',
   level: 'intermediate',
   title: '中級9: コピペされた消費税計算を1か所にまとめる',
+  outcome: 'コピペされた同じ処理を、1か所にまとめられる',
   learns: ['重複の排除', 'Merge Methods'],
   principles: ['dry'],
   checks: [
@@ -1324,6 +1333,7 @@ const memberRankBranchingStage: Stage = {
   problem: '会員ランクごとの振る舞いが条件分岐に集まっている',
   level: 'intermediate',
   title: '中級10: 会員ランクごとのif分岐をクラスに分ける',
+  outcome: '種類ごとの if 分岐を、種類ごとのクラスに分けられる',
   learns: ['分岐の分離', '継承'],
   principles: ['ocp'],
   checks: [
@@ -1470,6 +1480,7 @@ const layeredOrderApiStage: Stage = {
   problem: '注文APIに画面・業務・保存の処理が混在している',
   level: 'intermediate',
   title: '中級11: Controller に全部書いてある注文API',
+  outcome: 'API の処理を、一方通行の3つの層に分けられる',
   learns: ['層(Controller/Service/Repository)', '依存の向き'],
   principles: ['srp', 'adp'],
   checks: [
@@ -1589,6 +1600,7 @@ const middleManStage: Stage = {
   problem: '注文の受付とキャンセルが横流しだけの管理クラスを経由している',
   level: 'intermediate',
   title: '中級12: 横流しするだけの OrderManager',
+  outcome: '横流しするだけのクラスを、呼び出し元へ戻して消せる',
   learns: ['Middle Man', 'Inline Method / Inline Class'],
   principles: ['yagni'],
   checks: [

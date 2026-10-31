@@ -1463,6 +1463,44 @@ describe('模範解答の方針', () => {
   });
 });
 
+describe('ステージ一覧に出す outcome', () => {
+  it('全ステージで空でなく、40文字以内で、改行を含まない', () => {
+    // Arrange / Act
+    const invalid = stages.filter((stage) => stage.outcome.trim() === '' || [...stage.outcome].length > 40 || stage.outcome.includes('\n')).map((stage) => stage.id);
+
+    // Assert
+    expect(invalid).toEqual([]);
+  });
+
+  it('全ステージで「る」で終わり、数値条件(〜行)を含まない', () => {
+    // Arrange / Act
+    const invalid = stages.filter((stage) => !stage.outcome.endsWith('る') || /\d行/.test(stage.outcome)).map((stage) => stage.id);
+
+    // Assert
+    expect(invalid).toEqual([]);
+  });
+
+  it('ステージ間で重複せず、goal の流用でもない', () => {
+    // Arrange
+    const outcomes = stages.map((stage) => stage.outcome);
+
+    // Act
+    const reused = stages.filter((stage) => stage.outcome === stage.goal).map((stage) => stage.id);
+
+    // Assert
+    expect(new Set(outcomes).size).toBe(outcomes.length);
+    expect(reused).toEqual([]);
+  });
+
+  it('全ステージで100点までの目安の手数が1以上になる', () => {
+    // Arrange / Act
+    const invalid = stages.filter((stage) => (sampleMovesToPerfect(stage) ?? 0) < 1).map((stage) => stage.id);
+
+    // Assert
+    expect(invalid).toEqual([]);
+  });
+});
+
 describe('模範解答で100点に届く手数', () => {
   it('模範解答を持つ全ステージで、1以上かつ手順の長さ以下', () => {
     // Arrange

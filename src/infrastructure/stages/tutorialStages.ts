@@ -13,6 +13,7 @@ const extractMethodStage: Stage = {
   problem: 'printMonthlyReportに集計・計算・表の組み立て・出力がまとまっている',
   level: 'tutorial',
   title: 'チュートリアル1: 長いメソッドを分ける',
+  outcome: '長いメソッドから、まとまった処理を別のメソッドとして取り出せる',
   learns: ['Extract Method'],
   principles: ['srp'],
   checks: [
@@ -95,6 +96,7 @@ const orderServiceStage: Stage = {
   problem: '注文処理の中に税計算が含まれている',
   level: 'tutorial',
   title: 'チュートリアル2: 太った placeOrder',
+  outcome: '取り出したメソッドを、担当のクラスへドラッグで移せる',
   learns: ['Extract Method', 'Move Method'],
   principles: ['srp'],
   checks: [

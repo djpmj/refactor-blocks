@@ -1,10 +1,10 @@
 import { expect, test } from '@playwright/test';
 import { selectStage } from './selectStage.js';
 
-test('参考メニューは8個のツールバー操作の1つにまとまり、変更前の図を確認なしで開く', async ({ page }) => {
+test('参考メニューは9個のツールバー操作の1つにまとまり、変更前の図を確認なしで開く', async ({ page }) => {
   await page.goto('/');
   const toolbar = page.locator('.toolbar');
-  await expect(toolbar.getByRole('button')).toHaveCount(8);
+  await expect(toolbar.getByRole('button')).toHaveCount(9);
 
   const menuButton = page.getByTestId('reference-menu-button');
   await menuButton.focus();

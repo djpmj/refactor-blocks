@@ -312,6 +312,7 @@ export const blankDesignProblems: readonly BlankDesignProblem[] = [
     id: 'blank-order-shipping',
     level: 'beginner',
     title: '白紙1: 注文と発送',
+    outcome: '白紙から、変わる理由ごとに部品をクラスへ配置できる',
     learns: ['責務の分離', 'クラス設計'],
     checks: [
       {
@@ -388,6 +389,7 @@ export const blankDesignProblems: readonly BlankDesignProblem[] = [
     id: 'blank-room-reservation',
     level: 'beginner',
     title: '白紙2: 会議室の予約',
+    outcome: '白紙から、予約まわりの処理を責務ごとのクラスへ配置できる',
     learns: ['責務の分離', 'クラス設計'],
     responsibilityNames: { 'reservation-flow': '予約の流れ', availability: '空き確認', persistence: 'DBへの保存', calendar: 'カレンダー連携' },
     classNames: {
@@ -471,6 +473,7 @@ export const blankDesignProblems: readonly BlankDesignProblem[] = [
     id: 'blank-attendance',
     level: 'beginner',
     title: '白紙3: 勤怠の打刻',
+    outcome: '白紙から、勤怠まわりの処理を責務ごとのクラスへ配置できる',
     learns: ['責務の分離', 'クラス設計'],
     responsibilityNames: { 'attendance-flow': '打刻の流れ', persistence: 'DBへの保存', overtime: '残業の計算', alert: '上長への通知' },
     classNames: {

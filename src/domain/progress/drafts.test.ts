@@ -18,6 +18,7 @@ function stageOf(id: string, lines: number): Stage {
     problem: '',
     description: '',
     learns: ['Extract Method'],
+    outcome: '',
     checks: [],
     limits: { method: 10, class: 20, file: 30 },
     dependencyLimit: 3,
