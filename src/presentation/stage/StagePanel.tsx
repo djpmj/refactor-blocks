@@ -8,7 +8,7 @@ import { ReferenceMenu } from './ReferenceMenu';
 import { OperationGuideDialog } from '../guide/OperationGuideDialog';
 import { useGuideShortcut } from '../guide/useGuideShortcut';
 import { useGameStore } from '../store/useGameStore';
-import { describeScoreShort } from './describeScore';
+import { describeScoreShort, isStartingScore } from './describeScore';
 import { ScoreBreakdown } from './ScoreBreakdown';
 import { HintPopover } from './HintPopover';
 import { OperationHistoryPopover } from './OperationHistoryPopover';
@@ -167,7 +167,7 @@ function isFloorProgress(score: Score, celebration: ScoreCelebration): boolean {
 }
 
 /** 点数を丸いゲージで見せる。隣のテキストは減点の件数だけで、内訳は「減点の内訳」に出す。 */
-function ScoreBadge({ score }: Readonly<{ score: Score }>) {
+function ScoreBadge({ score, initialScore }: Readonly<{ score: Score; initialScore: Score }>) {
   const celebration = useGameStore((state) => state.celebration);
   const rising = celebration !== null && celebration.scoreAfter === score.total && celebration.scoreAfter > celebration.scoreBefore;
   const floorProgress = isFloorProgress(score, celebration);
@@ -184,15 +184,18 @@ function ScoreBadge({ score }: Readonly<{ score: Score }>) {
       <span className="score-badge__detail" data-testid="score">
         {describeScoreShort(score)}
       </span>
+      {isStartingScore(score, initialScore) && (
+        <span className="score-badge__start" data-testid="score-start-note" title="ステージを開いた時点の点数です。ここから100点を目指します">スタート時の点数</span>
+      )}
     </div>
   );
 }
 
 /** ヘッダーの右端: 点数のゲージ・テストの状態・減点の内訳。 */
-function ScoreArea({ stage, codebase, score, disabled }: Readonly<{ stage: Stage; codebase: Codebase; score: Score; disabled: boolean }>) {
+function ScoreArea({ stage, codebase, score, initialScore, disabled }: Readonly<{ stage: Stage; codebase: Codebase; score: Score; initialScore: Score; disabled: boolean }>) {
   return (
     <>
-      <ScoreBadge score={score} />
+      <ScoreBadge score={score} initialScore={initialScore} />
       <TestStatus stage={stage} codebase={codebase} />
       <ScoreBreakdown key={`${stage.id}-${String(disabled)}`} score={score} disabled={disabled} />
     </>
@@ -352,14 +355,14 @@ function useStageHintState(stageId: string, score: Score) {
   };
 }
 
-function StageHeader({ stage, codebase, score, investigating }: Readonly<{ stage: Stage; codebase: Codebase; score: Score; investigating: boolean }>) {
+function StageHeader({ stage, codebase, score, initialScore, investigating }: Readonly<{ stage: Stage; codebase: Codebase; score: Score; initialScore: Score; investigating: boolean }>) {
   return (
     <header className="stage-panel">
       <h1 className="stage-panel__title">{stage.title}</h1>
       <StageNavigation />
       <div className="stage-panel__spacer" />
       <CritiqueButton disabled={investigating} />
-      <ScoreArea stage={stage} codebase={codebase} score={score} disabled={investigating} />
+      <ScoreArea stage={stage} codebase={codebase} score={score} initialScore={initialScore} disabled={investigating} />
     </header>
   );
 }
@@ -397,7 +400,7 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
     <>
       <SpotlightTour />
       <ClearScreen />
-      <StageHeader stage={stage} codebase={codebase} score={score} investigating={investigating} />
+      <StageHeader stage={stage} codebase={codebase} score={score} initialScore={initialScore} investigating={investigating} />
       <CritiqueResult />
       <ManualFixSidebarOpener setSidebarOpen={setSidebarOpen} />
       <div className={`app__body${sidebarOpen ? ' app__body--sidebar-open' : ''}`} style={sidebarStyle}>

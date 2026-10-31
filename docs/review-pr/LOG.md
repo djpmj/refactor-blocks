@@ -38,6 +38,18 @@
 
 ## ログ一覧
 
+## 2026-10-31 07:45 UTC PR #386 ステージを開いた直後の点数に「スタート時の点数」の注記を出す (#361)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(178ファイル/2618件) / npm run lint ✅ / npm run typecheck ✅。差分をIssue #361/仕様書start-score-untouched-labelと照合(presentation層のみ、isStartingScoreで点数同一の間だけ注記)。E2Eはこの環境でブラウザ未導入のため未実行(PR本文では全件527 passed)
+- マージ: squash & delete-branch
+
+## 2026-10-31 03:30 UTC PR #385 減点が変わらなかった組み替えに、効いていない理由を出す (#362)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(178ファイル/2613件) / npm run lint ✅ / npm run typecheck ✅。差分をIssue #362と仕様書wrong-move-reason-hintの設計判断(配置が変わった時のみ・減点0と白紙設計は除外・presentation層のみ)と照合。E2Eはこの環境でブラウザ未導入のため未実行(PR本文では関係E2E 20件通過)
+- マージ: squash & delete-branch
+
 ## 2026-10-31 02:15 UTC PR #384 クイズ・ブランクモードの初回紹介ガイドを追加する (#354)
 
 - 判定: 合格(blocker無し)
@@ -204,23 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test(2150件)✅ / npm run lint ✅ / npm run typecheck ✅。差分をIssue #324・docs/specs/responsibility-label-names.mdの設計判断と照合。E2Eはこの環境で実行許可が無く未実行(PR本文では428件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-25 16:15 UTC PR #335 仕様書の例を実機に合わせて訂正する (#327の後始末)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(2138件)✅ / npm run lint ✅ / npm run typecheck ✅。文書のみの変更(docs/specs/tour-step-follows-state.mdの例を90→80点の実機結果に合わせて訂正)。仕様書は実装済み一覧に追加済みのため追記なし
-- マージ: squash & delete-branch
-
-## 2026-10-25 16:00 UTC PR #334 初回ツアーの改善を実装する (#327)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(2128件)✅ / npm run lint ✅ / npm run typecheck ✅。差分をIssue #327・docs/specs/tour-step-follows-state.mdの設計判断1〜7と照合。E2Eはこの環境で未実行(PR本文では423件成功)。仕様書の受け入れ基準2(B+C=90→80)は実機と不一致(suggestion)
-- マージ: squash & delete-branch
-
-## 2026-10-25 15:45 UTC PR #333 ロードマップに概念習得リストを追加 (#317)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(2127件)✅ / npm run lint ✅ / npm run typecheck ✅。isStageCleared・conceptMastery・ConceptMasteryList・表示切替をIssue #317・docs/specs/concept-mastery-map.mdと照合。E2Eはこの環境で未実行(PR本文では423件成功)
 - マージ: squash & delete-branch
 

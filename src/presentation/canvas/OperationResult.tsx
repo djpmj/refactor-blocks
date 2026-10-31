@@ -1,7 +1,7 @@
 import { useGameStore } from '../store/useGameStore';
 import type { OperationTone } from '../stage/describeOperationResult';
 
-const TONE_MARK: Record<OperationTone, string> = { better: '↑', worse: '↓', mixed: '↕' };
+const TONE_MARK: Record<OperationTone, string> = { better: '↑', worse: '↓', mixed: '↕', unchanged: '→' };
 
 /** 直前の操作で増えた・消えた減点を、キャンバス上部に1〜2行で示す。 */
 export function OperationResult() {
