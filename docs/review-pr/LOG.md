@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-11-01 09:20 UTC PR #398 サイドバーで変更カードをクリア条件より上に並べる (#389)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(179ファイル/2637件) / npm run lint ✅ / npm run typecheck ✅。差分をIssue #389と照合(StageSidebarの並び替え1行+E2E期待順序の更新のみ、順序依存CSSなし)。E2E(sidebar-structure)はこの環境でブラウザ未導入のため未実行(PR本文では単独再実行で全件成功)
+- マージ: squash & delete-branch
+
 ## 2026-11-01 07:55 UTC PR #397 ステージ一覧から1ステージ分の記録をリセットできるようにする (#360)
 
 - 判定: 合格(blocker無し)
@@ -210,11 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test(2228件)✅ / npm run lint ✅ / npm run typecheck ✅。差分をIssue #323・docs/specs/progress-export-import.mdと照合(入力検証・層境界)。E2Eはこの環境で実行できず未実行(PR本文では446件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-26 10:30 UTC PR #339 手数チャレンジ: 最少手数との比較とベスト記録を追加 (#319)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(2205件)✅ / npm run lint ✅ / npm run typecheck ✅。差分をIssue #319・docs/specs/move-count-challenge.mdの設計判断と照合。E2Eはこの環境でブラウザ未導入のため未実行(PR本文では440件成功)
 - マージ: squash & delete-branch
 

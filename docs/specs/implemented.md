@@ -190,3 +190,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [start-score-untouched-label](start-score-untouched-label.md) | 点数が開いたときと同じ間、ヘッダーのゲージに「スタート時の点数」と注記する |
 | [stage-prerequisite-note](stage-prerequisite-note.md) | 前提ステージが未クリアのとき、課題パネルに先にやるステージを案内し、ワンクリックで開ける |
 | [stage-record-reset](stage-record-reset.md) | ステージ一覧から1ステージ分の記録(点数・下書き・手数の自己ベスト・段階)だけをリセットする |
+| [sidebar-change-card-before-conditions](sidebar-change-card-before-conditions.md) | 左サイドバーで「もし、この変更が来たら?」の変更カードをクリア条件より上に並べる |
