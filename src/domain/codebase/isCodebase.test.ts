@@ -127,6 +127,8 @@ describe('isCodebase の変数の受け渡し', () => {
     ['uses が文字列配列でない', { fragment: { variables: { uses: [1] } } }],
     ['returns が配列でない', { method: { returns: 'x' } }],
     ['returns の type が無い', { method: { returns: [{ name: 'x' }] } }],
+    ['declares の type.csharp が文字列でない', { fragment: { variables: { declares: [{ name: 'x', type: { csharp: 1 } }] } } }],
+    ['returns の type.csharp が文字列でない', { method: { returns: [{ name: 'x', type: { csharp: {} } }] } }],
   ])('%sは拒否する', (_label, patch) => {
     // Arrange / Act / Assert
     expect(isCodebase(codebaseWith(patch))).toBe(false);

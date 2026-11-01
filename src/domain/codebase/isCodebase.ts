@@ -36,7 +36,7 @@ function isAutoNamed(value: unknown): boolean {
 }
 
 function isLocalVariable(v: Obj): boolean {
-  return isStr(v.name) && isObj(v.type);
+  return isStr(v.name) && isObj(v.type) && optional(v.type.csharp, isStr);
 }
 
 function isVariables(value: unknown): boolean {
