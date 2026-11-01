@@ -264,3 +264,68 @@ describe('generateClassSourceLines(行ごとのソース)', () => {
     expect(generateClassSource(twoFragments, 'none', 'csharp')).toBe('');
   });
 });
+
+describe('generateClassSourceLines の引数・戻り値・async', () => {
+  const decl = (name: string, type: string) => ({ name, type: { csharp: type } });
+  const code = (id: string, text: string) => ({ id, label: id, lines: 1, responsibility: 'x', code: { csharp: text } });
+  const call = (id: string, target: string, args: string) => ({ id, label: id, lines: 1, responsibility: 'call', uses: [target], callArguments: [args] });
+  function codebaseOf(methods: Codebase['files'][number]['classes'][number]['methods']): Codebase {
+    return { files: [{ id: 'f', path: 'x', classes: [{ id: 'c', name: 'C', methods }] }] };
+  }
+
+  it('戻り値1個のメソッドは型付きの宣言になり、末尾に return が出る', () => {
+    // Arrange
+    const codebase = codebaseOf([{ id: 't', name: 'CalculateTax', visibility: 'private', parameters: [{ type: 'decimal', name: 'subtotal' }], returns: [decl('taxAmount', 'decimal')], fragments: [code('a', 'var taxAmount = subtotal * 0.1m;')] }]);
+    // Act
+    const source = generateClassSource(codebase, 'c', 'csharp');
+    // Assert
+    expect(source).toContain('    private decimal CalculateTax(decimal subtotal)');
+    expect(source).toContain('        return taxAmount;\n    }');
+  });
+
+  it('戻り値2個は名前付きタプルになり、呼び出し側は var (a, b) = M(...); になる', () => {
+    // Arrange
+    const codebase = codebaseOf([
+      { id: 'm', name: 'Run', visibility: 'public', fragments: [call('k', 't', 'x')] },
+      { id: 't', name: 'Split', visibility: 'private', parameters: [{ type: 'int', name: 'x' }], returns: [decl('a', 'int'), decl('b', 'string')], fragments: [code('s', 'var a = x;')] },
+    ]);
+    // Act
+    const source = generateClassSource(codebase, 'c', 'csharp');
+    // Assert
+    expect(source).toContain('private (int a, string b) Split(int x)');
+    expect(source).toContain('        return (a, b);');
+    expect(source).toContain('        var (a, b) = Split(x);');
+  });
+
+  it('async なメソッドは async Task<T> になり、呼び出し側(も async)に await が付く', () => {
+    // Arrange
+    const codebase = codebaseOf([
+      { id: 'm', name: 'Run', visibility: 'public', fragments: [call('k', 't', '')] },
+      { id: 't', name: 'Load', visibility: 'private', returns: [decl('rows', 'List<int>')], fragments: [code('s', 'var rows = await repo.LoadAsync();')] },
+    ]);
+    // Act
+    const source = generateClassSource(codebase, 'c', 'csharp');
+    // Assert
+    expect(source).toContain('private async Task<List<int>> Load()');
+    expect(source).toContain('public async Task Run()');
+    expect(source).toContain('        var rows = await Load();');
+  });
+
+  it('戻り値の無い async メソッドは async Task になる', () => {
+    // Arrange
+    const codebase = codebaseOf([{ id: 't', name: 'Save', visibility: 'private', fragments: [code('s', 'await repo.SaveAsync();')] }]);
+    // Act
+    const source = generateClassSource(codebase, 'c', 'csharp');
+    // Assert
+    expect(source).toContain('private async Task Save()');
+  });
+
+  it('return 行はどの処理にも属さない', () => {
+    // Arrange
+    const codebase = codebaseOf([{ id: 't', name: 'F', visibility: 'private', returns: [decl('v', 'int')], fragments: [code('s', 'var v = 1;')] }]);
+    // Act
+    const lines = generateClassSourceLines(codebase, 'c', 'csharp');
+    // Assert
+    expect(lines.find((line) => line.text.includes('return v;'))?.fragmentId).toBeUndefined();
+  });
+});

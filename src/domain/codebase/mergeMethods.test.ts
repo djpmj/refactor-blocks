@@ -126,6 +126,27 @@ describe('mergeMethods', () => {
     expect(merged?.fragments).toEqual([{ id: 'method-merged:merge0', label: '送信ログを記録する', lines: 24, responsibility: 'logging', duplicateGroup: 'log-group' }]);
   });
 
+  it('統合後のメソッドは、Aの parameters / returns と、処理の variables を引き継ぐ', () => {
+    // Arrange
+    const variables = { declares: [{ name: 'message', type: { csharp: 'string' } }], uses: ['id'] };
+    const withData = mapClasses(fixture(), (owner) => ({
+      ...owner,
+      methods: owner.methods.map((item) => (item.id === 'method-a'
+        ? { ...item, parameters: [{ type: 'int', name: 'id' }], returns: variables.declares, fragments: item.fragments.map((f) => ({ ...f, variables })) }
+        : item)),
+    }));
+
+    // Act
+    const result = mergeMethods(withData, request());
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    const merged = findMethod(result.value, 'method-merged');
+    expect(merged?.parameters).toEqual([{ type: 'int', name: 'id' }]);
+    expect(merged?.returns).toEqual(variables.declares);
+    expect(merged?.fragments[0].variables).toEqual(variables);
+  });
+
   it('統合後のFragmentは重複元と同じコードを引き継ぎ、fragmentLinesがコードの行数と一致する', () => {
     // Arrange
     const duplicateCode = 'var message = BuildMessage();\n_logger.LogInformation(message);';

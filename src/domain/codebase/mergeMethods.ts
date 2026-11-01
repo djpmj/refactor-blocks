@@ -98,6 +98,7 @@ function mergeFragment(newMethodId: string, index: number, fragmentA: Fragment, 
     ...(uses.length === 0 ? {} : { uses }),
     ...(reads.length === 0 ? {} : { reads }),
     ...(writes.length === 0 ? {} : { writes }),
+    ...(fragmentA.variables === undefined ? {} : { variables: fragmentA.variables }),
   };
 }
 
@@ -149,6 +150,8 @@ export function mergeMethods(codebase: Codebase, request: MergeMethodsRequest): 
     id: request.newMethodId,
     name: request.newMethodName.trim(),
     visibility: methodA.visibility === 'protected' || methodB.visibility === 'protected' ? 'protected' : methodA.visibility,
+    ...(methodA.parameters === undefined ? {} : { parameters: methodA.parameters }),
+    ...(methodA.returns === undefined ? {} : { returns: methodA.returns }),
     fragments: methodA.fragments.map((fragmentA, index) => mergeFragment(request.newMethodId, index, fragmentA, methodB.fragments[index])),
   };
   const replaced = replaceMethods(codebase, validated.value, merged);
