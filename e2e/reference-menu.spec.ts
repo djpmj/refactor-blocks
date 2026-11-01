@@ -129,3 +129,84 @@ test('解答例プレビュー内のArrowDownはメニューに妨げられな�
 
   await expect(page.locator('html')).toHaveAttribute('data-arrow-down-prevented', 'false');
 });
+
+test('runtime を持つステージでは、メニューから C# プロジェクトの zip をダウンロードできる', async ({ page }) => {
+  await page.goto('/');
+  await selectStage(page, 'チュートリアル1: 長いメソッドを分ける', { completeOpeningFix: false });
+  await page.getByTestId('reference-menu-button').click();
+  await page.getByTestId('reference-source-download').click();
+  const dialog = page.getByTestId('source-download-dialog');
+  await expect(dialog).toContainText('Visual Studio');
+
+  const downloadPromise = page.waitForEvent('download');
+  await dialog.getByTestId('source-download-confirm').click();
+  const download = await downloadPromise;
+
+  expect(download.suggestedFilename()).toBe('tutorial-extract-method.zip');
+  await expect(dialog).not.toBeVisible();
+});
+
+test('runtime の無いステージでは、メニューに C# のダウンロードが出ない', async ({ page }) => {
+  await page.goto('/');
+  await selectStage(page, '中級1: 循環依存を断ち切る', { completeOpeningFix: false });
+  await page.getByTestId('reference-menu-button').click();
+  await expect(page.getByTestId('reference-before')).toBeVisible();
+  await expect(page.getByTestId('reference-source-download')).toHaveCount(0);
+});
+
+type DraftMethod = { id: string; name?: string; visibility?: string; fragments?: object[] };
+type DraftClass = { methods: DraftMethod[] };
+type DraftStore = Record<string, { codebase: { files: { classes: DraftClass[] }[] } }>;
+
+test('別クラスの private を使う状態では、ダイアログに「ビルドが通らない箇所」が出ても、キーボードだけでダウンロードできる', async ({ page }) => {
+  // Arrange: 抽出で2クラスにしたあと、下書きを書き換えて「別クラスの private メソッドを呼ぶ」状態にする
+  await page.goto('/');
+  await selectStage(page, 'チュートリアル1: 長いメソッドを分ける');
+  const source = await page.getByTestId('method-printMonthlyReport').boundingBox();
+  const pane = await page.locator('.react-flow__pane').boundingBox();
+  if (source === null || pane === null) throw new Error('要素の位置を取得できません');
+  await page.mouse.move(source.x + source.width / 2, source.y + source.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(source.x + source.width / 2 + 20, source.y + source.height / 2, { steps: 5 });
+  await page.mouse.move(pane.x + pane.width - 20, pane.y + pane.height - 20, { steps: 15 });
+  await page.mouse.up();
+  await expect(page.locator('.class-node')).toHaveCount(2);
+  await page.evaluate(() => {
+    const drafts: DraftStore = JSON.parse(localStorage.getItem('refactor-blocks:drafts') ?? '{}');
+    for (const draft of Object.values(drafts)) {
+      const classes = draft.codebase.files.flatMap((file) => file.classes);
+      const owner = classes.find((codeClass) => codeClass.methods.some((method) => method.id === 'method-print-monthly-report'));
+      const caller = classes.find((codeClass) => codeClass !== owner);
+      const target = owner?.methods.find((method) => method.id === 'method-print-monthly-report');
+      if (owner === undefined || caller === undefined || target === undefined) throw new Error('下書きの形が想定と違います');
+      target.visibility = 'private';
+      caller.methods.push({ id: 'method-caller', name: 'run', visibility: 'public', fragments: [{ id: 'frag-caller', label: '呼ぶ', lines: 1, responsibility: 'output', uses: ['method-print-monthly-report'], code: { csharp: 'printMonthlyReport();' } }] });
+    }
+    localStorage.setItem('refactor-blocks:drafts', JSON.stringify(drafts));
+  });
+  await page.reload();
+  await selectStage(page, 'チュートリアル1: 長いメソッドを分ける');
+
+  // Act: 開いて、Esc で閉じて、もう一度開く
+  const menuButton = page.getByTestId('reference-menu-button');
+  await menuButton.click();
+  await page.getByTestId('reference-source-download').click();
+  const dialog = page.getByTestId('source-download-dialog');
+  await expect(dialog.getByTestId('source-download-issues')).toContainText('1件');
+  await expect(dialog).toContainText('printMonthlyReport(private)');
+  await page.keyboard.press('Escape');
+  await expect(dialog).not.toBeVisible();
+  await menuButton.click();
+  await page.getByTestId('reference-source-download').click();
+
+  // Assert: 開いた直後は「ダウンロードする」にフォーカスがあり、Tab / Shift+Tab で「やめる」と行き来でき、Enter で問題があってもダウンロードできる
+  await expect(dialog.getByTestId('source-download-confirm')).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(dialog.getByRole('button', { name: 'やめる' })).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(dialog.getByTestId('source-download-confirm')).toBeFocused();
+  const downloadPromise = page.waitForEvent('download');
+  await page.keyboard.press('Enter');
+  expect((await downloadPromise).suggestedFilename()).toBe('tutorial-extract-method.zip');
+  await expect(dialog).not.toBeVisible();
+});
