@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-11-01 03:38 UTC PR #396 score-floor-progress の E2E で、開いた減点の内訳を閉じてから右クリックする
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅。E2Eヘルパー closeBreakdown 追加のみのテスト変更。E2Eはこの環境で実行許可が無く未実行
+- マージ: squash & delete-branch
+
 ## 2026-10-31 08:40 UTC PR #387 前提ステージが未クリアのとき、課題パネルに先にやるステージを案内する (#359)
 
 - 判定: 合格(blocker無し)
@@ -210,11 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test(2154件)✅ / npm run lint ✅ / npm run typecheck ✅。差分をIssue #318・docs/specs/manual-fix-read-vs-mark.mdの設計判断と照合。E2Eはこの環境でブラウザ未導入のため未実行(PR本文では429件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-26 09:30 UTC PR #337 クリアを習得として扱い、マイルストーン表示を追加する (#316)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(2177件)✅ / npm run lint ✅ / npm run typecheck ✅。差分をIssue #316・docs/specs/clear-means-learned.mdと照合(DDD層境界・isMilestonesの入力検証を確認)。E2Eはこの環境で実行許可が無く未実行(PR本文では434件成功)
 - マージ: squash & delete-branch
 
