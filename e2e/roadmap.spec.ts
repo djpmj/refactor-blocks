@@ -292,3 +292,88 @@ test('ステージ一覧の各カードに「できるようになること」�
   await expect(page.getByTestId('roadmap-outcome')).toHaveCount(cardCount);
   await expect(page.getByTestId('roadmap-estimate')).toHaveCount(cardCount);
 });
+
+const RESET_A = 'tutorial-extract-method';
+const RESET_B = 'tutorial-order-service';
+
+async function openRoadmapWithTwoCleared(page: import('@playwright/test').Page): Promise<void> {
+  await page.goto('/');
+  await page.evaluate(
+    ([a, b]) => localStorage.setItem('refactor-blocks:progress', JSON.stringify({ [a]: 100, [b]: 100 })),
+    [RESET_A, RESET_B],
+  );
+  await page.reload();
+  await page.getByTestId('roadmap-open').click();
+}
+
+test('ステージ一覧で1ステージの記録をリセットすると、そのカードだけ「未挑戦」に戻る', async ({ page }) => {
+  // Arrange
+  await openRoadmapWithTwoCleared(page);
+  await expect(page.getByTestId(`roadmap-card-${RESET_B}`)).toContainText('100点');
+
+  // Act
+  await page.getByTestId(`roadmap-reset-${RESET_B}`).click();
+  await page.getByTestId('roadmap-reset-apply').click();
+
+  // Assert
+  await expect(page.getByTestId('stage-roadmap')).toBeVisible();
+  await expect(page.getByTestId('roadmap-reset-confirm')).toHaveCount(0);
+  await expect(page.getByTestId(`roadmap-card-${RESET_B}`)).toContainText('未挑戦');
+  await expect(page.getByTestId(`roadmap-reset-${RESET_B}`)).toHaveCount(0);
+  await expect(page.getByTestId(`roadmap-stage-${RESET_B}`)).toBeFocused();
+  await expect(page.getByTestId(`roadmap-card-${RESET_A}`)).toContainText('100点');
+  await expect(page.getByTestId(`roadmap-reset-${RESET_A}`)).toBeVisible();
+  const stored = await page.evaluate(() => localStorage.getItem('refactor-blocks:progress'));
+  expect(stored).toBe(JSON.stringify({ [RESET_A]: 100 }));
+});
+
+test('記録のリセットは「やめる」で何も消えず、フォーカスがリセットボタンに戻る', async ({ page }) => {
+  // Arrange
+  await openRoadmapWithTwoCleared(page);
+  const reset = page.getByTestId(`roadmap-reset-${RESET_B}`);
+
+  // Act: キーボードだけで確認まで出す
+  await reset.focus();
+  await page.keyboard.press('Enter');
+
+  // Assert
+  await expect(page.getByTestId('roadmap-reset-confirm')).toBeVisible();
+  await expect(page.getByTestId('roadmap-reset-cancel')).toBeFocused();
+
+  // Act
+  await page.keyboard.press('Enter');
+
+  // Assert
+  await expect(page.getByTestId('roadmap-reset-confirm')).toHaveCount(0);
+  await expect(reset).toBeFocused();
+  await expect(page.getByTestId(`roadmap-card-${RESET_B}`)).toContainText('100点');
+});
+
+test('記録が無いステージのカードには「記録をリセット」が出ない', async ({ page }) => {
+  // Arrange
+  await openRoadmapWithTwoCleared(page);
+
+  // Assert
+  await expect(page.getByTestId('roadmap-reset-drill-extract-tail')).toHaveCount(0);
+});
+
+test('記録をリセットすると、そのステージが学べる概念ごとにクリア数が1ずつ減る', async ({ page }) => {
+  // Arrange
+  await openRoadmapWithTwoCleared(page);
+  const clearedTotal = async (): Promise<number> => {
+    await page.getByTestId('roadmap-view-concepts').click();
+    const texts = await page.getByTestId('concept-mastery-row').allTextContents();
+    await page.getByTestId('roadmap-view-stages').click();
+    return texts.reduce((sum, text) => sum + Number(/件中(\d+)件クリア/.exec(text)?.[1] ?? 0), 0);
+  };
+  const before = await clearedTotal();
+
+  // Act
+  await page.getByTestId(`roadmap-reset-${RESET_B}`).click();
+  await page.getByTestId('roadmap-reset-apply').click();
+
+  // Assert
+  await expect(page.getByTestId(`roadmap-card-${RESET_B}`)).toContainText('未挑戦');
+  // tutorial-order-service の learns は Extract Method と Move Method の2概念なので、合計は2減る
+  expect(await clearedTotal()).toBe(before - 2);
+});

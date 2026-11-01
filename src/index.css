@@ -640,6 +640,10 @@ input.class-node__name { width: 14ch; }
 .stage-roadmap__level h3 { margin: 12px 0 6px; font-size: 14px; }
 .stage-roadmap__cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; }
 .stage-roadmap__card { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; text-align: left; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
+.stage-roadmap__card-wrap { display: flex; flex-direction: column; gap: 4px; align-items: stretch; }
+.stage-roadmap__reset { align-self: flex-end; padding: 2px 8px; font-size: 12px; cursor: pointer; }
+.stage-roadmap__reset-confirm { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+.stage-roadmap__reset-confirm p { flex-basis: 100%; margin: 0; font-size: 13px; }
 .stage-roadmap__card--current { border: 3px solid var(--accent); padding: 8px; }
 .stage-roadmap__choose { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; width: 100%; padding: 0; border: 0; background: none; color: inherit; text-align: left; cursor: pointer; font: inherit; }
 .stage-roadmap__card-title { font-weight: bold; }

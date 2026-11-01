@@ -13,7 +13,7 @@ import { scoreCodebase } from '../../domain/scoring/score';
 import { sampleAnswerCodebase } from '../../domain/stage/sampleAnswer';
 import { putDraft } from '../../domain/progress/drafts';
 import { blankDesignProblems } from '../../infrastructure/blankDesigns/blankDesignProblems';
-import { saveDrafts } from '../../infrastructure/progress/draftStorage';
+import { loadDrafts, saveDrafts } from '../../infrastructure/progress/draftStorage';
 import { saveLastStageId } from '../../infrastructure/progress/lastStageStorage';
 import { operationTimeline } from '../stage/operationTimeline';
 
@@ -1493,5 +1493,122 @@ describe('operationLabels (操作の記録の操作名)', () => {
     // Assert
     expect(store.getState().codebase).toBe(before);
     expect(store.getState().operationLabels.get(before)).toBe('メソッドの抽出');
+  });
+});
+
+describe('resetStageRecord', () => {
+  const [first, second] = stages;
+  const draftOf = (stage: typeof first) => {
+    const codebase = sampleAnswerCodebase(stage);
+    return { codebase, drafts: putDraft({}, stage, codebase) };
+  };
+  const seed = () => {
+    localStorage.clear();
+    const drafts = { ...draftOf(first).drafts, ...draftOf(second).drafts };
+    saveDrafts(drafts);
+    saveLastStageId(first.id);
+    const store = createGameStore(stages, true, false);
+    for (const stage of [first, second]) {
+      store.getState().recordProgress(stage.id, 100);
+      store.getState().recordMoveBest(stage.id, 3);
+      store.getState().recordMilestone(stage.id, 'concept-check');
+    }
+    return store;
+  };
+
+  it('指定したステージの記録だけを4つの記録とlocalStorageから消し、もう片方は残す', () => {
+    // Arrange
+    const store = seed();
+
+    // Act
+    store.getState().resetStageRecord(second.id);
+
+    // Assert
+    const state = store.getState();
+    expect(state.progress[second.id]).toBeUndefined();
+    expect(state.moveBests[second.id]).toBeUndefined();
+    expect(state.milestones[second.id]).toBeUndefined();
+    expect(state.draftStageIds).toEqual([first.id]);
+    expect(state.progress[first.id]).toBe(100);
+    expect(state.moveBests[first.id]).toBe(3);
+    expect(state.milestones[first.id]).toEqual(['concept-check']);
+    expect(localStorage.getItem('refactor-blocks:progress')).toBe(JSON.stringify({ [first.id]: 100 }));
+    expect(localStorage.getItem('refactor-blocks:move-bests')).toBe(JSON.stringify({ [first.id]: 3 }));
+    expect(Object.keys(loadDrafts())).toEqual([first.id]);
+  });
+
+  it('今のステージをリセットすると初期コード・空の履歴に戻り、undoしても戻らず下書きも作り直されない', () => {
+    // Arrange
+    const store = seed();
+    const classId = allClasses(store.getState().codebase)[0].id;
+    expect(store.getState().renameClass(classId, 'RenamedForTest')).toBe(true);
+    expect(store.getState().history.past).not.toHaveLength(0);
+
+    // Act
+    store.getState().resetStageRecord(first.id);
+    store.getState().undo();
+
+    // Assert
+    const state = store.getState();
+    expect(state.codebase).toBe(first.codebase);
+    expect(state.history.past).toHaveLength(0);
+    expect(state.draftStageIds).toEqual([second.id]);
+    expect(Object.keys(loadDrafts())).toEqual([second.id]);
+  });
+
+  it('今のステージ以外をリセットしても、盤面と履歴は変わらない', () => {
+    // Arrange
+    const store = seed();
+    const before = store.getState();
+
+    // Act
+    store.getState().resetStageRecord(second.id);
+
+    // Assert
+    const after = store.getState();
+    expect(after.stage).toBe(before.stage);
+    expect(after.codebase).toBe(before.codebase);
+    expect(after.history).toBe(before.history);
+  });
+
+  it('変更依頼の途中で今のステージをリセットすると changeSession が null になる', () => {
+    // Arrange
+    const stage = stages.find((candidate) => candidate.changeRequests.length > 0) ?? first;
+    localStorage.clear();
+    const store = createGameStore([stage], true, false);
+    store.getState().startChangeRequests();
+    expect(store.getState().changeSession).not.toBeNull();
+
+    // Act
+    store.getState().resetStageRecord(stage.id);
+
+    // Assert
+    expect(store.getState().changeSession).toBeNull();
+  });
+
+  it('今のステージをリセットすると、開いていたクリア画面も閉じる', () => {
+    // Arrange
+    const store = seed();
+    store.setState({ clearScreen: { stageId: first.id } });
+
+    // Act
+    store.getState().resetStageRecord(first.id);
+
+    // Assert
+    expect(store.getState().clearScreen).toBeNull();
+  });
+
+  it('無いステージIDなら状態もlocalStorageも変わらない', () => {
+    // Arrange
+    const store = seed();
+    const before = store.getState();
+    const progressRaw = localStorage.getItem('refactor-blocks:progress');
+
+    // Act
+    store.getState().resetStageRecord('no-such-stage');
+
+    // Assert
+    expect(store.getState()).toBe(before);
+    expect(localStorage.getItem('refactor-blocks:progress')).toBe(progressRaw);
   });
 });

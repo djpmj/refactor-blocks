@@ -296,8 +296,8 @@ function StageSidebar({ stage, codebase, score, initialScore, investigating, hid
         <h3 id="stage-problem-title">困っていること</h3>
         <p>{stage.problem}</p>
       </section>
-      <ClearConditionList stage={stage} codebase={codebase} initial={initialScore} current={score} />
       {!investigating && <><ChangePainCard stage={stage} codebase={codebase} score={score.total} /><ManualFixPanel stage={stage} codebase={codebase} /></>}
+      <ClearConditionList stage={stage} codebase={codebase} initial={initialScore} current={score} />
       <details className="stage-panel__description">
         <summary>どんなコード?</summary>
         <p data-testid="stage-description">{stage.description}</p>
