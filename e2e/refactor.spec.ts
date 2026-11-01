@@ -66,15 +66,16 @@ test('左サイドバーの幅を変えても右サイドバーの幅は独立�
 
   // Act
   await leftHandle.focus();
-  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowLeft');
 
   // Assert
-  await expect(leftHandle).toHaveAttribute('aria-valuenow', '276');
+  await expect(leftHandle).toHaveAttribute('aria-valuenow', '464');
   await expect(rightSidebar).toHaveCSS('width', '360px');
 });
 
 /** 既存のテストは OrderService を分解するチュートリアル2を前提にしている。 */
 async function openOrderStage(page: Page) {
+  await page.setViewportSize({ width: 1800, height: 1000 });
   await page.goto('/');
   await page.getByTestId('editor-rail').click();
   await selectStage(page, 'チュートリアル2: 太った placeOrder');
@@ -1327,6 +1328,7 @@ test('メソッドをドラッグで移したあと Ctrl+Z で元のクラスに
 
 /** 上級2を100点にする: 各ゲートウェイの charge からログ記録を抽出して行数超過を解き、PaymentGateway を実装させる。 */
 async function solvePaymentStage(page: Page) {
+  await page.setViewportSize({ width: 1800, height: 1000 });
   await page.goto('/');
   await selectStage(page, '上級2: 決済ゲートウェイをインターフェース越しに呼ぶ');
   for (const [gateway, log] of [['Stripe', '決済ログを記録する(Stripe)'], ['Paypal', '決済ログを記録する(PayPal)']] as const) {

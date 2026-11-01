@@ -45,7 +45,7 @@ test('開始時に変更の痛みが見え、責務を寄せると直すクラ�
 });
 
 test('100点で理由を見せてサイドバーを一度だけ自動で開く', async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.setViewportSize({ width: 1399, height: 1000 });
   await page.goto('/');
   await selectStage(page, 'チュートリアル2: 太った placeOrder');
   const openToggle = page.getByRole('button', { name: 'サイドバーを開く' });

@@ -76,9 +76,11 @@ function StageNavigation() {
   );
 }
 
+const STAGE_SIDEBAR_MAX_WIDTH = 480;
+
 function useStageSidebarWidth() {
   const { width, handleProps } = useResizableSidebarWidth({
-    side: 'left', defaultWidth: 260, minWidth: 200, maxWidth: 480, ariaLabel: '課題の幅を変更',
+    side: 'left', defaultWidth: STAGE_SIDEBAR_MAX_WIDTH, minWidth: 200, maxWidth: STAGE_SIDEBAR_MAX_WIDTH, ariaLabel: '課題の幅を変更',
   });
   const style: CSSProperties & { readonly '--sidebar-width': string } = { '--sidebar-width': `${width}px` };
   return { handleProps, style };
