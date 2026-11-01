@@ -44,8 +44,11 @@ test('開始時に変更の痛みが見え、責務を寄せると直すクラ�
   await expect(card).toContainText('1 クラス');
 });
 
-test('100点で理由を見せてサイドバーを一度だけ自動で開く', async ({ page }) => {
-  await page.setViewportSize({ width: 1399, height: 1000 });
+const NARROW_VIEWPORTS = [{ width: 1280, height: 720 }, { width: 1366, height: 768 }] as const;
+
+for (const viewport of NARROW_VIEWPORTS) {
+test(`${viewport.width}x${viewport.height} でも100点で理由を見せてサイドバーを一度だけ自動で開く`, async ({ page }) => {
+  await page.setViewportSize(viewport);
   await page.goto('/');
   await selectStage(page, 'チュートリアル2: 太った placeOrder');
   const openToggle = page.getByRole('button', { name: 'サイドバーを開く' });
@@ -81,6 +84,7 @@ test('100点で理由を見せてサイドバーを一度だけ自動で開く',
   await expect(page.getByTestId('change-panel')).toBeVisible();
   await expect(page.locator('.change-pain')).toHaveCount(0);
 });
+}
 
 test('チュートリアル1の読む行数は実コードと一致する', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });

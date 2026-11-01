@@ -41,6 +41,7 @@ async function dragToEmptyCanvas(page: Page, source: Locator, pane: Locator) {
   await page.waitForTimeout(300);
 }
 
+// 上級2の変更依頼は1366pxだとキャンバスが足りず「実装を終える」まで進めないため、広い画面で行う(#400で調査)。
 async function openChangeRequestResult(page: Page) {
   await page.setViewportSize({ width: 1800, height: 1000 });
   await page.goto('/');

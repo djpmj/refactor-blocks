@@ -77,10 +77,19 @@ function StageNavigation() {
 }
 
 const STAGE_SIDEBAR_MAX_WIDTH = 480;
+const STAGE_SIDEBAR_MIN_WIDTH = 200;
+
+/** 1400px未満ではキャンバスを残すため、画面幅の35%までに抑える(#400)。 */
+// ponytail: 描画時に1回だけ評価しウィンドウのリサイズには追従しない、必要になったら resize イベントを購読する
+function stageSidebarMaxWidth(): number {
+  if (window.innerWidth >= 1400) return STAGE_SIDEBAR_MAX_WIDTH;
+  return Math.max(STAGE_SIDEBAR_MIN_WIDTH, Math.min(STAGE_SIDEBAR_MAX_WIDTH, Math.floor(window.innerWidth * 0.35)));
+}
 
 function useStageSidebarWidth() {
+  const maxWidth = stageSidebarMaxWidth();
   const { width, handleProps } = useResizableSidebarWidth({
-    side: 'left', defaultWidth: STAGE_SIDEBAR_MAX_WIDTH, minWidth: 200, maxWidth: STAGE_SIDEBAR_MAX_WIDTH, ariaLabel: '課題の幅を変更',
+    side: 'left', defaultWidth: maxWidth, minWidth: STAGE_SIDEBAR_MIN_WIDTH, maxWidth, ariaLabel: '課題の幅を変更',
   });
   const style: CSSProperties & { readonly '--sidebar-width': string } = { '--sidebar-width': `${width}px` };
   return { handleProps, style };

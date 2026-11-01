@@ -399,7 +399,7 @@ function CanvasFlow({ nodes, edges, onNodesChange, setFlow, contextMenu, selectM
         <Panel position="top-right">
           <button type="button" className="nodrag nopan" data-testid="canvas-arrange" aria-label="依存の向きに沿って並べ直す" onClick={arrange}>整列</button>
         </Panel>
-        <Panel position="top-center"><OperationResult /></Panel>
+        <Panel position="top-center" className="operation-result-panel"><OperationResult /></Panel>
         <DetailZoomNotice onZoom={onControlZoom} />
         <GhostAnimation nodes={nodes} />
         <FitViewOnLayoutChange stageId={stageId} fileCount={visibleFileCount} layoutResetCount={layoutResetCount} arrangeVersion={arrangeVersion} autoFitStateRef={autoFitStateRef} />
