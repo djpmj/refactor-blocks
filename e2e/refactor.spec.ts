@@ -75,7 +75,7 @@ test('左サイドバーの幅を変えても右サイドバーの幅は独立�
 
 /** 既存のテストは OrderService を分解するチュートリアル2を前提にしている。 */
 async function openOrderStage(page: Page) {
-  await page.setViewportSize({ width: 1800, height: 1000 });
+  await page.setViewportSize({ width: 1366, height: 768 });
   await page.goto('/');
   await page.getByTestId('editor-rail').click();
   await selectStage(page, 'チュートリアル2: 太った placeOrder');
@@ -1327,6 +1327,7 @@ test('メソッドをドラッグで移したあと Ctrl+Z で元のクラスに
 });
 
 /** 上級2を100点にする: 各ゲートウェイの charge からログ記録を抽出して行数超過を解き、PaymentGateway を実装させる。 */
+// 上級2の変更依頼は1366pxだとキャンバスが足りず「実装を終える」まで進めないため、広い画面で行う(#400で調査)。
 async function solvePaymentStage(page: Page) {
   await page.setViewportSize({ width: 1800, height: 1000 });
   await page.goto('/');

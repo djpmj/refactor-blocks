@@ -209,3 +209,23 @@ test('閉じたサイドバーのボタンをキーボードで操作できる',
   await expect(sidebar).toBeVisible();
   await expect(page.getByRole('button', { name: 'サイドバーを閉じる' })).toHaveAttribute('aria-expanded', 'true');
 });
+
+test('1400px未満では左サイドバーの初期幅が画面幅の35%に抑えられ、キーボードで狭められる', async ({ page }) => {
+  // Arrange
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto('/');
+  await selectStage(page, 'チュートリアル2: 太った placeOrder');
+  await page.getByRole('button', { name: 'サイドバーを開く' }).click();
+  const handle = page.getByRole('separator', { name: '課題の幅を変更' });
+
+  // Assert: 1280 * 0.35 = 448
+  await expect(handle).toHaveAttribute('aria-valuenow', '448');
+  await expect(handle).toHaveAttribute('aria-valuemax', '448');
+
+  // Act
+  await handle.focus();
+  await page.keyboard.press('ArrowLeft');
+
+  // Assert
+  await expect(handle).toHaveAttribute('aria-valuenow', '432');
+});
