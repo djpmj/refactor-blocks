@@ -1,4 +1,6 @@
 ﻿import type { Stage } from '../../domain/stage/Stage';
+import { tutorialExtractMethodRuntime } from './runtime/tutorial-extract-method';
+import { tutorialOrderServiceRuntime } from './runtime/tutorial-order-service';
 
 /** チュートリアル1: Extract Method だけで解ける。まとまった処理を1つ抜き出せば行数の上限に収まる。 */
 const extractMethodStage: Stage = {
@@ -10,16 +12,7 @@ const extractMethodStage: Stage = {
     "output": "OutputHandler",
   },
   id: 'tutorial-extract-method',
-  runtime: {
-    entryMethodId: 'method-print-monthly-report',
-    entryArguments: [],
-    // printMonthlyReport が変数として使う sales / currentMonth / previousMonth / _logger を、同じクラスの別ファイル(partial)で用意する
-    support: [
-      { path: 'Sale.cs', code: 'namespace RefactorBlocks;\n\npublic class Sale\n{\n    public int Month;\n    public decimal Amount;\n    public string ProductName;\n}\n' },
-      { path: 'FakeLogger.cs', code: 'namespace RefactorBlocks;\n\npublic class FakeLogger\n{\n    public void LogDebug(string message) { }\n}\n' },
-      { path: 'ReportServiceData.cs', code: 'namespace RefactorBlocks;\n\npublic partial class ReportService\n{\n    private readonly List<Sale> sales = new()\n    {\n        new Sale { Month = 9, ProductName = "りんご", Amount = 1200m },\n        new Sale { Month = 9, ProductName = "みかん", Amount = 800m },\n        new Sale { Month = 10, ProductName = "りんご", Amount = 1500m },\n        new Sale { Month = 10, ProductName = "みかん", Amount = 1000m },\n        new Sale { Month = 10, ProductName = "りんご", Amount = 500m },\n    };\n\n    private readonly int currentMonth = 10;\n    private readonly int previousMonth = 9;\n    private readonly FakeLogger _logger = new();\n}\n' },
-    ],
-  },
+  runtime: tutorialExtractMethodRuntime,
   problem: 'printMonthlyReportに集計・計算・表の組み立て・出力がまとまっている',
   level: 'tutorial',
   title: 'チュートリアル1: 長いメソッドを分ける',
@@ -74,13 +67,13 @@ const extractMethodStage: Stage = {
               {
                 id: 'method-print-monthly-report',
                 name: 'printMonthlyReport',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'List<Sale>', name: 'sales' }, { type: 'int', name: 'currentMonth' }, { type: 'int', name: 'previousMonth' }],
                 fragments: [
-                  { id: 'frag-aggregate-sales', label: '今月の売上を集計する', lines: 6, responsibility: 'aggregation', suggestedName: 'aggregateSales', code: { csharp: 'var monthlySales = sales\n    .Where(s => s.Month == currentMonth)\n    .Sum(s => s.Amount);\n\nvar transactionCount = sales\n    .Count(s => s.Month == currentMonth);' } },
-                  { id: 'frag-compare-last-month', label: '前月比を計算する', lines: 7, responsibility: 'aggregation', suggestedName: 'compareWithLastMonth', code: { csharp: 'var lastMonthSales = sales\n    .Where(s => s.Month == previousMonth)\n    .Sum(s => s.Amount);\n\nvar changeRate = lastMonthSales == 0\n    ? 0\n    : (monthlySales - lastMonthSales) / lastMonthSales;' } },
-                  { id: 'frag-table-header', label: '表のヘッダーを組み立てる', lines: 2, responsibility: 'formatting', suggestedName: 'buildTableHeader', code: { csharp: "var header = \"商品名 | 数量 | 売上\";\n_logger.LogDebug(\"表のヘッダーを組み立てる が完了しました\");" } },
-                  { id: 'frag-table-rows', label: '表の行を組み立てる', lines: 3, responsibility: 'formatting', suggestedName: 'buildTableRows', code: { csharp: 'var rows = sales\n    .GroupBy(s => s.ProductName)\n    .Select(group => $"{group.Key} | {group.Count()} | {group.Sum(s => s.Amount):C}");' } },
-                  { id: 'frag-print', label: '画面に出力する', lines: 9, responsibility: 'output', suggestedName: 'print', code: { csharp: '// レポートを出力する\nConsole.WriteLine(header);\n\nforeach (var row in rows)\n{\n    Console.WriteLine(row);\n}\n\nConsole.WriteLine($"前月比: {changeRate:P}");' } },
+                  { id: 'frag-aggregate-sales', label: '今月の売上を集計する', lines: 6, responsibility: 'aggregation', suggestedName: 'aggregateSales', code: { csharp: "var monthlySales = sales\n    .Where(s => s.Month == currentMonth)\n    .Sum(s => s.Amount);\n\nvar transactionCount = sales\n    .Count(s => s.Month == currentMonth);" }, variables: { declares: [{ name: 'monthlySales', type: { csharp: 'decimal' } }, { name: 'transactionCount', type: { csharp: 'int' } }], uses: ['sales', 'currentMonth'] } },
+                  { id: 'frag-compare-last-month', label: '前月比を計算する', lines: 7, responsibility: 'aggregation', suggestedName: 'compareWithLastMonth', code: { csharp: "var lastMonthSales = sales\n    .Where(s => s.Month == previousMonth)\n    .Sum(s => s.Amount);\n\nvar changeRate = lastMonthSales == 0\n    ? 0\n    : (monthlySales - lastMonthSales) / lastMonthSales;" }, variables: { declares: [{ name: 'lastMonthSales', type: { csharp: 'decimal' } }, { name: 'changeRate', type: { csharp: 'decimal' } }], uses: ['sales', 'previousMonth', 'monthlySales'] } },
+                  { id: 'frag-table-header', label: '表のヘッダーを組み立てる', lines: 2, responsibility: 'formatting', suggestedName: 'buildTableHeader', code: { csharp: "var header = \"商品名 | 数量 | 売上\";\nLog.Debug(\"表のヘッダーを組み立てる が完了しました\");" }, variables: { declares: [{ name: 'header', type: { csharp: 'string' } }] } },
+                  { id: 'frag-table-rows', label: '表の行を組み立てる', lines: 3, responsibility: 'formatting', suggestedName: 'buildTableRows', code: { csharp: "var rows = sales\n    .GroupBy(s => s.ProductName)\n    .Select(group => $\"{group.Key} | {group.Count()} | {group.Sum(s => s.Amount):C}\");" }, variables: { declares: [{ name: 'rows', type: { csharp: 'IEnumerable<string>' } }], uses: ['sales'] } },
+                  { id: 'frag-print', label: '画面に出力する', lines: 9, responsibility: 'output', suggestedName: 'print', code: { csharp: "// レポートを出力する\nConsole.WriteLine(header);\n\nforeach (var row in rows)\n{\n    Console.WriteLine(row);\n}\n\nConsole.WriteLine($\"前月比: {changeRate:P}\");" }, variables: { uses: ['header', 'rows', 'changeRate'] } },
                 ],
               },
             ],
@@ -103,6 +96,7 @@ const orderServiceStage: Stage = {
     "notification": "InvoiceMailer",
   },
   id: 'tutorial-order-service',
+  runtime: tutorialOrderServiceRuntime,
   problem: '注文処理の中に税計算が含まれている',
   level: 'tutorial',
   title: 'チュートリアル2: 太った placeOrder',
@@ -159,14 +153,14 @@ const orderServiceStage: Stage = {
               {
                 id: 'method-place-order',
                 name: 'placeOrder',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'List<OrderItem>', name: 'items' }, { type: 'string', name: 'productId' }, { type: 'int', name: 'quantity' }, { type: 'Order', name: 'order' }, { type: 'CancellationToken', name: 'cancellationToken' }],
                 fragments: [
-                  { id: 'frag-validate-items', label: '商品が空でないか検証する', lines: 2, responsibility: 'validation', suggestedName: 'validateItems' , code: { csharp: "if (items.Count == 0) throw new ValidationException(\"対象がありません\");\nif (items.Any(item => !item.IsValid)) throw new ValidationException(\"入力が不正です\");" }},
-                  { id: 'frag-validate-stock', label: '在庫があるか検証する', lines: 3, responsibility: 'validation', suggestedName: 'validateStock' , code: { csharp: "if (quantity <= 0) throw new ArgumentOutOfRangeException(nameof(quantity));\nif (!await _inventory.IsAvailableAsync(productId, quantity)) throw new InsufficientStockException(productId);\nawait _inventory.ReserveAsync(productId, quantity);" }},
-                  { id: 'frag-subtotal', label: '小計を計算する', lines: 2, responsibility: 'pricing', suggestedName: 'calculateSubtotal' , code: { csharp: "var total = items.Sum(item => item.Quantity * item.UnitPrice);\norder.Subtotal = decimal.Round(total, 2);" }},
-                  { id: 'frag-tax', label: '消費税を計算する(軽減税率あり)', lines: 4, responsibility: 'tax', suggestedName: 'calculateTax' , code: { csharp: "var taxRate = isReducedRate ? reducedTaxRate : standardTaxRate;\nvar taxAmount = decimal.Round(order.Subtotal * taxRate, 0, MidpointRounding.AwayFromZero);\norder.TaxAmount = taxAmount;\norder.Total = order.Subtotal + taxAmount;" }},
-                  { id: 'frag-save', label: '注文をDBに保存する', lines: 3, responsibility: 'persistence', suggestedName: 'saveOrder' , code: { csharp: "cancellationToken.ThrowIfCancellationRequested();\nawait _repository.SaveAsync(order, cancellationToken);\nawait _unitOfWork.CommitAsync(cancellationToken);" }},
-                  { id: 'frag-mail', label: '確認メールを送る', lines: 3, responsibility: 'notification', suggestedName: 'sendConfirmationMail' , code: { csharp: "var message = new MailMessage(order.CustomerEmail, \"注文確認\", $\"注文 {order.Id}: 合計 {order.Total:C}\");\nawait _mailer.SendAsync(message, cancellationToken);\nawait _mailAuditLog.RecordSentAsync(message.Id, cancellationToken);" }},
+                  { id: 'frag-validate-items', label: '商品が空でないか検証する', lines: 2, responsibility: 'validation', suggestedName: 'validateItems' , code: { csharp: "if (items.Count == 0) throw new ValidationException(\"対象がありません\");\nif (items.Any(item => !item.IsValid)) throw new ValidationException(\"入力が不正です\");" }, variables: { uses: ['items'] }},
+                  { id: 'frag-validate-stock', label: '在庫があるか検証する', lines: 3, responsibility: 'validation', suggestedName: 'validateStock' , code: { csharp: "if (quantity <= 0) throw new ArgumentOutOfRangeException(nameof(quantity));\nif (!await FakeInventory.IsAvailableAsync(productId, quantity)) throw new InsufficientStockException(productId);\nawait FakeInventory.ReserveAsync(productId, quantity);" }, variables: { uses: ['productId', 'quantity'] }},
+                  { id: 'frag-subtotal', label: '小計を計算する', lines: 2, responsibility: 'pricing', suggestedName: 'calculateSubtotal' , code: { csharp: "var total = items.Sum(item => item.Quantity * item.UnitPrice);\norder.Subtotal = decimal.Round(total, 2);" }, variables: { declares: [{ name: 'total', type: { csharp: 'decimal' } }], uses: ['items', 'order'] }},
+                  { id: 'frag-tax', label: '消費税を計算する(軽減税率あり)', lines: 4, responsibility: 'tax', suggestedName: 'calculateTax' , code: { csharp: "var taxRate = order.IsReducedRate ? TaxRates.Reduced : TaxRates.Standard;\nvar taxAmount = decimal.Round(order.Subtotal * taxRate, 0, MidpointRounding.AwayFromZero);\norder.TaxAmount = taxAmount;\norder.Total = order.Subtotal + taxAmount;" }, variables: { declares: [{ name: 'taxRate', type: { csharp: 'decimal' } }, { name: 'taxAmount', type: { csharp: 'decimal' } }], uses: ['order'] }},
+                  { id: 'frag-save', label: '注文をDBに保存する', lines: 3, responsibility: 'persistence', suggestedName: 'saveOrder' , code: { csharp: "cancellationToken.ThrowIfCancellationRequested();\nawait FakeOrderRepository.SaveAsync(order, cancellationToken);\nawait FakeUnitOfWork.CommitAsync(cancellationToken);" }, variables: { uses: ['order', 'cancellationToken'] }},
+                  { id: 'frag-mail', label: '確認メールを送る', lines: 3, responsibility: 'notification', suggestedName: 'sendConfirmationMail' , code: { csharp: "var message = new MailMessage(order.CustomerEmail, \"注文確認\", $\"注文 {order.Id}: 合計 {order.Total:C}\");\nawait FakeMailGateway.SendAsync(message, cancellationToken);\nawait FakeMailAuditLog.RecordSentAsync(message.Id, cancellationToken);" }, variables: { declares: [{ name: 'message', type: { csharp: 'MailMessage' } }], uses: ['order', 'cancellationToken'] }},
                 ],
               },
             ],

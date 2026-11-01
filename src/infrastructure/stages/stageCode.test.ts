@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { allClasses, fieldsOf } from '../../domain/codebase/Codebase';
 import { generateClassSource } from '../../domain/codebase/generateClassSource';
-import type { Fragment } from '../../domain/codebase/Codebase';
+import type { Fragment, Method } from '../../domain/codebase/Codebase';
 import type { Stage } from '../../domain/stage/Stage';
 import { blankDesignProblems } from '../blankDesigns/blankDesignProblems';
 import { stages } from './stageCatalog';
@@ -140,9 +140,9 @@ describe('ステージのC#コード', () => {
   it('請求書メールは保存済みPDFを添付し、メールを送る', () => {
     const code = fragmentById('frag-attach-mail').code?.csharp ?? '';
 
-    expect(code).toContain('_storage.DownloadAsync');
+    expect(code).toContain('FakeStorage.DownloadAsync');
     expect(code).toContain('message.Attachments.Add');
-    expect(code).toContain('_mailer.SendAsync');
+    expect(code).toContain('FakeMailGateway.SendAsync');
   });
 
   it('通知文の組み立てとメール/SMS送信を分け、SMSはSMSクライアントへ送る', () => {
@@ -507,5 +507,45 @@ describe('ステージのC#コード', () => {
 
     // Assert
     expect(missingTypes.map((field) => field.id)).toEqual([]);
+  });
+});
+
+/** メソッド1つ分の、変数のつながりの問題。 */
+function methodFlowProblems(stageId: string, method: Method): string[] {
+  const available = new Set((method.parameters ?? []).map((parameter) => parameter.name));
+  const problems: string[] = [];
+  for (const fragment of method.fragments) {
+    const unknown = (fragment.variables?.uses ?? []).filter((name) => !available.has(name));
+    problems.push(...unknown.map((name) => `${stageId}/${method.name}: ${fragment.id} が使う ${name} が、手前の処理や引数で作られていない`));
+    const declared = (fragment.variables?.declares ?? []).map((variable) => variable.name);
+    problems.push(...declared.filter((name) => available.has(name)).map((name) => `${stageId}/${method.name}: ${fragment.id} が作る ${name} がすでにある`));
+    declared.forEach((name) => available.add(name));
+  }
+  const missingReturns = (method.returns ?? []).filter((variable) => !available.has(variable.name));
+  return [...problems, ...missingReturns.map((variable) => `${stageId}/${method.name}: 戻り値 ${variable.name} をどの処理も作っていない`)];
+}
+
+/** runtime を持つステージの、メソッドごとの変数のつながりの問題を `ステージ/メソッド: 内容` で返す。 */
+function variableFlowProblems(): string[] {
+  return stages
+    .filter((stage) => stage.runtime !== undefined)
+    .flatMap((stage) => allClasses(stage.codebase).flatMap((codeClass) => codeClass.methods).flatMap((method) => methodFlowProblems(stage.id, method)));
+}
+
+describe('runtime を持つステージの変数', () => {
+  it('第4弾の7ステージが runtime を持つ', () => {
+    // Arrange
+    const ids = ['tutorial-extract-method', 'tutorial-order-service', 'drill-extract-tail', 'drill-extract-middle', 'drill-move-method', 'beginner-user-controller', 'beginner-invoice-service'];
+
+    // Act
+    const withRuntime = stages.filter((stage) => stage.runtime !== undefined).map((stage) => stage.id);
+    const missing = ids.filter((id) => !withRuntime.includes(id));
+
+    // Assert
+    expect(missing).toEqual([]);
+  });
+
+  it('全処理の variables.uses が、手前の処理かメソッドの引数で作られていて、同じ変数名を2つの処理が作っていない', () => {
+    expect(variableFlowProblems()).toEqual([]);
   });
 });

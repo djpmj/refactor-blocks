@@ -1,4 +1,6 @@
 ﻿import type { Stage } from '../../domain/stage/Stage';
+import { beginnerInvoiceServiceRuntime } from './runtime/beginner-invoice-service';
+import { beginnerUserControllerRuntime } from './runtime/beginner-user-controller';
 
 /** 初級1: 保存とメール送信まで抱えた UserController から、用意されたクラスへ処理を移す。 */
 const userControllerStage: Stage = {
@@ -10,6 +12,7 @@ const userControllerStage: Stage = {
     "notification": "WelcomeMailer",
   },
   id: 'beginner-user-controller',
+  runtime: beginnerUserControllerRuntime,
   problem: 'ユーザー登録に保存とメール送信がまとまっている',
   level: 'beginner',
   title: '初級1: 何でも屋の UserController',
@@ -65,22 +68,22 @@ const userControllerStage: Stage = {
               {
                 id: 'method-register-user',
                 name: 'registerUser',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'RegisterInput', name: 'input' }, { type: 'CancellationToken', name: 'cancellationToken' }],
                 fragments: [
-                  { id: 'frag-validate-input', label: '入力値を検証する', lines: 2, responsibility: 'http', suggestedName: 'validateInput' , code: { csharp: "if (string.IsNullOrWhiteSpace(input.Name)) throw new ValidationException(\"名前が必要です\");\nif (!EmailAddress.TryParse(input.Email, out _)) throw new ValidationException(\"メールアドレスが不正です\");" }},
-                  { id: 'frag-save-user', label: 'ユーザーをDBに保存する', lines: 3, responsibility: 'persistence', suggestedName: 'saveUser' , code: { csharp: "var user = User.Create(input.Name, input.Email);\nawait _repository.SaveAsync(user, cancellationToken);\nawait _unitOfWork.CommitAsync(cancellationToken);" }},
-                  { id: 'frag-welcome-mail', label: 'ようこそメールを送る', lines: 3, responsibility: 'notification', suggestedName: 'sendWelcomeMail' , code: { csharp: "var message = new MailMessage(user.Email, \"ようこそ\", $\"{user.Name} さん、登録ありがとうございます\");\nawait _mailer.SendAsync(message, cancellationToken);\nawait _mailAuditLog.RecordSentAsync(message.Id, cancellationToken);" }},
-                  { id: 'frag-register-response', label: 'レスポンスを組み立てる', lines: 3, responsibility: 'http', suggestedName: 'buildResponse' , code: { csharp: "var response = new ApiResponse(user.Id, user.Name, user.Email);\n_logger.LogDebug(\"登録済みユーザー {UserId} を返します\", user.Id);\nreturn Results.Created($\"/users/{user.Id}\", response);" }},
+                  { id: 'frag-validate-input', label: '入力値を検証する', lines: 2, responsibility: 'http', suggestedName: 'validateInput' , code: { csharp: "if (string.IsNullOrWhiteSpace(input.Name)) throw new ValidationException(\"名前が必要です\");\nif (!EmailAddress.TryParse(input.Email, out _)) throw new ValidationException(\"メールアドレスが不正です\");" }, variables: { uses: ['input'] }},
+                  { id: 'frag-save-user', label: 'ユーザーをDBに保存する', lines: 3, responsibility: 'persistence', suggestedName: 'saveUser' , code: { csharp: "var user = User.Create(input.Name, input.Email);\nawait FakeUserStore.SaveAsync(user, cancellationToken);\nawait FakeUnitOfWork.CommitAsync(cancellationToken);" }, variables: { declares: [{ name: 'user', type: { csharp: 'User' } }], uses: ['input', 'cancellationToken'] }},
+                  { id: 'frag-welcome-mail', label: 'ようこそメールを送る', lines: 3, responsibility: 'notification', suggestedName: 'sendWelcomeMail' , code: { csharp: "var message = new MailMessage(user.Email, \"ようこそ\", $\"{user.Name} さん、登録ありがとうございます\");\nawait FakeMailGateway.SendAsync(message, cancellationToken);\nawait FakeMailAuditLog.RecordSentAsync(message.Id, cancellationToken);" }, variables: { declares: [{ name: 'message', type: { csharp: 'MailMessage' } }], uses: ['user', 'cancellationToken'] }},
+                  { id: 'frag-register-response', label: 'レスポンスを組み立てる', lines: 3, responsibility: 'http', suggestedName: 'buildResponse' , code: { csharp: "var response = new ApiResponse(user.Id, user.Name, user.Email);\nLog.Debug($\"登録済みユーザー {user.Id} を返します\");\nResults.Created($\"/users/{user.Id}\", response);" }, variables: { declares: [{ name: 'response', type: { csharp: 'ApiResponse' } }], uses: ['user'] }},
                 ],
               },
               {
                 id: 'method-delete-user',
                 name: 'deleteUser',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'int', name: 'userId' }, { type: 'string', name: 'userName' }, { type: 'string', name: 'recipient' }, { type: 'string', name: 'subject' }, { type: 'CancellationToken', name: 'cancellationToken' }],
                 fragments: [
-                  { id: 'frag-delete-user', label: 'ユーザーをDBから削除する', lines: 3, responsibility: 'persistence', suggestedName: 'removeUserRecord' , code: { csharp: "cancellationToken.ThrowIfCancellationRequested();\nawait _repository.DeleteAsync(userId, cancellationToken);\nawait _unitOfWork.CommitAsync(cancellationToken);" }},
-                  { id: 'frag-farewell-mail', label: 'お別れメールを送る', lines: 4, responsibility: 'notification', suggestedName: 'sendFarewellMail' , code: { csharp: "var body = $\"{userName} さん、これまでご利用ありがとうございました\";\nvar message = new MailMessage(recipient, subject, body);\nawait _mailer.SendAsync(message, cancellationToken);\nawait _mailAuditLog.RecordSentAsync(message.Id, cancellationToken);" }},
-                  { id: 'frag-delete-response', label: 'レスポンスを組み立てる', lines: 3, responsibility: 'http', suggestedName: 'buildDeleteResponse' , code: { csharp: "if (input is null) throw new ArgumentNullException(nameof(input));\nvar response = new ApiResponse(statusCode, message);\nreturn Results.Json(response, statusCode: statusCode);" }},
+                  { id: 'frag-delete-user', label: 'ユーザーをDBから削除する', lines: 3, responsibility: 'persistence', suggestedName: 'removeUserRecord' , code: { csharp: "cancellationToken.ThrowIfCancellationRequested();\nawait FakeUserStore.DeleteAsync(userId, cancellationToken);\nawait FakeUnitOfWork.CommitAsync(cancellationToken);" }, variables: { uses: ['userId', 'cancellationToken'] }},
+                  { id: 'frag-farewell-mail', label: 'お別れメールを送る', lines: 4, responsibility: 'notification', suggestedName: 'sendFarewellMail' , code: { csharp: "var body = $\"{userName} さん、これまでご利用ありがとうございました\";\nvar message = new MailMessage(recipient, subject, body);\nawait FakeMailGateway.SendAsync(message, cancellationToken);\nawait FakeMailAuditLog.RecordSentAsync(message.Id, cancellationToken);" }, variables: { declares: [{ name: 'body', type: { csharp: 'string' } }, { name: 'message', type: { csharp: 'MailMessage' } }], uses: ['userName', 'recipient', 'subject', 'cancellationToken'] }},
+                  { id: 'frag-delete-response', label: 'レスポンスを組み立てる', lines: 3, responsibility: 'http', suggestedName: 'buildDeleteResponse' , code: { csharp: "if (userName is null) throw new ArgumentNullException(nameof(userName));\nvar response = new ApiResponse(204, $\"{userName} を削除しました\");\nResults.Json(response, statusCode: 204);" }, variables: { declares: [{ name: 'response', type: { csharp: 'ApiResponse' } }], uses: ['userName'] }},
                 ],
               },
             ],
@@ -112,6 +115,7 @@ const invoiceServiceStage: Stage = {
     "notification": "InvoiceMailer",
   },
   id: 'beginner-invoice-service',
+  runtime: beginnerInvoiceServiceRuntime,
   problem: '請求処理と明細計算が同じ場所にある',
   level: 'beginner',
   title: '初級2: クラスを自分で作る',
@@ -166,21 +170,21 @@ const invoiceServiceStage: Stage = {
               {
                 id: 'method-issue-invoice',
                 name: 'issueInvoice',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'List<InvoiceItem>', name: 'items' }, { type: 'decimal', name: 'discountRate' }, { type: 'Invoice', name: 'invoice' }, { type: 'CancellationToken', name: 'cancellationToken' }],
                 fragments: [
-                  { id: 'frag-sum-items', label: '明細の金額を合計する', lines: 2, responsibility: 'pricing', suggestedName: 'sumItems' , code: { csharp: "var total = items.Sum(item => item.Quantity * item.UnitPrice);\nsubtotal = decimal.Round(total, 2);" }},
-                  { id: 'frag-apply-discount', label: '割引を適用する', lines: 2, responsibility: 'pricing', suggestedName: 'applyDiscount' , code: { csharp: "var discount = subtotal * discountRate;\ninvoice.Total = subtotal - discount;" }},
-                  { id: 'frag-render-pdf', label: '請求書のPDFを描画する', lines: 3, responsibility: 'rendering', suggestedName: 'renderPdf' , code: { csharp: "var page = _pdfRenderer.CreatePage();\npage.DrawInvoice(invoice);\nvar document = _pdfRenderer.Render(page);" }},
-                  { id: 'frag-store-pdf', label: 'PDFをストレージに保存する', lines: 3, responsibility: 'storage', suggestedName: 'storePdf' , code: { csharp: "var key = $\"invoices/{invoice.Number}.pdf\";\nawait _storage.UploadAsync(key, document, cancellationToken);\nawait _storage.SetMetadataAsync(key, invoice.Number, cancellationToken);" }},
+                  { id: 'frag-sum-items', label: '明細の金額を合計する', lines: 2, responsibility: 'pricing', suggestedName: 'sumItems' , code: { csharp: "var total = items.Sum(item => item.Quantity * item.UnitPrice);\nvar subtotal = decimal.Round(total, 2);" }, variables: { declares: [{ name: 'total', type: { csharp: 'decimal' } }, { name: 'subtotal', type: { csharp: 'decimal' } }], uses: ['items'] }},
+                  { id: 'frag-apply-discount', label: '割引を適用する', lines: 2, responsibility: 'pricing', suggestedName: 'applyDiscount' , code: { csharp: "var discount = subtotal * discountRate;\ninvoice.Total = subtotal - discount;" }, variables: { declares: [{ name: 'discount', type: { csharp: 'decimal' } }], uses: ['subtotal', 'discountRate', 'invoice'] }},
+                  { id: 'frag-render-pdf', label: '請求書のPDFを描画する', lines: 3, responsibility: 'rendering', suggestedName: 'renderPdf' , code: { csharp: "var page = FakePdfRenderer.CreatePage();\npage.DrawInvoice(invoice);\nvar document = FakePdfRenderer.Render(page);" }, variables: { declares: [{ name: 'page', type: { csharp: 'PdfPage' } }, { name: 'document', type: { csharp: 'PdfDocument' } }], uses: ['invoice'] }},
+                  { id: 'frag-store-pdf', label: 'PDFをストレージに保存する', lines: 3, responsibility: 'storage', suggestedName: 'storePdf' , code: { csharp: "var key = $\"invoices/{invoice.Number}.pdf\";\nawait FakeStorage.UploadAsync(key, document, cancellationToken);\nawait FakeStorage.SetMetadataAsync(key, invoice.Number, cancellationToken);" }, variables: { declares: [{ name: 'key', type: { csharp: 'string' } }], uses: ['invoice', 'document', 'cancellationToken'] }},
                 ],
               },
               {
                 id: 'method-send-invoice',
                 name: 'sendInvoice',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'Invoice', name: 'invoice' }, { type: 'string', name: 'recipient' }, { type: 'string', name: 'body' }, { type: 'CancellationToken', name: 'cancellationToken' }],
                 fragments: [
-                  { id: 'frag-attach-mail', label: '請求書をメールに添付して送る', lines: 7, responsibility: 'notification', suggestedName: 'mailInvoice' , code: { csharp: "var key = $\"invoices/{invoice.Number}.pdf\";\nvar subject = $\"請求書 {invoice.Number} のご案内\";\nawait using var pdf = await _storage.DownloadAsync(key, cancellationToken);\nvar message = new MailMessage(recipient, subject, body);\nmessage.Attachments.Add(new Attachment(pdf, $\"{invoice.Number}.pdf\", \"application/pdf\"));\nawait _mailer.SendAsync(message, cancellationToken);\nawait _mailAuditLog.RecordSentAsync(message.Id, cancellationToken);" }},
-                  { id: 'frag-record-history', label: '送信履歴を記録する', lines: 4, responsibility: 'storage', suggestedName: 'recordHistory' , code: { csharp: "var history = new InvoiceDeliveryHistory(invoice.Number, recipient, DateTimeOffset.UtcNow);\nawait _historyRepository.AddAsync(history, cancellationToken);\nawait _unitOfWork.CommitAsync(cancellationToken);\n_logger.LogInformation(\"請求書 {Number} の送信履歴を記録しました\", invoice.Number);" }},
+                  { id: 'frag-attach-mail', label: '請求書をメールに添付して送る', lines: 7, responsibility: 'notification', suggestedName: 'mailInvoice' , code: { csharp: "var key = $\"invoices/{invoice.Number}.pdf\";\nvar subject = $\"請求書 {invoice.Number} のご案内\";\nawait using var pdf = await FakeStorage.DownloadAsync(key, cancellationToken);\nvar message = new MailMessage(recipient, subject, body);\nmessage.Attachments.Add(new Attachment(pdf, $\"{invoice.Number}.pdf\", \"application/pdf\"));\nawait FakeMailGateway.SendAsync(message, cancellationToken);\nawait FakeMailAuditLog.RecordSentAsync(message.Id, cancellationToken);" }, variables: { declares: [{ name: 'key', type: { csharp: 'string' } }, { name: 'subject', type: { csharp: 'string' } }, { name: 'pdf', type: { csharp: 'Stream' } }, { name: 'message', type: { csharp: 'MailMessage' } }], uses: ['invoice', 'recipient', 'body', 'cancellationToken'] }},
+                  { id: 'frag-record-history', label: '送信履歴を記録する', lines: 4, responsibility: 'storage', suggestedName: 'recordHistory' , code: { csharp: "var history = new InvoiceDeliveryHistory(invoice.Number, recipient, SampleData.Now);\nawait FakeHistoryRepository.AddAsync(history, cancellationToken);\nawait FakeUnitOfWork.CommitAsync(cancellationToken);\nLog.Info($\"請求書 {invoice.Number} の送信履歴を記録しました\");" }, variables: { declares: [{ name: 'history', type: { csharp: 'InvoiceDeliveryHistory' } }], uses: ['invoice', 'recipient', 'cancellationToken'] }},
                 ],
               },
             ],
