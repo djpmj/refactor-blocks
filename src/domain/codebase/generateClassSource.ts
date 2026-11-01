@@ -1,4 +1,5 @@
-import { fieldsOf, findClass, parentIds, type CodeLanguage, type Codebase, type CodeClass } from './Codebase';
+import { fieldsOf, findClass, parentIds, type LocalVariable, type CodeLanguage, type Codebase, type CodeClass } from './Codebase';
+import { isAsyncMethod } from './methodSignature';
 import { fragmentCode } from './fragmentCode';
 
 export type SourceLine = {
@@ -14,9 +15,33 @@ function plain(text: string): SourceLine {
   return { text };
 }
 
+function typeOf(item: LocalVariable, language: CodeLanguage): string {
+  return item.type[language] ?? 'object';
+}
+
+function plainReturnType(returns: readonly LocalVariable[], language: CodeLanguage): string | undefined {
+  if (returns.length === 0) return undefined;
+  if (returns.length === 1) return typeOf(returns[0], language);
+  const items = returns.map((item) => `${typeOf(item, language)} ${item.name}`);
+  return `(${items.join(', ')})`;
+}
+
+/** 戻り値の数に応じた型。0個は void、1個は T、2個以上は名前付きタプル。async なら Task で包む。 */
+function returnType(returns: readonly LocalVariable[], isAsync: boolean, language: CodeLanguage): string {
+  const plainType = plainReturnType(returns, language);
+  if (!isAsync) return plainType ?? 'void';
+  return plainType === undefined ? 'async Task' : `async Task<${plainType}>`;
+}
+
+function returnStatement(returns: readonly LocalVariable[]): string {
+  return returns.length === 1 ? `return ${returns[0].name};` : `return (${returns.map((item) => item.name).join(', ')});`;
+}
+
 function renderMethod(codebase: Codebase, method: CodeClass['methods'][number], language: CodeLanguage): SourceLine[] {
   const parameters = (method.parameters ?? []).map((parameter) => `${parameter.type} ${parameter.name}`).join(', ');
-  const declaration = `    ${method.visibility} void ${method.name}(${parameters})`;
+  const returns = method.returns ?? [];
+  const type = returnType(returns, isAsyncMethod(codebase, method.id), language);
+  const declaration = `    ${method.visibility} ${type} ${method.name}(${parameters})`;
   if (method.fragments.length === 0) return [plain(`${declaration};`)];
   const body = method.fragments.flatMap((fragment, index) => {
     const code = fragmentCode(codebase, fragment, language);
@@ -26,7 +51,8 @@ function renderMethod(codebase: Codebase, method: CodeClass['methods'][number], 
     const lines = texts.map((text): SourceLine => ({ text, fragmentId: fragment.id }));
     return [...(index > 0 ? [plain('')] : []), ...lines];
   });
-  return [plain(declaration), plain('    {'), ...body, plain('    }')];
+  const returnLines = returns.length === 0 ? [] : [plain(`        ${returnStatement(returns)}`)];
+  return [plain(declaration), plain('    {'), ...body, ...returnLines, plain('    }')];
 }
 
 /** クラスと各Fragmentに登録されたコードから、読み取り専用のC#風疑似ソースを、行ごとの所属処理つきで生成する。 */

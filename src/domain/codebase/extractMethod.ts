@@ -1,4 +1,5 @@
 import { findClassOfMethod, findMethod, mapClasses, type Codebase, type Fragment, type Method } from './Codebase';
+import { inferExtractedSignature } from './methodSignature';
 import { err, ok, type Result } from '../shared/Result';
 
 export type ExtractMethodRequest = {
@@ -71,10 +72,14 @@ export function extractMethod(codebase: Codebase, request: ExtractMethodRequest)
   const source = validated.value;
   const selected = new Set(request.fragmentIds);
   const name = request.newMethodName.trim();
+  const { parameters, returns } = inferExtractedSignature(source, request.fragmentIds);
   const extracted: Method = {
     id: request.newMethodId,
     name,
     visibility: 'private',
+    // ponytail: 型が無い変数は object にする。ステージ側が型を書く(4〜6本目)ので、足りなければそこで直す
+    ...(parameters.length === 0 ? {} : { parameters: parameters.map((item) => ({ type: item.type.csharp ?? 'object', name: item.name })) }),
+    ...(returns.length === 0 ? {} : { returns }),
     fragments: source.fragments.filter((fragment) => selected.has(fragment.id)),
   };
   const callFragment: Fragment = {
@@ -83,6 +88,10 @@ export function extractMethod(codebase: Codebase, request: ExtractMethodRequest)
     lines: CALL_LINES,
     responsibility: 'call',
     uses: [request.newMethodId],
+    ...(parameters.length === 0 ? {} : { callArguments: [parameters.map((item) => item.name).join(', ')] }),
+    ...(parameters.length === 0 && returns.length === 0
+      ? {}
+      : { variables: { ...(returns.length === 0 ? {} : { declares: returns }), ...(parameters.length === 0 ? {} : { uses: parameters.map((item) => item.name) }) } }),
   };
   const updatedSource: Method = { ...source, fragments: replaceWithCall(source, selected, callFragment) };
   return ok(

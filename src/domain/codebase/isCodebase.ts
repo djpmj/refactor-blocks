@@ -35,15 +35,23 @@ function isAutoNamed(value: unknown): boolean {
   return value === true;
 }
 
+function isLocalVariable(v: Obj): boolean {
+  return isStr(v.name) && isObj(v.type) && optional(v.type.csharp, isStr);
+}
+
+function isVariables(value: unknown): boolean {
+  return isObj(value) && optional(value.declares, (v) => allObjects(v, isLocalVariable)) && optional(value.uses, isStrArray);
+}
+
 function isFragment(f: Obj): boolean {
   const requiredOk = isStr(f.id) && isStr(f.label) && isStr(f.responsibility) && typeof f.lines === 'number' && Number.isInteger(f.lines) && f.lines >= 0;
   const arraysOk = [f.uses, f.reads, f.writes].every((value) => optional(value, isStrArray));
   const textsOk = [f.suggestedName, f.duplicateGroup].every((value) => optional(value, isStr));
-  return requiredOk && arraysOk && textsOk && optional(f.stub, isBool) && optional(f.accessor, isBool) && optional(f.code, isObj);
+  return requiredOk && arraysOk && textsOk && optional(f.stub, isBool) && optional(f.accessor, isBool) && optional(f.code, isObj) && optional(f.variables, isVariables);
 }
 
 function isMethod(m: Obj): boolean {
-  return isStr(m.id) && isStr(m.name) && isVisibility(m.visibility) && allObjects(m.fragments, isFragment);
+  return isStr(m.id) && isStr(m.name) && isVisibility(m.visibility) && allObjects(m.fragments, isFragment) && optional(m.returns, (v) => allObjects(v, isLocalVariable));
 }
 
 function isField(f: Obj): boolean {

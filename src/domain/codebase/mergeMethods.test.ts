@@ -97,6 +97,10 @@ function request(overrides: Partial<MergeMethodsRequest> = {}): MergeMethodsRequ
   return { methodAId: 'method-a', methodBId: 'method-b', newMethodId: 'method-merged', newMethodName: 'logNotification', ...overrides };
 }
 
+const testVariables = { declares: [{ name: 'message', type: { csharp: 'string' } }], uses: ['id'] };
+const withVariables = (item: Method): Method => ({ ...item, parameters: [{ type: 'int', name: 'id' }], returns: testVariables.declares, fragments: item.fragments.map((f) => ({ ...f, variables: testVariables })) });
+const withVariablesOnA = (codebase: Codebase): Codebase => mapClasses(codebase, (owner) => ({ ...owner, methods: owner.methods.map((item) => (item.id === 'method-a' ? withVariables(item) : item)) }));
+
 describe('mergeMethods', () => {
   it('別クラスにある形の一致した2つのprivateメソッドを統合すると、Aの位置に新メソッドが入りBからは消える', () => {
     // Arrange
@@ -124,6 +128,21 @@ describe('mergeMethods', () => {
     if (!result.ok) throw new Error(result.error);
     const merged = findMethod(result.value, 'method-merged');
     expect(merged?.fragments).toEqual([{ id: 'method-merged:merge0', label: '送信ログを記録する', lines: 24, responsibility: 'logging', duplicateGroup: 'log-group' }]);
+  });
+
+  it('統合後のメソッドは、Aの parameters / returns と、処理の variables を引き継ぐ', () => {
+    // Arrange
+    const withData = withVariablesOnA(fixture());
+
+    // Act
+    const result = mergeMethods(withData, request());
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    const merged = findMethod(result.value, 'method-merged');
+    expect(merged?.parameters).toEqual([{ type: 'int', name: 'id' }]);
+    expect(merged?.returns).toEqual(testVariables.declares);
+    expect(merged?.fragments[0].variables).toEqual(testVariables);
   });
 
   it('統合後のFragmentは重複元と同じコードを引き継ぎ、fragmentLinesがコードの行数と一致する', () => {

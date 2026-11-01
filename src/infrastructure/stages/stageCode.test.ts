@@ -419,9 +419,9 @@ describe('ステージのC#コード', () => {
     const source = generateClassSource(stage.codebase, cartClass.id, 'csharp');
 
     expect(source).toContain('calculateShippingFee(order);');
-    expect(source).toContain('addPoints(order);');
+    expect(source).toContain('await addPoints(order);');
     expect(source).toContain('void calculateShippingFee(Order order)');
-    expect(source).toContain('void addPoints(Order order)');
+    expect(source).toContain('async Task addPoints(Order order)');
   });
 
   it('call fragments with uses leave their C# code for automatic call generation', () => {

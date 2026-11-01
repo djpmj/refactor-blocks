@@ -3,6 +3,12 @@ export type Visibility = 'public' | 'private' | 'protected';
 /** コードプレビューに対応する言語。 */
 export type CodeLanguage = 'csharp';
 
+/** 処理が作るローカル変数。type は言語ごとの型(表示・コード生成用)。 */
+export type LocalVariable = {
+  readonly name: string;
+  readonly type: Partial<Record<CodeLanguage, string>>;
+};
+
 /**
  * メソッドの中の、切り出し可能な処理のまとまり。
  * responsibility は採点用の隠しタグで、プレイヤーには表示しない(例: 'validation' / 'tax' / 'io')。
@@ -41,6 +47,11 @@ export type Fragment = {
    * 全部の処理が accessor のメソッドを他の処理が呼ぶと、そのメソッドが読む・書くフィールドを読んだ・書いたものとして Feature Envy・カプセル化の破れを数える。省略時は通常の処理。
    */
   readonly accessor?: boolean;
+  /**
+   * この処理が作る(declares)・使う(uses)ローカル変数。Extract Method が引数と戻り値を決める元になる。
+   * 省略は「変数を作らず使わない」と同じ。1つの変数は1つの処理だけが作る前提(再代入は追わない)。
+   */
+  readonly variables?: { readonly declares?: readonly LocalVariable[]; readonly uses?: readonly string[] };
 };
 
 /** クラスが持つデータ。行数は持たない(クラス・ファイルの行数は今までどおりメソッドの Fragment だけから数える)。 */
@@ -60,6 +71,8 @@ export type Method = {
   readonly name: string;
   readonly visibility: Visibility;
   readonly parameters?: readonly { readonly type: string; readonly name: string }[];
+  /** 戻り値の変数(宣言順)。省略は void。末尾の return は、コード生成のときに足す。 */
+  readonly returns?: readonly LocalVariable[];
   readonly fragments: readonly Fragment[];
 };
 

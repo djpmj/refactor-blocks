@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { findMethod, mapClasses, type Codebase, type Method } from './Codebase';
 import { extractMethod, type ExtractMethodRequest } from './extractMethod';
+import { inlineMethod } from './inlineMethod';
 import { methodLines } from './lineCount';
 import { sampleCodebase } from './testFixtures';
 
@@ -152,5 +153,61 @@ describe('extractMethod', () => {
 
     // Assert
     expect(result).toEqual({ ok: false, error: expected });
+  });
+});
+
+describe('extractMethod のデータの受け渡し', () => {
+  const vars = (declares: { name: string; type: string }[], uses: string[]) => ({
+    declares: declares.map((item) => ({ name: item.name, type: { csharp: item.type } })),
+    uses,
+  });
+  function dataflowCodebase(): Codebase {
+    return {
+      files: [{ id: 'f', path: 'a.cs', classes: [{ id: 'c', name: 'C', methods: [{
+        id: 'm', name: 'run', visibility: 'public', parameters: [{ type: 'decimal', name: 'price' }],
+        fragments: [
+          { id: 'a', label: 'a', lines: 1, responsibility: 'x', variables: vars([{ name: 'subtotal', type: 'decimal' }], ['price']) },
+          { id: 'b', label: 'b', lines: 1, responsibility: 'y', variables: vars([{ name: 'taxAmount', type: 'decimal' }], ['subtotal']) },
+          { id: 'c', label: 'c', lines: 1, responsibility: 'z', variables: vars([], ['taxAmount']) },
+        ],
+      }] }] }],
+    };
+  }
+
+  it('抽出したメソッドに parameters / returns が付き、呼び出し処理の callArguments・variables が対応する', () => {
+    // Arrange
+    const codebase = dataflowCodebase();
+    // Act
+    const result = extractMethod(codebase, { sourceMethodId: 'm', fragmentIds: ['b'], newMethodId: 'm2', newMethodName: 'calculateTax' });
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    const extracted = findMethod(result.value, 'm2');
+    const call = findMethod(result.value, 'm')?.fragments[1];
+    expect(extracted?.parameters).toEqual([{ type: 'decimal', name: 'subtotal' }]);
+    expect(extracted?.returns).toEqual([{ name: 'taxAmount', type: { csharp: 'decimal' } }]);
+    expect(call?.callArguments).toEqual(['subtotal']);
+    expect(call?.variables).toEqual(vars([{ name: 'taxAmount', type: 'decimal' }], ['subtotal']));
+  });
+
+  it('variables の無い処理を抽出しても、parameters / returns / variables は付かない', () => {
+    // Arrange / Act
+    const result = extractMethod(sampleCodebase(), request());
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    expect(findMethod(result.value, 'method-tax')?.parameters).toBeUndefined();
+    expect(findMethod(result.value, 'method-tax')?.returns).toBeUndefined();
+    expect(findMethod(result.value, 'method-place')?.fragments[1].variables).toBeUndefined();
+  });
+
+  it('抽出したあとに Inline すると、元の処理の並び・variables に戻る', () => {
+    // Arrange
+    const codebase = dataflowCodebase();
+    const extracted = extractMethod(codebase, { sourceMethodId: 'm', fragmentIds: ['b'], newMethodId: 'm2', newMethodName: 'calculateTax' });
+    if (!extracted.ok) throw new Error(extracted.error);
+    // Act
+    const inlined = inlineMethod(extracted.value, 'm2');
+    // Assert
+    if (!inlined.ok) throw new Error(inlined.error);
+    expect(findMethod(inlined.value, 'm')).toEqual(findMethod(codebase, 'm'));
   });
 });

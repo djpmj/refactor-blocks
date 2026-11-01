@@ -66,6 +66,16 @@ function mergedCode(fragmentA: Fragment, fragmentB: Fragment): Partial<Pick<Frag
   return code === undefined ? {} : { code };
 }
 
+/** Aの suggestedName・duplicateGroup・variables をそのまま引き継ぐ。 */
+function inheritedFromA(fragmentA: Fragment): Partial<Pick<Fragment, 'suggestedName' | 'duplicateGroup' | 'variables'>> {
+  const { suggestedName, duplicateGroup, variables } = fragmentA;
+  return {
+    ...(suggestedName === undefined ? {} : { suggestedName }),
+    ...(duplicateGroup === undefined ? {} : { duplicateGroup }),
+    ...(variables === undefined ? {} : { variables }),
+  };
+}
+
 function validate(codebase: Codebase, request: MergeMethodsRequest): Result<Validated, MergeMethodsError> {
   const methodA = findMethod(codebase, request.methodAId);
   const ownerA = findClassOfMethod(codebase, request.methodAId);
@@ -93,8 +103,7 @@ function mergeFragment(newMethodId: string, index: number, fragmentA: Fragment, 
     responsibility: fragmentA.responsibility,
     lines: Math.max(fragmentA.lines, fragmentB.lines),
     ...mergedCode(fragmentA, fragmentB),
-    ...(fragmentA.suggestedName === undefined ? {} : { suggestedName: fragmentA.suggestedName }),
-    ...(fragmentA.duplicateGroup === undefined ? {} : { duplicateGroup: fragmentA.duplicateGroup }),
+    ...inheritedFromA(fragmentA),
     ...(uses.length === 0 ? {} : { uses }),
     ...(reads.length === 0 ? {} : { reads }),
     ...(writes.length === 0 ? {} : { writes }),
@@ -149,6 +158,8 @@ export function mergeMethods(codebase: Codebase, request: MergeMethodsRequest): 
     id: request.newMethodId,
     name: request.newMethodName.trim(),
     visibility: methodA.visibility === 'protected' || methodB.visibility === 'protected' ? 'protected' : methodA.visibility,
+    ...(methodA.parameters === undefined ? {} : { parameters: methodA.parameters }),
+    ...(methodA.returns === undefined ? {} : { returns: methodA.returns }),
     fragments: methodA.fragments.map((fragmentA, index) => mergeFragment(request.newMethodId, index, fragmentA, methodB.fragments[index])),
   };
   const replaced = replaceMethods(codebase, validated.value, merged);

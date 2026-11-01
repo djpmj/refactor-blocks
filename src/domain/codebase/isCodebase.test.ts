@@ -109,3 +109,28 @@ describe('isCodebase', () => {
     expect(result).toBe(true);
   });
 });
+
+describe('isCodebase の変数の受け渡し', () => {
+  it('variables・returns を持つ形を受け入れる', () => {
+    // Arrange
+    const value = codebaseWith({
+      fragment: { variables: { declares: [{ name: 'x', type: { csharp: 'int' } }], uses: ['y'] } },
+      method: { returns: [{ name: 'x', type: { csharp: 'int' } }] },
+    });
+    // Act / Assert
+    expect(isCodebase(value)).toBe(true);
+  });
+
+  it.each([
+    ['variables が配列', { fragment: { variables: [] } }],
+    ['declares の name が数値', { fragment: { variables: { declares: [{ name: 1, type: {} }] } } }],
+    ['uses が文字列配列でない', { fragment: { variables: { uses: [1] } } }],
+    ['returns が配列でない', { method: { returns: 'x' } }],
+    ['returns の type が無い', { method: { returns: [{ name: 'x' }] } }],
+    ['declares の type.csharp が文字列でない', { fragment: { variables: { declares: [{ name: 'x', type: { csharp: 1 } }] } } }],
+    ['returns の type.csharp が文字列でない', { method: { returns: [{ name: 'x', type: { csharp: {} } }] } }],
+  ])('%sは拒否する', (_label, patch) => {
+    // Arrange / Act / Assert
+    expect(isCodebase(codebaseWith(patch))).toBe(false);
+  });
+});
