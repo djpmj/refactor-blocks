@@ -3,6 +3,7 @@ import type { Codebase } from '../../domain/codebase/Codebase';
 import { sampleAnswerCodebase, sampleAnswerSteps, type SolutionStep } from '../../domain/stage/sampleAnswer';
 import type { Stage } from '../../domain/stage/Stage';
 import { SampleAnswerReplayDialog } from './SampleAnswerReplayDialog';
+import { SourceDownloadDialog } from './SourceDownloadDialog';
 import { CodebasePreviewDialog } from '../preview/CodebasePreviewDialog';
 import type { AnswerComparison } from '../preview/ComparisonPanes';
 import { scoreCodebase } from '../../domain/scoring/score';
@@ -71,13 +72,14 @@ function moveMenuFocus(event: KeyboardEvent<HTMLDivElement>, menuRef: RefObject<
   activateMenuItem(event);
 }
 
-function ReferenceMenuItems({ hasSampleAnswer, onBefore, onAnswer }: Readonly<{ hasSampleAnswer: boolean; onBefore: () => void; onAnswer: (answer: AnswerKind) => void }>) {
+function ReferenceMenuItems({ hasSampleAnswer, canDownload, onBefore, onAnswer, onDownload }: Readonly<{ hasSampleAnswer: boolean; canDownload: boolean; onBefore: () => void; onAnswer: (answer: AnswerKind) => void; onDownload: () => void }>) {
   const itemProps = { role: 'menuitem' as const, tabIndex: -1 };
   const unavailableTitle = hasSampleAnswer ? undefined : 'このステージには解答例が未登録です';
   return (
     <div className="reference-menu__items" role="menu" aria-label="参考・答え">
       <div className="reference-menu__group-label">参考</div>
       <button {...itemProps} type="button" data-testid="reference-before" onClick={onBefore}>変更前の図を見る</button>
+      {canDownload && <button {...itemProps} type="button" data-testid="reference-source-download" onClick={onDownload}>ソースをダウンロード(C#)</button>}
       <div className="reference-menu__divider" role="separator" />
       <div className="reference-menu__group-label">答え <small>(ネタバレ)</small></div>
       <button {...itemProps} type="button" data-testid="reference-sample" aria-disabled={!hasSampleAnswer} title={unavailableTitle} onClick={() => onAnswer('sample')}>解答例の図を見る</button>
@@ -179,6 +181,8 @@ export function ReferenceMenu({ stage, disabled, menuOpen, onMenuOpenChange, rev
 }>) {
   const [preview, setPreview] = useState<PreviewKind>(null);
   const [replaying, setReplaying] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const currentCodebase = useGameStore((state) => state.codebase);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const { pendingAnswer, openAnswer, closeConfirmation, chooseAnswer } = useReferenceAnswer(onMenuOpenChange, setPreview, setReplaying);
@@ -207,7 +211,8 @@ export function ReferenceMenu({ stage, disabled, menuOpen, onMenuOpenChange, rev
       >
         参考・答え ▾
       </button>
-      {menuOpen && <ReferenceMenuItems hasSampleAnswer={hasSampleAnswer} onBefore={() => { onMenuOpenChange(false); setPreview('before'); }} onAnswer={(answer) => { if (hasSampleAnswer) openAnswer(answer); }} />}
+      {menuOpen && <ReferenceMenuItems hasSampleAnswer={hasSampleAnswer} canDownload={stage.runtime !== undefined} onBefore={() => { onMenuOpenChange(false); setPreview('before'); }} onAnswer={(answer) => { if (hasSampleAnswer) openAnswer(answer); }} onDownload={() => { onMenuOpenChange(false); setDownloading(true); }} />}
+      {downloading && stage.runtime !== undefined && <SourceDownloadDialog stageId={stage.id} runtime={stage.runtime} codebase={currentCodebase} onClose={() => setDownloading(false)} />}
       <ReferenceMenuPopups
         stage={stage}
         preview={preview}

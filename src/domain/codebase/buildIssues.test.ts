@@ -1,0 +1,61 @@
+import { describe, expect, it } from 'vitest';
+import type { Codebase, CodeClass, Fragment, Visibility } from './Codebase';
+import { findBuildIssues } from './buildIssues';
+
+function callerClass(fragment: Partial<Fragment>): CodeClass {
+  return { id: 'c-a', name: 'A', methods: [{ id: 'm-a', name: 'run', visibility: 'public', fragments: [{ id: 'f', label: 'f', lines: 1, responsibility: 'call', ...fragment }] }] };
+}
+
+function codebaseWith(options: { readonly callerFragment: Partial<Fragment>; readonly visibility: Visibility; readonly sameClass?: boolean }): Codebase {
+  const target = { id: 'm-t', name: 'secret', visibility: options.visibility, fragments: [] };
+  const field = { id: 'fld', name: 'balance', visibility: options.visibility };
+  const caller = callerClass(options.callerFragment);
+  if (options.sameClass === true) {
+    return { files: [{ id: 'f1', path: 'A.cs', classes: [{ ...caller, methods: [...caller.methods, target], fields: [field] }] }] };
+  }
+  const owner: CodeClass = { id: 'c-b', name: 'B', methods: [target], fields: [field] };
+  return { files: [{ id: 'f1', path: 'A.cs', classes: [caller] }, { id: 'f2', path: 'B.cs', classes: [owner] }] };
+}
+
+describe('findBuildIssues', () => {
+  it('同じクラスの private メソッドを呼ぶ処理は問題にしない', () => {
+    // Arrange
+    const codebase = codebaseWith({ callerFragment: { uses: ['m-t'] }, visibility: 'private', sameClass: true });
+    // Act / Assert
+    expect(findBuildIssues(codebase)).toEqual([]);
+  });
+
+  it('別クラスの private メソッドを uses で呼ぶ処理を1件返す', () => {
+    // Arrange
+    const codebase = codebaseWith({ callerFragment: { uses: ['m-t'] }, visibility: 'private' });
+    // Act
+    const issues = findBuildIssues(codebase);
+    // Assert
+    expect(issues).toEqual([{ classId: 'c-a', methodId: 'm-a', memberName: 'secret', ownerClassId: 'c-b', reason: 'private-member' }]);
+  });
+
+  it('別クラスの private フィールドを reads / writes で使う処理を1件ずつ返す', () => {
+    // Arrange
+    const read = codebaseWith({ callerFragment: { reads: ['fld'] }, visibility: 'private' });
+    const write = codebaseWith({ callerFragment: { writes: ['fld'] }, visibility: 'private' });
+    // Act / Assert
+    expect(findBuildIssues(read)).toEqual([{ classId: 'c-a', methodId: 'm-a', memberName: 'balance', ownerClassId: 'c-b', reason: 'private-member' }]);
+    expect(findBuildIssues(write)).toHaveLength(1);
+  });
+
+  it('同じメンバーを複数の処理で使っても1件にまとめる', () => {
+    // Arrange
+    const codebase = codebaseWith({ callerFragment: { uses: ['m-t'], reads: ['fld'], writes: ['fld'] }, visibility: 'private' });
+    // Act
+    const issues = findBuildIssues(codebase);
+    // Assert
+    expect(issues.map((issue) => issue.memberName)).toEqual(['secret', 'balance']);
+  });
+
+  it.each(['public', 'protected'] as const)('%s のメンバーは問題にしない', (visibility) => {
+    // Arrange
+    const codebase = codebaseWith({ callerFragment: { uses: ['m-t'], reads: ['fld'] }, visibility });
+    // Act / Assert
+    expect(findBuildIssues(codebase)).toEqual([]);
+  });
+});

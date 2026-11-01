@@ -1,0 +1,11 @@
+/** ステージを C# のコンソールアプリとして実行するための情報。 */
+export type StageRuntime = {
+  /** 実行の入口にするメソッドのID。リファクタリングでクラスを移っても、IDで今の持ち主を探す。 */
+  readonly entryMethodId: string;
+  /** 入口のメソッドに渡す引数の C# の式(例: ['SampleData.Sales()'])。 */
+  readonly entryArguments: readonly string[];
+  /** ゲームのブロックにならない補助コード(データ型・リポジトリの偽物・サンプルデータ)。`Support/` の下に出す。 */
+  readonly support: readonly { readonly path: string; readonly code: string }[];
+  /** インターフェースの実装が複数あるときに、どれを注入するか(インターフェース名 → クラス名)。3本目で使う。 */
+  readonly bindings?: Readonly<Record<string, string>>;
+};

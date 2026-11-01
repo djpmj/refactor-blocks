@@ -7,6 +7,9 @@ export type SourceLine = {
   readonly fragmentId?: string;
 };
 
+/** クラス宣言の頭。画面の疑似ソースは 'public class'、C#プロジェクトは補助コードから足せるよう 'public partial class'。 */
+export type ClassDeclaration = 'public class' | 'public partial class';
+
 function plain(text: string): SourceLine {
   return { text };
 }
@@ -27,7 +30,7 @@ function renderMethod(codebase: Codebase, method: CodeClass['methods'][number], 
 }
 
 /** クラスと各Fragmentに登録されたコードから、読み取り専用のC#風疑似ソースを、行ごとの所属処理つきで生成する。 */
-export function generateClassSourceLines(codebase: Codebase, classId: string, language: CodeLanguage): SourceLine[] {
+export function generateClassSourceLines(codebase: Codebase, classId: string, language: CodeLanguage, declaration: ClassDeclaration = 'public class'): SourceLine[] {
   const codeClass = findClass(codebase, classId);
   if (codeClass === undefined) return [];
   const parents = parentIds(codeClass).map((id) => findClass(codebase, id)?.name).filter((name) => name !== undefined);
@@ -45,9 +48,9 @@ export function generateClassSourceLines(codebase: Codebase, classId: string, la
     ...renderMethod(codebase, method, language),
   ]);
   const members = [...fields, ...(fields.length > 0 && methods.length > 0 ? [plain('')] : []), ...methods];
-  return [plain(`public class ${codeClass.name}${inheritance}`), plain('{'), ...members, plain('}')];
+  return [plain(`${declaration} ${codeClass.name}${inheritance}`), plain('{'), ...members, plain('}')];
 }
 
-export function generateClassSource(codebase: Codebase, classId: string, language: CodeLanguage): string {
-  return generateClassSourceLines(codebase, classId, language).map((line) => line.text).join('\n');
+export function generateClassSource(codebase: Codebase, classId: string, language: CodeLanguage, declaration: ClassDeclaration = 'public class'): string {
+  return generateClassSourceLines(codebase, classId, language, declaration).map((line) => line.text).join('\n');
 }
