@@ -85,6 +85,7 @@ test('処理を抽出すると、移動と追加が色と文字で示され、�
 
 test('メソッドを別クラスへドラッグで移すと、移した処理に元のクラスからのラベルが付く', async ({ page }) => {
   // Arrange
+  await page.setViewportSize({ width: 1800, height: 1000 });
   await page.goto('/');
   await selectStage(page, STAGE_2);
   const method = page.getByTestId('method-placeOrder');

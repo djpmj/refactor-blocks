@@ -64,23 +64,35 @@ test('左サイドバーをドラッグとキーボードで調整し、開閉�
   const painDetails = sidebar.locator('.change-pain details');
   if (await painDetails.count() > 0) await painDetails.locator('summary').click();
   await sidebar.locator('.stage-panel__description summary').click();
-  await expect(handle).toHaveAttribute('aria-valuenow', '260');
+  await expect(handle).toHaveAttribute('aria-valuenow', '480');
   await expect(handle).toHaveAttribute('aria-valuemin', '200');
   await expect(handle).toHaveAttribute('aria-valuemax', '480');
 
-  // Act: 左サイドバーは右ドラッグで広がる
+  // Act: 初期の480pxは上限なので、右ドラッグ・→ では広がらない
   const handleBox = await handle.boundingBox();
   if (handleBox === null) throw new Error('リサイズハンドルが見つかりません');
   await page.mouse.move(handleBox.x + 3, handleBox.y + 100);
   await page.mouse.down();
   await page.mouse.move(handleBox.x + 103, handleBox.y + 100, { steps: 4 });
   await page.mouse.up();
-  await expect(handle).toHaveAttribute('aria-valuenow', '360');
+  await expect(handle).toHaveAttribute('aria-valuenow', '480');
+  await handle.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(handle).toHaveAttribute('aria-valuenow', '480');
+
+  // Act: 左ドラッグ・← で狭まる
+  const wideHandleBox = await handle.boundingBox();
+  if (wideHandleBox === null) throw new Error('リサイズハンドルが見つかりません');
+  await page.mouse.move(wideHandleBox.x + 3, wideHandleBox.y + 100);
+  await page.mouse.down();
+  await page.mouse.move(wideHandleBox.x - 97, wideHandleBox.y + 100, { steps: 4 });
+  await page.mouse.up();
+  await expect(handle).toHaveAttribute('aria-valuenow', '380');
   await handle.focus();
   await page.keyboard.press('ArrowLeft');
 
   // Assert
-  await expect(handle).toHaveAttribute('aria-valuenow', '344');
+  await expect(handle).toHaveAttribute('aria-valuenow', '364');
   const narrowedHandleBox = await handle.boundingBox();
   if (narrowedHandleBox === null) throw new Error('リサイズハンドルが見つかりません');
   await page.mouse.move(narrowedHandleBox.x + 3, narrowedHandleBox.y + 100);
@@ -108,7 +120,7 @@ test('左サイドバーをドラッグとキーボードで調整し、開閉�
   // Assert
   await expect(handle).toHaveAttribute('aria-valuenow', '216');
   await page.reload();
-  await expect(page.getByRole('separator', { name: '課題の幅を変更' })).toHaveAttribute('aria-valuenow', '260');
+  await expect(page.getByRole('separator', { name: '課題の幅を変更' })).toHaveAttribute('aria-valuenow', '480');
 });
 
 test('狭い画面では左サイドバーを85vwのドロワーとして重ねる', async ({ page }) => {

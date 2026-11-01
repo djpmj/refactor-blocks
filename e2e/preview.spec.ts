@@ -42,6 +42,7 @@ async function dragToEmptyCanvas(page: Page, source: Locator, pane: Locator) {
 }
 
 async function openChangeRequestResult(page: Page) {
+  await page.setViewportSize({ width: 1800, height: 1000 });
   await page.goto('/');
   await selectStage(page, '上級2: 決済ゲートウェイをインターフェース越しに呼ぶ');
   for (const [gateway, log] of [['Stripe', '決済ログを記録する(Stripe)'], ['Paypal', '決済ログを記録する(PayPal)']] as const) {
