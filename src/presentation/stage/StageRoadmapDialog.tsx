@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { retryMark, type AssistLevel } from '../../domain/progress/assists';
 import { conceptMastery, isStageCleared, recommendNextStage, recommendReviewStage, stageStatus, type StageStatus } from '../../domain/progress/roadmap';
 import type { Milestones } from '../../domain/progress/milestones';
+import type { MoveBests } from '../../domain/progress/moveBests';
 import type { Progress } from '../../domain/progress/Progress';
 import type { ReflectionNotes } from '../../domain/progress/reflectionNotes';
 import { summarizeQuizRecord } from '../../domain/quiz/quizRecord';
@@ -105,6 +106,44 @@ function StageCard({ stage, current, recommended, reviewRecommended, retry, stat
   );
 }
 
+type ResetControlProps = {
+  readonly stage: Stage;
+  readonly confirming: boolean;
+  readonly onAsk: () => void;
+  readonly onCancel: (button: HTMLElement) => void;
+  readonly onApply: (button: HTMLElement) => void;
+};
+
+/** カードの下に置く「記録をリセット」と、その場の確認。確認を出したら「やめる」にフォーカスを置く(Enter連打で誤って消さない)。 */
+function ResetControl({ stage, confirming, onAsk, onCancel, onApply }: ResetControlProps) {
+  return (
+    <>
+      <button
+        type="button"
+        className="stage-roadmap__reset"
+        aria-label={`${stage.title}の記録をリセット`}
+        data-testid={`roadmap-reset-${stage.id}`}
+        onClick={onAsk}
+      >
+        記録をリセット
+      </button>
+      {confirming && (
+        <div className="stage-roadmap__reset-confirm" role="group" aria-label="記録リセットの確認" data-testid="roadmap-reset-confirm">
+          <p>
+            {`『${stage.title}』の点数・下書き・手数の自己ベスト・クリアの印を消して、最初からやり直せるようにします。他のステージの記録は消えません。`}
+          </p>
+          <button type="button" data-testid="roadmap-reset-apply" onClick={(event) => { onApply(event.currentTarget); }}>
+            消す
+          </button>
+          <button type="button" autoFocus data-testid="roadmap-reset-cancel" onClick={(event) => { onCancel(event.currentTarget); }}>
+            やめる
+          </button>
+        </div>
+      )}
+    </>
+  );
+}
+
 type StageLevelsProps = {
   readonly stages: readonly Stage[];
   readonly currentId: string;
@@ -116,8 +155,23 @@ type StageLevelsProps = {
   readonly onChoose: (stageId: string) => void;
 };
 
+/** 記録がある = 自己ベスト・手数の自己ベスト・段階・下書きのどれかがある。 */
+function hasRecord(stageId: string, state: { progress: Progress; moveBests: MoveBests; milestones: Milestones; draftStageIds: readonly string[] }): boolean {
+  return Object.hasOwn(state.progress, stageId) || Object.hasOwn(state.moveBests, stageId)
+    || Object.hasOwn(state.milestones, stageId) || state.draftStageIds.includes(stageId);
+}
+
+/** フォーカスを、押したボタンを含むカードの中の対象(data-testid)へ移す。 */
+function focusInWrap(from: HTMLElement, testId: string): void {
+  from.closest('.stage-roadmap__card-wrap')?.querySelector<HTMLElement>(`[data-testid="${testId}"]`)?.focus();
+}
+
 function StageLevels({ stages, currentId, nextId, progress, reflectionNotes, milestones, draftStageIds, onChoose }: StageLevelsProps) {
   const assists = useGameStore((state) => state.assists);
+  const moveBests = useGameStore((state) => state.moveBests);
+  const resetStageRecord = useGameStore((state) => state.resetStageRecord);
+  // 確認は一度に1つだけ
+  const [resettingId, setResettingId] = useState<string | null>(null);
   const reviewId = recommendReviewStage(stages, progress, assists)?.id;
   // stages は変わらないので、目安の手数は最初の1回だけ計算する
   const estimates = useMemo(() => new Map(stages.map((stage) => [stage.id, sampleMovesToPerfect(stage)])), [stages]);
@@ -130,20 +184,37 @@ function StageLevels({ stages, currentId, nextId, progress, reflectionNotes, mil
         {stages
           .filter((stage) => stage.level === level)
           .map((stage) => (
-            <StageCard
-              key={stage.id}
-              stage={stage}
-              current={stage.id === currentId}
-              recommended={stage.id === nextId}
-              reviewRecommended={stage.id === reviewId}
-              retry={isStageCleared(stage.id, progress) ? retryMark(assists, stage.id) : undefined}
-              status={stageStatus(stage, progress, milestones, draftStageIds.includes(stage.id))}
-              note={reflectionNotes[stage.id]}
-              estimate={estimates.get(stage.id)}
-              onChoose={() => {
-                onChoose(stage.id);
-              }}
-            />
+            <div key={stage.id} className="stage-roadmap__card-wrap">
+              <StageCard
+                stage={stage}
+                current={stage.id === currentId}
+                recommended={stage.id === nextId}
+                reviewRecommended={stage.id === reviewId}
+                retry={isStageCleared(stage.id, progress) ? retryMark(assists, stage.id) : undefined}
+                status={stageStatus(stage, progress, milestones, draftStageIds.includes(stage.id))}
+                note={reflectionNotes[stage.id]}
+                estimate={estimates.get(stage.id)}
+                onChoose={() => {
+                  onChoose(stage.id);
+                }}
+              />
+              {hasRecord(stage.id, { progress, moveBests, milestones, draftStageIds }) && (
+                <ResetControl
+                  stage={stage}
+                  confirming={resettingId === stage.id}
+                  onAsk={() => { setResettingId(stage.id); }}
+                  onCancel={(button) => {
+                    setResettingId(null);
+                    focusInWrap(button, `roadmap-reset-${stage.id}`);
+                  }}
+                  onApply={(button) => {
+                    setResettingId(null);
+                    resetStageRecord(stage.id);
+                    focusInWrap(button, `roadmap-stage-${stage.id}`);
+                  }}
+                />
+              )}
+            </div>
           ))}
       </div>
     </section>

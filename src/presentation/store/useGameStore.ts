@@ -71,6 +71,7 @@ import { updateMoveBest, type MoveBests } from '../../domain/progress/moveBests'
 import { updateReflectionNote, type ReflectionNotes } from '../../domain/progress/reflectionNotes';
 import { isStageCleared } from '../../domain/progress/roadmap';
 import { updateProgress } from '../../domain/progress/updateProgress';
+import { withoutStage } from '../../domain/progress/withoutStage';
 import { loadAssists, saveAssists } from '../../infrastructure/progress/assistStorage';
 import { loadDrafts, saveDrafts } from '../../infrastructure/progress/draftStorage';
 import { loadLastStageId, saveLastStageId } from '../../infrastructure/progress/lastStageStorage';
@@ -213,6 +214,8 @@ type GameState = {
   advanceChangeRequest: () => void;
   endChangeRequests: () => void;
   resetStage: () => void;
+  /** そのステージの記録(自己ベスト・下書き・手数の自己ベスト・段階)を消す。今のステージなら盤面と履歴も初期状態に戻す。 */
+  resetStageRecord: (stageId: string) => void;
   selectStage: (stageId: string) => void;
   /** 前回の下書きから再開したか。次にコードが変わったら false に戻す。 */
   restoredDraft: boolean;
@@ -516,6 +519,42 @@ function resetActions(set: (partial: Partial<GameState>) => void, get: () => Gam
       const assists = resetAttempt(get().assists, get().stage.id);
       if (assists !== get().assists) saveAssists(assists);
       set({ assists, ...commit(get(), get().stage.codebase, '最初に戻す', false), layoutResetCount: get().layoutResetCount + 1, celebration: null, operationResult: null, ghost: null, manualFix: null, closingFixSolved: false, impactReviewOpen: false, extractDraft: null, focusedRule: null, hintTarget: null, hintTargetKey: null, previewRule: null, hoverPreviewRule: null, focusPreviewRule: null, selectedMethodId: null, selectedFieldId: null, message: null, notice: null });
+    },
+  };
+}
+
+/** 1ステージ分の記録を消す。下書きは createGameStore のクロージャ(holder)にあるので、ここで受け取る。 */
+function resetRecordActions(
+  set: (partial: Partial<GameState>) => void,
+  get: () => GameState,
+  holder: { drafts: Drafts },
+  saveDraftsOn: boolean,
+): Pick<GameState, 'resetStageRecord'> {
+  return {
+    resetStageRecord: (stageId) => {
+      if (!get().stages.some((stage) => stage.id === stageId)) return;
+      const { progress, moveBests, milestones, openingFixes } = get();
+      // ponytail: 保存に失敗すると再読み込みで記録が戻る。困る報告が出たら message で知らせる
+      const nextProgress = withoutStage(progress, stageId);
+      if (nextProgress !== progress) saveProgress(nextProgress);
+      const nextMoveBests = withoutStage(moveBests, stageId);
+      if (nextMoveBests !== moveBests) saveMoveBests(nextMoveBests);
+      const nextMilestones = withoutStage(milestones, stageId);
+      if (nextMilestones !== milestones) saveMilestones(nextMilestones);
+      holder.drafts = withoutStage(holder.drafts, stageId);
+      if (saveDraftsOn) saveDrafts(holder.drafts);
+      set({
+        progress: nextProgress,
+        moveBests: nextMoveBests,
+        milestones: nextMilestones,
+        draftStageIds: Object.keys(holder.drafts),
+        openingFixes: withoutStage(openingFixes, stageId),
+      });
+      if (get().stage.id !== stageId) return;
+      const board = selectStageState(get().stages, stageId, holder.drafts);
+      if (board === null) return;
+      get().endTour();
+      set({ ...board, layoutResetCount: get().layoutResetCount + 1, ghost: null, clearScreen: null });
     },
   };
 }
@@ -1075,7 +1114,7 @@ export function createGameStore(allStages: readonly Stage[], saveDraftsOn = true
       ...moveActions(apply, set, get),
       ...historyActions(set, get),
       ...changeSessionActions(set, get),
-      ...resetActions(set, get),
+      ...resetActions(set, get), ...resetRecordActions(set, get, holder, saveDraftsOn),
       selectStage: (stageId) => {
         const next = selectStageState(get().stages, stageId, holder.drafts);
         if (next !== null) {
