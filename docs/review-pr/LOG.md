@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-11-01 12:10 UTC PR #403 C#書き出しでクラス間の依存をコンストラクタ注入として配線する (#392)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅、差分がIssue #392・仕様 csharp-move-wiring とDDD層境界に沿うことを確認(E2EはPR本文の全件通過報告を参照)
+- マージ: squash & delete-branch
+
 ## 2026-11-01 11:20 UTC PR #402 メソッド抽出・統合で変数の受け渡しをC#コードに反映する (#391)
 
 - 判定: 合格(blocker無し)

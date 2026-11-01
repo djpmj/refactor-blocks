@@ -193,3 +193,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [sidebar-change-card-before-conditions](sidebar-change-card-before-conditions.md) | 左サイドバーで「もし、この変更が来たら?」の変更カードをクリア条件より上に並べる |
 | [left-sidebar-default-max-width](left-sidebar-default-max-width.md) | 左サイドバー(課題)を初期表示で上限の幅480pxにする |
 | [csharp-extract-dataflow](csharp-extract-dataflow.md) | 抽出したメソッドに引数・戻り値・async を付け、C#コードのプレビューに反映する |
+| [csharp-move-wiring](csharp-move-wiring.md) | C#書き出しでクラス間の依存をコンストラクタ注入として配線する |
