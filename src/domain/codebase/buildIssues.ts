@@ -1,4 +1,5 @@
 import { allClasses, fieldsOf, type Codebase, type CodeClass, type Method } from './Codebase';
+import { compositionOrder } from './csharpWiring';
 import { fieldOwnerMap, methodOwnerMap } from './dependencies';
 
 /** ゲームでは許されているが、C# ではビルドが通らない箇所。 */
@@ -9,7 +10,7 @@ export type BuildIssue = {
   readonly memberName: string;
   /** そのメンバーの持ち主のクラスID。 */
   readonly ownerClassId: string;
-  readonly reason: 'private-member';
+  readonly reason: 'private-member' | 'ambiguous-binding';
 };
 
 /** コードベース全体から1回だけ作る索引。メソッドごとに作り直さない。 */
@@ -34,9 +35,10 @@ function memberIssues(index: Index, codeClass: CodeClass, method: Method): Build
   return unique.map((member) => ({ classId: codeClass.id, methodId: method.id, memberName: member.name, ownerClassId: member.ownerId, reason: 'private-member' }));
 }
 
-/** 別クラスの private メンバー(メソッド・フィールド)を使っている箇所を、クラス・メソッドの順に返す。 */
-export function findBuildIssues(codebase: Codebase): readonly BuildIssue[] {
+/** 別クラスの private メンバー(メソッド・フィールド)を使っている箇所を、クラス・メソッドの順に返す。そのあとに、注入する実装が決められない箇所を続ける。 */
+export function findBuildIssues(codebase: Codebase, bindings?: Readonly<Record<string, string>>): readonly BuildIssue[] {
   const classes = allClasses(codebase);
   const index: Index = { classes, methodOwners: methodOwnerMap(codebase), fieldOwners: fieldOwnerMap(codebase) };
-  return classes.flatMap((codeClass) => codeClass.methods.flatMap((method) => memberIssues(index, codeClass, method)));
+  const privateIssues = classes.flatMap((codeClass) => codeClass.methods.flatMap((method) => memberIssues(index, codeClass, method)));
+  return [...privateIssues, ...compositionOrder(codebase, bindings).issues];
 }

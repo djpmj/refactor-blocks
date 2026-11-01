@@ -2,8 +2,8 @@ import { findMethod, type CodeLanguage, type LocalVariable, type Codebase, type 
 import { isAsyncMethod } from './methodSignature';
 import { CALL_RESPONSIBILITY } from '../scoring/responsibilities';
 
-/** Returns explicit or inferred source code for a fragment, if it has any. */
-export function fragmentCode(codebase: Codebase, fragment: Fragment, language: CodeLanguage): string | undefined {
+/** Returns explicit or inferred source code for a fragment, if it has any. receiverOf は呼ぶメソッドの受け手(別クラスなら `_taxCalculator` など)。 */
+export function fragmentCode(codebase: Codebase, fragment: Fragment, language: CodeLanguage, receiverOf?: (methodId: string) => string | undefined): string | undefined {
   const explicitCode = fragment.code?.[language];
   if (explicitCode !== undefined) return explicitCode;
 
@@ -15,7 +15,9 @@ export function fragmentCode(codebase: Codebase, fragment: Fragment, language: C
 
   return calledMethods
     .map((method, index) => {
-      const call = `${method.name}(${fragment.callArguments?.[index] ?? ''})`;
+      const receiver = receiverOf?.(method.id);
+      const prefix = receiver === undefined ? '' : receiver + '.';
+      const call = `${prefix}${method.name}(${fragment.callArguments?.[index] ?? ''})`;
       const awaited = isAsyncMethod(codebase, method.id) ? 'await ' : '';
       return `${returnPrefix(method.returns ?? [])}${awaited}${call};`;
     })

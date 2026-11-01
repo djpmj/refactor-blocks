@@ -328,4 +328,29 @@ describe('generateClassSourceLines の引数・戻り値・async', () => {
     // Assert
     expect(lines.find((line) => line.text.includes('return v;'))?.fragmentId).toBeUndefined();
   });
+
+  it('別クラスを呼ぶクラスに、private readonly フィールドとコンストラクタが出て、呼び出しは受け手付きになる', () => {
+    // Arrange
+    const codebase: Codebase = { files: [{ id: 'f', path: 'x', classes: [
+      { id: 'o', name: 'OrderService', methods: [{ id: 'm', name: 'Run', visibility: 'public', fragments: [{ id: 'f1', label: 'tax', lines: 1, responsibility: 'call', uses: ['t1'], callArguments: ['subtotal'] }] }] },
+      { id: 't', name: 'TaxCalculator', methods: [{ id: 't1', name: 'CalculateTax', visibility: 'public', fragments: [] }] },
+    ] }] };
+    // Act
+    const source = generateClassSource(codebase, 'o', 'csharp');
+    // Assert
+    expect(source).toContain('    private readonly TaxCalculator _taxCalculator;\n\n    public OrderService(TaxCalculator taxCalculator)\n    {\n        _taxCalculator = taxCalculator;\n    }\n\n    public void Run()');
+    expect(source).toContain('_taxCalculator.CalculateTax(subtotal);');
+  });
+
+  it('別クラスのフィールドを使うコードには受け手を付ける', () => {
+    // Arrange
+    const codebase: Codebase = { files: [{ id: 'f', path: 'x', classes: [
+      { id: 'o', name: 'Runner', methods: [{ id: 'm', name: 'Run', visibility: 'public', fragments: [{ id: 'f1', label: 'save', lines: 1, responsibility: 'x', code: { csharp: '_repository.Save();' }, reads: ['r'] }] }] },
+      { id: 's', name: 'Store', methods: [], fields: [{ id: 'r', name: '_repository', visibility: 'public', type: { csharp: 'Repo' } }] },
+    ] }] };
+    // Act
+    const source = generateClassSource(codebase, 'o', 'csharp');
+    // Assert
+    expect(source).toContain('_store._repository.Save();');
+  });
 });
