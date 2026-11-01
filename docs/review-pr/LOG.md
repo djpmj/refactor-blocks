@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-11-01 09:30 UTC PR #399 ステージのソースをC#の実行可能プロジェクトとして書き出す (#390)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(181ファイル/2654件) / npm run lint ✅ / npm run typecheck ✅。差分をIssue #390と照合(domainのcsharpProject/buildIssues/StageRuntime、infrastructureのzip、presentationのSourceDownloadDialog。zip-slipはsanitizeSourcePath経由で対策済み)。E2E(reference-menu)とdotnet検証はこの環境で実行できず未実行(PR本文に実測結果あり)
+- マージ: 見送り(.github/workflows/配下を含むためGitHub Appの権限で自動マージ不可。人が手動でマージする)
+
 ## 2026-11-01 09:20 UTC PR #398 サイドバーで変更カードをクリア条件より上に並べる (#389)
 
 - 判定: 合格(blocker無し)
