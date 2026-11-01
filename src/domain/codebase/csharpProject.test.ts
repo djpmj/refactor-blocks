@@ -64,7 +64,8 @@ describe('generateCSharpProject', () => {
     // Assert
     const program = contentOf(files, 'Demo/Program.cs');
     expect(program).toContain('static async Task Main()');
-    expect(program).toContain(`new ${owner}().run(SampleData.Sales(), 3);`);
+    expect(program).toContain(`var ${owner.toLowerCase()} = new ${owner}();`);
+    expect(program).toContain(`${owner.toLowerCase()}.run(SampleData.Sales(), 3);`);
   });
 
   it('runtime.support を Support/ の下にそのまま出す', () => {

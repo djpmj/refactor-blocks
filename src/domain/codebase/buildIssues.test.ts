@@ -58,4 +58,21 @@ describe('findBuildIssues', () => {
     // Act / Assert
     expect(findBuildIssues(codebase)).toEqual([]);
   });
+
+  it('実装が複数で bindings が無いインターフェースは ambiguous-binding として返す', () => {
+    // Arrange
+    const fragment = { id: 'f', label: 'f', lines: 1, responsibility: 'x' };
+    const codebase: Codebase = { files: [{ id: 'f', path: 'x', classes: [
+      { id: 'a', name: 'A', methods: [{ id: 'm', name: 'Run', visibility: 'public', fragments: [{ ...fragment, uses: ['i-do'] }] }] },
+      { id: 'i', name: 'IPolicy', methods: [{ id: 'i-do', name: 'Apply', visibility: 'public', fragments: [] }] },
+      { id: 'p1', name: 'P1', interfaceIds: ['i'], methods: [{ id: 'p1-do', name: 'Apply', visibility: 'public', fragments: [fragment] }] },
+      { id: 'p2', name: 'P2', interfaceIds: ['i'], methods: [{ id: 'p2-do', name: 'Apply', visibility: 'public', fragments: [fragment] }] },
+    ] }] };
+    // Act
+    const unbound = findBuildIssues(codebase);
+    const bound = findBuildIssues(codebase, { IPolicy: 'P1' });
+    // Assert
+    expect(unbound).toEqual([{ classId: 'a', methodId: 'm', memberName: 'IPolicy', ownerClassId: 'i', reason: 'ambiguous-binding' }]);
+    expect(bound).toEqual([]);
+  });
 });

@@ -1,5 +1,6 @@
 import type { StageRuntime } from '../stage/StageRuntime';
 import { findClassOfMethod, findMethod, type Codebase } from './Codebase';
+import { compositionOrder } from './csharpWiring';
 import { generateClassSource } from './generateClassSource';
 import { uniqueName } from './naming';
 
@@ -26,12 +27,20 @@ function csproj(projectName: string): string {
 }
 
 function program(codebase: Codebase, runtime: StageRuntime, projectName: string): string {
+  const plan = compositionOrder(codebase, runtime.bindings);
   const owner = findClassOfMethod(codebase, runtime.entryMethodId);
   const method = findMethod(codebase, runtime.entryMethodId);
-  const call = owner === undefined || method === undefined
+  const entryVariable = plan.steps.find((step) => step.classId === owner?.id)?.variable;
+  const call = entryVariable === undefined || method === undefined
     ? '// 入口のメソッドが見つかりません'
-    : `new ${owner.name}().${method.name}(${runtime.entryArguments.join(', ')});`;
-  return [`namespace ${projectName};`, '', 'public static class Program', '{', '    public static async Task Main()', '    {', `        ${call}`, '        await Task.CompletedTask;', '    }', '}', ''].join('\n');
+    : `${entryVariable}.${method.name}(${runtime.entryArguments.join(', ')});`;
+  const body = [
+    ...plan.steps.map((step) => `var ${step.variable} = new ${step.className}(${step.args.join(', ')});`),
+    ...plan.lateAssignments.map((assignment) => `${assignment.variable}.${assignment.property} = ${assignment.value};`),
+    call,
+    'await Task.CompletedTask;',
+  ].map((line) => `        ${line}`);
+  return [`namespace ${projectName};`, '', 'public static class Program', '{', '    public static async Task Main()', '    {', ...body, '    }', '}', ''].join('\n');
 }
 
 // Windows のファイル名に使えない文字と制御文字(コードポイント 0〜31)

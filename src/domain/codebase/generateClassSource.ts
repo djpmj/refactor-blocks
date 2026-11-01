@@ -1,6 +1,7 @@
 import { fieldsOf, findClass, parentIds, type LocalVariable, type CodeLanguage, type Codebase, type CodeClass } from './Codebase';
 import { isAsyncMethod } from './methodSignature';
 import { fragmentCode } from './fragmentCode';
+import { qualifyFragmentCode, receiverOfMethod, wiringOf, type ClassWiring } from './csharpWiring';
 
 export type SourceLine = {
   readonly text: string;
@@ -37,14 +38,15 @@ function returnStatement(returns: readonly LocalVariable[]): string {
   return returns.length === 1 ? `return ${returns[0].name};` : `return (${returns.map((item) => item.name).join(', ')});`;
 }
 
-function renderMethod(codebase: Codebase, method: CodeClass['methods'][number], language: CodeLanguage): SourceLine[] {
+function renderMethod(codebase: Codebase, method: CodeClass['methods'][number], language: CodeLanguage, wiring: ClassWiring): SourceLine[] {
   const parameters = (method.parameters ?? []).map((parameter) => `${parameter.type} ${parameter.name}`).join(', ');
   const returns = method.returns ?? [];
   const type = returnType(returns, isAsyncMethod(codebase, method.id), language);
   const declaration = `    ${method.visibility} ${type} ${method.name}(${parameters})`;
   if (method.fragments.length === 0) return [plain(`${declaration};`)];
   const body = method.fragments.flatMap((fragment, index) => {
-    const code = fragmentCode(codebase, fragment, language);
+    const rawCode = fragmentCode(codebase, fragment, language, (methodId) => receiverOfMethod(codebase, wiring.receivers, methodId));
+    const code = rawCode === undefined ? undefined : qualifyFragmentCode(codebase, wiring.receivers, fragment, rawCode);
     const texts = code === undefined
       ? [`        // 未入力: ${fragment.label}`]
       : [`        // ${fragment.label}`, ...code.split('\n').map((line) => `        ${line}`)];
@@ -69,11 +71,13 @@ export function generateClassSourceLines(codebase: Codebase, classId: string, la
       plain(`    ${field.visibility} ${type} ${field.name};`),
     ];
   });
+  const wiring = wiringOf(codebase, classId);
   const methods = codeClass.methods.flatMap((method, index) => [
     ...(index > 0 ? [plain('')] : []),
-    ...renderMethod(codebase, method, language),
+    ...renderMethod(codebase, method, language, wiring),
   ]);
-  const members = [...fields, ...(fields.length > 0 && methods.length > 0 ? [plain('')] : []), ...methods];
+  const injected = wiring.declarations.map(plain);
+  const members = [fields, injected, methods].filter((group) => group.length > 0).flatMap((group, index) => [...(index > 0 ? [plain('')] : []), ...group]);
   return [plain(`${declaration} ${codeClass.name}${inheritance}`), plain('{'), ...members, plain('}')];
 }
 

@@ -9,13 +9,14 @@ function issueText(codebase: Codebase, issue: ReturnType<typeof findBuildIssues>
   const className = findClass(codebase, issue.classId)?.name ?? issue.classId;
   const methodName = findMethod(codebase, issue.methodId)?.name ?? issue.methodId;
   const ownerName = findClass(codebase, issue.ownerClassId)?.name ?? issue.ownerClassId;
+  if (issue.reason === 'ambiguous-binding') return `${className}.${methodName} が使う ${ownerName} の実装が複数あり、どれを使うか決められない`;
   return `${className}.${methodName} が ${ownerName}.${issue.memberName}(private)を使っている`;
 }
 
 /** C# プロジェクトのダウンロード前に開く確認ダイアログ。ビルドが通らない箇所があっても、そのままダウンロードできる。 */
 export function SourceDownloadDialog({ stageId, runtime, codebase, onClose }: Readonly<{ stageId: string; runtime: StageRuntime; codebase: Codebase; onClose: () => void }>) {
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const issues = useMemo(() => findBuildIssues(codebase), [codebase]);
+  const issues = useMemo(() => findBuildIssues(codebase, runtime.bindings), [codebase, runtime.bindings]);
   useEffect(() => {
     dialogRef.current?.showModal();
   }, []);
@@ -32,7 +33,7 @@ export function SourceDownloadDialog({ stageId, runtime, codebase, onClose }: Re
         <>
           <p data-testid="source-download-issues">この状態ではビルドが通らない箇所: {issues.length}件</p>
           <ul>
-            {issues.map((issue) => <li key={`${issue.methodId}-${issue.ownerClassId}-${issue.memberName}`}>{issueText(codebase, issue)}</li>)}
+            {issues.map((issue) => <li key={`${issue.reason}-${issue.methodId}-${issue.ownerClassId}-${issue.memberName}`}>{issueText(codebase, issue)}</li>)}
           </ul>
         </>
       )}
