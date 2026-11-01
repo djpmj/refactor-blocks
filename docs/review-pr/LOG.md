@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-11-01 11:20 UTC PR #402 メソッド抽出・統合で変数の受け渡しをC#コードに反映する (#391)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint・typecheck・Vitest 183ファイル/2690件)✅。差分をIssue #391・docs/specs/csharp-extract-dataflow.md と照合(domainのmethodSignature/extractMethod/fragmentCode/generateClassSource/isCodebase)。E2Eはこの環境で未実行(PR本文では538件成功)
+- マージ: squash & delete-branch
+
 ## 2026-11-01 10:50 UTC PR #401 左サイドバーの初期幅を480に統一する (#388)
 
 - 判定: 合格(blocker無し)
@@ -210,11 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅(package.json/lockのみの変更。E2E未実行)
-- マージ: squash & delete-branch
-
-## 2026-10-26 11:10 UTC PR #342 ステージに設計原則を紐づけて表示する (#322)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(2271件) / npm run lint ✅ / npm run typecheck ✅。E2Eはこの環境で実行不可(PR本文では440件成功)。仕様書principle-labelsと差分を照合
 - マージ: squash & delete-branch
 
