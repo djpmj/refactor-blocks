@@ -39,3 +39,10 @@ export async function expectDeduction(page: Page, label: string): Promise<void> 
   const breakdown = await openBreakdown(page);
   await expect(breakdown.getByRole('button', { name: label, exact: true })).toBeVisible();
 }
+
+/** 開いた「減点の内訳」を閉じる(絶対配置の一覧がキャンバスの上に重なって、右クリックなどを横取りするため)。 */
+export async function closeBreakdown(page: Page): Promise<void> {
+  const breakdown = page.locator('.score-breakdown');
+  if (await breakdown.getAttribute('open') !== null) await breakdown.locator('summary').click();
+  await expect(breakdown).not.toHaveAttribute('open', '');
+}

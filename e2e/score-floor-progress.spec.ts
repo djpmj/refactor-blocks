@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { selectStage } from './selectStage.js';
-import { expectDeductions } from './scoreBreakdown.js';
+import { closeBreakdown, expectDeductions } from './scoreBreakdown.js';
 
 test('中級9は0点でも減点の合計を表示し、減った操作でゲージを光らせる', async ({ page }) => {
   // Arrange
@@ -15,6 +15,7 @@ test('中級9は0点でも減点の合計を表示し、減った操作でゲー
   await addMenu.getByLabel('追加するクラス名').fill('TemporaryEmpty');
   await addMenu.getByRole('button', { name: '追加' }).click();
   await expectDeductions(page, [['行数 ×7', 70], ['責務の混在 ×3', 30], ['空のクラス・ファイル ×2', 20]]);
+  await closeBreakdown(page);
   await page.getByTestId('class-header-NewClass').click({ button: 'right' });
   await page.getByTestId('context-menu').getByRole('menuitem', { name: 'NewClass を削除' }).click();
 
