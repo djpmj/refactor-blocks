@@ -191,3 +191,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [stage-prerequisite-note](stage-prerequisite-note.md) | 前提ステージが未クリアのとき、課題パネルに先にやるステージを案内し、ワンクリックで開ける |
 | [stage-record-reset](stage-record-reset.md) | ステージ一覧から1ステージ分の記録(点数・下書き・手数の自己ベスト・段階)だけをリセットする |
 | [sidebar-change-card-before-conditions](sidebar-change-card-before-conditions.md) | 左サイドバーで「もし、この変更が来たら?」の変更カードをクリア条件より上に並べる |
+| [left-sidebar-default-max-width](left-sidebar-default-max-width.md) | 左サイドバー(課題)を初期表示で上限の幅480pxにする |

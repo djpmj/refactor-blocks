@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-11-01 10:50 UTC PR #401 左サイドバーの初期幅を480に統一する (#388)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(179ファイル/2637件) / npm run lint ✅ / npm run typecheck ✅。差分をIssue #388・docs/specs/left-sidebar-default-max-width.mdと照合(上限定数の共通化、CSSフォールバック480px、E2E期待値/ビューポートの更新のみ)。E2Eはこの環境で実行できず未実行(PR本文に実測結果あり)
+- マージ: squash & delete-branch
+
 ## 2026-11-01 09:30 UTC PR #399 ステージのソースをC#の実行可能プロジェクトとして書き出す (#390)
 
 - 判定: 合格(blocker無し)
@@ -210,17 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(2271件) / npm run lint ✅ / npm run typecheck ✅。E2Eはこの環境で実行不可(PR本文では440件成功)。仕様書principle-labelsと差分を照合
-- マージ: squash & delete-branch
-
-## 2026-10-26 11:00 UTC PR #340 操作結果のフィードバックを表示する (#320)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(lint・typecheck・Vitest 2222件)✅。差分をIssue #320の設計判断と照合(domain層は無変更)。E2Eはこの環境にChromiumが無く未実行(PR本文では446件成功・1件は単独再実行で成功)
-- マージ: squash & delete-branch
-
-## 2026-10-26 10:50 UTC PR #341 学習記録をロードマップに表示する (#323)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(2228件)✅ / npm run lint ✅ / npm run typecheck ✅。差分をIssue #323・docs/specs/progress-export-import.mdと照合(入力検証・層境界)。E2Eはこの環境で実行できず未実行(PR本文では446件成功)
 - マージ: squash & delete-branch
 
