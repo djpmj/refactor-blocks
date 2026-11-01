@@ -189,3 +189,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [wrong-move-reason-hint](wrong-move-reason-hint.md) | 減点の件数が変わらなかった組み替えの直後に、「効いていません: 〜」と理由を1文で出す |
 | [start-score-untouched-label](start-score-untouched-label.md) | 点数が開いたときと同じ間、ヘッダーのゲージに「スタート時の点数」と注記する |
 | [stage-prerequisite-note](stage-prerequisite-note.md) | 前提ステージが未クリアのとき、課題パネルに先にやるステージを案内し、ワンクリックで開ける |
+| [stage-record-reset](stage-record-reset.md) | ステージ一覧から1ステージ分の記録(点数・下書き・手数の自己ベスト・段階)だけをリセットする |

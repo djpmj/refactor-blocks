@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-11-01 07:55 UTC PR #397 ステージ一覧から1ステージ分の記録をリセットできるようにする (#360)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint・typecheck・Vitest 179ファイル/2637件)✅。差分をIssue #360・docs/specs/stage-record-reset.mdと照合(withoutStageをdomainにテスト先行で追加、storeに resetStageRecord、UIは確認付きボタン)。E2E(roadmap.spec.ts)はこの環境でブラウザ未導入のため未実行(PR本文では19件成功)
+- マージ: squash & delete-branch
+
 ## 2026-11-01 03:38 UTC PR #396 score-floor-progress の E2E で、開いた減点の内訳を閉じてから右クリックする
 
 - 判定: 合格(blocker無し)
@@ -210,11 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test(2205件)✅ / npm run lint ✅ / npm run typecheck ✅。差分をIssue #319・docs/specs/move-count-challenge.mdの設計判断と照合。E2Eはこの環境でブラウザ未導入のため未実行(PR本文では440件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-26 09:45 UTC PR #338 手で直す最中の「読む」クリックと「直した」印を別の操作に分ける (#318)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test(2154件)✅ / npm run lint ✅ / npm run typecheck ✅。差分をIssue #318・docs/specs/manual-fix-read-vs-mark.mdの設計判断と照合。E2Eはこの環境でブラウザ未導入のため未実行(PR本文では429件成功)
 - マージ: squash & delete-branch
 
