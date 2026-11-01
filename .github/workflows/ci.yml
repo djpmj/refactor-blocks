@@ -40,3 +40,23 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+  csharp:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "8.0.x"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - run: npm ci
+      - run: CSHARP_EXPORT_DIR=out/csharp npx vitest run src/domain/codebase/csharpExport.export.test.ts
+      - run: bash scripts/verify-csharp.sh out/csharp

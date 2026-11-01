@@ -112,5 +112,7 @@ npm run test:e2e     # Playwright(初回は npx playwright install chromium)
                      # ローカルの既定は1並列。重くならない範囲で E2E_WORKERS=2 などに上げられる
 npm run check        # lint + typecheck + test をまとめて実行
 npm run stage-report  # 全ステージの一覧表 docs/stages/report.md を再生成
+npm run csharp-export  # runtime を持つステージの C# プロジェクトを CSHARP_EXPORT_DIR(例: out/csharp)へ書き出す
+bash scripts/verify-csharp.sh out/csharp  # 書き出したプロジェクトを dotnet build / run で確かめる(要 .NET 8 SDK)
 npm run build        # 本番ビルド
 ```

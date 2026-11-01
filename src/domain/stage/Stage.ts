@@ -2,6 +2,7 @@ import type { ChangeRequest } from '../change/ChangeRequest';
 import type { Codebase } from '../codebase/Codebase';
 import type { LineLimits } from '../scoring/lineLimits';
 import type { ScoreRule } from '../scoring/score';
+import type { StageRuntime } from './StageRuntime';
 
 /** ステージの区分。ステージ選択ではこの順に並べる。drill は1操作の短い練習。 */
 export type StageLevel = 'tutorial' | 'beginner' | 'intermediate' | 'advanced' | 'drill';
@@ -73,4 +74,6 @@ export type Stage = {
   readonly visibilityEnforced?: boolean;
   /** 層の並び(上 → 下)。省略時は層の採点をしない。 */
   readonly layers?: readonly StageLayer[];
+  /** C# のコンソールアプリとしてダウンロードするための情報。省略したステージには「ソースをダウンロード(C#)」を出さない。 */
+  readonly runtime?: StageRuntime;
 };

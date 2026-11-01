@@ -10,6 +10,16 @@ const extractMethodStage: Stage = {
     "output": "OutputHandler",
   },
   id: 'tutorial-extract-method',
+  runtime: {
+    entryMethodId: 'method-print-monthly-report',
+    entryArguments: [],
+    // printMonthlyReport が変数として使う sales / currentMonth / previousMonth / _logger を、同じクラスの別ファイル(partial)で用意する
+    support: [
+      { path: 'Sale.cs', code: 'namespace RefactorBlocks;\n\npublic class Sale\n{\n    public int Month;\n    public decimal Amount;\n    public string ProductName;\n}\n' },
+      { path: 'FakeLogger.cs', code: 'namespace RefactorBlocks;\n\npublic class FakeLogger\n{\n    public void LogDebug(string message) { }\n}\n' },
+      { path: 'ReportServiceData.cs', code: 'namespace RefactorBlocks;\n\npublic partial class ReportService\n{\n    private readonly List<Sale> sales = new()\n    {\n        new Sale { Month = 9, ProductName = "りんご", Amount = 1200m },\n        new Sale { Month = 9, ProductName = "みかん", Amount = 800m },\n        new Sale { Month = 10, ProductName = "りんご", Amount = 1500m },\n        new Sale { Month = 10, ProductName = "みかん", Amount = 1000m },\n        new Sale { Month = 10, ProductName = "りんご", Amount = 500m },\n    };\n\n    private readonly int currentMonth = 10;\n    private readonly int previousMonth = 9;\n    private readonly FakeLogger _logger = new();\n}\n' },
+    ],
+  },
   problem: 'printMonthlyReportに集計・計算・表の組み立て・出力がまとまっている',
   level: 'tutorial',
   title: 'チュートリアル1: 長いメソッドを分ける',
