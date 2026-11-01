@@ -19,7 +19,7 @@ async function move(page: Page, methodId: string, classId: string) {
   await page.mouse.up();
 }
 
-test('困りごと・クリア条件が上に並び、ヒントとうわさはサイドバーではなくツールバーに出る', async ({ page }) => {
+test('困りごと・変更カード・クリア条件の順に上に並び、ヒントとうわさはサイドバーではなくツールバーに出る', async ({ page }) => {
   await page.setViewportSize({ width: 1800, height: 1400 });
   await page.goto('/');
   await page.getByTestId('story-toggle').click();
@@ -35,7 +35,7 @@ test('困りごと・クリア条件が上に並び、ヒントとうわさは�
   await expect(sidebar).not.toContainText('メソッドは20行以内');
 
   const order = await sidebar.evaluate((element) => {
-    const selectors = ['.story-card', '.stage-panel__problem', '.clear-conditions', '.change-pain', '.stage-panel__description'];
+    const selectors = ['.story-card', '.stage-panel__problem', '.change-pain', '.clear-conditions', '.stage-panel__description'];
     return selectors.map((selector) => {
       const target = element.querySelector(selector);
       return target === null ? -1 : [...element.children].indexOf(target);
