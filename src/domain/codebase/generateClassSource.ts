@@ -19,11 +19,16 @@ function typeOf(item: LocalVariable, language: CodeLanguage): string {
   return item.type[language] ?? 'object';
 }
 
+function plainReturnType(returns: readonly LocalVariable[], language: CodeLanguage): string | undefined {
+  if (returns.length === 0) return undefined;
+  if (returns.length === 1) return typeOf(returns[0], language);
+  const items = returns.map((item) => `${typeOf(item, language)} ${item.name}`);
+  return `(${items.join(', ')})`;
+}
+
 /** 戻り値の数に応じた型。0個は void、1個は T、2個以上は名前付きタプル。async なら Task で包む。 */
 function returnType(returns: readonly LocalVariable[], isAsync: boolean, language: CodeLanguage): string {
-  const plainType = returns.length <= 1
-    ? (returns[0] === undefined ? undefined : typeOf(returns[0], language))
-    : `(${returns.map((item) => `${typeOf(item, language)} ${item.name}`).join(', ')})`;
+  const plainType = plainReturnType(returns, language);
   if (!isAsync) return plainType ?? 'void';
   return plainType === undefined ? 'async Task' : `async Task<${plainType}>`;
 }

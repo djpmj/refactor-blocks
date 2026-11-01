@@ -13,7 +13,13 @@ export function fragmentCode(codebase: Codebase, fragment: Fragment, language: C
     .filter((method) => method !== undefined);
   if (calledMethods.length === 0) return undefined;
 
-  return calledMethods.map((method, index) => `${method.name}(${fragment.callArguments?.[index] ?? ''});`).join('\n');
+  return calledMethods
+    .map((method, index) => {
+      const call = `${method.name}(${fragment.callArguments?.[index] ?? ''})`;
+      const awaited = isAsyncMethod(codebase, method.id) ? 'await ' : '';
+      return `${returnPrefix(method.returns ?? [])}${awaited}${call};`;
+    })
+    .join('\n');
 }
 
 /** 戻り値の数に応じた受け取り方。0個なら無し、1個なら `var x = `、2個以上なら `var (x, y) = `。 */
