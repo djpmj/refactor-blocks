@@ -2,6 +2,7 @@ import type { StageRuntime } from '../stage/StageRuntime';
 import { findClassOfMethod, findMethod, type Codebase } from './Codebase';
 import { compositionOrder } from './csharpWiring';
 import { generateClassSource } from './generateClassSource';
+import { isAsyncMethod } from './methodSignature';
 import { uniqueName } from './naming';
 
 /** ダウンロードするプロジェクトの名前(名前空間)。補助コード(runtime.support)はこの名前空間に書く。 */
@@ -31,9 +32,10 @@ function program(codebase: Codebase, runtime: StageRuntime, projectName: string)
   const owner = findClassOfMethod(codebase, runtime.entryMethodId);
   const method = findMethod(codebase, runtime.entryMethodId);
   const entryVariable = plan.steps.find((step) => step.classId === owner?.id)?.variable;
+  const awaiting = method !== undefined && isAsyncMethod(codebase, method.id) ? 'await ' : '';
   const call = entryVariable === undefined || method === undefined
     ? '// 入口のメソッドが見つかりません'
-    : `${entryVariable}.${method.name}(${runtime.entryArguments.join(', ')});`;
+    : `${awaiting}${entryVariable}.${method.name}(${runtime.entryArguments.join(', ')});`;
   const body = [
     ...plan.steps.map((step) => `var ${step.variable} = new ${step.className}(${step.args.join(', ')});`),
     ...plan.lateAssignments.map((assignment) => `${assignment.variable}.${assignment.property} = ${assignment.value};`),

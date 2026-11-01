@@ -146,6 +146,31 @@ test('runtime を持つステージでは、メニューから C# プロジェ�
   await expect(dialog).not.toBeVisible();
 });
 
+const runtimeStages = [
+  ['チュートリアル2: 太った placeOrder', 'tutorial-order-service'],
+  ['ドリル1: 後ろのまとまりを抜き出す', 'drill-extract-tail'],
+  ['ドリル2: 途中のまとまりを抜き出す', 'drill-extract-middle'],
+  ['ドリル3: メソッドを持ち主のクラスへ移す', 'drill-move-method'],
+  ['初級1: 何でも屋の UserController', 'beginner-user-controller'],
+  ['初級2: クラスを自分で作る', 'beginner-invoice-service'],
+] as const;
+
+for (const [title, stageId] of runtimeStages) {
+  test(`${title} でも、メニューから C# プロジェクトの zip をダウンロードできる`, async ({ page }) => {
+    await page.goto('/');
+    await selectStage(page, title, { completeOpeningFix: false });
+    await page.getByTestId('reference-menu-button').click();
+    await page.getByTestId('reference-source-download').click();
+    const dialog = page.getByTestId('source-download-dialog');
+
+    const downloadPromise = page.waitForEvent('download');
+    await dialog.getByTestId('source-download-confirm').click();
+    const download = await downloadPromise;
+
+    expect(download.suggestedFilename()).toBe(`${stageId}.zip`);
+  });
+}
+
 test('runtime の無いステージでは、メニューに C# のダウンロードが出ない', async ({ page }) => {
   await page.goto('/');
   await selectStage(page, '中級1: 循環依存を断ち切る', { completeOpeningFix: false });

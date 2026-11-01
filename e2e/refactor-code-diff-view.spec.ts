@@ -71,7 +71,7 @@ test('処理を抽出すると、移動と追加が色と文字で示され、�
   await expect(afterMoved.first()).toContainText('← ReportService.printMonthlyReport() から');
   const added = after.locator('[data-change="added"]');
   await expect(added.first()).toContainText('追加');
-  await expect(added.filter({ hasText: 'aggregateSales();' })).toHaveCount(1);
+  await expect(added.filter({ hasText: 'aggregateSales(sales, currentMonth);' })).toHaveCount(1);
   await expect(before.locator('[data-change="added"]')).toHaveCount(0);
   await expect(after.locator('[data-change="removed"]')).toHaveCount(0);
   await expect(afterMoved.first()).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');

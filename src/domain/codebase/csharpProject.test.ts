@@ -68,6 +68,19 @@ describe('generateCSharpProject', () => {
     expect(program).toContain(`${owner.toLowerCase()}.run(SampleData.Sales(), 3);`);
   });
 
+  it('入口のメソッドが await を含む(async)なら、Program.cs でも await して呼ぶ', () => {
+    // Arrange
+    const codebase = codebaseOf('A');
+    const entry = codebase.files[0].classes[0].methods[0];
+    const asyncCodebase: Codebase = {
+      files: [{ ...codebase.files[0], classes: [{ ...codebase.files[0].classes[0], methods: [{ ...entry, fragments: [{ ...entry.fragments[0], code: { csharp: 'await Task.Delay(1);' } }] }] }] }, codebase.files[1]],
+    };
+    // Act
+    const program = contentOf(generateCSharpProject(asyncCodebase, runtime, 'Demo'), 'Demo/Program.cs');
+    // Assert
+    expect(program).toContain('await a.run(SampleData.Sales(), 3);');
+  });
+
   it('runtime.support を Support/ の下にそのまま出す', () => {
     // Arrange / Act
     const files = generateCSharpProject(codebaseOf('A'), runtime, 'Demo');
