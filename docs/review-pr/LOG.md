@@ -38,6 +38,18 @@
 
 ## ログ一覧
 
+## 2026-11-02 20:30 UTC PR #409 chore(deps): bump actions/setup-dotnet from 5 to 6
+
+- 判定: 合格(blocker無し)
+- 確認した内容: 変更は .github/workflows/ci.yml の setup-dotnet バージョン1行のみ。CLAUDE.mdの開発ルールに反しない
+- マージ: 見送り(.github/workflows/配下を含むためGitHub Appの権限で自動マージ不可。人が手動でマージする)
+
+## 2026-11-02 20:30 UTC PR #407 chore(deps): bump @rolldown/binding-linux-x64-gnu from 1.2.15 to 1.2.16 in the production-dependencies group
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅ / npm run build ✅
+- マージ: squash & delete-branch
+
 ## 2026-11-01 13:20 UTC PR #405 狭い画面で課題サイドバーがキャンバスを覆わないよう幅を抑える (#400)
 
 - 判定: 合格(blocker無し)
