@@ -370,3 +370,61 @@ describe('generateClassSourceLines の引数・戻り値・async', () => {
     expect(source).toContain('_store._repository.Save();');
   });
 });
+
+describe('generateClassSource の継承・インターフェース(C#)', () => {
+  const body = (id: string, text: string) => ({ id, label: id, lines: 1, responsibility: 'x', code: { csharp: text } });
+
+  it('インターフェース役のクラスは public interface になり、メソッドは本体なしの宣言になる', () => {
+    // Arrange
+    const codebase: Codebase = { files: [{ id: 'f', path: 'x', classes: [{ id: 'c', name: 'DiscountStrategy', methods: [
+      { id: 'm', name: 'calculate', visibility: 'public', parameters: [{ type: 'Order', name: 'order' }], returns: [{ name: 'amount', type: { csharp: 'decimal' } }], fragments: [] },
+    ] }] }] };
+    // Act
+    const source = generateClassSource(codebase, 'c', 'csharp');
+    // Assert
+    expect(source).toBe('public interface DiscountStrategy\n{\n    public decimal calculate(Order order);\n}');
+  });
+
+  it('本体の無いメソッドを持つ基底クラスは abstract class になり、そのメソッドは abstract になる', () => {
+    // Arrange
+    const codebase: Codebase = { files: [{ id: 'f', path: 'x', classes: [{ id: 'c', name: 'OrderImporter', methods: [
+      { id: 'p', name: 'parse', visibility: 'protected', fragments: [] },
+      { id: 'r', name: 'run', visibility: 'public', fragments: [body('a', 'work();')] },
+    ] }] }] };
+    // Act
+    const source = generateClassSource(codebase, 'c', 'csharp');
+    // Assert
+    expect(source).toContain('public abstract class OrderImporter');
+    expect(source).toContain('    protected abstract void parse();');
+    expect(source).toContain('    public void run()');
+    expect(generateClassSource(codebase, 'c', 'csharp', 'public partial class')).toContain('public abstract partial class OrderImporter');
+  });
+
+  it('基底の本体の無いメソッドと同じ名前・同じ引数の子のメソッドは override になる', () => {
+    // Arrange
+    const codebase: Codebase = { files: [{ id: 'f', path: 'x', classes: [
+      { id: 'base', name: 'OrderImporter', methods: [{ id: 'p', name: 'parse', visibility: 'protected', parameters: [{ type: 'int', name: 'x' }], fragments: [] }] },
+      { id: 'c', name: 'CsvOrderImporter', superclassId: 'base', methods: [
+        { id: 'parse', name: 'parse', visibility: 'protected', parameters: [{ type: 'int', name: 'x' }], fragments: [body('a', 'work();')] },
+        { id: 'other', name: 'parse', visibility: 'protected', parameters: [{ type: 'string', name: 'x' }], fragments: [body('b', 'work();')] },
+      ] },
+    ] }] };
+    // Act
+    const source = generateClassSource(codebase, 'c', 'csharp');
+    // Assert
+    expect(source).toContain('protected override void parse(int x)');
+    expect(source).toContain('protected void parse(string x)');
+  });
+
+  it('継承もインターフェースも無いクラスの出力は変わらない', () => {
+    // Arrange
+    const codebase: Codebase = { files: [{ id: 'f', path: 'x', classes: [{ id: 'c', name: 'Plain', methods: [
+      { id: 'm', name: 'run', visibility: 'public', fragments: [body('a', 'work();')] },
+      { id: 'h', name: 'helper', visibility: 'private', fragments: [] },
+    ] }] }] };
+    // Act
+    const source = generateClassSource(codebase, 'c', 'csharp');
+    // Assert
+    expect(source).toBe('public class Plain\n{\n    public void run()\n    {\n        // a\n        work();\n    }\n\n    private void helper();\n}');
+  });
+});

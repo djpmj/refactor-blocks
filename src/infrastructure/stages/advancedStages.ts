@@ -1,4 +1,13 @@
 import type { Stage } from '../../domain/stage/Stage';
+import { advancedNotifierHierarchyRuntime } from './runtime/advanced-notifier-hierarchy';
+import { advancedPaymentGatewayInterfaceRuntime } from './runtime/advanced-payment-gateway-interface';
+import { advancedDiscountStrategyRuntime } from './runtime/advanced-discount-strategy';
+import { advancedReportFactoryRuntime } from './runtime/advanced-report-factory';
+import { advancedCollapseHierarchyRuntime } from './runtime/advanced-collapse-hierarchy';
+import { advancedInterfaceSegregationRuntime } from './runtime/advanced-interface-segregation';
+import { advancedValueObjectRuntime } from './runtime/advanced-value-object';
+import { advancedTemplateMethodRuntime } from './runtime/advanced-template-method';
+import { advancedOrderStateRuntime } from './runtime/advanced-order-state';
 
 /**
  * 上級1: メール通知(EmailNotifier)とSMS通知(SmsNotifier)が、
@@ -23,6 +32,7 @@ const notifierHierarchyStage: Stage = {
     "sms-delivery": "sendSms",
   },
   id: 'advanced-notifier-hierarchy',
+  runtime: advancedNotifierHierarchyRuntime,
   problem: '通知方式ごとに共通手順が重複している',
   level: 'advanced',
   title: '上級1: 通知クラスの共通処理を基底クラスへ集める',
@@ -81,11 +91,11 @@ const notifierHierarchyStage: Stage = {
               {
                 id: 'method-notify-email',
                 name: 'notifyByEmail',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'Recipient', name: 'recipient' }, { type: 'string', name: 'confirmationLink' }, { type: 'string', name: 'footer' }],
                 fragments: [
-                  { id: 'frag-build-body-email', label: '通知文を組み立てる', lines: 3, responsibility: 'formatting', suggestedName: 'buildEmailBody' , code: { csharp: 'var body = $"こんにちは {recipient.Name} さん、会員登録ありがとうございます。";\nbody = body.Replace("{confirmationLink}", confirmationLink);\nbody += Environment.NewLine + footer;' }},
-                  { id: 'frag-log-email', label: '送信ログを記録する', lines: 3, responsibility: 'logging', suggestedName: 'logEmailNotification', duplicateGroup: 'notification-log' , code: { csharp: "_logger.LogInformation(\"通知を送信しました: {Recipient}\", recipient);\nawait _auditLog.WriteAsync(recipient, DateTimeOffset.UtcNow);\n_logger.LogDebug(\"通知の監査記録を保存しました\");" }},
-                  { id: 'frag-send-email', label: 'メールを送信する', lines: 3, responsibility: 'email-delivery', suggestedName: 'sendEmail' , code: { csharp: "var message = new MailMessage(recipient, subject, body);\nawait _mailer.SendAsync(message, cancellationToken);\nawait _mailAuditLog.RecordSentAsync(message.Id, cancellationToken);" }},
+                  { id: 'frag-build-body-email', label: '通知文を組み立てる', lines: 3, responsibility: 'formatting', suggestedName: 'buildEmailBody' , code: { csharp: "var body = $\"こんにちは {recipient.Name} さん、会員登録ありがとうございます。\";\nbody = body.Replace(\"{confirmationLink}\", confirmationLink);\nbody += Environment.NewLine + footer;" }, variables: { declares: [{ name: 'body', type: { csharp: 'string' } }], uses: ['recipient', 'confirmationLink', 'footer'] }},
+                  { id: 'frag-log-email', label: '送信ログを記録する', lines: 3, responsibility: 'logging', suggestedName: 'logEmailNotification', duplicateGroup: 'notification-log' , code: { csharp: "Log.Info($\"通知を送信しました: {recipient.Name}\");\nFakeAuditLog.Write(recipient.Name);\nLog.Debug(\"通知の監査記録を保存しました\");" }, variables: { uses: ['recipient'] }},
+                  { id: 'frag-send-email', label: 'メールを送信する', lines: 3, responsibility: 'email-delivery', suggestedName: 'sendEmail' , code: { csharp: "var message = new MailMessage(recipient.Email, \"会員登録のお知らせ\", body);\nFakeMailGateway.Send(message);\nFakeMailAudit.RecordSent(message.Id);" }, variables: { declares: [{ name: 'message', type: { csharp: 'MailMessage' } }], uses: ['recipient', 'body'] }},
                 ],
               },
             ],
@@ -103,11 +113,11 @@ const notifierHierarchyStage: Stage = {
               {
                 id: 'method-notify-sms',
                 name: 'notifyBySms',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'Recipient', name: 'recipient' }, { type: 'string', name: 'verificationCode' }, { type: 'DateTime', name: 'expiresAt' }],
                 fragments: [
-                  { id: 'frag-build-body-sms', label: '通知文を組み立てる', lines: 3, responsibility: 'formatting', suggestedName: 'buildSmsBody' , code: { csharp: 'var body = $"{recipient.Name} さん、会員登録ありがとうございます。";\nbody = body.Replace("{code}", verificationCode);\nbody += $" 有効期限: {expiresAt:t}";' }},
-                  { id: 'frag-log-sms', label: '送信ログを記録する', lines: 3, responsibility: 'logging', suggestedName: 'logSmsNotification', duplicateGroup: 'notification-log' , code: { csharp: "_logger.LogInformation(\"通知を送信しました: {Recipient}\", recipient);\nawait _auditLog.WriteAsync(recipient, DateTimeOffset.UtcNow);\n_logger.LogDebug(\"通知の監査記録を保存しました\");" }},
-                  { id: 'frag-send-sms', label: 'SMSを送信する', lines: 3, responsibility: 'sms-delivery', suggestedName: 'sendSms' , code: { csharp: "var message = new SmsMessage(recipient.PhoneNumber, body);\nawait _smsClient.SendAsync(message, cancellationToken);\nawait _smsAuditLog.RecordSentAsync(message.Id, cancellationToken);" }},
+                  { id: 'frag-build-body-sms', label: '通知文を組み立てる', lines: 3, responsibility: 'formatting', suggestedName: 'buildSmsBody' , code: { csharp: "var body = $\"{recipient.Name} さん、会員登録ありがとうございます。\";\nbody = body.Replace(\"{code}\", verificationCode);\nbody += $\" 有効期限: {expiresAt:HH:mm}\";" }, variables: { declares: [{ name: 'body', type: { csharp: 'string' } }], uses: ['recipient', 'verificationCode', 'expiresAt'] }},
+                  { id: 'frag-log-sms', label: '送信ログを記録する', lines: 3, responsibility: 'logging', suggestedName: 'logSmsNotification', duplicateGroup: 'notification-log' , code: { csharp: "Log.Info($\"通知を送信しました: {recipient.Name}\");\nFakeAuditLog.Write(recipient.Name);\nLog.Debug(\"通知の監査記録を保存しました\");" }, variables: { uses: ['recipient'] }},
+                  { id: 'frag-send-sms', label: 'SMSを送信する', lines: 3, responsibility: 'sms-delivery', suggestedName: 'sendSms' , code: { csharp: "var message = new SmsMessage(recipient.PhoneNumber, body);\nFakeSmsClient.Send(message);\nFakeSmsAudit.RecordSent(message.Id);" }, variables: { declares: [{ name: 'message', type: { csharp: 'SmsMessage' } }], uses: ['recipient', 'body'] }},
                 ],
               },
             ],
@@ -151,6 +161,7 @@ const paymentGatewayInterfaceStage: Stage = {
     "paypal-config": "configurePaypal",
   },
   id: 'advanced-payment-gateway-interface',
+  runtime: advancedPaymentGatewayInterfaceRuntime,
   problem: '決済処理が特定のゲートウェイに直接依存している',
   level: 'advanced',
   title: '上級2: 決済ゲートウェイをインターフェース越しに呼ぶ',
@@ -220,10 +231,10 @@ const paymentGatewayInterfaceStage: Stage = {
               {
                 id: 'method-checkout',
                 name: 'checkout',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'List<OrderItem>', name: 'items' }, { type: 'string', name: 'cardNumber' }, { type: 'string', name: 'paymentToken' }],
                 fragments: [
-                  { id: 'frag-validate-payment', label: '注文内容とカード情報を検証する', lines: 2, responsibility: 'validation', suggestedName: 'validatePayment' , code: { csharp: "if (items.Count == 0 || items.Any(item => !item.IsValid)) throw new ValidationException(\"注文内容が不正です\");\nif (string.IsNullOrWhiteSpace(cardNumber) || string.IsNullOrWhiteSpace(paymentToken)) throw new ValidationException(\"カード情報が必要です\");" }},
-                  { id: 'frag-dispatch-gateway', label: 'PaymentGateway(インターフェース)経由で決済を実行する', lines: 3, responsibility: 'gateway-dispatch', uses: ['method-payment-gateway-charge'], suggestedName: 'dispatchGateway' , code: { csharp: "if (input is null) throw new ArgumentNullException(nameof(input));\ncharge();\nreturn true;" }},
+                  { id: 'frag-validate-payment', label: '注文内容とカード情報を検証する', lines: 2, responsibility: 'validation', suggestedName: 'validatePayment' , code: { csharp: "if (items.Count == 0 || items.Any(item => !item.IsValid)) throw new ValidationException(\"注文内容が不正です\");\nif (string.IsNullOrWhiteSpace(cardNumber) || string.IsNullOrWhiteSpace(paymentToken)) throw new ValidationException(\"カード情報が必要です\");" }, variables: { uses: ['items', 'cardNumber', 'paymentToken'] }},
+                  { id: 'frag-dispatch-gateway', label: 'PaymentGateway(インターフェース)経由で決済を実行する', lines: 3, responsibility: 'gateway-dispatch', uses: ['method-payment-gateway-charge'], suggestedName: 'dispatchGateway' , code: { csharp: "var total = items.Sum(item => item.Quantity * item.UnitPrice);\ncharge(total, paymentToken);\nLog.Info($\"決済を依頼しました: {total}\");" }, variables: { declares: [{ name: 'total', type: { csharp: 'decimal' } }], uses: ['items', 'paymentToken'] }},
                 ],
               },
             ],
@@ -241,10 +252,10 @@ const paymentGatewayInterfaceStage: Stage = {
               {
                 id: 'method-charge-stripe',
                 name: 'charge',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'decimal', name: 'amount' }, { type: 'string', name: 'paymentToken' }],
                 fragments: [
-                  { id: 'frag-stripe-api-call', label: 'Stripe APIを呼び出して決済する', lines: 3, responsibility: 'gateway-integration', suggestedName: 'callStripeApi' , code: { csharp: "var result = await _stripeClient.CreateChargeAsync(amount, paymentToken, cancellationToken);\nif (!result.Succeeded) throw new PaymentException(result.ErrorMessage);\n_logger.LogDebug(\"Stripe charge {ChargeId} completed\", result.ChargeId);" }},
-                  { id: 'frag-log-payment-stripe', label: '決済ログを記録する(Stripe)', lines: 4, responsibility: 'payment-logging', suggestedName: 'logStripePayment' , code: { csharp: "_logger.LogInformation(\"{Action} を記録しました\", action);\nawait _auditLog.WriteAsync(action, DateTimeOffset.UtcNow);\n_logger.LogDebug(\"決済ログを記録する(Stripe) が完了しました\");\nreturn true;" }},
+                  { id: 'frag-stripe-api-call', label: 'Stripe APIを呼び出して決済する', lines: 3, responsibility: 'gateway-integration', suggestedName: 'callStripeApi' , code: { csharp: "var result = FakeStripeClient.CreateCharge(amount, paymentToken);\nif (!result.Succeeded) throw new PaymentException(result.ErrorMessage);\nLog.Debug($\"Stripe charge {result.ChargeId} completed\");" }, variables: { declares: [{ name: 'result', type: { csharp: 'PaymentResult' } }], uses: ['amount', 'paymentToken'] }},
+                  { id: 'frag-log-payment-stripe', label: '決済ログを記録する(Stripe)', lines: 4, responsibility: 'payment-logging', suggestedName: 'logStripePayment' , code: { csharp: "Log.Info(\"決済を記録しました: Stripe\");\nFakeAuditLog.Write(\"stripe-charge\");\nLog.Debug(\"決済ログを記録する(Stripe) が完了しました\");\nLog.Debug($\"決済額: {amount}\");" }, variables: { uses: ['amount'] }},
                 ],
               },
               {
@@ -252,7 +263,7 @@ const paymentGatewayInterfaceStage: Stage = {
                 name: 'configureStripeCredentials',
                 visibility: 'public',
                 fragments: [
-                  { id: 'frag-configure-stripe', label: 'Stripe APIキーを設定する', lines: 4, responsibility: 'stripe-config', suggestedName: 'configureStripe' , code: { csharp: "var apiKey = Environment.GetEnvironmentVariable(\"STRIPE_API_KEY\");\nif (string.IsNullOrWhiteSpace(apiKey)) throw new InvalidOperationException(\"Stripe APIキーがありません\");\n_stripeClient.Configure(apiKey);\nreturn true;" }},
+                  { id: 'frag-configure-stripe', label: 'Stripe APIキーを設定する', lines: 4, responsibility: 'stripe-config', suggestedName: 'configureStripe' , code: { csharp: "var apiKey = Environment.GetEnvironmentVariable(\"STRIPE_API_KEY\");\nif (string.IsNullOrWhiteSpace(apiKey)) throw new InvalidOperationException(\"Stripe APIキーがありません\");\nFakeStripeClient.Configure(apiKey);\nLog.Debug(\"Stripe APIキーを設定しました\");" }, variables: { declares: [{ name: 'apiKey', type: { csharp: 'string' } }] }},
                 ],
               },
             ],
@@ -270,10 +281,10 @@ const paymentGatewayInterfaceStage: Stage = {
               {
                 id: 'method-charge-paypal',
                 name: 'charge',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'decimal', name: 'amount' }, { type: 'string', name: 'paymentToken' }],
                 fragments: [
-                  { id: 'frag-paypal-api-call', label: 'PayPal APIを呼び出して決済する', lines: 3, responsibility: 'gateway-integration', suggestedName: 'callPaypalApi' , code: { csharp: "var result = await _paypalClient.CreateOrderAsync(amount, paymentToken, cancellationToken);\nif (!result.Succeeded) throw new PaymentException(result.ErrorMessage);\n_logger.LogDebug(\"PayPal order {OrderId} completed\", result.OrderId);" }},
-                  { id: 'frag-log-payment-paypal', label: '決済ログを記録する(PayPal)', lines: 4, responsibility: 'payment-logging', suggestedName: 'logPaypalPayment' , code: { csharp: "_logger.LogInformation(\"{Action} を記録しました\", action);\nawait _auditLog.WriteAsync(action, DateTimeOffset.UtcNow);\n_logger.LogDebug(\"決済ログを記録する(PayPal) が完了しました\");\nreturn true;" }},
+                  { id: 'frag-paypal-api-call', label: 'PayPal APIを呼び出して決済する', lines: 3, responsibility: 'gateway-integration', suggestedName: 'callPaypalApi' , code: { csharp: "var result = FakePaypalClient.CreateOrder(amount, paymentToken);\nif (!result.Succeeded) throw new PaymentException(result.ErrorMessage);\nLog.Debug($\"PayPal charge {result.ChargeId} completed\");" }, variables: { declares: [{ name: 'result', type: { csharp: 'PaymentResult' } }], uses: ['amount', 'paymentToken'] }},
+                  { id: 'frag-log-payment-paypal', label: '決済ログを記録する(PayPal)', lines: 4, responsibility: 'payment-logging', suggestedName: 'logPaypalPayment' , code: { csharp: "Log.Info(\"決済を記録しました: PayPal\");\nFakeAuditLog.Write(\"paypal-charge\");\nLog.Debug(\"決済ログを記録する(PayPal) が完了しました\");\nLog.Debug($\"決済額: {amount}\");" }, variables: { uses: ['amount'] }},
                 ],
               },
               {
@@ -281,7 +292,7 @@ const paymentGatewayInterfaceStage: Stage = {
                 name: 'configurePaypalCredentials',
                 visibility: 'public',
                 fragments: [
-                  { id: 'frag-configure-paypal', label: 'PayPal APIキーを設定する', lines: 4, responsibility: 'paypal-config', suggestedName: 'configurePaypal' , code: { csharp: "var clientSecret = Environment.GetEnvironmentVariable(\"PAYPAL_CLIENT_SECRET\");\nif (string.IsNullOrWhiteSpace(clientSecret)) throw new InvalidOperationException(\"PayPal client secretがありません\");\n_paypalClient.Configure(clientSecret);\nreturn true;" }},
+                  { id: 'frag-configure-paypal', label: 'PayPal APIキーを設定する', lines: 4, responsibility: 'paypal-config', suggestedName: 'configurePaypal' , code: { csharp: "var clientSecret = Environment.GetEnvironmentVariable(\"PAYPAL_CLIENT_SECRET\");\nif (string.IsNullOrWhiteSpace(clientSecret)) throw new InvalidOperationException(\"PayPal client secretがありません\");\nFakePaypalClient.Configure(clientSecret);\nLog.Debug(\"PayPal client secretを設定しました\");" }, variables: { declares: [{ name: 'clientSecret', type: { csharp: 'string' } }] }},
                 ],
               },
             ],
@@ -295,7 +306,7 @@ const paymentGatewayInterfaceStage: Stage = {
           {
             id: 'class-payment-gateway',
             name: 'PaymentGateway',
-            methods: [{ id: 'method-payment-gateway-charge', name: 'charge', visibility: 'public', fragments: [] }],
+            methods: [{ id: 'method-payment-gateway-charge', name: 'charge', visibility: 'public', parameters: [{ type: 'decimal', name: 'amount' }, { type: 'string', name: 'paymentToken' }], fragments: [] }],
           },
         ],
       },
@@ -327,6 +338,7 @@ const discountStrategyStage: Stage = {
     "discount-vip": "applyVipDiscount",
   },
   id: 'advanced-discount-strategy',
+  runtime: advancedDiscountStrategyRuntime,
   problem: '会員ランクごとの割引計算が1つの処理に混在している',
   level: 'advanced',
   title: '上級3: 会員ランクの割引をStrategyパターンへ組み替える',
@@ -386,12 +398,12 @@ const discountStrategyStage: Stage = {
               {
                 id: 'method-calculate-discount',
                 name: 'calculateDiscount',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'Order', name: 'order' }], returns: [{ name: 'vipTotal', type: { csharp: 'decimal' } }],
                 fragments: [
-                  { id: 'frag-validate-order', label: '注文内容と会員ランクを検証する', lines: 5, responsibility: 'validation', suggestedName: 'validateOrder' , code: { csharp: "var items = order.Items;\nif (items is null || items.Count == 0) throw new ValidationException(\"注文に商品がありません\");\nvar subtotal = items.Sum(item => item.UnitPrice * item.Quantity);\nvar rank = order.MemberRank;\nif (!Enum.IsDefined(rank)) throw new ValidationException(\"会員ランクが不正です\");" }},
-                  { id: 'frag-branch-regular', label: '会員ランクが「通常」なら、割引なしで合計する', lines: 3, responsibility: 'discount-regular', suggestedName: 'calculate' , code: { csharp: "if (subtotal <= 0) return 0;\nvar regularTotal = decimal.Round(subtotal, 2);\nif (rank == MemberRank.Regular) return regularTotal;" }},
-                  { id: 'frag-branch-premium', label: '会員ランクが「プレミアム」なら、一律10%引きで合計する', lines: 3, responsibility: 'discount-premium', suggestedName: 'calculate' , code: { csharp: "var premiumRate = 0.10m;\nvar discountedTotal = subtotal * (1 - premiumRate);\nif (rank == MemberRank.Premium) return decimal.Round(discountedTotal, 2);" }},
-                  { id: 'frag-branch-vip', label: '会員ランクが「VIP」なら、送料無料込みで合計する', lines: 3, responsibility: 'discount-vip', suggestedName: 'calculate' , code: { csharp: "var shippingFee = rank == MemberRank.Vip ? 0m : standardShippingFee;\nvar vipDiscountedTotal = subtotal * 0.80m;\nreturn decimal.Round(vipDiscountedTotal + shippingFee, 2);" }},
+                  { id: 'frag-validate-order', label: '注文内容と会員ランクを検証する', lines: 5, responsibility: 'validation', suggestedName: 'validateOrder' , code: { csharp: "var items = order.Items ?? throw new ValidationException(\"注文に商品がありません\");\nif (items.Count == 0) throw new ValidationException(\"注文に商品がありません\");\nvar subtotal = items.Sum(item => item.UnitPrice * item.Quantity);\nvar rank = Enum.IsDefined(order.MemberRank) ? order.MemberRank : throw new ValidationException(\"会員ランクが不正です\");\nvar total = subtotal;" }, variables: { declares: [{ name: 'items', type: { csharp: 'List<OrderItem>' } }, { name: 'subtotal', type: { csharp: 'decimal' } }, { name: 'rank', type: { csharp: 'MemberRank' } }, { name: 'total', type: { csharp: 'decimal' } }], uses: ['order'] }},
+                  { id: 'frag-branch-regular', label: '会員ランクが「通常」なら、割引なしで合計する', lines: 3, responsibility: 'discount-regular', suggestedName: 'calculate' , code: { csharp: "var regularRate = 0m;\nvar regularTotal = rank == MemberRank.Regular ? decimal.Round(subtotal * (1 - regularRate), 2) : total;\nLog.Debug($\"通常会員の合計: {regularTotal}\");" }, variables: { declares: [{ name: 'regularRate', type: { csharp: 'decimal' } }, { name: 'regularTotal', type: { csharp: 'decimal' } }], uses: ['subtotal', 'rank', 'total'] }},
+                  { id: 'frag-branch-premium', label: '会員ランクが「プレミアム」なら、一律10%引きで合計する', lines: 3, responsibility: 'discount-premium', suggestedName: 'calculate' , code: { csharp: "var premiumRate = 0.10m;\nvar premiumTotal = rank == MemberRank.Premium ? decimal.Round(subtotal * (1 - premiumRate), 2) : regularTotal;\nLog.Debug($\"プレミアム会員の合計: {premiumTotal}\");" }, variables: { declares: [{ name: 'premiumRate', type: { csharp: 'decimal' } }, { name: 'premiumTotal', type: { csharp: 'decimal' } }], uses: ['subtotal', 'rank', 'regularTotal'] }},
+                  { id: 'frag-branch-vip', label: '会員ランクが「VIP」なら、送料無料込みで合計する', lines: 3, responsibility: 'discount-vip', suggestedName: 'calculate' , code: { csharp: "var shippingFee = rank == MemberRank.Vip ? 0m : 500m;\nvar vipTotal = rank == MemberRank.Vip ? decimal.Round(subtotal * 0.80m + shippingFee, 2) : premiumTotal;\nLog.Debug($\"VIP会員の合計: {vipTotal}\");" }, variables: { declares: [{ name: 'shippingFee', type: { csharp: 'decimal' } }, { name: 'vipTotal', type: { csharp: 'decimal' } }], uses: ['subtotal', 'rank', 'premiumTotal'] }},
                 ],
               },
             ],
@@ -405,7 +417,7 @@ const discountStrategyStage: Stage = {
           {
             id: 'class-discount-strategy',
             name: 'DiscountStrategy',
-            methods: [{ id: 'method-discount-strategy-calculate', name: 'calculate', visibility: 'public', fragments: [] }],
+            methods: [{ id: 'method-discount-strategy-calculate', name: 'calculate', visibility: 'public', parameters: [{ type: 'decimal', name: 'subtotal' }, { type: 'MemberRank', name: 'rank' }, { type: 'decimal', name: 'currentTotal' }], returns: [{ name: 'total', type: { csharp: 'decimal' } }], fragments: [] }],
           },
         ],
       },
@@ -434,6 +446,7 @@ const reportFactoryStage: Stage = {
     "report-delivery": "sendReport",
   },
   id: 'advanced-report-factory',
+  runtime: advancedReportFactoryRuntime,
   problem: '帳票ごとの生成方法が呼び出し側に散らばっている',
   level: 'advanced',
   title: '上級4: レポート生成処理をFactoryへ集約する',
@@ -493,11 +506,11 @@ const reportFactoryStage: Stage = {
               {
                 id: 'method-export-weekly-report',
                 name: 'exportWeeklyReport',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'List<SaleRecord>', name: 'source' }, { type: 'DateTime', name: 'periodStart' }, { type: 'DateTime', name: 'periodEnd' }],
                 fragments: [
-                  { id: 'frag-gather-weekly-data', label: '週次データを集計する', lines: 3, responsibility: 'data-aggregation', suggestedName: 'gatherWeeklyData' , code: { csharp: "var rows = source.GroupBy(item => item.Category)\n    .Select(group => new ReportRow(group.Key, group.Sum(item => item.Amount)))\n    .ToList();" }},
-                  { id: 'frag-build-report-weekly', label: 'レポートオブジェクトを組み立てる', lines: 3, responsibility: 'report-building', suggestedName: 'buildReport', duplicateGroup: 'report-building' , code: { csharp: "var report = new Report(periodStart, periodEnd, rows);\nreport.Validate();\n_logger.LogInformation(\"レポートを検証しました: {RowCount}\", report.Rows.Count);" }},
-                  { id: 'frag-send-weekly', label: 'レポートを送信する', lines: 3, responsibility: 'report-delivery', suggestedName: 'sendReport' , code: { csharp: "var payload = JsonSerializer.Serialize(report);\nusing var response = await _httpClient.PostAsync(endpoint, new StringContent(payload), cancellationToken);\nresponse.EnsureSuccessStatusCode();" }},
+                  { id: 'frag-gather-weekly-data', label: '週次データを集計する', lines: 3, responsibility: 'data-aggregation', suggestedName: 'gatherWeeklyData' , code: { csharp: "var rows = source.GroupBy(item => item.Category)\n    .Select(group => new ReportRow(group.Key, group.Sum(item => item.Amount)))\n    .ToList();" }, variables: { declares: [{ name: 'rows', type: { csharp: 'List<ReportRow>' } }], uses: ['source'] }},
+                  { id: 'frag-build-report-weekly', label: 'レポートオブジェクトを組み立てる', lines: 3, responsibility: 'report-building', suggestedName: 'buildReport', duplicateGroup: 'report-building' , code: { csharp: "var report = new Report(periodStart, periodEnd, rows);\nreport.Validate();\nLog.Info($\"レポートを検証しました: {report.Rows.Count}\");" }, variables: { declares: [{ name: 'report', type: { csharp: 'Report' } }], uses: ['periodStart', 'periodEnd', 'rows'] }},
+                  { id: 'frag-send-weekly', label: 'レポートを送信する', lines: 3, responsibility: 'report-delivery', suggestedName: 'sendReport' , code: { csharp: "var payload = FakeJson.Serialize(report);\nFakeReportEndpoint.Post(payload);\nLog.Debug(\"レポートを送信しました\");" }, variables: { declares: [{ name: 'payload', type: { csharp: 'string' } }], uses: ['report'] }},
                 ],
               },
             ],
@@ -515,11 +528,11 @@ const reportFactoryStage: Stage = {
               {
                 id: 'method-export-monthly-report',
                 name: 'exportMonthlyReport',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'List<SaleRecord>', name: 'source' }, { type: 'DateTime', name: 'periodStart' }, { type: 'DateTime', name: 'periodEnd' }],
                 fragments: [
-                  { id: 'frag-gather-monthly-data', label: '月次データを集計する', lines: 3, responsibility: 'data-aggregation', suggestedName: 'gatherMonthlyData' , code: { csharp: "var rows = source.GroupBy(item => item.Category)\n    .Select(group => new ReportRow(group.Key, group.Sum(item => item.Amount)))\n    .ToList();" }},
-                  { id: 'frag-build-report-monthly', label: 'レポートオブジェクトを組み立てる', lines: 3, responsibility: 'report-building', suggestedName: 'buildReport', duplicateGroup: 'report-building' , code: { csharp: "var report = new Report(periodStart, periodEnd, rows);\nreport.Validate();\n_logger.LogInformation(\"レポートを検証しました: {RowCount}\", report.Rows.Count);" }},
-                  { id: 'frag-send-monthly', label: 'レポートを送信する', lines: 3, responsibility: 'report-delivery', suggestedName: 'sendReport' , code: { csharp: "var payload = JsonSerializer.Serialize(report);\nusing var response = await _httpClient.PostAsync(endpoint, new StringContent(payload), cancellationToken);\nresponse.EnsureSuccessStatusCode();" }},
+                  { id: 'frag-gather-monthly-data', label: '月次データを集計する', lines: 3, responsibility: 'data-aggregation', suggestedName: 'gatherMonthlyData' , code: { csharp: "var rows = source.GroupBy(item => item.Category)\n    .Select(group => new ReportRow(group.Key, group.Sum(item => item.Amount)))\n    .ToList();" }, variables: { declares: [{ name: 'rows', type: { csharp: 'List<ReportRow>' } }], uses: ['source'] }},
+                  { id: 'frag-build-report-monthly', label: 'レポートオブジェクトを組み立てる', lines: 3, responsibility: 'report-building', suggestedName: 'buildReport', duplicateGroup: 'report-building' , code: { csharp: "var report = new Report(periodStart, periodEnd, rows);\nreport.Validate();\nLog.Info($\"レポートを検証しました: {report.Rows.Count}\");" }, variables: { declares: [{ name: 'report', type: { csharp: 'Report' } }], uses: ['periodStart', 'periodEnd', 'rows'] }},
+                  { id: 'frag-send-monthly', label: 'レポートを送信する', lines: 3, responsibility: 'report-delivery', suggestedName: 'sendReport' , code: { csharp: "var payload = FakeJson.Serialize(report);\nFakeReportEndpoint.Post(payload);\nLog.Debug(\"レポートを送信しました\");" }, variables: { declares: [{ name: 'payload', type: { csharp: 'string' } }], uses: ['report'] }},
                 ],
               },
             ],
@@ -555,6 +568,7 @@ const collapseHierarchyStage: Stage = {
     "csv-format": "formatCsv",
   },
   id: 'advanced-collapse-hierarchy',
+  runtime: advancedCollapseHierarchyRuntime,
   problem: '子クラスが1つだけの基底クラスが残っている',
   level: 'advanced',
   title: '上級5: 子が1つしかない継承を畳む',
@@ -612,10 +626,10 @@ const collapseHierarchyStage: Stage = {
               {
                 id: 'method-download-sales-csv',
                 name: 'downloadSalesCsv',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'SalesQuery', name: 'input' }], returns: [{ name: 'csv', type: { csharp: 'string' } }],
                 fragments: [
-                  { id: 'frag-validate-query', label: '検索条件を検証する', lines: 2, responsibility: 'http', suggestedName: 'validateQuery' , code: { csharp: "if (input.StartDate > input.EndDate) throw new ValidationException(\"期間が逆転しています\");\nif (input.StartDate < minimumDate || input.EndDate > maximumDate) throw new ValidationException(\"期間が範囲外です\");" }},
-                  { id: 'frag-fetch-sales', label: '売上データを取得する', lines: 2, responsibility: 'query', suggestedName: 'fetchSales' , code: { csharp: "if (input is null) throw new ArgumentNullException(nameof(input));\nvar sales = await _salesRepository.FindAsync(input.StartDate, input.EndDate, cancellationToken);" }},
+                  { id: 'frag-validate-query', label: '検索条件を検証する', lines: 2, responsibility: 'http', suggestedName: 'validateQuery' , code: { csharp: "if (input.StartDate > input.EndDate) throw new ValidationException(\"期間が逆転しています\");\nif (input.StartDate < SalesQuery.Minimum || input.EndDate > SalesQuery.Maximum) throw new ValidationException(\"期間が範囲外です\");" }, variables: { uses: ['input'] }},
+                  { id: 'frag-fetch-sales', label: '売上データを取得する', lines: 2, responsibility: 'query', suggestedName: 'fetchSales' , code: { csharp: "Log.Info($\"売上を取得します: {input.StartDate:yyyy-MM-dd} から {input.EndDate:yyyy-MM-dd}\");\nvar sales = FakeSalesRepository.Find(input.StartDate, input.EndDate);" }, variables: { declares: [{ name: 'sales', type: { csharp: 'List<Sale>' } }], uses: ['input'] }},
                   {
                     id: 'frag-output-csv',
                     label: 'CSVを出力する',
@@ -623,7 +637,7 @@ const collapseHierarchyStage: Stage = {
                     responsibility: 'http',
                     uses: ['method-prepare-export', 'method-write-rows'],
                     suggestedName: 'outputCsv',
-                   code: { csharp: "var rows = sales.Select(sale => new SalesRow(sale.ProductName, sale.Amount)).ToList();\nvar writer = new StringWriter();\nprepareExport(writer, rows);\nwriteRows(writer, rows);\nreturn writer.ToString();" }},
+                   code: { csharp: "var rows = sales.Select(sale => new SalesRow(sale.ProductName, sale.Amount)).ToList();\nvar writer = new StringWriter();\nprepareExport(writer, rows);\nwriteRows(writer, rows);\nvar csv = writer.ToString();" }, variables: { declares: [{ name: 'rows', type: { csharp: 'List<SalesRow>' } }, { name: 'writer', type: { csharp: 'StringWriter' } }, { name: 'csv', type: { csharp: 'string' } }], uses: ['sales'] }},
                 ],
               },
             ],
@@ -641,15 +655,15 @@ const collapseHierarchyStage: Stage = {
               {
                 id: 'method-prepare-export',
                 name: 'prepareExport',
-                visibility: 'public',
-                fragments: [{ id: 'frag-decide-header', label: '文字コードとヘッダー行を決める', lines: 4, responsibility: 'csv-format' , code: { csharp: "var encoding = options.Encoding ?? Encoding.UTF8;\nvar header = string.Join(\",\", typeof(SalesRow).GetProperties().Select(property => Quote(property.Name)));\nawait writer.WriteLineAsync(header, encoding, cancellationToken);\nreturn header;" }}],
+                visibility: 'public', parameters: [{ type: 'StringWriter', name: 'writer' }, { type: 'List<SalesRow>', name: 'rows' }],
+                fragments: [{ id: 'frag-decide-header', label: '文字コードとヘッダー行を決める', lines: 4, responsibility: 'csv-format' , code: { csharp: "var columns = new[] { \"商品名\", \"金額\" };\nvar header = string.Join(\",\", columns);\nwriter.WriteLine(header);\nLog.Debug($\"ヘッダーを出力しました: {rows.Count} 行\");" }, variables: { uses: ['writer', 'rows'] }}],
               },
               {
                 id: 'method-escape-value',
                 name: 'escapeValue',
-                visibility: 'protected',
+                visibility: 'protected', parameters: [{ type: 'string', name: 'value' }], returns: [{ name: 'quoted', type: { csharp: 'string' } }],
                 // Template Method: 基底クラスが子クラスのフック(quoteChar)を呼ぶ。2クラスに分けたままだと互いを呼び合う循環が残る
-                fragments: [{ id: 'frag-escape-value', label: '値をエスケープする', lines: 3, responsibility: 'csv-format', uses: ['method-quote-char'] , code: { csharp: "var escaped = value.Replace(\"\"\", \"\"\"\");\nvar quoted = $\"{quoteChar()}{escaped}{quoteChar()}\";\nreturn quoted;" }}],
+                fragments: [{ id: 'frag-escape-value', label: '値をエスケープする', lines: 3, responsibility: 'csv-format', uses: ['method-quote-char'] , code: { csharp: "var escaped = value.Replace(\"\\\"\", \"\\\"\\\"\");\nvar quoted = $\"{quoteChar(value)}{escaped}{quoteChar(value)}\";\nLog.Debug($\"値をエスケープしました: {quoted}\");" }, variables: { declares: [{ name: 'quoted', type: { csharp: 'string' } }], uses: ['value'] }}],
               },
             ],
           },
@@ -667,14 +681,14 @@ const collapseHierarchyStage: Stage = {
               {
                 id: 'method-write-rows',
                 name: 'writeRows',
-                visibility: 'public',
-                fragments: [{ id: 'frag-write-rows', label: '行をCSVに書き出す', lines: 3, responsibility: 'csv-format', uses: ['method-escape-value'] , code: { csharp: "foreach (var row in rows)\n    await writer.WriteLineAsync(string.Join(\",\", row.Values.Select(value => escapeValue(value))));\nawait writer.FlushAsync(cancellationToken);" }}],
+                visibility: 'public', parameters: [{ type: 'StringWriter', name: 'writer' }, { type: 'List<SalesRow>', name: 'rows' }],
+                fragments: [{ id: 'frag-write-rows', label: '行をCSVに書き出す', lines: 3, responsibility: 'csv-format', uses: ['method-escape-value'] , code: { csharp: "foreach (var row in rows)\n    writer.WriteLine(string.Join(\",\", row.Values.Select(value => escapeValue(value))));\nwriter.Flush();" }, variables: { uses: ['writer', 'rows'] }}],
               },
               {
                 id: 'method-quote-char',
                 name: 'quoteChar',
-                visibility: 'protected',
-                fragments: [{ id: 'frag-quote-char', label: 'クォートに使う文字を返す(BaseExporter から呼ばれるフック)', lines: 3, responsibility: 'csv-format' , code: { csharp: "var quote = options.AlwaysQuote ? \"\\\"\" : string.Empty;\nif (value.Contains(options.Delimiter)) return \"\\\"\";\nreturn quote;" }}],
+                visibility: 'protected', parameters: [{ type: 'string', name: 'value' }], returns: [{ name: 'quote', type: { csharp: 'string' } }],
+                fragments: [{ id: 'frag-quote-char', label: 'クォートに使う文字を返す(BaseExporter から呼ばれるフック)', lines: 3, responsibility: 'csv-format' , code: { csharp: "var quote = value.Contains(',') ? \"\\\"\" : string.Empty;\nLog.Debug($\"クォート文字を決めました: [{quote}]\");\nLog.Debug(\"quoteChar を呼びました\");" }, variables: { declares: [{ name: 'quote', type: { csharp: 'string' } }], uses: ['value'] }}],
               },
             ],
           },
@@ -714,6 +728,7 @@ const interfaceSegregationStage: Stage = {
     "task-complete": "completeTask",
   },
   id: 'advanced-interface-segregation',
+  runtime: advancedInterfaceSegregationRuntime,
   problem: '通知とタスク管理の約束が1つに集まっている',
   level: 'advanced',
   title: '上級6: 太ったインターフェースを役割ごとに分ける',
@@ -787,9 +802,9 @@ const interfaceSegregationStage: Stage = {
               {
                 id: 'method-notify-alert',
                 name: 'notifyAlert',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'Alert', name: 'alert' }, { type: 'string', name: 'channel' }],
                 fragments: [
-                  { id: 'frag-alert-format', label: 'アラートの内容から通知文を組み立てる', lines: 3, responsibility: 'alert-format', suggestedName: 'buildAlertMessage' , code: { csharp: "var severityLabel = alert.Severity == IncidentSeverity.High ? \"重大\" : \"通常\";\nvar body = $\"{severityLabel}: {alert.Title} - {alert.Description}\";\nvar message = new ChatMessage(channel, body);" }},
+                  { id: 'frag-alert-format', label: 'アラートの内容から通知文を組み立てる', lines: 3, responsibility: 'alert-format', suggestedName: 'buildAlertMessage' , code: { csharp: "var severityLabel = alert.Severity == IncidentSeverity.High ? \"重大\" : \"通常\";\nvar body = $\"{severityLabel}: {alert.Title} - {alert.Description}\";\nvar message = new ChatMessage(channel, body);" }, variables: { declares: [{ name: 'message', type: { csharp: 'ChatMessage' } }], uses: ['alert', 'channel'] }},
                   {
                     id: 'frag-alert-dispatch',
                     label: 'チャットへ投稿する',
@@ -797,7 +812,7 @@ const interfaceSegregationStage: Stage = {
                     responsibility: 'alert-dispatch',
                     uses: ['method-tool-post-message'],
                     suggestedName: 'dispatchAlert',
-                   code: { csharp: "var alert = new ChatMessage(subject, body);\nawait postMessage(alert);\n_logger.LogInformation(\"アラートを投稿しました\");" }},
+                   code: { csharp: "Log.Info($\"アラートを投稿します: {message.Body}\");\npostMessage(message);\nLog.Info(\"アラートを投稿しました\");" }, variables: { uses: ['message'] }},
                 ],
               },
             ],
@@ -815,9 +830,9 @@ const interfaceSegregationStage: Stage = {
               {
                 id: 'method-report-incident',
                 name: 'reportIncident',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'Incident', name: 'incident' }, { type: 'List<string>', name: 'affectedServices' }], returns: [{ name: 'completed', type: { csharp: 'bool' } }],
                 fragments: [
-                  { id: 'frag-triage', label: '障害の影響範囲と重要度を判定する', lines: 2, responsibility: 'triage', suggestedName: 'triageIncident' , code: { csharp: "if (input is null) throw new ArgumentNullException(nameof(input));\nvar severity = affectedServices.Count > 3 ? IncidentSeverity.High : IncidentSeverity.Normal;" }},
+                  { id: 'frag-triage', label: '障害の影響範囲と重要度を判定する', lines: 2, responsibility: 'triage', suggestedName: 'triageIncident' , code: { csharp: "if (incident is null) throw new ArgumentNullException(nameof(incident));\nvar severity = affectedServices.Count > 3 ? IncidentSeverity.High : IncidentSeverity.Normal;" }, variables: { declares: [{ name: 'severity', type: { csharp: 'IncidentSeverity' } }], uses: ['incident', 'affectedServices'] }},
                   {
                     id: 'frag-incident-dispatch-create',
                     label: '対応タスクを登録する',
@@ -825,7 +840,7 @@ const interfaceSegregationStage: Stage = {
                     responsibility: 'incident-dispatch',
                     uses: ['method-tool-create-task'],
                     suggestedName: 'createIncidentTask',
-                   code: { csharp: "var incidentTask = new IncidentTask(incident.Id, severity);\nawait createTask(incidentTask);\n_logger.LogInformation(\"対応タスクを登録しました\");" }},
+                   code: { csharp: "var incidentTask = new IncidentTask(incident.Id, severity);\ncreateTask(incidentTask);\nLog.Info(\"対応タスクを登録しました\");" }, variables: { uses: ['incident', 'severity'] }},
                   {
                     id: 'frag-incident-dispatch-complete',
                     label: '復旧したらタスクを完了にする',
@@ -833,7 +848,7 @@ const interfaceSegregationStage: Stage = {
                     responsibility: 'incident-dispatch',
                     uses: ['method-tool-complete-task'],
                     suggestedName: 'completeIncidentTask',
-                   code: { csharp: "if (!incident.IsRecovered) return false;\nawait completeTask(incident.Id);\nreturn true;" }},
+                   code: { csharp: "var completed = incident.IsRecovered;\nif (completed) completeTask(incident.Id);\nLog.Info($\"復旧状況: {completed}\");" }, variables: { declares: [{ name: 'completed', type: { csharp: 'bool' } }], uses: ['incident'] }},
                 ],
               },
             ],
@@ -848,9 +863,9 @@ const interfaceSegregationStage: Stage = {
             id: 'class-collaboration-tool',
             name: 'CollaborationTool',
             methods: [
-              { id: 'method-tool-post-message', name: 'postMessage', visibility: 'public', fragments: [] },
-              { id: 'method-tool-create-task', name: 'createTask', visibility: 'public', fragments: [] },
-              { id: 'method-tool-complete-task', name: 'completeTask', visibility: 'public', fragments: [] },
+              { id: 'method-tool-post-message', name: 'postMessage', visibility: 'public', parameters: [{ type: 'ChatMessage', name: 'message' }], fragments: [] },
+              { id: 'method-tool-create-task', name: 'createTask', visibility: 'public', parameters: [{ type: 'IncidentTask', name: 'task' }], fragments: [] },
+              { id: 'method-tool-complete-task', name: 'completeTask', visibility: 'public', parameters: [{ type: 'string', name: 'incidentId' }], fragments: [] },
             ],
           },
         ],
@@ -867,19 +882,19 @@ const interfaceSegregationStage: Stage = {
               {
                 id: 'method-slack-post-message',
                 name: 'postMessage',
-                visibility: 'public',
-                fragments: [{ id: 'frag-slack-chat-post', label: 'Slack APIでチャンネルに投稿する', lines: 3, responsibility: 'chat-post', suggestedName: 'postToSlack' , code: { csharp: "var payload = JsonSerializer.Serialize(message);\nusing var response = await _httpClient.PostAsync(endpoint, new StringContent(payload), cancellationToken);\nresponse.EnsureSuccessStatusCode();" }}],
+                visibility: 'public', parameters: [{ type: 'ChatMessage', name: 'message' }],
+                fragments: [{ id: 'frag-slack-chat-post', label: 'Slack APIでチャンネルに投稿する', lines: 3, responsibility: 'chat-post', suggestedName: 'postToSlack' , code: { csharp: "var payload = $\"{message.Channel}: {message.Body}\";\nFakeHttp.Post(\"Slack\", payload);\nLog.Debug(\"Slackに投稿しました\");" }, variables: { uses: ['message'] }}],
               },
               {
                 id: 'method-slack-create-task',
                 name: 'createTask',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'IncidentTask', name: 'task' }],
                 fragments: [{ id: 'frag-slack-task-create-stub', label: '未対応: UnsupportedOperationErrorを投げるだけ', lines: 1, responsibility: 'task-create', stub: true , code: { csharp: "throw new NotSupportedException();" }}],
               },
               {
                 id: 'method-slack-complete-task',
                 name: 'completeTask',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'string', name: 'incidentId' }],
                 fragments: [{ id: 'frag-slack-task-complete-stub', label: '未対応: UnsupportedOperationErrorを投げるだけ', lines: 1, responsibility: 'task-complete', stub: true , code: { csharp: "throw new NotSupportedException();" }}],
               },
             ],
@@ -898,19 +913,19 @@ const interfaceSegregationStage: Stage = {
               {
                 id: 'method-teams-post-message',
                 name: 'postMessage',
-                visibility: 'public',
-                fragments: [{ id: 'frag-teams-chat-post', label: 'Teams のWebhookでチャネルに投稿する', lines: 3, responsibility: 'chat-post', suggestedName: 'postToTeams' , code: { csharp: "var payload = JsonSerializer.Serialize(message);\nusing var response = await _httpClient.PostAsync(endpoint, new StringContent(payload), cancellationToken);\nresponse.EnsureSuccessStatusCode();" }}],
+                visibility: 'public', parameters: [{ type: 'ChatMessage', name: 'message' }],
+                fragments: [{ id: 'frag-teams-chat-post', label: 'Teams のWebhookでチャネルに投稿する', lines: 3, responsibility: 'chat-post', suggestedName: 'postToTeams' , code: { csharp: "var payload = $\"{message.Channel}: {message.Body}\";\nFakeHttp.Post(\"Teams\", payload);\nLog.Debug(\"Teamsに投稿しました\");" }, variables: { uses: ['message'] }}],
               },
               {
                 id: 'method-teams-create-task',
                 name: 'createTask',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'IncidentTask', name: 'task' }],
                 fragments: [{ id: 'frag-teams-task-create-stub', label: '未対応: UnsupportedOperationErrorを投げるだけ', lines: 1, responsibility: 'task-create', stub: true , code: { csharp: "throw new NotSupportedException();" }}],
               },
               {
                 id: 'method-teams-complete-task',
                 name: 'completeTask',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'string', name: 'incidentId' }],
                 fragments: [{ id: 'frag-teams-task-complete-stub', label: '未対応: UnsupportedOperationErrorを投げるだけ', lines: 1, responsibility: 'task-complete', stub: true , code: { csharp: "throw new NotSupportedException();" }}],
               },
             ],
@@ -929,21 +944,21 @@ const interfaceSegregationStage: Stage = {
               {
                 id: 'method-backlog-post-message',
                 name: 'postMessage',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'ChatMessage', name: 'message' }],
                 fragments: [{ id: 'frag-backlog-chat-post-stub', label: '未対応: 何もせずreturnする空実装', lines: 1, responsibility: 'chat-post', stub: true , code: { csharp: "return;" }}],
               },
               {
                 id: 'method-backlog-create-task',
                 name: 'createTask',
-                visibility: 'public',
-                fragments: [{ id: 'frag-backlog-task-create', label: 'Backlog APIで課題を登録する', lines: 3, responsibility: 'task-create', suggestedName: 'createBacklogIssue' , code: { csharp: "var payload = JsonSerializer.Serialize(message);\nusing var response = await _httpClient.PostAsync(endpoint, new StringContent(payload), cancellationToken);\nresponse.EnsureSuccessStatusCode();" }}],
+                visibility: 'public', parameters: [{ type: 'IncidentTask', name: 'task' }],
+                fragments: [{ id: 'frag-backlog-task-create', label: 'Backlog APIで課題を登録する', lines: 3, responsibility: 'task-create', suggestedName: 'createBacklogIssue' , code: { csharp: "var payload = $\"create {task.IncidentId} {task.Severity}\";\nFakeHttp.Post(\"Backlog\", payload);\nLog.Debug(\"Backlogに課題を登録しました\");" }, variables: { uses: ['task'] }}],
               },
               {
                 id: 'method-backlog-complete-task',
                 name: 'completeTask',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'string', name: 'incidentId' }],
                 fragments: [
-                  { id: 'frag-backlog-task-complete', label: 'Backlog APIで課題の状態を完了にする', lines: 3, responsibility: 'task-complete', suggestedName: 'completeBacklogIssue' , code: { csharp: "var payload = JsonSerializer.Serialize(message);\nusing var response = await _httpClient.PostAsync(endpoint, new StringContent(payload), cancellationToken);\nresponse.EnsureSuccessStatusCode();" }},
+                  { id: 'frag-backlog-task-complete', label: 'Backlog APIで課題の状態を完了にする', lines: 3, responsibility: 'task-complete', suggestedName: 'completeBacklogIssue' , code: { csharp: "var payload = $\"complete {incidentId}\";\nFakeHttp.Post(\"Backlog\", payload);\nLog.Debug(\"Backlogの課題を完了にしました\");" }, variables: { uses: ['incidentId'] }},
                 ],
               },
             ],
@@ -962,20 +977,20 @@ const interfaceSegregationStage: Stage = {
               {
                 id: 'method-chatwork-post-message',
                 name: 'postMessage',
-                visibility: 'public',
-                fragments: [{ id: 'frag-chatwork-chat-post', label: 'Chatwork APIでルームに投稿する', lines: 3, responsibility: 'chat-post', suggestedName: 'postToChatwork' , code: { csharp: "var payload = JsonSerializer.Serialize(message);\nusing var response = await _httpClient.PostAsync(endpoint, new StringContent(payload), cancellationToken);\nresponse.EnsureSuccessStatusCode();" }}],
+                visibility: 'public', parameters: [{ type: 'ChatMessage', name: 'message' }],
+                fragments: [{ id: 'frag-chatwork-chat-post', label: 'Chatwork APIでルームに投稿する', lines: 3, responsibility: 'chat-post', suggestedName: 'postToChatwork' , code: { csharp: "var payload = $\"{message.Channel}: {message.Body}\";\nFakeHttp.Post(\"Chatwork\", payload);\nLog.Debug(\"Chatworkに投稿しました\");" }, variables: { uses: ['message'] }}],
               },
               {
                 id: 'method-chatwork-create-task',
                 name: 'createTask',
-                visibility: 'public',
-                fragments: [{ id: 'frag-chatwork-task-create', label: 'Chatwork APIでタスクを登録する', lines: 3, responsibility: 'task-create', suggestedName: 'createChatworkTask' , code: { csharp: "var payload = JsonSerializer.Serialize(message);\nusing var response = await _httpClient.PostAsync(endpoint, new StringContent(payload), cancellationToken);\nresponse.EnsureSuccessStatusCode();" }}],
+                visibility: 'public', parameters: [{ type: 'IncidentTask', name: 'task' }],
+                fragments: [{ id: 'frag-chatwork-task-create', label: 'Chatwork APIでタスクを登録する', lines: 3, responsibility: 'task-create', suggestedName: 'createChatworkTask' , code: { csharp: "var payload = $\"create {task.IncidentId} {task.Severity}\";\nFakeHttp.Post(\"Chatwork\", payload);\nLog.Debug(\"Chatworkに課題を登録しました\");" }, variables: { uses: ['task'] }}],
               },
               {
                 id: 'method-chatwork-complete-task',
                 name: 'completeTask',
-                visibility: 'public',
-                fragments: [{ id: 'frag-chatwork-task-complete', label: 'Chatwork APIでタスクを完了にする', lines: 3, responsibility: 'task-complete', suggestedName: 'completeChatworkTask' , code: { csharp: "var payload = JsonSerializer.Serialize(message);\nusing var response = await _httpClient.PostAsync(endpoint, new StringContent(payload), cancellationToken);\nresponse.EnsureSuccessStatusCode();" }}],
+                visibility: 'public', parameters: [{ type: 'string', name: 'incidentId' }],
+                fragments: [{ id: 'frag-chatwork-task-complete', label: 'Chatwork APIでタスクを完了にする', lines: 3, responsibility: 'task-complete', suggestedName: 'completeChatworkTask' , code: { csharp: "var payload = $\"complete {incidentId}\";\nFakeHttp.Post(\"Chatwork\", payload);\nLog.Debug(\"Chatworkの課題を完了にしました\");" }, variables: { uses: ['incidentId'] }}],
               },
             ],
           },
@@ -1019,6 +1034,7 @@ const valueObjectStage: Stage = {
     "transfer": "sendTransfer",
   },
   id: 'advanced-value-object',
+  runtime: advancedValueObjectRuntime,
   problem: '金額と通貨が別々の値として扱われている',
   level: 'advanced',
   title: '上級7: 金額と通貨を Money にまとめる',
@@ -1091,13 +1107,13 @@ const valueObjectStage: Stage = {
                     responsibility: 'workflow',
                     reads: ['field-category'],
                     writes: ['field-status'],
-                   code: { csharp: "if (string.IsNullOrWhiteSpace(category)) throw new ValidationException(\"勘定科目が必要です\");\nstatus = \"Submitted\";\nreturn true;" }},
+                   code: { csharp: "if (string.IsNullOrWhiteSpace(category)) throw new ValidationException(\"勘定科目が必要です\");\nstatus = \"Submitted\";\nLog.Info(\"申請を提出済みにしました\");" }},
                 ],
               },
               {
                 id: 'method-is-receipt-required',
                 name: 'isReceiptRequired',
-                visibility: 'public',
+                visibility: 'public', returns: [{ name: 'required', type: { csharp: 'bool' } }],
                 fragments: [
                   {
                     id: 'frag-receipt-required',
@@ -1105,7 +1121,7 @@ const valueObjectStage: Stage = {
                     lines: 3,
                     responsibility: 'category-rule',
                     reads: ['field-category'],
-                   code: { csharp: "var requiredCategories = new[] { \"Travel\", \"Equipment\" };\nvar required = requiredCategories.Contains(category);\nreturn required;" }},
+                   code: { csharp: "var requiredCategories = new[] { \"Travel\", \"Equipment\" };\nvar required = requiredCategories.Contains(category);\nLog.Debug($\"領収書の要否: {required}\");" }, variables: { declares: [{ name: 'requiredCategories', type: { csharp: 'string[]' } }, { name: 'required', type: { csharp: 'bool' } }] }},
                 ],
               },
             ],
@@ -1123,7 +1139,7 @@ const valueObjectStage: Stage = {
               {
                 id: 'method-submit-expense',
                 name: 'submitExpense',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'DateTime', name: 'expenseDate' }, { type: 'string', name: 'receipt' }, { type: 'string', name: 'supervisorId' }, { type: 'string', name: 'expenseId' }],
                 fragments: [
                   {
                     id: 'frag-apply-check-form',
@@ -1132,7 +1148,7 @@ const valueObjectStage: Stage = {
                     responsibility: 'application',
                     uses: ['method-is-receipt-required'],
                     suggestedName: 'checkExpenseForm',
-                   code: { csharp: "var receiptRequired = isReceiptRequired(category);\nif (expenseDate > DateTime.UtcNow || string.IsNullOrWhiteSpace(category)) throw new ValidationException(\"日付か勘定科目が不正です\");\nif (receiptRequired && receipt is null) throw new ValidationException(\"領収書が必要です\");" }},
+                   code: { csharp: "var receiptRequired = isReceiptRequired();\nif (expenseDate > DateTime.UtcNow) throw new ValidationException(\"日付が不正です\");\nif (receiptRequired && receipt is null) throw new ValidationException(\"領収書が必要です\");" }, variables: { declares: [{ name: 'receiptRequired', type: { csharp: 'bool' } }], uses: ['expenseDate', 'receipt'] }},
                   {
                     id: 'frag-apply-validate-money',
                     label: '金額が0より大きく、対応している通貨か確かめる',
@@ -1150,7 +1166,7 @@ const valueObjectStage: Stage = {
                     reads: ['field-amount', 'field-currency'],
                     duplicateGroup: 'money-format',
                     suggestedName: 'formatMoney',
-                   code: { csharp: "var digits = CurrencyDigits.For(currency);\nvar format = $\"F{digits}\";\nvar formattedAmount = amount.ToString(format, CultureInfo.InvariantCulture);" }},
+                   code: { csharp: "var digits = CurrencyDigits.For(currency);\nvar format = $\"F{digits}\";\nvar formattedAmount = amount.ToString(format, System.Globalization.CultureInfo.InvariantCulture);" }, variables: { declares: [{ name: 'digits', type: { csharp: 'int' } }, { name: 'format', type: { csharp: 'string' } }, { name: 'formattedAmount', type: { csharp: 'string' } }] }},
                   {
                     id: 'frag-apply-request-approval',
                     label: '申請を提出し、上長へ承認依頼を送る',
@@ -1158,7 +1174,7 @@ const valueObjectStage: Stage = {
                     responsibility: 'approval-request',
                     uses: ['method-submit'],
                     suggestedName: 'requestApproval',
-                   code: { csharp: "submit();\nvar approval = new ApprovalRequest(supervisorId, expenseId, formattedAmount);\nawait _approvalService.RequestAsync(approval, cancellationToken);" }},
+                   code: { csharp: "submit();\nvar approval = new ApprovalRequest(supervisorId, expenseId, formattedAmount);\nFakeApproval.Request(approval);" }, variables: { declares: [{ name: 'approval', type: { csharp: 'ApprovalRequest' } }], uses: ['supervisorId', 'expenseId', 'formattedAmount'] }},
                 ],
               },
             ],
@@ -1176,7 +1192,7 @@ const valueObjectStage: Stage = {
               {
                 id: 'method-approve-monthly-expenses',
                 name: 'approveMonthlyExpenses',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'string', name: 'departmentId' }, { type: 'decimal', name: 'otherAmount' }, { type: 'string', name: 'otherCurrency' }],
                 fragments: [
                   {
                     id: 'frag-approve-collect',
@@ -1184,7 +1200,7 @@ const valueObjectStage: Stage = {
                     lines: 2,
                     responsibility: 'aggregation',
                     suggestedName: 'collectMonthlyExpenses',
-                   code: { csharp: "var monthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);\nvar expenses = await _expenseRepository.FindByDepartmentAsync(departmentId, monthStart, cancellationToken);" }},
+                   code: { csharp: "var monthStart = new DateTime(2026, 11, 1);\nvar expenses = FakeExpenseRepository.FindByDepartment(departmentId, monthStart);" }, variables: { declares: [{ name: 'monthStart', type: { csharp: 'DateTime' } }, { name: 'expenses', type: { csharp: 'List<string>' } }], uses: ['departmentId'] }},
                   {
                     id: 'frag-approve-validate-money',
                     label: '金額が0より大きく、対応している通貨か確かめる',
@@ -1202,8 +1218,8 @@ const valueObjectStage: Stage = {
                     reads: ['field-amount', 'field-currency'],
                     duplicateGroup: 'money-sum',
                     suggestedName: 'sumMoney',
-                   code: { csharp: "if (currency != other.currency) throw new InvalidOperationException(\"通貨が一致しません\");\nvar sum = amount + other.amount;\nvar result = new Money(sum, currency);" }},
-                  { id: 'frag-approve-record-total', label: '承認した合計を部署の承認結果として保存する', lines: 1, responsibility: 'aggregation', suggestedName: 'recordApprovedTotal', code: { csharp: 'await _expenseRepository.SaveApprovedTotalAsync(departmentId, result, cancellationToken);' } },
+                   code: { csharp: "if (currency != otherCurrency) throw new InvalidOperationException(\"通貨が一致しません\");\nvar sum = amount + otherAmount;\nvar result = new Money(sum, currency);" }, variables: { declares: [{ name: 'sum', type: { csharp: 'decimal' } }, { name: 'result', type: { csharp: 'Money' } }], uses: ['otherAmount', 'otherCurrency'] }},
+                  { id: 'frag-approve-record-total', label: '承認した合計を部署の承認結果として保存する', lines: 1, responsibility: 'aggregation', suggestedName: 'recordApprovedTotal', code: { csharp: "FakeExpenseRepository.SaveApprovedTotal(departmentId, result);" }, variables: { uses: ['departmentId', 'result'] } },
                 ],
               },
             ],
@@ -1221,7 +1237,7 @@ const valueObjectStage: Stage = {
               {
                 id: 'method-pay-out',
                 name: 'payOut',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'decimal', name: 'otherAmount' }, { type: 'string', name: 'otherCurrency' }, { type: 'string', name: 'bankAccount' }],
                 fragments: [
                   {
                     id: 'frag-payout-sum-money',
@@ -1231,7 +1247,7 @@ const valueObjectStage: Stage = {
                     reads: ['field-amount', 'field-currency'],
                     duplicateGroup: 'money-sum',
                     suggestedName: 'sumMoney',
-                   code: { csharp: "if (currency != other.currency) throw new InvalidOperationException(\"通貨が一致しません\");\nvar sum = amount + other.amount;\nvar result = new Money(sum, currency);" }},
+                   code: { csharp: "if (currency != otherCurrency) throw new InvalidOperationException(\"通貨が一致しません\");\nvar sum = amount + otherAmount;\nvar result = new Money(sum, currency);" }, variables: { declares: [{ name: 'sum', type: { csharp: 'decimal' } }, { name: 'result', type: { csharp: 'Money' } }], uses: ['otherAmount', 'otherCurrency'] }},
                   {
                     id: 'frag-payout-format-money',
                     label: '通貨ごとの小数桁で金額を表示用に整える',
@@ -1240,14 +1256,14 @@ const valueObjectStage: Stage = {
                     reads: ['field-amount', 'field-currency'],
                     duplicateGroup: 'money-format',
                     suggestedName: 'formatMoney',
-                   code: { csharp: "var digits = CurrencyDigits.For(currency);\nvar format = $\"F{digits}\";\nvar formattedAmount = amount.ToString(format, CultureInfo.InvariantCulture);" }},
+                   code: { csharp: "var digits = CurrencyDigits.For(currency);\nvar format = $\"F{digits}\";\nvar formattedAmount = amount.ToString(format, System.Globalization.CultureInfo.InvariantCulture);" }, variables: { declares: [{ name: 'digits', type: { csharp: 'int' } }, { name: 'format', type: { csharp: 'string' } }, { name: 'formattedAmount', type: { csharp: 'string' } }] }},
                   {
                     id: 'frag-payout-transfer',
                     label: '振込データを作って銀行へ送る',
                     lines: 4,
                     responsibility: 'transfer',
                     suggestedName: 'sendTransfer',
-                   code: { csharp: "var transfer = new BankTransfer(bankAccount, result.Amount);\nawait _bankClient.TransferAsync(transfer, cancellationToken);\n_logger.LogDebug(\"振込データを作って銀行へ送る が完了しました\");\nreturn true;" }},
+                   code: { csharp: "var transfer = new BankTransfer(bankAccount, formattedAmount);\nFakeBank.Transfer(transfer);\nLog.Debug(\"振込データを作って銀行へ送る が完了しました\");\nLog.Info($\"振込を完了しました: {formattedAmount}\");" }, variables: { declares: [{ name: 'transfer', type: { csharp: 'BankTransfer' } }], uses: ['bankAccount', 'formattedAmount'] }},
                 ],
               },
             ],
@@ -1277,6 +1293,7 @@ const templateMethodStage: Stage = {
     "persistence": "saveOrders",
   },
   id: 'advanced-template-method',
+  runtime: advancedTemplateMethodRuntime,
   problem: '形式ごとの取り込み処理に共通手順が重複している',
   level: 'advanced',
   title: '上級8: 取り込みの手順を Template Method にまとめる',
@@ -1348,7 +1365,7 @@ const templateMethodStage: Stage = {
               {
                 id: 'method-upload',
                 name: 'upload',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'UploadedFile', name: 'input' }], returns: [{ name: 'result', type: { csharp: 'int?' } }],
                 fragments: [
                   {
                     id: 'frag-detect-format',
@@ -1356,7 +1373,7 @@ const templateMethodStage: Stage = {
                     lines: 3,
                     responsibility: 'http',
                     suggestedName: 'detectFormat',
-                   code: { csharp: "if (input is null) throw new ArgumentNullException(nameof(input));\nvar format = Path.GetExtension(input.FileName).ToLowerInvariant();\nobject? result = null;" }},
+                   code: { csharp: "if (input is null) throw new ArgumentNullException(nameof(input));\nvar format = Path.GetExtension(input.Path).ToLowerInvariant();\nint? result = null;" }, variables: { declares: [{ name: 'format', type: { csharp: 'string' } }, { name: 'result', type: { csharp: 'int?' } }], uses: ['input'] }},
                   {
                     id: 'frag-dispatch-csv',
                     label: 'CSVなら CsvOrderImporter で取り込む',
@@ -1366,7 +1383,7 @@ const templateMethodStage: Stage = {
                       'method-import-csv',
                     ],
                     suggestedName: 'importCsv',
-                   code: { csharp: "if (format == \".csv\") result = await csvImporter.importOrders(input);\nif (format is not (\".csv\" or \".json\")) throw new ValidationException(\"未対応の形式です\");" }},
+                   code: { csharp: "if (format == \".csv\") result = importOrders(input.Path);\nif (format is not (\".csv\" or \".json\")) throw new ValidationException(\"未対応の形式です\");" }, variables: { uses: ['format', 'input', 'result'] }},
                   {
                     id: 'frag-dispatch-json',
                     label: 'JSONなら JsonOrderImporter で取り込む',
@@ -1376,7 +1393,7 @@ const templateMethodStage: Stage = {
                       'method-import-json',
                     ],
                     suggestedName: 'importJson',
-                   code: { csharp: "if (format == \".json\") result = await jsonImporter.importOrders(input);\nif (result is null) throw new InvalidOperationException(\"Importer returned no result\");\nreturn result;" }},
+                   code: { csharp: "if (format == \".json\") result = importOrders(input.Path);\nif (result is null) throw new InvalidOperationException(\"Importer returned no result\");\nLog.Info($\"取り込んだ注文数: {result}\");" }, variables: { uses: ['format', 'input', 'result'] }},
                 ],
               },
             ],
@@ -1394,7 +1411,7 @@ const templateMethodStage: Stage = {
               {
                 id: 'method-import-csv',
                 name: 'importOrders',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'string', name: 'path' }], returns: [{ name: 'saved', type: { csharp: 'int' } }],
                 fragments: [
                   {
                     id: 'frag-csv-read',
@@ -1403,14 +1420,14 @@ const templateMethodStage: Stage = {
                     responsibility: 'file-read',
                     duplicateGroup: 'order-import-read',
                     suggestedName: 'readLines',
-                   code: { csharp: "if (!File.Exists(path)) throw new FileNotFoundException(path);\nvar lines = File.ReadAllLines(path);\nif (lines.Length == 0) throw new ValidationException(\"ファイルにデータがありません\");" }},
+                   code: { csharp: "if (!File.Exists(path)) throw new FileNotFoundException(path);\nvar lines = File.ReadAllLines(path);\nif (lines.Length == 0) throw new ValidationException(\"ファイルにデータがありません\");" }, variables: { declares: [{ name: 'lines', type: { csharp: 'string[]' } }], uses: ['path'] }},
                   {
                     id: 'frag-csv-parse',
                     label: 'CSVの列を注文データに変換する',
                     lines: 3,
                     responsibility: 'order-parse',
                     suggestedName: 'parse',
-                   code: { csharp: "if (lines is null || lines.Count == 0) throw new ValidationException(\"CSVにデータがありません\");\nvar orders = lines.Select(ParseOrder).ToList();\nif (orders.Count == 0) throw new ValidationException(\"注文データがありません\");" }},
+                   code: { csharp: "if (lines.Length == 0) throw new ValidationException(\"CSVにデータがありません\");\nvar orders = lines.Skip(1).Select(OrderFormats.FromCsvLine).ToList();\nif (orders.Count == 0) throw new ValidationException(\"注文データがありません\");" }, variables: { declares: [{ name: 'orders', type: { csharp: 'List<Order>' } }], uses: ['lines'] }},
                   {
                     id: 'frag-csv-validate',
                     label: '必須項目と金額を検証する',
@@ -1418,7 +1435,7 @@ const templateMethodStage: Stage = {
                     responsibility: 'order-validation',
                     duplicateGroup: 'order-import-validate',
                     suggestedName: 'validateOrders',
-                   code: { csharp: "foreach (var order in orders) {\n    if (order.Items.Count == 0 || order.Total < 0 || order.Items.Any(item => item.UnitPrice < 0)) throw new ValidationException(\"注文内容または単価が不正です\");\n}" }},
+                   code: { csharp: "foreach (var order in orders) {\n    if (order.Items.Count == 0 || order.Total < 0 || order.Items.Any(item => item.UnitPrice < 0)) throw new ValidationException(\"注文内容または単価が不正です\");\n}" }, variables: { uses: ['orders'] }},
                   {
                     id: 'frag-csv-save',
                     label: '注文をまとめて保存する',
@@ -1426,7 +1443,7 @@ const templateMethodStage: Stage = {
                     responsibility: 'persistence',
                     duplicateGroup: 'order-import-save',
                     suggestedName: 'saveOrders',
-                   code: { csharp: "await _orderRepository.SaveManyAsync(orders, cancellationToken);\nawait _unitOfWork.CommitAsync(cancellationToken);\nreturn true;" }},
+                   code: { csharp: "FakeOrderRepository.SaveMany(orders);\nLog.Info($\"{orders.Count} 件の注文を保存しました\");\nvar saved = orders.Count;" }, variables: { declares: [{ name: 'saved', type: { csharp: 'int' } }], uses: ['orders'] }},
                 ],
               },
             ],
@@ -1444,7 +1461,7 @@ const templateMethodStage: Stage = {
               {
                 id: 'method-import-json',
                 name: 'importOrders',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'string', name: 'path' }], returns: [{ name: 'saved', type: { csharp: 'int' } }],
                 fragments: [
                   {
                     id: 'frag-json-read',
@@ -1453,14 +1470,14 @@ const templateMethodStage: Stage = {
                     responsibility: 'file-read',
                     duplicateGroup: 'order-import-read',
                     suggestedName: 'readLines',
-                   code: { csharp: "if (!File.Exists(path)) throw new FileNotFoundException(path);\nvar lines = File.ReadAllLines(path);\nif (lines.Length == 0) throw new ValidationException(\"ファイルにデータがありません\");" }},
+                   code: { csharp: "if (!File.Exists(path)) throw new FileNotFoundException(path);\nvar lines = File.ReadAllLines(path);\nif (lines.Length == 0) throw new ValidationException(\"ファイルにデータがありません\");" }, variables: { declares: [{ name: 'lines', type: { csharp: 'string[]' } }], uses: ['path'] }},
                   {
                     id: 'frag-json-parse',
                     label: 'JSONの項目を注文データに変換する',
                     lines: 3,
                     responsibility: 'order-parse',
                     suggestedName: 'parse',
-                   code: { csharp: "using var document = JsonDocument.Parse(string.Join(Environment.NewLine, lines));\nvar orders = document.RootElement.Deserialize<List<Order>>() ?? throw new ValidationException(\"JSONに注文がありません\");\nif (orders.Count == 0) throw new ValidationException(\"注文データがありません\");" }},
+                   code: { csharp: "var json = string.Join(Environment.NewLine, lines);\nvar orders = OrderFormats.FromJson(json);\nif (orders.Count == 0) throw new ValidationException(\"注文データがありません\");" }, variables: { declares: [{ name: 'json', type: { csharp: 'string' } }, { name: 'orders', type: { csharp: 'List<Order>' } }], uses: ['lines'] }},
                   {
                     id: 'frag-json-validate',
                     label: '必須項目と金額を検証する',
@@ -1468,7 +1485,7 @@ const templateMethodStage: Stage = {
                     responsibility: 'order-validation',
                     duplicateGroup: 'order-import-validate',
                     suggestedName: 'validateOrders',
-                   code: { csharp: "foreach (var order in orders) {\n    if (order.Items.Count == 0 || order.Total < 0 || order.Items.Any(item => item.UnitPrice < 0)) throw new ValidationException(\"注文内容または単価が不正です\");\n}" }},
+                   code: { csharp: "foreach (var order in orders) {\n    if (order.Items.Count == 0 || order.Total < 0 || order.Items.Any(item => item.UnitPrice < 0)) throw new ValidationException(\"注文内容または単価が不正です\");\n}" }, variables: { uses: ['orders'] }},
                   {
                     id: 'frag-json-save',
                     label: '注文をまとめて保存する',
@@ -1476,7 +1493,7 @@ const templateMethodStage: Stage = {
                     responsibility: 'persistence',
                     duplicateGroup: 'order-import-save',
                     suggestedName: 'saveOrders',
-                   code: { csharp: "await _orderRepository.SaveManyAsync(orders, cancellationToken);\nawait _unitOfWork.CommitAsync(cancellationToken);\nreturn true;" }},
+                   code: { csharp: "FakeOrderRepository.SaveMany(orders);\nLog.Info($\"{orders.Count} 件の注文を保存しました\");\nvar saved = orders.Count;" }, variables: { declares: [{ name: 'saved', type: { csharp: 'int' } }], uses: ['orders'] }},
                 ],
               },
             ],
@@ -1494,7 +1511,7 @@ const templateMethodStage: Stage = {
               {
                 id: 'method-order-importer-parse',
                 name: 'parse',
-                visibility: 'protected',
+                visibility: 'protected', parameters: [{ type: 'string[]', name: 'lines' }], returns: [{ name: 'orders', type: { csharp: 'List<Order>' } }],
                 fragments: [],
               },
             ],
@@ -1507,6 +1524,7 @@ const templateMethodStage: Stage = {
 
 const orderStateStage: Stage = {
   id: 'advanced-order-state', level: 'advanced',
+  runtime: advancedOrderStateRuntime,
   title: '上級9: 注文の状態ごとの分岐を State パターンへ組み替える',
   problem: '注文の状態ごとの分岐が、支払い・発送・取り消しの各メソッドに散らばっている',
   outcome: '状態ごとの分岐を、状態そのものを表すクラスに組み替えられる',
@@ -1541,31 +1559,31 @@ const orderStateStage: Stage = {
     ], answer: 2 },
   ],
   codebase: { files: [
-    { id: 'file-order-action-controller', path: 'src/order/OrderController.ts', classes: [{ id: 'class-order-action-controller', name: 'OrderController', methods: [{ id: 'method-handle-order-action', name: 'handleOrderAction', visibility: 'public', fragments: [
-      { id: 'frag-validate-action', label: '注文IDと操作を検証して注文を読み込む', lines: 2, responsibility: 'http', code: { csharp: 'if (string.IsNullOrWhiteSpace(action)) throw new ValidationException("操作が指定されていません");\nvar order = await _orderRepository.FindAsync(orderId, cancellationToken) ?? throw new NotFoundException(orderId);' } },
-      { id: 'frag-dispatch-state', label: 'OrderState(インターフェース)経由で今の状態に操作を任せ、次の状態を保存する', lines: 4, responsibility: 'state-dispatch', uses: ['method-order-state-pay', 'method-order-state-ship', 'method-order-state-cancel'], code: { csharp: 'var next = action == "pay" ? order.State.handlePay(order) : null;\nnext ??= action == "ship" ? order.State.handleShip(order) : null;\nnext ??= action == "cancel" ? order.State.handleCancel(order) : throw new ValidationException("未対応の操作です");\nawait _orderRepository.SaveAsync(order.ChangeState(next), cancellationToken);' } },
+    { id: 'file-order-action-controller', path: 'src/order/OrderController.ts', classes: [{ id: 'class-order-action-controller', name: 'OrderController', methods: [{ id: 'method-handle-order-action', name: 'handleOrderAction', visibility: 'public', parameters: [{ type: 'string', name: 'orderId' }, { type: 'string', name: 'action' }], fragments: [
+      { id: 'frag-validate-action', label: '注文IDと操作を検証して注文を読み込む', lines: 2, responsibility: 'http', code: { csharp: "if (string.IsNullOrWhiteSpace(action)) throw new ValidationException(\"操作が指定されていません\");\nvar order = FakeOrderRepository.Find(orderId) ?? throw new NotFoundException(orderId);" }, variables: { declares: [{ name: 'order', type: { csharp: 'OrderData' } }], uses: ['orderId', 'action'] } },
+      { id: 'frag-dispatch-state', label: 'OrderState(インターフェース)経由で今の状態に操作を任せ、次の状態を保存する', lines: 4, responsibility: 'state-dispatch', uses: ['method-order-state-pay', 'method-order-state-ship', 'method-order-state-cancel'], code: { csharp: "if (action == \"pay\") handlePay(order);\nelse if (action == \"ship\") handleShip(order);\nelse if (action == \"cancel\") handleCancel(order);\nelse throw new ValidationException(\"未対応の操作です\");" }, variables: { uses: ['order', 'action'] } },
     ] }] }] },
     { id: 'file-stateful-order', path: 'src/order/Order.ts', classes: [{ id: 'class-stateful-order', name: 'Order', methods: [
-      { id: 'method-order-pay', name: 'pay', visibility: 'public', fragments: [
-        { id: 'frag-pay-unpaid', label: '未払いなら、決済して次の状態を支払済みにする', lines: 3, responsibility: 'state-unpaid', suggestedName: 'handlePay', code: { csharp: 'var charge = status == OrderStatus.Unpaid ? await _payment.ChargeAsync(id, total, cancellationToken) : null;\nif (charge is { Succeeded: false }) throw new PaymentException(charge.ErrorMessage);\nif (charge is not null) return OrderStatus.Paid;' } },
-        { id: 'frag-pay-paid', label: '支払済みなら、二重決済を防ぐためにエラーにする', lines: 2, responsibility: 'state-paid', suggestedName: 'handlePay', code: { csharp: 'if (status == OrderStatus.Paid) _logger.LogWarning("支払済みの注文 {OrderId} に支払いが届きました", id);\nif (status == OrderStatus.Paid) throw new InvalidOperationException("支払済みの注文は二重に決済できません");' } },
-        { id: 'frag-pay-shipped', label: '発送済みなら、支払いを受け付けずエラーにする', lines: 2, responsibility: 'state-shipped', suggestedName: 'handlePay', code: { csharp: '_logger.LogWarning("発送済みの注文 {OrderId} に支払いが届きました", id);\nthrow new InvalidOperationException("発送済みの注文は支払いを受け付けません");' } },
+      { id: 'method-order-pay', name: 'pay', visibility: 'public', parameters: [{ type: 'OrderData', name: 'order' }], fragments: [
+        { id: 'frag-pay-unpaid', label: '未払いなら、決済して次の状態を支払済みにする', lines: 3, responsibility: 'state-unpaid', suggestedName: 'handlePay', code: { csharp: "var charge = order.Status == OrderStatus.Unpaid ? FakePayment.Charge(order.Id, order.Total) : null;\nif (charge is { Succeeded: false }) throw new PaymentException(charge.ErrorMessage);\nif (charge is not null) order.NextStatus = OrderStatus.Paid;" }, variables: { declares: [{ name: 'charge', type: { csharp: 'PaymentResult' } }], uses: ['order'] } },
+        { id: 'frag-pay-paid', label: '支払済みなら、二重決済を防ぐためにエラーにする', lines: 2, responsibility: 'state-paid', suggestedName: 'handlePay', code: { csharp: "if (order.Status == OrderStatus.Paid) Log.Info($\"支払済みの注文 {order.Id} に支払いが届きました\");\nif (order.Status == OrderStatus.Paid) throw new InvalidOperationException(\"支払済みの注文は二重に決済できません\");" }, variables: { uses: ['order'] } },
+        { id: 'frag-pay-shipped', label: '発送済みなら、支払いを受け付けずエラーにする', lines: 2, responsibility: 'state-shipped', suggestedName: 'handlePay', code: { csharp: "if (order.Status == OrderStatus.Shipped) Log.Info($\"発送済みの注文 {order.Id} に支払いが届きました\");\nif (order.Status == OrderStatus.Shipped) throw new InvalidOperationException(\"発送済みの注文は支払いを受け付けません\");" }, variables: { uses: ['order'] } },
       ] },
-      { id: 'method-order-ship', name: 'ship', visibility: 'public', fragments: [
-        { id: 'frag-ship-unpaid', label: '未払いなら、発送を受け付けずエラーにする', lines: 2, responsibility: 'state-unpaid', suggestedName: 'handleShip', code: { csharp: 'if (status == OrderStatus.Unpaid) _logger.LogWarning("未払いの注文 {OrderId} に発送指示が届きました", id);\nif (status == OrderStatus.Unpaid) throw new InvalidOperationException("未払いの注文は発送できません");' } },
-        { id: 'frag-ship-paid', label: '支払済みなら、倉庫へ出荷を指示して次の状態を発送済みにする', lines: 3, responsibility: 'state-paid', suggestedName: 'handleShip', code: { csharp: 'var shipment = status == OrderStatus.Paid ? await _warehouse.RequestShipmentAsync(id, address, cancellationToken) : null;\nif (shipment is not null) trackingNumber = shipment.TrackingNumber;\nif (shipment is not null) return OrderStatus.Shipped;' } },
-        { id: 'frag-ship-shipped', label: '発送済みなら、二重発送を防ぐためにエラーにする', lines: 2, responsibility: 'state-shipped', suggestedName: 'handleShip', code: { csharp: '_logger.LogWarning("発送済みの注文 {OrderId} に発送指示が届きました", id);\nthrow new InvalidOperationException("発送済みの注文は二重に発送できません");' } },
+      { id: 'method-order-ship', name: 'ship', visibility: 'public', parameters: [{ type: 'OrderData', name: 'order' }], fragments: [
+        { id: 'frag-ship-unpaid', label: '未払いなら、発送を受け付けずエラーにする', lines: 2, responsibility: 'state-unpaid', suggestedName: 'handleShip', code: { csharp: "if (order.Status == OrderStatus.Unpaid) Log.Info($\"未払いの注文 {order.Id} に発送指示が届きました\");\nif (order.Status == OrderStatus.Unpaid) throw new InvalidOperationException(\"未払いの注文は発送できません\");" }, variables: { uses: ['order'] } },
+        { id: 'frag-ship-paid', label: '支払済みなら、倉庫へ出荷を指示して次の状態を発送済みにする', lines: 3, responsibility: 'state-paid', suggestedName: 'handleShip', code: { csharp: "var shipment = order.Status == OrderStatus.Paid ? FakeWarehouse.RequestShipment(order.Id, order.Address) : null;\nif (shipment is not null) order.TrackingNumber = shipment.TrackingNumber;\nif (shipment is not null) order.NextStatus = OrderStatus.Shipped;" }, variables: { declares: [{ name: 'shipment', type: { csharp: 'Shipment' } }], uses: ['order'] } },
+        { id: 'frag-ship-shipped', label: '発送済みなら、二重発送を防ぐためにエラーにする', lines: 2, responsibility: 'state-shipped', suggestedName: 'handleShip', code: { csharp: "if (order.Status == OrderStatus.Shipped) Log.Info($\"発送済みの注文 {order.Id} に発送指示が届きました\");\nif (order.Status == OrderStatus.Shipped) throw new InvalidOperationException(\"発送済みの注文は二重に発送できません\");" }, variables: { uses: ['order'] } },
       ] },
-      { id: 'method-order-cancel', name: 'cancel', visibility: 'public', fragments: [
-        { id: 'frag-cancel-unpaid', label: '未払いなら、在庫を戻して注文を取り消し履歴へ移す', lines: 3, responsibility: 'state-unpaid', suggestedName: 'handleCancel', code: { csharp: 'if (status == OrderStatus.Unpaid) await _inventory.ReleaseAsync(items, cancellationToken);\nif (status == OrderStatus.Unpaid) await _orderRepository.ArchiveCanceledAsync(id, cancellationToken);\nif (status == OrderStatus.Unpaid) return OrderStatus.Canceled;' } },
-        { id: 'frag-cancel-paid', label: '支払済みなら、返金して在庫を戻し、注文を取り消し履歴へ移す', lines: 4, responsibility: 'state-paid', suggestedName: 'handleCancel', code: { csharp: 'if (status == OrderStatus.Paid) await _payment.RefundAsync(id, total, cancellationToken);\nif (status == OrderStatus.Paid) await _inventory.ReleaseAsync(items, cancellationToken);\nif (status == OrderStatus.Paid) await _orderRepository.ArchiveCanceledAsync(id, cancellationToken);\nif (status == OrderStatus.Paid) return OrderStatus.Canceled;' } },
-        { id: 'frag-cancel-shipped', label: '発送済みなら、取り消しは受け付けず返品窓口を案内する', lines: 2, responsibility: 'state-shipped', suggestedName: 'handleCancel', code: { csharp: '_logger.LogInformation("発送済みの注文 {OrderId} の取り消しを返品窓口へ案内しました", id);\nthrow new InvalidOperationException("発送済みの注文は取り消せません。返品窓口へお問い合わせください");' } },
+      { id: 'method-order-cancel', name: 'cancel', visibility: 'public', parameters: [{ type: 'OrderData', name: 'order' }], fragments: [
+        { id: 'frag-cancel-unpaid', label: '未払いなら、在庫を戻して注文を取り消し履歴へ移す', lines: 3, responsibility: 'state-unpaid', suggestedName: 'handleCancel', code: { csharp: "if (order.Status == OrderStatus.Unpaid) FakeInventory.Release(order.Items);\nif (order.Status == OrderStatus.Unpaid) FakeOrderRepository.ArchiveCanceled(order.Id);\nif (order.Status == OrderStatus.Unpaid) order.NextStatus = OrderStatus.Canceled;" }, variables: { uses: ['order'] } },
+        { id: 'frag-cancel-paid', label: '支払済みなら、返金して在庫を戻し、注文を取り消し履歴へ移す', lines: 4, responsibility: 'state-paid', suggestedName: 'handleCancel', code: { csharp: "if (order.Status == OrderStatus.Paid) FakePayment.Refund(order.Id, order.Total);\nif (order.Status == OrderStatus.Paid) FakeInventory.Release(order.Items);\nif (order.Status == OrderStatus.Paid) FakeOrderRepository.ArchiveCanceled(order.Id);\nif (order.Status == OrderStatus.Paid) order.NextStatus = OrderStatus.Canceled;" }, variables: { uses: ['order'] } },
+        { id: 'frag-cancel-shipped', label: '発送済みなら、取り消しは受け付けず返品窓口を案内する', lines: 2, responsibility: 'state-shipped', suggestedName: 'handleCancel', code: { csharp: "if (order.Status == OrderStatus.Shipped) Log.Info($\"発送済みの注文 {order.Id} の取り消しを返品窓口へ案内しました\");\nif (order.Status == OrderStatus.Shipped) throw new InvalidOperationException(\"発送済みの注文は取り消せません。返品窓口へお問い合わせください\");" }, variables: { uses: ['order'] } },
       ] },
     ] }] },
     { id: 'file-order-state', path: 'src/order/OrderState.ts', classes: [{ id: 'class-order-state', name: 'OrderState', methods: [
-      { id: 'method-order-state-pay', name: 'handlePay', visibility: 'public', fragments: [] },
-      { id: 'method-order-state-ship', name: 'handleShip', visibility: 'public', fragments: [] },
-      { id: 'method-order-state-cancel', name: 'handleCancel', visibility: 'public', fragments: [] },
+      { id: 'method-order-state-pay', name: 'handlePay', visibility: 'public', parameters: [{ type: 'OrderData', name: 'order' }], fragments: [] },
+      { id: 'method-order-state-ship', name: 'handleShip', visibility: 'public', parameters: [{ type: 'OrderData', name: 'order' }], fragments: [] },
+      { id: 'method-order-state-cancel', name: 'handleCancel', visibility: 'public', parameters: [{ type: 'OrderData', name: 'order' }], fragments: [] },
     ] }] },
   ] },
 };

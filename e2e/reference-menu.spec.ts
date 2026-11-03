@@ -85,6 +85,8 @@ test('メニューは矢印キーで移動・選択でき、未登録の答え�
 
   await expect(before).toBeFocused();
   await page.keyboard.press('ArrowDown');
+  await expect(page.getByTestId('reference-source-download')).toBeFocused();
+  await page.keyboard.press('ArrowDown');
   await expect(sample).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(menuButton).toBeFocused();
@@ -182,14 +184,6 @@ for (const [title, stageId] of runtimeStages) {
     expect(download.suggestedFilename()).toBe(`${stageId}.zip`);
   });
 }
-
-test('runtime の無いステージでは、メニューに C# のダウンロードが出ない', async ({ page }) => {
-  await page.goto('/');
-  await selectStage(page, '上級1: 通知クラスの共通処理を基底クラスへ集める', { completeOpeningFix: false });
-  await page.getByTestId('reference-menu-button').click();
-  await expect(page.getByTestId('reference-before')).toBeVisible();
-  await expect(page.getByTestId('reference-source-download')).toHaveCount(0);
-});
 
 type DraftMethod = { id: string; name?: string; visibility?: string; fragments?: object[] };
 type DraftClass = { methods: DraftMethod[] };

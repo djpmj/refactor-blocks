@@ -145,6 +145,20 @@ describe('mergeMethods', () => {
     expect(merged?.fragments[0].variables).toEqual(testVariables);
   });
 
+  it('統合後の呼び出し処理は、Aの callArguments を引き継ぐ', () => {
+    // Arrange
+    const addArguments = (item: Method): Method => ({ ...item, fragments: item.fragments.map((f) => ({ ...f, callArguments: ['id, path'] })) });
+    const patch = (item: Method): Method => (item.id === 'method-a' ? addArguments(item) : item);
+    const withArguments = mapClasses(fixture(), (owner) => ({ ...owner, methods: owner.methods.map(patch) }));
+
+    // Act
+    const result = mergeMethods(withArguments, request());
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    expect(findMethod(result.value, 'method-merged')?.fragments[0].callArguments).toEqual(['id, path']);
+  });
+
   it('統合後のFragmentは重複元と同じコードを引き継ぎ、fragmentLinesがコードの行数と一致する', () => {
     // Arrange
     const duplicateCode = 'var message = BuildMessage();\n_logger.LogInformation(message);';

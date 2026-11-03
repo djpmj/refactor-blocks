@@ -1,6 +1,7 @@
-import { fieldsOf, findClass, isInterfaceLike, parentIds, type LocalVariable, type CodeLanguage, type Codebase, type CodeClass } from './Codebase';
+import { fieldsOf, findClass, isAbstractClass, isAbstractMethod, isInterfaceLike, parentIds, type LocalVariable, type CodeLanguage, type Codebase, type CodeClass } from './Codebase';
 import { isAsyncMethod } from './methodSignature';
 import { fragmentCode } from './fragmentCode';
+import { overriddenAbstract } from './overrides';
 import { qualifyFragmentCode, receiverOfMethod, wiringOf, type ClassWiring } from './csharpWiring';
 
 export type SourceLine = {
@@ -10,7 +11,7 @@ export type SourceLine = {
 };
 
 /** クラス宣言の頭。画面の疑似ソースは 'public class'、C#プロジェクトは補助コードから足せるよう 'public partial class'。 */
-export type ClassDeclaration = 'public class' | 'public partial class' | 'public partial interface';
+export type ClassDeclaration = 'public class' | 'public partial class';
 
 function plain(text: string): SourceLine {
   return { text };
@@ -38,14 +39,23 @@ function returnStatement(returns: readonly LocalVariable[]): string {
   return returns.length === 1 ? `return ${returns[0].name};` : `return (${returns.map((item) => item.name).join(', ')});`;
 }
 
-function renderMethod(codebase: Codebase, method: CodeClass['methods'][number], language: CodeLanguage, context: { readonly wiring: ClassWiring; readonly implementedNames: ReadonlySet<string> }): SourceLine[] {
-  const { wiring, implementedNames } = context;
+type Method = CodeClass['methods'][number];
+
+/** メソッドの修飾子。本体の無いメソッドは abstract(インターフェース役のクラスの中は対象外)、基底の抽象メソッドの実装は override。 */
+function methodModifier(codebase: Codebase, codeClass: CodeClass, method: Method): string {
+  if (!isInterfaceLike(codeClass) && isAbstractMethod(method)) return ' abstract';
+  return overriddenAbstract(codebase, codeClass, method) === undefined ? '' : ' override';
+}
+
+function renderMethod(codebase: Codebase, method: Method, language: CodeLanguage, context: { readonly wiring: ClassWiring; readonly implementedNames: ReadonlySet<string>; readonly codeClass: CodeClass }): SourceLine[] {
+  const { wiring, implementedNames, codeClass } = context;
   const parameters = (method.parameters ?? []).map((parameter) => `${parameter.type} ${parameter.name}`).join(', ');
   const returns = method.returns ?? [];
   const type = returnType(returns, isAsyncMethod(codebase, method.id), language);
   // インターフェースの実装は、C# では必ず public
   const visibility = implementedNames.has(method.name) ? 'public' : method.visibility;
-  const declaration = `    ${visibility} ${type} ${method.name}(${parameters})`;
+  const modifier = methodModifier(codebase, codeClass, method);
+  const declaration = `    ${visibility}${modifier} ${type} ${method.name}(${parameters})`;
   if (method.fragments.length === 0) return [plain(`${declaration};`)];
   const body = method.fragments.flatMap((fragment, index) => {
     const rawCode = fragmentCode(codebase, fragment, language, (methodId) => receiverOfMethod(codebase, wiring.receivers, methodId));
@@ -81,11 +91,18 @@ export function generateClassSourceLines(codebase: Codebase, classId: string, la
   }));
   const methods = codeClass.methods.flatMap((method, index) => [
     ...(index > 0 ? [plain('')] : []),
-    ...renderMethod(codebase, method, language, { wiring, implementedNames }),
+    ...renderMethod(codebase, method, language, { wiring, implementedNames, codeClass }),
   ]);
   const injected = wiring.declarations.map(plain);
   const members = [fields, injected, methods].filter((group) => group.length > 0).flatMap((group, index) => [...(index > 0 ? [plain('')] : []), ...group]);
-  return [plain(`${declaration} ${codeClass.name}${inheritance}`), plain('{'), ...members, plain('}')];
+  const keyword = classKeyword(codeClass, declaration);
+  return [plain(`${keyword} ${codeClass.name}${inheritance}`), plain('{'), ...members, plain('}')];
+}
+
+/** クラスの宣言部分。インターフェース役は interface、抽象メソッドを持つクラスは abstract class。 */
+function classKeyword(codeClass: CodeClass, declaration: ClassDeclaration): string {
+  if (isInterfaceLike(codeClass)) return declaration.replace('class', 'interface');
+  return isAbstractClass(codeClass) ? declaration.replace('public ', 'public abstract ') : declaration;
 }
 
 export function generateClassSource(codebase: Codebase, classId: string, language: CodeLanguage, declaration: ClassDeclaration = 'public class'): string {

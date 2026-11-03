@@ -2,10 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { allClasses, fieldsOf } from '../../domain/codebase/Codebase';
 import { generateClassSource } from '../../domain/codebase/generateClassSource';
 import { findBuildIssues } from '../../domain/codebase/buildIssues';
+import { generateCSharpProject } from '../../domain/codebase/csharpProject';
 import { sampleAnswerSteps, solutionSnapshots } from '../../domain/stage/sampleAnswer';
 import type { Fragment, Method } from '../../domain/codebase/Codebase';
 import type { Stage } from '../../domain/stage/Stage';
 import { blankDesignProblems } from '../blankDesigns/blankDesignProblems';
+import { bindingDemoFile } from './runtime/supportFiles';
 import { stages } from './stageCatalog';
 
 const allStageDefinitions = [...stages, ...blankDesignProblems];
@@ -157,7 +159,7 @@ describe('ステージのC#コード', () => {
     expect(smsBody).toContain('var body =');
     expect(smsBody).not.toContain('_mailer.SendAsync');
     expect(smsDelivery).toContain('SmsMessage');
-    expect(smsDelivery).toContain('_smsClient.SendAsync');
+    expect(smsDelivery).toContain('FakeSmsClient.Send');
   });
 
   it('割引計算の前に注文内容と会員ランクを検証する', () => {
@@ -191,8 +193,8 @@ describe('ステージのC#コード', () => {
   });
 
   it('決済プロバイダー設定とCSVヘッダー作成は固有の値を構成・返却する', () => {
-    expect(fragmentById('frag-stripe-api-call').code?.csharp).toContain('_stripeClient');
-    expect(fragmentById('frag-paypal-api-call').code?.csharp).toContain('_paypalClient');
+    expect(fragmentById('frag-stripe-api-call').code?.csharp).toContain('FakeStripeClient');
+    expect(fragmentById('frag-paypal-api-call').code?.csharp).toContain('FakePaypalClient');
     expect(fragmentById('frag-configure-stripe').code?.csharp).toContain('STRIPE_API_KEY');
     expect(fragmentById('frag-configure-paypal').code?.csharp).toContain('PAYPAL_CLIENT_SECRET');
     expect(fragmentById('frag-decide-header').code?.csharp).toMatch(/return header|Write.*header/);
@@ -262,8 +264,8 @@ describe('ステージのC#コード', () => {
     expect(output).toContain('sales.Select');
     expect(output).toContain('prepareExport(writer, rows)');
     expect(output).toContain('writeRows(writer, rows)');
-    expect(header).toContain('writer.WriteLineAsync(header');
-    expect(rows).toContain('writer.WriteLineAsync');
+    expect(header).toContain('writer.WriteLine(header');
+    expect(rows).toContain('writer.WriteLine');
   });
 
   it('注文サービスは丸めた小計から税を計算し、同じ注文を保存して通知する', () => {
@@ -315,7 +317,7 @@ describe('ステージのC#コード', () => {
   it('JSON parseはnull・空データを検証し、注文検証前にordersを確定する', () => {
     const parse = fragmentById('frag-json-parse').code?.csharp ?? '';
     const validate = fragmentById('frag-json-validate').code?.csharp ?? '';
-    expect(parse).toContain('Deserialize<List<Order>>() ?? throw');
+    expect(parse).toContain('OrderFormats.FromJson(json)');
     expect(parse).toContain('orders.Count == 0');
     expect(validate).toContain('foreach (var order in orders)');
   });
@@ -376,8 +378,8 @@ describe('ステージのC#コード', () => {
   it('premium and VIP discounts use distinct locals in the shared method scope', () => {
     const premium = fragmentById('frag-branch-premium').code?.csharp ?? '';
     const vip = fragmentById('frag-branch-vip').code?.csharp ?? '';
-    expect(premium).toContain('discountedTotal');
-    expect(vip).toContain('vipDiscountedTotal');
+    expect(premium).toContain('premiumTotal');
+    expect(vip).toContain('vipTotal');
   });
 
   it('blank order flow forwards the taxed amount into persistence before notifying', () => {
@@ -522,7 +524,8 @@ function methodFlowProblems(stageId: string, method: Method): string[] {
     problems.push(...declared.filter((name) => available.has(name)).map((name) => `${stageId}/${method.name}: ${fragment.id} が作る ${name} がすでにある`));
     declared.forEach((name) => available.add(name));
   }
-  const missingReturns = (method.returns ?? []).filter((variable) => !available.has(variable.name));
+  // 本体の無いメソッド(インターフェース・抽象メソッドの宣言)は、戻り値の型だけを持つ
+  const missingReturns = method.fragments.length === 0 ? [] : (method.returns ?? []).filter((variable) => !available.has(variable.name));
   return [...problems, ...missingReturns.map((variable) => `${stageId}/${method.name}: 戻り値 ${variable.name} をどの処理も作っていない`)];
 }
 
@@ -544,6 +547,44 @@ function expectedBuildFailureProblems(stage: Stage): string[] {
       || findBuildIssues(snapshots[index], stage.runtime?.bindings).length === 0;
   }).map((name) => `${stage.id}/${name}`);
 }
+
+describe('bindings で選んだ実装の実行', () => {
+  const programOf = (stageId: string, snapshotIndex: 'initial' | 'final', bindings?: Record<string, string>): string => {
+    const stage = stages.find((item) => item.id === stageId);
+    if (stage?.runtime === undefined) throw new Error(`${stageId} に runtime がありません`);
+    const snapshots = solutionSnapshots(stage.codebase, sampleAnswerSteps[stageId] ?? [], { visibilityEnforced: stage.visibilityEnforced });
+    const codebase = snapshotIndex === 'initial' ? snapshots[0] : snapshots[snapshots.length - 1];
+    const runtime = bindings === undefined ? stage.runtime : { ...stage.runtime, bindings };
+    return generateCSharpProject(codebase, runtime, 'Demo').find((file) => file.path === 'Demo/Program.cs')?.content ?? '';
+  };
+
+  it.each([
+    { stageId: 'advanced-discount-strategy', contract: 'DiscountStrategy', other: 'VipDiscount', boundVariable: 'premiumDiscount', otherVariable: 'vipDiscount' },
+    { stageId: 'advanced-order-state', contract: 'OrderState', other: 'PaidState', boundVariable: 'unpaidState', otherVariable: 'paidState' },
+    { stageId: 'advanced-payment-gateway-interface', contract: 'PaymentGateway', other: 'PaypalGateway', boundVariable: 'stripeGateway', otherVariable: 'paypalGateway' },
+  ])('$stageId: 完成形では bindings で選んだ実装を実行し、別の実装を選ぶと実行する実装も変わる', ({ stageId, contract, other, boundVariable, otherVariable }) => {
+    // Arrange / Act
+    const withBound = programOf(stageId, 'final');
+    const withOther = programOf(stageId, 'final', { [contract]: other });
+    const initial = programOf(stageId, 'initial');
+    // Assert
+    expect(withBound).toContain(`${boundVariable}.`);
+    expect(withBound).toContain('BindingDemo.Run(');
+    expect(withOther).toContain(`${otherVariable}.`);
+    expect(withOther).not.toContain(`, ${boundVariable}, () => ${boundVariable}.`);
+    // 実装を宣言する前の手順では、まだインターフェース越しには実行しない
+    expect(initial).not.toContain('BindingDemo');
+  });
+});
+
+describe('BindingDemo(補助コード)', () => {
+  it('選んだ実装の例外を握りつぶさない(失敗はそのまま非ゼロ終了にする)', () => {
+    // Arrange / Act
+    const code = bindingDemoFile.code;
+    // Assert
+    expect(code).not.toMatch(/catch/);
+  });
+});
 
 describe('runtime を持つステージの変数', () => {
   it('第4弾の7ステージが runtime を持つ', () => {
@@ -568,6 +609,20 @@ describe('runtime を持つステージの変数', () => {
 
     // Assert
     expect(missing).toEqual([]);
+  });
+
+  it('第6弾の上級9ステージが runtime を持ち、全ステージが C# で書き出せる', () => {
+    // Arrange
+    const ids = ['advanced-notifier-hierarchy', 'advanced-payment-gateway-interface', 'advanced-discount-strategy', 'advanced-report-factory', 'advanced-collapse-hierarchy', 'advanced-interface-segregation', 'advanced-value-object', 'advanced-template-method', 'advanced-order-state'];
+
+    // Act
+    const withRuntime = stages.filter((stage) => stage.runtime !== undefined).map((stage) => stage.id);
+    const missing = ids.filter((id) => !withRuntime.includes(id));
+    const withoutRuntime = stages.filter((stage) => stage.runtime === undefined).map((stage) => stage.id);
+
+    // Assert
+    expect(missing).toEqual([]);
+    expect(withoutRuntime).toEqual([]);
   });
 
   it('全処理の variables.uses が、手前の処理かメソッドの引数で作られていて、同じ変数名を2つの処理が作っていない', () => {

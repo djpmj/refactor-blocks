@@ -5,7 +5,7 @@ import { dirname, join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { sampleAnswerSteps, solutionSnapshots } from '../stage/sampleAnswer';
 import { stages } from '../../infrastructure/stages/stageCatalog';
-import { csharpProjectName, generateCSharpProject } from './csharpProject';
+import { csharpProjectName, expectedBindingLines, generateCSharpProject } from './csharpProject';
 
 /**
  * Vitestで動くエクスポーター。環境変数 CSHARP_EXPORT_DIR があるときだけ、runtime を持つ全ステージのプロジェクトを
@@ -40,7 +40,7 @@ describe.skipIf(exportDir === undefined)('C# プロジェクトの書き出し',
       const solution = sampleAnswerSteps[stage.id] ?? [];
       const snapshots = withSteps ? solutionSnapshots(stage.codebase, solution, { visibilityEnforced: stage.visibilityEnforced }) : [stage.codebase];
       mkdirSync(join(root, stage.id), { recursive: true });
-      writeFileSync(join(root, stage.id, 'runtime.json'), JSON.stringify({ expectedBuildFailures: runtime.expectedBuildFailures ?? [] }), 'utf8');
+      writeFileSync(join(root, stage.id, 'runtime.json'), JSON.stringify({ expectedBuildFailures: runtime.expectedBuildFailures ?? [], expectedBindings: expectedBindingLines(snapshots[snapshots.length - 1], runtime) }), 'utf8');
       snapshots.forEach((codebase, index) => {
         const name = index === 0 ? '00-initial' : String(index).padStart(2, '0');
         writeProject(join(root, stage.id, name), generateCSharpProject(codebase, runtime, csharpProjectName));

@@ -1,4 +1,4 @@
-import { allClasses, findClass, findClassOfField, findClassOfMethod, findField, findMethod, isInterfaceLike, parentIds, touchedFieldIds, type CodeClass, type Codebase, type Fragment } from './Codebase';
+import { allClasses, findClass, findClassOfField, findClassOfMethod, findField, findMethod, isAbstractClass, isInterfaceLike, parentIds, touchedFieldIds, type CodeClass, type Codebase, type Fragment } from './Codebase';
 import type { BuildIssue } from './buildIssues';
 import { fieldOwnerMap, methodOwnerMap } from './dependencies';
 import { resolvesToOwnDeclaration } from './overrides';
@@ -61,12 +61,15 @@ export function collaboratorsOf(codebase: Codebase, classId: string): readonly C
   return [...unique.values()];
 }
 
-/** 型に代入できるインスタンスを作れるクラス。インターフェース役ならそれを継承・実装した具象クラス、具象クラスならそれ自身。 */
-function implementersOf(codebase: Codebase, classId: string): readonly CodeClass[] {
+/** インスタンスを作れないクラス(インターフェース役・抽象クラス)。 */
+const isUninstantiable = (codeClass: CodeClass): boolean => isInterfaceLike(codeClass) || isAbstractClass(codeClass);
+
+/** 型に代入できるインスタンスを作れるクラス。インターフェース役・抽象クラスならそれを継承・実装した具象クラス、具象クラスならそれ自身。 */
+export function implementersOf(codebase: Codebase, classId: string): readonly CodeClass[] {
   const target = findClass(codebase, classId);
   if (target === undefined) return [];
-  if (!isInterfaceLike(target)) return [target];
-  return allClasses(codebase).filter((codeClass) => !isInterfaceLike(codeClass) && ancestorIds(codebase, codeClass).has(classId));
+  if (!isUninstantiable(target)) return [target];
+  return allClasses(codebase).filter((codeClass) => !isUninstantiable(codeClass) && ancestorIds(codebase, codeClass).has(classId));
 }
 
 const edgeKey = (fromId: string, toId: string): string => `${fromId}>${toId}`;
@@ -156,11 +159,13 @@ export function qualifyFragmentCode(codebase: Codebase, receivers: ReadonlyMap<s
     const receiver = ownerId === undefined ? undefined : receivers.get(ownerId);
     return field === undefined || receiver === undefined ? [] : [[field.name, `${receiver}.${field.name}`] as const];
   });
-  const methodReplacements = (fragment.uses ?? []).flatMap((methodId) => {
+  const used = (fragment.uses ?? []).flatMap((methodId) => {
     const method = findMethod(codebase, methodId);
-    const receiver = receiverOfMethod(codebase, receivers, methodId);
-    return method === undefined || receiver === undefined ? [] : [[method.name, `${receiver}.${method.name}`] as const];
+    return method === undefined ? [] : [{ name: method.name, receiver: receiverOfMethod(codebase, receivers, methodId) }];
   });
+  // 統合で同じ名前のメソッドがまとまったとき、自分のクラスのメソッド(受け手なし)があればそれを呼ぶので、受け手は付けない
+  const ownNames = new Set(used.filter(({ receiver }) => receiver === undefined).map(({ name }) => name));
+  const methodReplacements = used.flatMap(({ name, receiver }) => (receiver === undefined || ownNames.has(name) ? [] : [[name, `${receiver}.${name}`] as const]));
   const replacements = new Map([...fieldReplacements, ...methodReplacements]);
   return replacements.size === 0 ? code : qualifyForeignMembers(code, replacements);
 }
@@ -194,7 +199,7 @@ function constructionOrder(classes: readonly CodeClass[], injectedTargets: (clas
  * インターフェース型の依存は、実装が1つならそれ、複数なら bindings(インターフェース名 → クラス名)で決める。決まらなければ 'ambiguous-binding' の問題にする(実装が1つもないときは問題にせず `null` を渡す)。
  */
 export function compositionOrder(codebase: Codebase, bindings: Readonly<Record<string, string>> = {}): CompositionPlan {
-  const concrete = allClasses(codebase).filter((codeClass) => !isInterfaceLike(codeClass));
+  const concrete = allClasses(codebase).filter((codeClass) => !isUninstantiable(codeClass));
   const late = lateEdges(codebase);
   const resolve = bindingResolver(codebase, bindings);
   const uses = new Map(concrete.map((codeClass) => [codeClass.id, usesOf(codebase, codeClass)]));

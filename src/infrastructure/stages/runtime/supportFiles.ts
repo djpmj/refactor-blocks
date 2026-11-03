@@ -85,3 +85,32 @@ public static class FakeMailAuditLog
     }
 }
 `);
+
+/**
+ * bindings で選んだ実装を、インターフェース越しに実行して見せる(runtime.bindingDemos から呼ぶ)。
+ * 実装が出した出力と、どの実装だったかを、各行に `[bindings] ` を付けて出す。例外は握りつぶさない(投げられたらそのままプログラムが異常終了し、検証が NG になる)。
+ */
+export const bindingDemoFile = supportFile('BindingDemo.cs', `
+public static class BindingDemo
+{
+    public static void Run(string operation, object bound, Action action)
+    {
+        var original = Console.Out;
+        var captured = new StringWriter();
+        Console.SetOut(captured);
+        try
+        {
+            action();
+        }
+        finally
+        {
+            Console.SetOut(original);
+        }
+        Console.WriteLine($"[bindings] {bound.GetType().Name}.{operation}");
+        foreach (var line in captured.ToString().Split(new[] { '\\r', '\\n' }, StringSplitOptions.RemoveEmptyEntries))
+        {
+            Console.WriteLine($"[bindings]   {line}");
+        }
+    }
+}
+`);

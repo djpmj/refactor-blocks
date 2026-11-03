@@ -1,6 +1,6 @@
 import type { StageRuntime } from '../stage/StageRuntime';
-import { findClassOfMethod, findMethod, isInterfaceLike, type Codebase } from './Codebase';
-import { compositionOrder } from './csharpWiring';
+import { allClasses, findClassOfMethod, findMethod, type Codebase, type CodeClass } from './Codebase';
+import { compositionOrder, implementersOf, type CompositionPlan } from './csharpWiring';
 import { generateClassSource } from './generateClassSource';
 import { isAsyncMethod } from './methodSignature';
 import { uniqueName } from './naming';
@@ -27,6 +27,33 @@ function csproj(projectName: string): string {
   ].join('\n');
 }
 
+/** bindings で選んだ実装(interface を実装している手順だけ)。まだ実装していない手順では undefined。 */
+function boundImplementation(codebase: Codebase, runtime: StageRuntime, interfaceName: string): CodeClass | undefined {
+  const contract = allClasses(codebase).find((codeClass) => codeClass.name === interfaceName);
+  const bound = contract === undefined ? undefined : implementersOf(codebase, contract.id).find((codeClass) => codeClass.name === runtime.bindings?.[interfaceName]);
+  return bound?.id === contract?.id ? undefined : bound;
+}
+
+/** bindings で選んだ実装が、そのインターフェースを実装している手順だけ、補助コードの呼び出し(runtime.bindingDemos)を返す。 */
+function bindingDemoLines(codebase: Codebase, runtime: StageRuntime, plan: CompositionPlan): string[] {
+  return Object.entries(runtime.bindingDemos ?? {}).flatMap(([interfaceName, statement]) => {
+    const bound = boundImplementation(codebase, runtime, interfaceName);
+    const variable = plan.steps.find((step) => step.classId === bound?.id)?.variable;
+    return variable === undefined ? [] : [statement.replaceAll('{0}', variable)];
+  });
+}
+
+/**
+ * 実行すると出るはずの `[bindings] <選んだ実装のクラス名>.<操作名>` の見出し行(各 `BindingDemo.Run("操作名", ...)` から取る)。
+ * scripts/verify-csharp.sh が、完成形の実行結果の見出し行とこれが一致するかで、選んだ実装が実際に呼ばれたことを確かめる。
+ */
+export function expectedBindingLines(codebase: Codebase, runtime: StageRuntime): string[] {
+  return Object.entries(runtime.bindingDemos ?? {}).flatMap(([interfaceName, statements]) => {
+    const bound = boundImplementation(codebase, runtime, interfaceName);
+    return bound === undefined ? [] : [...statements.matchAll(/BindingDemo\.Run\("([^"]+)"/g)].map((match) => `[bindings] ${bound.name}.${match[1]}`);
+  });
+}
+
 function program(codebase: Codebase, runtime: StageRuntime, projectName: string): string {
   const plan = compositionOrder(codebase, runtime.bindings);
   const owner = findClassOfMethod(codebase, runtime.entryMethodId);
@@ -40,6 +67,7 @@ function program(codebase: Codebase, runtime: StageRuntime, projectName: string)
     ...plan.steps.map((step) => `var ${step.variable} = new ${step.className}(${step.args.join(', ')});`),
     ...plan.lateAssignments.map((assignment) => `${assignment.variable}.${assignment.property} = ${assignment.value};`),
     call,
+    ...bindingDemoLines(codebase, runtime, plan),
     'await Task.CompletedTask;',
   ].map((line) => `        ${line}`);
   return [`namespace ${projectName};`, '', 'public static class Program', '{', '    public static async Task Main()', '    {', ...body, '    }', '}', ''].join('\n');
@@ -74,7 +102,7 @@ export function generateCSharpProject(codebase: Codebase, runtime: StageRuntime,
   // 生成側で決まっているファイルと、ゲーム側のファイルが同名にならないようにする
   const taken = new Set(['program.cs', ...runtime.support.map((support) => `support/${support.path}`.toLowerCase())]);
   const sources = codebase.files.map((file) => {
-    const classes = file.classes.map((codeClass) => generateClassSource(codebase, codeClass.id, 'csharp', isInterfaceLike(codeClass) ? 'public partial interface' : 'public partial class'));
+    const classes = file.classes.map((codeClass) => generateClassSource(codebase, codeClass.id, 'csharp', 'public partial class'));
     return { path: `${projectName}/${uniqueSourcePath(sanitizeSourcePath(file.path), taken)}`, content: `namespace ${projectName};\n\n${classes.join('\n\n')}\n` };
   });
   return [

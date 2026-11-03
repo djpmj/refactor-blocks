@@ -10,6 +10,8 @@ function issueText(codebase: Codebase, issue: ReturnType<typeof findBuildIssues>
   const methodName = findMethod(codebase, issue.methodId)?.name ?? issue.methodId;
   const ownerName = findClass(codebase, issue.ownerClassId)?.name ?? issue.ownerClassId;
   if (issue.reason === 'ambiguous-binding') return `${className}.${methodName} が使う ${ownerName} の実装が複数あり、どれを使うか決められない`;
+  if (issue.reason === 'hook-not-declared') return `${className}.${methodName} が、子クラスの ${ownerName}.${issue.memberName} を呼んでいる(親には宣言が無く、C# では親から子のメンバーは見えない)`;
+  if (issue.reason === 'narrow-override') return `${className}.${issue.memberName} が、${ownerName} の抽象メソッドより狭い可視性で実装している(protected の宣言を private では実装できない)`;
   return `${className}.${methodName} が ${ownerName}.${issue.memberName}(private)を使っている`;
 }
 
