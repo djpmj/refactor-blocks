@@ -41,9 +41,9 @@ async function dragToEmptyCanvas(page: Page, source: Locator, pane: Locator) {
   await page.waitForTimeout(300);
 }
 
-// 上級2の変更依頼は1366pxだとキャンバスが足りず「実装を終える」まで進めないため、広い画面で行う(#400で調査)。
-async function openChangeRequestResult(page: Page) {
-  await page.setViewportSize({ width: 1800, height: 1000 });
+/** 上級2を100点にして変更依頼を始める。 */
+async function startPaymentChangeRequests(page: Page, width: number, height = 768) {
+  await page.setViewportSize({ width, height });
   await page.goto('/');
   await selectStage(page, '上級2: 決済ゲートウェイをインターフェース越しに呼ぶ');
   for (const [gateway, log] of [['Stripe', '決済ログを記録する(Stripe)'], ['Paypal', '決済ログを記録する(PayPal)']] as const) {
@@ -58,6 +58,12 @@ async function openChangeRequestResult(page: Page) {
     await page.keyboard.press('Escape');
   }
   await startChangeRequests(page);
+}
+
+async function openChangeRequestResult(page: Page) {
+  await startPaymentChangeRequests(page, 1366);
+  // 1400px未満では変更依頼を始めると左サイドバーが閉じ、キャンバスが広がる(#404)
+  await expect(page.getByRole('button', { name: 'サイドバーを開く' })).toBeVisible();
   await dragPlayerMethodToEmptyCanvas(page, page.getByTestId('class-部品置き場').getByTestId('method-charge'));
   await page.getByTestId('class-header-GatewayIntegrationHandler').click({ button: 'right' });
   const menu = page.getByTestId('context-menu');
@@ -71,9 +77,30 @@ async function openChangeRequestResult(page: Page) {
   await finishChangeRequest(page);
 }
 
+test('1366幅で変更依頼を始めるとサイドバーが閉じ、フォーカスは開閉ボタンへ移り、閉じたことが読み上げられる', async ({ page }) => {
+  // Arrange / Act
+  await startPaymentChangeRequests(page, 1366);
+
+  // Assert
+  const openButton = page.getByRole('button', { name: 'サイドバーを開く' });
+  await expect(openButton).toBeFocused();
+  await expect(page.getByTestId('sidebar-announcement')).toHaveText(/課題サイドバーを閉じました/);
+});
+
+// 広い画面(1400px以上)では、キャンバスが足りるのでサイドバーを自動で閉じない(受け入れ基準3)
+test('1800幅では変更依頼を始めても、サイドバーは開いたままで通知も出ない', async ({ page }) => {
+  // Arrange / Act
+  await startPaymentChangeRequests(page, 1800, 1000);
+
+  // Assert
+  await expect(page.getByTestId('change-panel')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'サイドバーを閉じる' })).toBeVisible();
+  await expect(page.getByTestId('sidebar-announcement')).toHaveText('');
+});
+
 async function dragPlayerMethodToEmptyCanvas(page: Page, source: Locator) {
-  const sourceBox = await source.boundingBox();
-  const paneBox = await page.locator('.app__canvas .react-flow__pane').boundingBox();
+  const sourceBox = await stableBox(page, source);
+  const paneBox = await stableBox(page, page.locator('.app__canvas .react-flow__pane'));
   if (sourceBox === null || paneBox === null) throw new Error('ドラッグ対象またはキャンバスが見つかりません');
   await page.mouse.move(sourceBox.x + sourceBox.width / 2, sourceBox.y + sourceBox.height / 2);
   await page.mouse.down();
