@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-11-03 UTC PR #412 狭い画面で変更依頼を始めたとき課題サイドバーを自動で閉じる (#404)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(2717件) / npm run lint ✅ / npm run typecheck ✅。Issue #404の受け入れ基準と差分を照合(701〜1399pxで自動クローズ・フォーカス移動・読み上げ・1366幅へのE2E復帰)。E2Eはこの環境で実行できず、PR記載のCI実績に依拠
+- マージ: squash & delete-branch
+
 ## 2026-11-03 UTC PR #411 CI の C# 検証で全手順を書き出して、master の csharp ジョブを直す
 
 - 判定: 合格(blocker無し)
@@ -212,15 +218,4 @@
 - 確認した内容: npm run check(lint / typecheck / vitest 2332件)✅。Issue #347の仕様と差分を照合(5〜8問目のデータ・requestById・E2Eの8問対応・domain変更なし)。E2Eはレビュー環境にChromiumが無く未実行(PR本文では473件成功)
 - マージ: squash & delete-branch
 
-## 2026-10-28 UTC PR #369 白紙設計の答え合わせが押せない理由を表示する (#344)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(lint / typecheck / vitest 2326件)✅。Issue #344の仕様と差分を照合(理由文・aria-describedby・全配置後は非表示・CSS再利用・domain変更なし)。E2Eはレビュー環境にChromiumが無く未実行(PR本文では468件成功)、追加E2Eの期待値はコードと整合を目視確認
-- マージ: squash & delete-branch
-
-## 2026-10-28 UTC PR #365 用語ボタン(用語集)を追加し、目標文・採点の用語から意味を引けるようにする (#326)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(2326件) / npm run lint ✅ / npm run typecheck ✅。仕様書term-glossary-popoverと照合し、masterとの競合解消コミット(StageCardの用語ボタン構成とretry・復習バッジの統合)も確認。E2Eはレビュー環境にChromiumが無く未実行(PR本文では460件成功)
-- マージ: squash & delete-branch
 
