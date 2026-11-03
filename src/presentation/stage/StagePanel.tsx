@@ -103,6 +103,25 @@ function useOpenSidebarForManualFix(active: boolean, setSidebarOpen: (open: bool
   }, [active, setSidebarOpen]);
 }
 
+/**
+ * 変更依頼の間は右に依頼パネルが出るため、701〜1399pxでは左サイドバーを閉じてキャンバスを広く使う(700px以下は元々ドロワー)(#404)。
+ * 閉じるとフォーカスが消えるので開閉ボタンへ移し、閉じたことを読み上げる。終了後は閉じたまま(手動で開ける)。
+ */
+function ChangeRequestSidebarCloser({ setSidebarOpen, toggleRef }: Readonly<{ setSidebarOpen: (open: boolean) => void; toggleRef: RefObject<HTMLButtonElement | null> }>) {
+  const active = useGameStore((state) => state.changeSession !== null);
+  const wasActive = useRef(active);
+  const [message, setMessage] = useState('');
+  useEffect(() => {
+    if (!wasActive.current && active && window.matchMedia('(min-width: 701px) and (max-width: 1399px)').matches) {
+      setSidebarOpen(false);
+      toggleRef.current?.focus();
+      setMessage('課題サイドバーを閉じました。開くには「サイドバーを開く」ボタンを押してください');
+    }
+    wasActive.current = active;
+  }, [active, setSidebarOpen, toggleRef]);
+  return <span className="sr-only" role="status" data-testid="sidebar-announcement">{message}</span>;
+}
+
 function ManualFixSidebarOpener({ setSidebarOpen }: Readonly<{ setSidebarOpen: (open: boolean) => void }>) {
   const manualFix = useGameStore((state) => state.manualFix);
   useOpenSidebarForManualFix(manualFix !== null, setSidebarOpen);
@@ -414,6 +433,7 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
       <StageHeader stage={stage} codebase={codebase} score={score} initialScore={initialScore} investigating={investigating} />
       <CritiqueResult />
       <ManualFixSidebarOpener setSidebarOpen={setSidebarOpen} />
+      <ChangeRequestSidebarCloser setSidebarOpen={setSidebarOpen} toggleRef={sidebarToggleRef} />
       <div className={`app__body${sidebarOpen ? ' app__body--sidebar-open' : ''}`} style={sidebarStyle}>
         <StageSidebarDrawer open={sidebarOpen} stage={stage} codebase={codebase} score={score} initialScore={initialScore} investigating={investigating}
           sidebarRef={sidebarRef} />

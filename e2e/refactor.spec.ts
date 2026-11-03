@@ -1327,9 +1327,8 @@ test('メソッドをドラッグで移したあと Ctrl+Z で元のクラスに
 });
 
 /** 上級2を100点にする: 各ゲートウェイの charge からログ記録を抽出して行数超過を解き、PaymentGateway を実装させる。 */
-// 上級2の変更依頼は1366pxだとキャンバスが足りず「実装を終える」まで進めないため、広い画面で行う(#400で調査)。
 async function solvePaymentStage(page: Page) {
-  await page.setViewportSize({ width: 1800, height: 1000 });
+  await page.setViewportSize({ width: 1366, height: 768 });
   await page.goto('/');
   await selectStage(page, '上級2: 決済ゲートウェイをインターフェース越しに呼ぶ');
   for (const [gateway, log] of [['Stripe', '決済ログを記録する(Stripe)'], ['Paypal', '決済ログを記録する(PayPal)']] as const) {
