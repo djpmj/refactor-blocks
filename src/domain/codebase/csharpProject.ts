@@ -1,5 +1,5 @@
 import type { StageRuntime } from '../stage/StageRuntime';
-import { findClassOfMethod, findMethod, type Codebase } from './Codebase';
+import { findClassOfMethod, findMethod, isInterfaceLike, type Codebase } from './Codebase';
 import { compositionOrder } from './csharpWiring';
 import { generateClassSource } from './generateClassSource';
 import { isAsyncMethod } from './methodSignature';
@@ -74,7 +74,7 @@ export function generateCSharpProject(codebase: Codebase, runtime: StageRuntime,
   // 生成側で決まっているファイルと、ゲーム側のファイルが同名にならないようにする
   const taken = new Set(['program.cs', ...runtime.support.map((support) => `support/${support.path}`.toLowerCase())]);
   const sources = codebase.files.map((file) => {
-    const classes = file.classes.map((codeClass) => generateClassSource(codebase, codeClass.id, 'csharp', 'public partial class'));
+    const classes = file.classes.map((codeClass) => generateClassSource(codebase, codeClass.id, 'csharp', isInterfaceLike(codeClass) ? 'public partial interface' : 'public partial class'));
     return { path: `${projectName}/${uniqueSourcePath(sanitizeSourcePath(file.path), taken)}`, content: `namespace ${projectName};\n\n${classes.join('\n\n')}\n` };
   });
   return [

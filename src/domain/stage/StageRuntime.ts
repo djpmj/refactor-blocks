@@ -8,4 +8,6 @@ export type StageRuntime = {
   readonly support: readonly { readonly path: string; readonly code: string }[];
   /** インターフェースの実装が複数あるときに、どれを注入するか(インターフェース名 → クラス名)。3本目で使う。 */
   readonly bindings?: Readonly<Record<string, string>>;
+  /** ビルド失敗を意図するスナップショット名(initial, 01, 02, …)。 */
+  readonly expectedBuildFailures?: readonly string[];
 };

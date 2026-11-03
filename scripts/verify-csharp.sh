@@ -16,8 +16,11 @@ fi
 for stage_dir in "$root"/*/; do
   stage=$(basename "$stage_dir")
   expected=""
+  has_expected=0
+  allowed_failures=$(node -e 'const fs = require("fs"); const file = process.argv[1]; process.stdout.write(JSON.parse(fs.readFileSync(file, "utf8")).expectedBuildFailures.join("\n"))' "$stage_dir/runtime.json")
   for snapshot_dir in "$stage_dir"*/; do
     snapshot=$(basename "$snapshot_dir")
+    snapshot_name=${snapshot#00-}
     project=$(find "$snapshot_dir" -name '*.csproj' | head -n 1)
     if [ -z "$project" ]; then
       echo "NG  $stage/$snapshot: .csproj がありません"
@@ -26,8 +29,17 @@ for stage_dir in "$root"/*/; do
     fi
     checked=$((checked + 1))
     if ! dotnet build "$project" -p:TreatWarningsAsErrors=false -nologo -v quiet >"$snapshot_dir/build.log" 2>&1; then
+      if printf '%s\n' "$allowed_failures" | grep -Fxq "$snapshot_name"; then
+        echo "OK  $stage/$snapshot: 予定されたビルド失敗"
+        continue
+      fi
       echo "NG  $stage/$snapshot: dotnet build に失敗"
       sed -n "1,20p" "$snapshot_dir/build.log"
+      failed=1
+      continue
+    fi
+    if printf '%s\n' "$allowed_failures" | grep -Fxq "$snapshot_name"; then
+      echo "NG  $stage/$snapshot: ビルド失敗予定でしたが成功しました"
       failed=1
       continue
     fi
@@ -37,17 +49,22 @@ for stage_dir in "$root"/*/; do
       failed=1
       continue
     fi
-    if [ "$snapshot" = "00-initial" ]; then
+    if [ "$has_expected" -eq 0 ]; then
       expected="$output"
+      has_expected=1
       echo "OK  $stage/$snapshot"
     elif [ "$output" = "$expected" ]; then
       echo "OK  $stage/$snapshot"
     else
-      echo "NG  $stage/$snapshot: 標準出力が初期状態と違います"
+      echo "NG  $stage/$snapshot: 標準出力が最初の成功スナップショットと違います"
       diff <(echo "$expected") <(echo "$output") | sed -n '1,20p'
       failed=1
     fi
   done
+  if [ "$has_expected" -eq 0 ]; then
+    echo "NG  $stage: ビルド・実行できたスナップショットがありません"
+    failed=1
+  fi
 done
 
 echo "検証したプロジェクト: $checked 件"

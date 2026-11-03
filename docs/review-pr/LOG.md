@@ -38,6 +38,18 @@
 
 ## ログ一覧
 
+## 2026-11-03 UTC PR #411 CI の C# 検証で全手順を書き出して、master の csharp ジョブを直す
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅
+- マージ: 見送り(.github/workflows/配下を含むためGitHub Appの権限で自動マージ不可。人が手動でマージする)
+
+## 2026-11-03 00:30 UTC PR #408 chore(deps): bump the development-dependencies group across 1 directory with 4 updates
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm ci ✅ / npm test ✅ / npm run lint ✅ / npm run typecheck ✅
+- マージ: squash & delete-branch
+
 ## 2026-11-02 20:30 UTC PR #409 chore(deps): bump actions/setup-dotnet from 5 to 6
 
 - 判定: 合格(blocker無し)
@@ -210,35 +222,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(2326件) / npm run lint ✅ / npm run typecheck ✅。仕様書term-glossary-popoverと照合し、masterとの競合解消コミット(StageCardの用語ボタン構成とretry・復習バッジの統合)も確認。E2Eはレビュー環境にChromiumが無く未実行(PR本文では460件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-27 15:20 UTC PR #368 初回満点時のクリア画面と遷移選択を追加 (#315)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(2309件) / npm run lint ✅ / npm run typecheck ✅(前回指摘のe2e DOM型エラーは7dc2925で解消)。E2E(clear-screen)はレビュー環境にChromiumが無く未実行(PR本文では全466件成功)。Issue #315・docs/specs/clear-celebration-screen.mdの変更対象と差分を照合
-- マージ: squash & delete-branch
-
-## 2026-10-27 12:50 UTC PR #366 助けの使用記録を保存し、弱点ステージの復習に反映する (#325)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(2300件) / npm run lint ✅ / npm run typecheck ✅。E2E(review-weak-stages)はレビュー環境にChromiumが無く未実行(PR本文では全462件成功)。Issue #325の設計判断との整合を差分で確認
-- マージ: squash & delete-branch
-
-## 2026-10-27 12:46 UTC PR #367 ローカルのE2E並列数を既定で1にしてPCの負荷を下げる
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(2271件) / npm run lint ✅ / npm run typecheck ✅(playwright.config.tsとCLAUDE.mdのみの変更。E2Eは未実行)
-- マージ: squash & delete-branch
-
-## 2026-10-27 01:00 UTC PR #364 chore(deps): bump the development-dependencies group across 1 directory with 4 updates
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(2271件) / npm run lint ✅ / npm run typecheck ✅ / npm run build ✅(package.json/lockのみの変更。E2E未実行)
-- マージ: squash & delete-branch
-
-## 2026-10-26 21:00 UTC PR #363 chore(deps): bump the production-dependencies group with 3 updates
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅(package.json/lockのみの変更。E2E未実行)
 - マージ: squash & delete-branch
 

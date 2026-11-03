@@ -17,6 +17,8 @@ import { csharpProjectName, generateCSharpProject } from './csharpProject';
  */
 const exportDir = process.env.CSHARP_EXPORT_DIR;
 const withSteps = process.env.CSHARP_EXPORT_STEPS === '1';
+/** 指定があれば、カンマ区切りのステージIDだけを書き出す(開発中に1ステージずつ確かめる用)。 */
+const onlyStages = process.env.CSHARP_EXPORT_STAGES?.split(',');
 
 function writeProject(directory: string, files: ReturnType<typeof generateCSharpProject>): void {
   for (const file of files) {
@@ -34,9 +36,11 @@ describe.skipIf(exportDir === undefined)('C# プロジェクトの書き出し',
     // Act
     for (const stage of stages) {
       const { runtime } = stage;
-      if (runtime === undefined) continue;
+      if (runtime === undefined || (onlyStages !== undefined && !onlyStages.includes(stage.id))) continue;
       const solution = sampleAnswerSteps[stage.id] ?? [];
       const snapshots = withSteps ? solutionSnapshots(stage.codebase, solution, { visibilityEnforced: stage.visibilityEnforced }) : [stage.codebase];
+      mkdirSync(join(root, stage.id), { recursive: true });
+      writeFileSync(join(root, stage.id, 'runtime.json'), JSON.stringify({ expectedBuildFailures: runtime.expectedBuildFailures ?? [] }), 'utf8');
       snapshots.forEach((codebase, index) => {
         const name = index === 0 ? '00-initial' : String(index).padStart(2, '0');
         writeProject(join(root, stage.id, name), generateCSharpProject(codebase, runtime, csharpProjectName));

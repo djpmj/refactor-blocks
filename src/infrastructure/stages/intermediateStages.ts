@@ -1,4 +1,16 @@
 import type { Stage } from '../../domain/stage/Stage';
+import { intermediateMiddleManRuntime } from './runtime/intermediate-middle-man';
+import { intermediateLayeredOrderApiRuntime } from './runtime/intermediate-layered-order-api';
+import { intermediateMemberRankBranchingRuntime } from './runtime/intermediate-member-rank-branching';
+import { intermediateCopyPasteTaxRuntime } from './runtime/intermediate-copy-paste-tax';
+import { intermediateExtractClassRuntime } from './runtime/intermediate-extract-class';
+import { intermediateAnemicDomainModelRuntime } from './runtime/intermediate-anemic-domain-model';
+import { intermediateFeatureEnvyRuntime } from './runtime/intermediate-feature-envy';
+import { intermediateVolatileFormatRuntime } from './runtime/intermediate-volatile-format';
+import { intermediateVolatileTaxRuntime } from './runtime/intermediate-volatile-tax';
+import { intermediateMisplacedPrivateRuntime } from './runtime/intermediate-misplaced-private';
+import { intermediateGodFileRuntime } from './runtime/intermediate-god-file';
+import { intermediateCyclicDependencyRuntime } from './runtime/intermediate-cyclic-dependency';
 
 /**
  * 中級1: 置き場所を間違えたメソッドのせいで Order と Customer が互いに依存している。
@@ -24,6 +36,7 @@ const cyclicDependencyStage: Stage = {
     "membership": "judgeRank",
   },
   id: 'intermediate-cyclic-dependency',
+  runtime: intermediateCyclicDependencyRuntime,
   problem: '注文と顧客の処理が互いを呼び合っている',
   level: 'intermediate',
   title: '中級1: 循環依存を断ち切る',
@@ -77,28 +90,28 @@ const cyclicDependencyStage: Stage = {
               {
                 id: 'method-checkout',
                 name: 'checkout',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'int', name: 'orderId' }, { type: 'int', name: 'customerId' }, { type: 'int', name: 'productId' }, { type: 'int', name: 'quantity' }, { type: 'string', name: 'paymentToken' }],
                 fragments: [
-                  { id: 'frag-reserve-stock', label: '在庫を引き当てる', lines: 3, responsibility: 'inventory', uses: ['method-reserve'], suggestedName: 'reserveStock' , code: { csharp: "if (quantity <= 0) throw new ArgumentOutOfRangeException(nameof(quantity));\nawait reserve();\n_logger.LogDebug(\"在庫を引き当てました\");" }},
-                  { id: 'frag-order-total', label: '合計金額を求める', lines: 3, responsibility: 'pricing', uses: ['method-calculate-order-total'], suggestedName: 'orderTotal' , code: { csharp: "var total = items.Sum(item => item.Quantity * item.UnitPrice);\nvar roundedTotal = calculateOrderTotal(total);\nsubtotal = decimal.Round(roundedTotal, 2);" }},
-                  { id: 'frag-member-discount', label: '会員ランクで割引する', lines: 3, responsibility: 'discount', uses: ['method-get-rank'], suggestedName: 'applyMemberDiscount' , code: { csharp: "var rank = await getRank(customerId);\nvar discount = subtotal * rank.DiscountRate;\nvar discountedTotal = subtotal - discount;" }},
-                  { id: 'frag-pay', label: '決済する', lines: 4, responsibility: 'payment', suggestedName: 'pay' , code: { csharp: "var result = await _paymentGateway.ChargeAsync(discountedTotal, paymentToken, cancellationToken);\nif (!result.Succeeded) throw new PaymentException(result.ErrorMessage);\n_logger.LogDebug(\"決済する が完了しました\");\nreturn true;" }},
+                  { id: 'frag-reserve-stock', label: '在庫を引き当てる', lines: 3, responsibility: 'inventory', uses: ['method-reserve'], suggestedName: 'reserveStock' , code: { csharp: "if (quantity <= 0) throw new ArgumentOutOfRangeException(nameof(quantity));\nreserve(productId, quantity);\nLog.Debug(\"在庫を引き当てました\");" }, variables: { uses: ['quantity', 'productId'] } },
+                  { id: 'frag-order-total', label: '合計金額を求める', lines: 3, responsibility: 'pricing', uses: ['method-calculate-order-total'], suggestedName: 'orderTotal' , code: { csharp: "var rawTotal = calculateOrderTotal(orderId);\nvar subtotal = decimal.Round(rawTotal, 2);\nLog.Debug($\"小計を計算しました: {subtotal}\");" }, variables: { declares: [{ name: 'rawTotal', type: { csharp: 'decimal' } }, { name: 'subtotal', type: { csharp: 'decimal' } }], uses: ['orderId'] } },
+                  { id: 'frag-member-discount', label: '会員ランクで割引する', lines: 3, responsibility: 'discount', uses: ['method-get-rank'], suggestedName: 'applyMemberDiscount' , code: { csharp: "var rank = getRank(customerId);\nvar discount = subtotal * DiscountRates.For(rank);\nvar discountedTotal = subtotal - discount;" }, variables: { declares: [{ name: 'rank', type: { csharp: 'MemberRank' } }, { name: 'discount', type: { csharp: 'decimal' } }, { name: 'discountedTotal', type: { csharp: 'decimal' } }], uses: ['customerId', 'subtotal'] } },
+                  { id: 'frag-pay', label: '決済する', lines: 4, responsibility: 'payment', suggestedName: 'pay' , code: { csharp: "var result = FakePaymentGateway.Charge(discountedTotal, paymentToken);\nif (!result.Succeeded) throw new PaymentException(result.ErrorMessage);\nLog.Debug(\"決済する が完了しました\");\nLog.Info($\"注文 {orderId} の決済が完了しました\");" }, variables: { declares: [{ name: 'result', type: { csharp: 'PaymentResult' } }], uses: ['discountedTotal', 'paymentToken', 'orderId'] } },
                 ],
               },
               {
                 id: 'method-get-lines',
                 name: 'getLines',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'int', name: 'orderId' }], returns: [{ name: 'lines', type: { csharp: 'List<OrderLine>' } }],
                 fragments: [
-                  { id: 'frag-list-lines', label: '注文明細の一覧を返す', lines: 3, responsibility: 'pricing', suggestedName: 'listLines' , code: { csharp: "if (orderId <= 0) throw new ArgumentOutOfRangeException(nameof(orderId));\nvar lines = await _orderRepository.GetLinesAsync(orderId, cancellationToken);\nreturn lines;" }},
+                  { id: 'frag-list-lines', label: '注文明細の一覧を返す', lines: 3, responsibility: 'pricing', suggestedName: 'listLines' , code: { csharp: "if (orderId <= 0) throw new ArgumentOutOfRangeException(nameof(orderId));\nvar lines = FakeOrderStore.GetLines(orderId);\nLog.Debug($\"明細 {lines.Count} 件を取得しました\");" }, variables: { declares: [{ name: 'lines', type: { csharp: 'List<OrderLine>' } }], uses: ['orderId'] } },
                 ],
               },
               {
                 id: 'method-count-orders-of',
                 name: 'countOrdersOf',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'int', name: 'customerId' }], returns: [{ name: 'count', type: { csharp: 'int' } }],
                 fragments: [
-                  { id: 'frag-count-orders', label: '顧客の過去の注文数を数える', lines: 3, responsibility: 'history', suggestedName: 'countOrders' , code: { csharp: "var count = await _orderRepository.CountByCustomerAsync(customerId, cancellationToken);\nif (count < 0) throw new InvalidOperationException(\"注文数が不正です\");\nreturn count;" }},
+                  { id: 'frag-count-orders', label: '顧客の過去の注文数を数える', lines: 3, responsibility: 'history', suggestedName: 'countOrders' , code: { csharp: "var count = FakeOrderStore.CountByCustomer(customerId);\nif (count < 0) throw new InvalidOperationException(\"注文数が不正です\");\nLog.Debug($\"過去の注文数: {count}\");" }, variables: { declares: [{ name: 'count', type: { csharp: 'int' } }], uses: ['customerId'] } },
                 ],
               },
             ],
@@ -116,17 +129,17 @@ const cyclicDependencyStage: Stage = {
               {
                 id: 'method-get-rank',
                 name: 'getRank',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'int', name: 'customerId' }], returns: [{ name: 'rank', type: { csharp: 'MemberRank' } }],
                 fragments: [
-                  { id: 'frag-judge-rank', label: '注文数から会員ランクを判定する', lines: 3, responsibility: 'membership', uses: ['method-count-orders-of'], suggestedName: 'judgeRank' , code: { csharp: "var count = await countOrdersOf(customerId);\nif (count < 0) throw new InvalidOperationException(\"注文数が不正です\");\nreturn count >= 100 ? MemberRank.Vip : count >= 10 ? MemberRank.Premium : MemberRank.Regular;" }},
+                  { id: 'frag-judge-rank', label: '注文数から会員ランクを判定する', lines: 3, responsibility: 'membership', uses: ['method-count-orders-of'], suggestedName: 'judgeRank' , code: { csharp: "var count = countOrdersOf(customerId);\nif (count < 0) throw new InvalidOperationException(\"注文数が不正です\");\nvar rank = count >= 100 ? MemberRank.Vip : count >= 10 ? MemberRank.Premium : MemberRank.Regular;" }, variables: { declares: [{ name: 'count', type: { csharp: 'int' } }, { name: 'rank', type: { csharp: 'MemberRank' } }], uses: ['customerId'] } },
                 ],
               },
               {
                 id: 'method-calculate-order-total',
                 name: 'calculateOrderTotal',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'int', name: 'orderId' }], returns: [{ name: 'roundedTotal', type: { csharp: 'decimal' } }],
                 fragments: [
-                  { id: 'frag-sum-order-lines', label: '注文明細の金額を合計する', lines: 3, responsibility: 'pricing', uses: ['method-get-lines'], suggestedName: 'sumOrderLines' , code: { csharp: "var lines = getLines();\nvar roundedTotal = decimal.Round(lines.Sum(item => item.Quantity * item.UnitPrice), 2);\nreturn roundedTotal;" }},
+                  { id: 'frag-sum-order-lines', label: '注文明細の金額を合計する', lines: 3, responsibility: 'pricing', uses: ['method-get-lines'], suggestedName: 'sumOrderLines' , code: { csharp: "var lines = getLines(orderId);\nvar roundedTotal = decimal.Round(lines.Sum(item => item.Quantity * item.UnitPrice), 2);\nLog.Debug($\"明細の合計: {roundedTotal}\");" }, variables: { declares: [{ name: 'lines', type: { csharp: 'List<OrderLine>' } }, { name: 'roundedTotal', type: { csharp: 'decimal' } }], uses: ['orderId'] } },
                 ],
               },
             ],
@@ -144,9 +157,9 @@ const cyclicDependencyStage: Stage = {
               {
                 id: 'method-reserve',
                 name: 'reserve',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'int', name: 'productId' }, { type: 'int', name: 'quantity' }],
                 fragments: [
-                  { id: 'frag-decrease-stock', label: '在庫数を減らす', lines: 3, responsibility: 'inventory', suggestedName: 'decreaseStock' , code: { csharp: "if (quantity <= 0) throw new ArgumentOutOfRangeException(nameof(quantity));\nawait _inventory.ReserveAsync(productId, quantity);\nreturn true;" }},
+                  { id: 'frag-decrease-stock', label: '在庫数を減らす', lines: 3, responsibility: 'inventory', suggestedName: 'decreaseStock' , code: { csharp: "if (quantity <= 0) throw new ArgumentOutOfRangeException(nameof(quantity));\nFakeInventoryStore.Reserve(productId, quantity);\nLog.Debug(\"在庫数を減らしました\");" }, variables: { uses: ['quantity', 'productId'] } },
                 ],
               },
             ],
@@ -173,6 +186,7 @@ const godFileStage: Stage = {
     "points": "managePoints",
   },
   id: 'intermediate-god-file',
+  runtime: intermediateGodFileRuntime,
   problem: '複数の業務クラスが1つのファイルに集まっている',
   level: 'intermediate',
   title: '中級2: 何でも入った1つのファイル',
@@ -226,30 +240,28 @@ const godFileStage: Stage = {
               {
                 id: 'method-checkout-cart',
                 name: 'checkoutCart',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'List<CartItem>', name: 'items' }, { type: 'string', name: 'address' }, { type: 'decimal', name: 'weight' }, { type: 'int', name: 'customerId' }],
                 fragments: [
-                  { id: 'frag-validate-cart', label: 'カートの中身を検証する', lines: 2, responsibility: 'validation', suggestedName: 'validateCart' , code: { csharp: "if (items.Count == 0) throw new ValidationException(\"対象がありません\");\nif (items.Any(item => !item.IsValid)) throw new ValidationException(\"入力が不正です\");" }},
-                  { id: 'frag-cart-subtotal', label: '小計を計算する', lines: 3, responsibility: 'pricing', suggestedName: 'calculateSubtotal' , code: { csharp: "var total = items.Sum(item => item.Quantity * item.UnitPrice);\nvar roundedTotal = decimal.Round(total, 2);\nvar order = new Order(items, roundedTotal);" }},
-                  { id: 'frag-call-shipping-fee', label: 'calculateShippingFee(order) を呼び出す', lines: 1, responsibility: 'call', uses: ['method-calculate-shipping-fee'], callArguments: ['order'] },
-                  { id: 'frag-call-add-points', label: 'addPoints(order) を呼び出す', lines: 1, responsibility: 'call', uses: ['method-add-points'], callArguments: ['order'] },
+                  { id: 'frag-validate-cart', label: 'カートの中身を検証する', lines: 2, responsibility: 'validation', suggestedName: 'validateCart' , code: { csharp: "if (items.Count == 0) throw new ValidationException(\"対象がありません\");\nif (items.Any(item => !item.IsValid)) throw new ValidationException(\"入力が不正です\");" }, variables: { uses: ['items'] } },
+                  { id: 'frag-cart-subtotal', label: '小計を計算する', lines: 3, responsibility: 'pricing', suggestedName: 'calculateSubtotal' , code: { csharp: "var total = items.Sum(item => item.Quantity * item.UnitPrice);\nvar roundedTotal = decimal.Round(total, 2);\nvar order = new Order(items, roundedTotal, address, weight);" }, variables: { declares: [{ name: 'total', type: { csharp: 'decimal' } }, { name: 'roundedTotal', type: { csharp: 'decimal' } }, { name: 'order', type: { csharp: 'Order' } }], uses: ['items', 'address', 'weight'] } },
+                  { id: 'frag-call-shipping-fee', label: 'calculateShippingFee(order) を呼び出す', lines: 1, responsibility: 'call', uses: ['method-calculate-shipping-fee'], callArguments: ['order'], variables: { uses: ['order'] } },
+                  { id: 'frag-call-add-points', label: 'addPoints(order) を呼び出す', lines: 1, responsibility: 'call', uses: ['method-add-points'], callArguments: ['order, customerId'], variables: { uses: ['order', 'customerId'] } },
                 ],
               },
               {
                 id: 'method-calculate-shipping-fee',
                 name: 'calculateShippingFee',
-                visibility: 'private',
-                parameters: [{ type: 'Order', name: 'order' }],
+                visibility: 'private', parameters: [{ type: 'Order', name: 'order' }],
                 fragments: [
-                  { id: 'frag-shipping-fee', label: '地域と重さから送料を決める', lines: 3, responsibility: 'shipping', suggestedName: 'decideShippingFee' , code: { csharp: "var zone = _zoneResolver.Resolve(order.Address);\nvar shippingFee = _shippingRates.Calculate(zone, order.Weight);\norder.Total += shippingFee;" }},
+                  { id: 'frag-shipping-fee', label: '地域と重さから送料を決める', lines: 3, responsibility: 'shipping', suggestedName: 'decideShippingFee' , code: { csharp: "var zone = ZoneResolver.Resolve(order.Address);\nvar shippingFee = ShippingRates.Calculate(zone, order.Weight);\norder.Total += shippingFee;" }, variables: { declares: [{ name: 'zone', type: { csharp: 'string' } }, { name: 'shippingFee', type: { csharp: 'decimal' } }], uses: ['order'] } },
                 ],
               },
               {
                 id: 'method-add-points',
                 name: 'addPoints',
-                visibility: 'private',
-                parameters: [{ type: 'Order', name: 'order' }],
+                visibility: 'private', parameters: [{ type: 'Order', name: 'order' }, { type: 'int', name: 'customerId' }],
                 fragments: [
-                  { id: 'frag-add-points', label: '購入額に応じてポイントを付ける', lines: 4, responsibility: 'points', suggestedName: 'grantPoints' , code: { csharp: "var earnedPoints = (int)(order.Total / pointsUnit);\nawait _pointLedger.AddAsync(customerId, earnedPoints, cancellationToken);\n_logger.LogDebug(\"購入額に応じてポイントを付ける が完了しました\");\nreturn true;" }},
+                  { id: 'frag-add-points', label: '購入額に応じてポイントを付ける', lines: 4, responsibility: 'points', suggestedName: 'grantPoints' , code: { csharp: "var earnedPoints = (int)(order.Total / 100m);\nPointLedger.Add(customerId, earnedPoints);\nLog.Debug(\"購入額に応じてポイントを付ける が完了しました\");\nLog.Info($\"顧客 {customerId} に {earnedPoints} ポイントを付与しました\");" }, variables: { declares: [{ name: 'earnedPoints', type: { csharp: 'int' } }], uses: ['order', 'customerId'] } },
                 ],
               },
             ],
@@ -261,17 +273,17 @@ const godFileStage: Stage = {
               {
                 id: 'method-schedule-delivery',
                 name: 'scheduleDelivery',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'string', name: 'address' }, { type: 'DateTime', name: 'requestedDate' }], returns: [{ name: 'deliveryDate', type: { csharp: 'DateTime' } }],
                 fragments: [
-                  { id: 'frag-schedule-delivery', label: '配送日を決める', lines: 3, responsibility: 'shipping', suggestedName: 'decideDeliveryDate' , code: { csharp: "if (string.IsNullOrWhiteSpace(address)) throw new ArgumentException(\"住所が必要です\");\nvar zone = _zoneResolver.Resolve(address);\nreturn _deliveryCalendar.NextAvailableDate(zone, requestedDate);" }},
+                  { id: 'frag-schedule-delivery', label: '配送日を決める', lines: 3, responsibility: 'shipping', suggestedName: 'decideDeliveryDate' , code: { csharp: "if (string.IsNullOrWhiteSpace(address)) throw new ArgumentException(\"住所が必要です\");\nvar zone = ZoneResolver.Resolve(address);\nvar deliveryDate = DeliveryCalendar.NextAvailableDate(zone, requestedDate);" }, variables: { declares: [{ name: 'zone', type: { csharp: 'string' } }, { name: 'deliveryDate', type: { csharp: 'DateTime' } }], uses: ['address', 'requestedDate'] } },
                 ],
               },
               {
                 id: 'method-track-package',
                 name: 'trackPackage',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'string', name: 'trackingNumber' }], returns: [{ name: 'status', type: { csharp: 'string' } }],
                 fragments: [
-                  { id: 'frag-track-package', label: '配送状況を問い合わせる', lines: 3, responsibility: 'shipping', suggestedName: 'fetchTrackingStatus' , code: { csharp: "if (string.IsNullOrWhiteSpace(trackingNumber)) throw new ArgumentException(\"追跡番号が必要です\");\nvar status = await _trackingClient.GetStatusAsync(trackingNumber, cancellationToken);\nreturn status;" }},
+                  { id: 'frag-track-package', label: '配送状況を問い合わせる', lines: 3, responsibility: 'shipping', suggestedName: 'fetchTrackingStatus' , code: { csharp: "if (string.IsNullOrWhiteSpace(trackingNumber)) throw new ArgumentException(\"追跡番号が必要です\");\nvar status = TrackingClient.GetStatus(trackingNumber);\nLog.Debug($\"追跡状況: {status}\");" }, variables: { declares: [{ name: 'status', type: { csharp: 'string' } }], uses: ['trackingNumber'] } },
                 ],
               },
             ],
@@ -283,17 +295,17 @@ const godFileStage: Stage = {
               {
                 id: 'method-get-balance',
                 name: 'getBalance',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'int', name: 'customerId' }], returns: [{ name: 'balance', type: { csharp: 'int' } }],
                 fragments: [
-                  { id: 'frag-get-balance', label: 'ポイント残高を取得する', lines: 3, responsibility: 'points', suggestedName: 'fetchBalance' , code: { csharp: "var balance = await _pointLedger.GetBalanceAsync(customerId, cancellationToken);\nif (balance < 0) throw new InvalidOperationException(\"ポイント残高が不正です\");\nreturn balance;" }},
+                  { id: 'frag-get-balance', label: 'ポイント残高を取得する', lines: 3, responsibility: 'points', suggestedName: 'fetchBalance' , code: { csharp: "var balance = PointLedger.GetBalance(customerId);\nif (balance < 0) throw new InvalidOperationException(\"ポイント残高が不正です\");\nLog.Debug($\"ポイント残高: {balance}\");" }, variables: { declares: [{ name: 'balance', type: { csharp: 'int' } }], uses: ['customerId'] } },
                 ],
               },
               {
                 id: 'method-expire-points',
                 name: 'expirePoints',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'int', name: 'customerId' }], returns: [{ name: 'expiredCount', type: { csharp: 'int' } }],
                 fragments: [
-                  { id: 'frag-expire-points', label: '期限切れのポイントを失効させる', lines: 4, responsibility: 'points', suggestedName: 'expireOldPoints' , code: { csharp: "var expiredBefore = DateTimeOffset.UtcNow.AddYears(-1);\nvar expiredCount = await _pointLedger.ExpireBeforeAsync(customerId, expiredBefore, cancellationToken);\n_logger.LogInformation(\"期限切れポイントを失効しました: {Count}\", expiredCount);\nreturn expiredCount;" }},
+                  { id: 'frag-expire-points', label: '期限切れのポイントを失効させる', lines: 4, responsibility: 'points', suggestedName: 'expireOldPoints' , code: { csharp: "var expiredBefore = SampleData.Today.AddYears(-1);\nvar expiredCount = PointLedger.ExpireBefore(customerId, expiredBefore);\nLog.Info($\"期限切れポイントを失効しました: {expiredCount}\");\nLog.Debug(\"失効処理が完了しました\");" }, variables: { declares: [{ name: 'expiredBefore', type: { csharp: 'DateTime' } }, { name: 'expiredCount', type: { csharp: 'int' } }], uses: ['customerId'] } },
                 ],
               },
             ],
@@ -325,6 +337,7 @@ const misplacedPrivateStage: Stage = {
     "rendering": "renderBody",
   },
   id: 'intermediate-misplaced-private',
+  runtime: intermediateMisplacedPrivateRuntime,
   problem: '通知クラスの非公開処理が別クラスから呼ばれている',
   level: 'intermediate',
   title: '中級3: 越境する private メソッド',
@@ -384,12 +397,12 @@ const misplacedPrivateStage: Stage = {
               {
                 id: 'method-notify-shipment',
                 name: 'notifyShipment',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'Shipment', name: 'shipment' }, { type: 'TemplateInput', name: 'input' }],
                 fragments: [
-                  { id: 'frag-gather-info', label: '通知に必要な情報を集める', lines: 3, responsibility: 'notification', suggestedName: 'gatherNotificationInfo' , code: { csharp: "var recipient = await _recipientDirectory.FindAsync(shipment.CustomerId, cancellationToken);\nvar subject = $\"配送状況のお知らせ: {shipment.TrackingNumber}\";\nvar body = $\"配送状況: {shipment.Status}\";" }},
-                  { id: 'frag-render-template', label: 'テンプレートを描画する', lines: 2, responsibility: 'notification', uses: ['method-render-template'], suggestedName: 'renderNotification' , code: { csharp: "if (input is null) throw new ArgumentNullException(nameof(input));\nrenderTemplate();" }},
-                  { id: 'frag-send-mail', label: 'メールを送信する', lines: 3, responsibility: 'delivery', suggestedName: 'sendMail' , code: { csharp: "var message = new MailMessage(recipient, subject, body);\nawait _mailer.SendAsync(message, cancellationToken);\nawait _mailAuditLog.RecordSentAsync(message.Id, cancellationToken);" }},
-                  { id: 'frag-log-delivery', label: '送信ログを記録する', lines: 3, responsibility: 'logging', suggestedName: 'logDelivery' , code: { csharp: "_logger.LogInformation(\"配送通知を送信しました: {Recipient}\", recipient);\nawait _mailAuditLog.RecordSentAsync(message.Id, cancellationToken);\n_logger.LogDebug(\"配送通知の監査記録を保存しました\");" }},
+                  { id: 'frag-gather-info', label: '通知に必要な情報を集める', lines: 3, responsibility: 'notification', suggestedName: 'gatherNotificationInfo' , code: { csharp: "var recipient = RecipientDirectory.Find(shipment.CustomerId);\nvar subject = $\"配送状況のお知らせ: {shipment.TrackingNumber}\";\nvar body = $\"配送状況: {shipment.Status}\";" }, variables: { declares: [{ name: 'recipient', type: { csharp: 'string' } }, { name: 'subject', type: { csharp: 'string' } }, { name: 'body', type: { csharp: 'string' } }], uses: ['shipment'] } },
+                  { id: 'frag-render-template', label: 'テンプレートを描画する', lines: 2, responsibility: 'notification', uses: ['method-render-template'], suggestedName: 'renderNotification' , code: { csharp: "if (input is null) throw new ArgumentNullException(nameof(input));\nvar rendered = renderTemplate(input, body);" }, variables: { declares: [{ name: 'rendered', type: { csharp: 'string' } }], uses: ['input', 'body'] } },
+                  { id: 'frag-send-mail', label: 'メールを送信する', lines: 3, responsibility: 'delivery', suggestedName: 'sendMail' , code: { csharp: "var message = new MailMessage(recipient, subject, rendered);\nFakeMailer.Send(message);\nLog.Debug($\"メール {message.Id} を送信しました\");" }, variables: { declares: [{ name: 'message', type: { csharp: 'MailMessage' } }], uses: ['recipient', 'subject', 'rendered'] } },
+                  { id: 'frag-log-delivery', label: '送信ログを記録する', lines: 3, responsibility: 'logging', suggestedName: 'logDelivery' , code: { csharp: "Log.Info($\"配送通知を送信しました: {recipient}\");\nFakeMailAuditLog.RecordSent(message.Id);\nLog.Debug(\"配送通知の監査記録を保存しました\");" }, variables: { uses: ['recipient', 'message'] } },
                 ],
               },
             ],
@@ -407,9 +420,9 @@ const misplacedPrivateStage: Stage = {
               {
                 id: 'method-render-template',
                 name: 'renderTemplate',
-                visibility: 'private',
+                visibility: 'private', parameters: [{ type: 'TemplateInput', name: 'input' }, { type: 'string', name: 'body' }], returns: [{ name: 'rendered', type: { csharp: 'string' } }],
                 fragments: [
-                  { id: 'frag-embed-body', label: '本文のテンプレートを埋め込む', lines: 3, responsibility: 'rendering', suggestedName: 'embedBody' , code: { csharp: "if (input is null) throw new ArgumentNullException(nameof(input));\nvar body = input.Template.Replace(\"{trackingNumber}\", input.TrackingNumber);\nreturn await RenderAsync(body, cancellationToken);" }},
+                  { id: 'frag-embed-body', label: '本文のテンプレートを埋め込む', lines: 3, responsibility: 'rendering', suggestedName: 'embedBody' , code: { csharp: "if (input is null) throw new ArgumentNullException(nameof(input));\nvar embedded = input.Template.Replace(\"{trackingNumber}\", input.TrackingNumber);\nvar rendered = embedded.Replace(\"{body}\", body);" }, variables: { declares: [{ name: 'embedded', type: { csharp: 'string' } }, { name: 'rendered', type: { csharp: 'string' } }], uses: ['input', 'body'] } },
                 ],
               },
             ],
@@ -437,21 +450,21 @@ const salesReportCodebase: Stage['codebase'] = {
             {
               id: 'method-generate-monthly-report',
               name: 'generateMonthlyReport',
-              visibility: 'public',
+              visibility: 'public', parameters: [{ type: 'ReportInput', name: 'input' }], returns: [{ name: 'reportText', type: { csharp: 'string' } }],
               fragments: [
-                { id: 'frag-monthly-aggregate', label: '月次の売上を集計する', lines: 3, responsibility: 'aggregation', suggestedName: 'aggregateMonthlySales' , code: { csharp: 'report.Rows = sales.Where(sale => sale.Date >= input.StartDate && sale.Date <= input.EndDate)\n    .GroupBy(sale => sale.ProductId)\n    .Select(group => new SalesRow(group.Key, group.Sum(sale => sale.Quantity), group.Sum(sale => sale.Amount))).ToList();' }},
-                { id: 'frag-monthly-tax', label: '税額を計算する', lines: 7, responsibility: 'tax', suggestedName: 'calculateMonthlyTax' , code: { csharp: 'var taxByCategory = report.Rows.GroupBy(row => row.TaxCategory)\n    .ToDictionary(group => group.Key, group => decimal.Round(\n        group.Sum(row => row.Amount) * (group.Key == TaxCategory.Reduced ? reducedTaxRate : standardTaxRate),\n        0,\n        MidpointRounding.AwayFromZero));\nreport.TaxAmount = taxByCategory.Values.Sum();\nreport.Total = report.Subtotal + report.TaxAmount;' }},
-                { id: 'frag-monthly-format', label: '帳票の形式に整形する', lines: 3, responsibility: 'formatting', suggestedName: 'formatMonthlyReport' , code: { csharp: 'var rows = report.Rows.OrderBy(row => row.ProductName)\n    .Select(row => $"{row.ProductName},{row.Quantity},{row.Amount:C}");\nreturn string.Join(Environment.NewLine, rows);' }},
+                { id: 'frag-monthly-aggregate', label: '月次の売上を集計する', lines: 3, responsibility: 'aggregation', suggestedName: 'aggregateMonthlySales' , code: { csharp: "var report = new SalesReport { Rows = SampleData.Sales.Where(sale => sale.Date >= input.StartDate && sale.Date <= input.EndDate)\n    .GroupBy(sale => sale.ProductId)\n    .Select(group => new SalesRow(group.Key, group.Sum(sale => sale.Quantity), group.Sum(sale => sale.Amount))).ToList() };" }, variables: { declares: [{ name: 'report', type: { csharp: 'SalesReport' } }], uses: ['input'] } },
+                { id: 'frag-monthly-tax', label: '税額を計算する', lines: 7, responsibility: 'tax', suggestedName: 'calculateMonthlyTax' , code: { csharp: "var taxByCategory = report.Rows.GroupBy(row => row.TaxCategory)\n    .ToDictionary(group => group.Key, group => decimal.Round(\n        group.Sum(row => row.Amount) * (group.Key == TaxCategory.Reduced ? 0.08m : 0.10m),\n        0,\n        MidpointRounding.AwayFromZero));\nreport.TaxAmount = taxByCategory.Values.Sum();\nreport.Total = report.Subtotal + report.TaxAmount;" }, variables: { declares: [{ name: 'taxByCategory', type: { csharp: 'Dictionary<TaxCategory, decimal>' } }], uses: ['report'] } },
+                { id: 'frag-monthly-format', label: '帳票の形式に整形する', lines: 3, responsibility: 'formatting', suggestedName: 'formatMonthlyReport' , code: { csharp: "var rows = report.Rows.OrderBy(row => row.ProductName)\n    .Select(row => $\"{row.ProductName},{row.Quantity},{row.Amount:N0}\");\nvar reportText = string.Join(Environment.NewLine, rows);" }, variables: { declares: [{ name: 'rows', type: { csharp: 'IEnumerable<string>' } }, { name: 'reportText', type: { csharp: 'string' } }], uses: ['report'] } },
               ],
             },
             {
               id: 'method-generate-quarterly-report',
               name: 'generateQuarterlyReport',
-              visibility: 'public',
+              visibility: 'public', parameters: [{ type: 'ReportInput', name: 'input' }], returns: [{ name: 'reportText', type: { csharp: 'string' } }],
               fragments: [
-                { id: 'frag-quarterly-aggregate', label: '四半期の売上を集計する', lines: 3, responsibility: 'aggregation', suggestedName: 'aggregateQuarterlySales' , code: { csharp: 'report.Rows = sales.Where(sale => sale.Date >= input.StartDate && sale.Date <= input.EndDate)\n    .GroupBy(sale => sale.ProductId)\n    .Select(group => new SalesRow(group.Key, group.Sum(sale => sale.Quantity), group.Sum(sale => sale.Amount))).ToList();' }},
-                { id: 'frag-quarterly-tax', label: '税額を計算する', lines: 7, responsibility: 'tax', suggestedName: 'calculateQuarterlyTax' , code: { csharp: 'var taxByCategory = report.Rows.GroupBy(row => row.TaxCategory)\n    .ToDictionary(group => group.Key, group => decimal.Round(\n        group.Sum(row => row.Amount) * (group.Key == TaxCategory.Reduced ? reducedTaxRate : standardTaxRate),\n        0,\n        MidpointRounding.AwayFromZero));\nreport.TaxAmount = taxByCategory.Values.Sum();\nreport.Total = report.Subtotal + report.TaxAmount;' }},
-                { id: 'frag-quarterly-format', label: '帳票の形式に整形する', lines: 3, responsibility: 'formatting', suggestedName: 'formatQuarterlyReport' , code: { csharp: 'var rows = report.Rows.OrderBy(row => row.ProductName)\n    .Select(row => $"{row.ProductName},{row.Quantity},{row.Amount:C}");\nreturn string.Join(Environment.NewLine, rows);' }},
+                { id: 'frag-quarterly-aggregate', label: '四半期の売上を集計する', lines: 3, responsibility: 'aggregation', suggestedName: 'aggregateQuarterlySales' , code: { csharp: "var report = new SalesReport { Rows = SampleData.Sales.Where(sale => sale.Date >= input.StartDate && sale.Date <= input.EndDate)\n    .GroupBy(sale => sale.ProductId)\n    .Select(group => new SalesRow(group.Key, group.Sum(sale => sale.Quantity), group.Sum(sale => sale.Amount))).ToList() };" }, variables: { declares: [{ name: 'report', type: { csharp: 'SalesReport' } }], uses: ['input'] } },
+                { id: 'frag-quarterly-tax', label: '税額を計算する', lines: 7, responsibility: 'tax', suggestedName: 'calculateQuarterlyTax' , code: { csharp: "var taxByCategory = report.Rows.GroupBy(row => row.TaxCategory)\n    .ToDictionary(group => group.Key, group => decimal.Round(\n        group.Sum(row => row.Amount) * (group.Key == TaxCategory.Reduced ? 0.08m : 0.10m),\n        0,\n        MidpointRounding.AwayFromZero));\nreport.TaxAmount = taxByCategory.Values.Sum();\nreport.Total = report.Subtotal + report.TaxAmount;" }, variables: { declares: [{ name: 'taxByCategory', type: { csharp: 'Dictionary<TaxCategory, decimal>' } }], uses: ['report'] } },
+                { id: 'frag-quarterly-format', label: '帳票の形式に整形する', lines: 3, responsibility: 'formatting', suggestedName: 'formatQuarterlyReport' , code: { csharp: "var rows = report.Rows.OrderBy(row => row.ProductName)\n    .Select(row => $\"{row.ProductName},{row.Quantity},{row.Amount:N0}\");\nvar reportText = string.Join(Environment.NewLine, rows);" }, variables: { declares: [{ name: 'rows', type: { csharp: 'IEnumerable<string>' } }, { name: 'reportText', type: { csharp: 'string' } }], uses: ['report'] } },
               ],
             },
           ],
@@ -471,7 +484,7 @@ const salesReportCodebase: Stage['codebase'] = {
             {
               id: 'method-download-report',
               name: 'downloadReport',
-              visibility: 'public',
+              visibility: 'public', parameters: [{ type: 'ReportInput', name: 'input' }],
               fragments: [
                 {
                   id: 'frag-dispatch-report',
@@ -480,7 +493,7 @@ const salesReportCodebase: Stage['codebase'] = {
                   responsibility: 'http',
                   uses: ['method-generate-monthly-report', 'method-generate-quarterly-report'],
                   suggestedName: 'dispatchReport',
-                 code: { csharp: 'if (input is null) return BadRequest();\nif (input.StartDate > input.EndDate) return BadRequest();\nif (input.StartDate < reportWindow.Start || input.EndDate > reportWindow.End) return BadRequest();\nif (input.Format is not ("csv" or "pdf")) return BadRequest();\nvar isMonthly = input.StartDate.Year == input.EndDate.Year\n    && input.StartDate.Month == input.EndDate.Month;\nvar report = isMonthly ? generateMonthlyReport(input) : generateQuarterlyReport(input);\nif (report.Rows.Count == 0) return NoContent();\nResponse.Headers.Append("X-Report-Period", input.StartDate.ToString("yyyy-MM"));\nResponse.Headers.Append("Content-Disposition", $"attachment; filename={report.FileName}");\nResponse.Headers.Append("Cache-Control", "no-store");\nreturn File(report.Content, report.ContentType, report.FileName);' }},
+                 code: { csharp: "if (input is null) throw new ArgumentNullException(nameof(input));\nif (input.StartDate > input.EndDate) throw new ValidationException(\"期間が不正です\");\nif (input.StartDate < SampleData.ReportWindow.Start || input.EndDate > SampleData.ReportWindow.End) throw new ValidationException(\"期間が範囲外です\");\nif (input.Format is not (\"csv\" or \"pdf\")) throw new ValidationException(\"形式が不正です\");\nvar isMonthly = input.StartDate.Year == input.EndDate.Year\n    && input.StartDate.Month == input.EndDate.Month;\nvar content = isMonthly ? generateMonthlyReport(input) : generateQuarterlyReport(input);\nif (content.Length == 0) throw new ValidationException(\"対象の売上がありません\");\nLog.Info($\"帳票の期間: {input.StartDate:yyyy-MM}\");\nLog.Debug($\"出力形式: {input.Format}\");\nLog.Debug($\"帳票の文字数: {content.Length}\");\nConsole.WriteLine(content);" }, variables: { declares: [{ name: 'isMonthly', type: { csharp: 'bool' } }, { name: 'content', type: { csharp: 'string' } }], uses: ['input'] } },
               ],
             },
           ],
@@ -515,6 +528,7 @@ const volatileTaxStage: Stage = {
     "http": "dispatchReport",
   },
   id: 'intermediate-volatile-tax',
+  runtime: intermediateVolatileTaxRuntime,
   problem: '売上処理の中に税率ごとの計算が混在している',
   level: 'intermediate',
   title: '中級4: 変わるのは税の計算',
@@ -573,6 +587,7 @@ const volatileFormatStage: Stage = {
     "http": "dispatchReport",
   },
   id: 'intermediate-volatile-format',
+  runtime: intermediateVolatileFormatRuntime,
   problem: '売上処理の中に帳票形式ごとの出力が混在している',
   level: 'intermediate',
   title: '中級5: 変わるのは帳票の形式',
@@ -638,6 +653,7 @@ const featureEnvyStage: Stage = {
     "cancellation": "cancelOrder",
   },
   id: 'intermediate-feature-envy',
+  runtime: intermediateFeatureEnvyRuntime,
   problem: '契約処理が別クラスのデータを多く読み書きしている',
   level: 'intermediate',
   title: '中級6: 他人のデータばかり触るメソッド',
@@ -688,15 +704,15 @@ const featureEnvyStage: Stage = {
             id: 'class-billing-service',
             name: 'BillingService',
             fields: [
-              { id: 'field-payment-gateway', name: 'paymentGateway', visibility: 'private', description: '決済を処理するゲートウェイ', type: { csharp: 'IPaymentGateway' } },
-              { id: 'field-mailer', name: 'mailer', visibility: 'private', description: 'メールを送信するサービス', type: { csharp: 'IMailer' } },
+              { id: 'field-payment-gateway', name: 'paymentGateway', visibility: 'private', description: '決済を処理するゲートウェイ', type: { csharp: 'PaymentGateway' } },
+              { id: 'field-mailer', name: 'mailer', visibility: 'private', description: 'メールを送信するサービス', type: { csharp: 'Mailer' } },
               { id: 'field-trial-days', name: 'trialDays', visibility: 'private', description: '無料試用期間の日数', type: { csharp: 'int' } },
             ],
             methods: [
               {
                 id: 'method-renew-subscription',
                 name: 'renewSubscription',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'string', name: 'customerEmail' }, { type: 'string', name: 'paymentToken' }],
                 fragments: [
                   {
                     id: 'frag-check-trial',
@@ -705,7 +721,7 @@ const featureEnvyStage: Stage = {
                     responsibility: 'trial',
                     reads: ['field-started-at', 'field-status', 'field-trial-days'],
                     suggestedName: 'isInTrial',
-                   code: { csharp: "if (input is null) throw new ArgumentNullException(nameof(input));\nvar trialEndsAt = startedAt.AddDays(trialDays);\nvar isTrialActive = status == \"Trial\" && DateTime.UtcNow < trialEndsAt;" }},
+                   code: { csharp: "Log.Debug(\"トライアル期間を確認します\");\nvar trialEndsAt = startedAt.AddDays(trialDays);\nvar isTrialActive = status == \"Trial\" && SampleData.Today < trialEndsAt;" }, variables: { declares: [{ name: 'trialEndsAt', type: { csharp: 'DateTime' } }, { name: 'isTrialActive', type: { csharp: 'bool' } }] } },
                   {
                     id: 'frag-calc-fee',
                     label: '解約済み・支払い停止中なら請求しない。それ以外は席数と単価から今月の請求額を計算する',
@@ -713,7 +729,7 @@ const featureEnvyStage: Stage = {
                     responsibility: 'pricing',
                     reads: ['field-status', 'field-seats', 'field-unit-price'],
                     suggestedName: 'monthlyFee',
-                   code: { csharp: "if (seats <= 0) throw new ArgumentOutOfRangeException(nameof(seats));\nvar monthlyFee = isTrialActive || status is \"Canceled\" or \"Suspended\" ? 0m : decimal.Round(seats * unitPrice, 2);\n_logger.LogDebug(\"今月の請求額を計算しました\");" }},
+                   code: { csharp: "if (seats <= 0) throw new ArgumentOutOfRangeException(nameof(seats));\nvar fee = isTrialActive || status is \"Canceled\" or \"Suspended\" ? 0m : decimal.Round(seats * unitPrice, 2);\nLog.Debug(\"今月の請求額を計算しました\");" }, variables: { declares: [{ name: 'fee', type: { csharp: 'decimal' } }], uses: ['isTrialActive'] } },
                   {
                     id: 'frag-charge-card',
                     label: '決済代行サービスでカードに請求する',
@@ -721,7 +737,7 @@ const featureEnvyStage: Stage = {
                     responsibility: 'payment',
                     reads: ['field-payment-gateway'],
                     suggestedName: 'chargeCard',
-                   code: { csharp: "var result = monthlyFee > 0 ? await _paymentGateway.ChargeAsync(monthlyFee, paymentToken, cancellationToken) : null;\nif (result is not null && !result.Succeeded) throw new PaymentException(result.ErrorMessage);\nif (result is not null) _logger.LogDebug(\"カードに請求しました\");\nawait sendRenewalNotice(customerId, cancellationToken);" }},
+                   code: { csharp: "var result = fee > 0 ? paymentGateway.Charge(fee, paymentToken) : null;\nif (result is not null && !result.Succeeded) throw new PaymentException(result.ErrorMessage);\nif (result is not null) Log.Debug(\"カードに請求しました\");\nLog.Info($\"{customerEmail} の更新手続きが完了しました\");" }, variables: { declares: [{ name: 'result', type: { csharp: 'PaymentResult' } }], uses: ['fee', 'paymentToken', 'customerEmail'] } },
                   {
                     id: 'frag-send-invoice-mail',
                     label: '請求書メールを送る',
@@ -729,13 +745,13 @@ const featureEnvyStage: Stage = {
                     responsibility: 'notification',
                     reads: ['field-mailer'],
                     suggestedName: 'sendInvoiceMail',
-                   code: { csharp: "var message = new MailMessage(recipient, subject, body);\nawait _mailer.SendAsync(message, cancellationToken);\nawait _mailAuditLog.RecordSentAsync(message.Id, cancellationToken);" }},
+                   code: { csharp: "var message = new MailMessage(customerEmail, \"月額料金のお知らせ\", $\"今月の請求額は {fee} 円です\");\nmailer.Send(message);\nLog.Debug($\"請求書メール {message.Id} を送信しました\");" }, variables: { declares: [{ name: 'message', type: { csharp: 'MailMessage' } }], uses: ['customerEmail', 'fee'] } },
                 ],
               },
               {
                 id: 'method-cancel-subscription',
                 name: 'cancelSubscription',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'string', name: 'customerEmail' }],
                 fragments: [
                   {
                     id: 'frag-check-cancelable',
@@ -744,7 +760,7 @@ const featureEnvyStage: Stage = {
                     responsibility: 'cancellation',
                     reads: ['field-status', 'field-canceled-at'],
                     suggestedName: 'checkCancelable',
-                   code: { csharp: "if (status != \"Active\") return false;\nif (canceledAt is not null) return false;" }},
+                   code: { csharp: "var isActive = status == \"Active\";\nvar neverCanceled = canceledAt is null;" }, variables: { declares: [{ name: 'isActive', type: { csharp: 'bool' } }, { name: 'neverCanceled', type: { csharp: 'bool' } }] } },
                   {
                     id: 'frag-mark-canceled',
                     label: '状態を解約済みにし、解約日を記録する',
@@ -752,7 +768,7 @@ const featureEnvyStage: Stage = {
                     responsibility: 'cancellation',
                     writes: ['field-status', 'field-canceled-at'],
                     suggestedName: 'markCanceled',
-                   code: { csharp: "if (status != \"Active\") throw new InvalidOperationException(\"この状態では解約できません\");\nstatus = \"Canceled\";\ncanceledAt = DateTime.UtcNow;" }},
+                   code: { csharp: "if (!isActive || !neverCanceled) throw new InvalidOperationException(\"この状態では解約できません\");\nstatus = \"Canceled\";\ncanceledAt = SampleData.Today;" }, variables: { uses: ['isActive', 'neverCanceled'] } },
                   {
                     id: 'frag-send-cancel-mail',
                     label: '解約の確認メールを送る',
@@ -760,7 +776,7 @@ const featureEnvyStage: Stage = {
                     responsibility: 'notification',
                     reads: ['field-mailer'],
                     suggestedName: 'sendCancelMail',
-                   code: { csharp: "var message = new MailMessage(recipient, subject, body);\nawait mailer.SendAsync(message, cancellationToken);\nawait _mailAuditLog.RecordSentAsync(message.Id, cancellationToken);" }},
+                   code: { csharp: "var message = new MailMessage(customerEmail, \"解約のお知らせ\", \"ご解約を承りました\");\nmailer.Send(message);\nLog.Debug($\"解約メール {message.Id} を送信しました\");" }, variables: { declares: [{ name: 'message', type: { csharp: 'MailMessage' } }], uses: ['customerEmail'] } },
                 ],
               },
             ],
@@ -814,6 +830,7 @@ const anemicDomainModelStage: Stage = {
     "notification": "notifyWithdrawal",
   },
   id: 'intermediate-anemic-domain-model',
+  runtime: intermediateAnemicDomainModelRuntime,
   problem: '口座の状態変更がサービス側に集まっている',
   level: 'intermediate',
   title: '中級7: getter/setter だけの口座クラス',
@@ -878,32 +895,32 @@ const anemicDomainModelStage: Stage = {
               {
                 id: 'method-get-balance',
                 name: 'getBalance',
-                visibility: 'public',
-                fragments: [{ id: 'frag-get-balance', label: '残高を返す', lines: 1, responsibility: 'accessor', reads: ['field-balance'], accessor: true , code: { csharp: "return balance;" }}],
+                visibility: 'public', returns: [{ name: 'current', type: { csharp: 'decimal' } }],
+                fragments: [{ id: 'frag-get-balance', label: '残高を返す', lines: 1, responsibility: 'accessor', reads: ['field-balance'], accessor: true , code: { csharp: "var current = balance;" }, variables: { declares: [{ name: 'current', type: { csharp: 'decimal' } }] } }],
               },
               {
                 id: 'method-set-balance',
                 name: 'setBalance',
-                visibility: 'public',
-                fragments: [{ id: 'frag-set-balance', label: '残高を書き換える', lines: 1, responsibility: 'accessor', writes: ['field-balance'], accessor: true , code: { csharp: "balance = value;" }}],
+                visibility: 'public', parameters: [{ type: 'decimal', name: 'value' }],
+                fragments: [{ id: 'frag-set-balance', label: '残高を書き換える', lines: 1, responsibility: 'accessor', writes: ['field-balance'], accessor: true , code: { csharp: "balance = value;" }, variables: { uses: ['value'] } }],
               },
               {
                 id: 'method-get-status',
                 name: 'getStatus',
-                visibility: 'public',
-                fragments: [{ id: 'frag-get-status', label: '口座の状態を返す', lines: 1, responsibility: 'accessor', reads: ['field-status'], accessor: true , code: { csharp: "return status;" }}],
+                visibility: 'public', returns: [{ name: 'current', type: { csharp: 'string' } }],
+                fragments: [{ id: 'frag-get-status', label: '口座の状態を返す', lines: 1, responsibility: 'accessor', reads: ['field-status'], accessor: true , code: { csharp: "var current = status;" }, variables: { declares: [{ name: 'current', type: { csharp: 'string' } }] } }],
               },
               {
                 id: 'method-get-daily-withdrawn',
                 name: 'getDailyWithdrawn',
-                visibility: 'public',
-                fragments: [{ id: 'frag-get-daily-withdrawn', label: '本日の引き出し額を返す', lines: 1, responsibility: 'accessor', reads: ['field-daily-withdrawn'], accessor: true , code: { csharp: "return dailyWithdrawn;" }}],
+                visibility: 'public', returns: [{ name: 'current', type: { csharp: 'decimal' } }],
+                fragments: [{ id: 'frag-get-daily-withdrawn', label: '本日の引き出し額を返す', lines: 1, responsibility: 'accessor', reads: ['field-daily-withdrawn'], accessor: true , code: { csharp: "var current = dailyWithdrawn;" }, variables: { declares: [{ name: 'current', type: { csharp: 'decimal' } }] } }],
               },
               {
                 id: 'method-set-daily-withdrawn',
                 name: 'setDailyWithdrawn',
-                visibility: 'public',
-                fragments: [{ id: 'frag-set-daily-withdrawn', label: '本日の引き出し額を書き換える', lines: 1, responsibility: 'accessor', writes: ['field-daily-withdrawn'], accessor: true , code: { csharp: "dailyWithdrawn = value;" }}],
+                visibility: 'public', parameters: [{ type: 'decimal', name: 'value' }],
+                fragments: [{ id: 'frag-set-daily-withdrawn', label: '本日の引き出し額を書き換える', lines: 1, responsibility: 'accessor', writes: ['field-daily-withdrawn'], accessor: true , code: { csharp: "dailyWithdrawn = value;" }, variables: { uses: ['value'] } }],
               },
             ],
           },
@@ -917,14 +934,14 @@ const anemicDomainModelStage: Stage = {
             id: 'class-account-service',
             name: 'AccountService',
             fields: [
-              { id: 'field-transaction-log', name: 'transactionLog', visibility: 'private', description: '取引を記録するログ', type: { csharp: 'ITransactionLog' } },
-              { id: 'field-notifier', name: 'notifier', visibility: 'private', description: '通知を送るサービス', type: { csharp: 'INotifier' } },
+              { id: 'field-transaction-log', name: 'transactionLog', visibility: 'private', description: '取引を記録するログ', type: { csharp: 'TransactionLog' } },
+              { id: 'field-notifier', name: 'notifier', visibility: 'private', description: '通知を送るサービス', type: { csharp: 'Notifier' } },
             ],
             methods: [
               {
                 id: 'method-withdraw',
                 name: 'withdraw',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'int', name: 'accountId' }, { type: 'decimal', name: 'amount' }, { type: 'decimal', name: 'dailyLimit' }, { type: 'int', name: 'customerId' }],
                 fragments: [
                   {
                     id: 'frag-withdraw-check-status',
@@ -933,7 +950,7 @@ const anemicDomainModelStage: Stage = {
                     responsibility: 'account-status',
                     uses: ['method-get-status'],
                     suggestedName: 'checkNotFrozen',
-                   code: { csharp: "var currentStatus = getStatus();\nif (currentStatus == \"Frozen\") throw new InvalidOperationException(\"凍結口座は操作できません\");\nvar canOperate = currentStatus == \"Active\";" }},
+                   code: { csharp: "var currentStatus = getStatus();\nif (currentStatus == \"Frozen\") throw new InvalidOperationException(\"凍結口座は操作できません\");\nvar canOperate = currentStatus == \"Active\";" }, variables: { declares: [{ name: 'currentStatus', type: { csharp: 'string' } }, { name: 'canOperate', type: { csharp: 'bool' } }] } },
                   {
                     id: 'frag-check-withdrawable',
                     label: '残高と1日の引き出し上限から引き出せるか確かめる',
@@ -941,7 +958,7 @@ const anemicDomainModelStage: Stage = {
                     responsibility: 'withdrawal-limit',
                     uses: ['method-get-balance', 'method-get-daily-withdrawn'],
                     suggestedName: 'checkWithdrawable',
-                   code: { csharp: "var balance = getBalance();\nvar dailyWithdrawn = getDailyWithdrawn();\nif (balance <= 0 || dailyWithdrawn >= dailyLimit) throw new InvalidOperationException(\"引き出せません\");" }},
+                   code: { csharp: "var currentBalance = getBalance();\nvar withdrawnToday = getDailyWithdrawn();\nif (currentBalance <= 0 || withdrawnToday >= dailyLimit) throw new InvalidOperationException(\"引き出せません\");" }, variables: { declares: [{ name: 'currentBalance', type: { csharp: 'decimal' } }, { name: 'withdrawnToday', type: { csharp: 'decimal' } }], uses: ['dailyLimit'] } },
                   {
                     id: 'frag-debit-balance',
                     label: '残高を減らし、本日の引き出し額を足して setter で書き戻す',
@@ -949,7 +966,7 @@ const anemicDomainModelStage: Stage = {
                     responsibility: 'balance',
                     uses: ['method-get-balance', 'method-set-balance', 'method-get-daily-withdrawn', 'method-set-daily-withdrawn'],
                     suggestedName: 'debitBalance',
-                   code: { csharp: "var balance = getBalance();\nsetBalance(balance - amount);\nvar dailyWithdrawn = getDailyWithdrawn();\nsetDailyWithdrawn(dailyWithdrawn + amount);" }},
+                   code: { csharp: "var balanceBefore = getBalance();\nsetBalance(balanceBefore - amount);\nvar withdrawnBefore = getDailyWithdrawn();\nsetDailyWithdrawn(withdrawnBefore + amount);" }, variables: { declares: [{ name: 'balanceBefore', type: { csharp: 'decimal' } }, { name: 'withdrawnBefore', type: { csharp: 'decimal' } }], uses: ['amount'] } },
                   {
                     id: 'frag-withdraw-log',
                     label: '取引履歴に記録する',
@@ -957,7 +974,7 @@ const anemicDomainModelStage: Stage = {
                     responsibility: 'history',
                     reads: ['field-transaction-log'],
                     suggestedName: 'logWithdrawal',
-                   code: { csharp: "if (input is null) throw new ArgumentNullException(nameof(input));\nawait _transactionLog.AppendAsync(accountId, amount, DateTimeOffset.UtcNow);" }},
+                   code: { csharp: "transactionLog.Append(accountId, amount);\nLog.Debug($\"口座 {accountId} の取引履歴に出金 {amount} を記録しました\");" }, variables: { uses: ['accountId', 'amount'] } },
                   {
                     id: 'frag-withdraw-notify',
                     label: '引き出したことをメールで知らせる',
@@ -965,13 +982,13 @@ const anemicDomainModelStage: Stage = {
                     responsibility: 'notification',
                     reads: ['field-notifier'],
                     suggestedName: 'notifyWithdrawal',
-                   code: { csharp: "var message = $\"{amount}円を引き出しました\";\nawait notifier.SendAsync(customerId, message, cancellationToken);\nawait notifier.RecordDeliveryAsync(customerId, DateTimeOffset.UtcNow);" }},
+                   code: { csharp: "var message = $\"{amount}円を引き出しました\";\nnotifier.Send(customerId, message);\nnotifier.RecordDelivery(customerId);" }, variables: { declares: [{ name: 'message', type: { csharp: 'string' } }], uses: ['amount', 'customerId'] } },
                 ],
               },
               {
                 id: 'method-deposit',
                 name: 'deposit',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'int', name: 'accountId' }, { type: 'decimal', name: 'amount' }],
                 fragments: [
                   {
                     id: 'frag-deposit-check-status',
@@ -980,7 +997,7 @@ const anemicDomainModelStage: Stage = {
                     responsibility: 'account-status',
                     uses: ['method-get-status'],
                     suggestedName: 'checkNotFrozenForDeposit',
-                   code: { csharp: "var currentStatus = getStatus();\nif (currentStatus == \"Frozen\") throw new InvalidOperationException(\"凍結口座は操作できません\");\nvar canOperate = currentStatus == \"Active\";" }},
+                   code: { csharp: "var currentStatus = getStatus();\nif (currentStatus == \"Frozen\") throw new InvalidOperationException(\"凍結口座は操作できません\");\nvar canOperate = currentStatus == \"Active\";" }, variables: { declares: [{ name: 'currentStatus', type: { csharp: 'string' } }, { name: 'canOperate', type: { csharp: 'bool' } }] } },
                   {
                     id: 'frag-credit-balance',
                     label: '残高を増やして setBalance() で書き戻す',
@@ -988,7 +1005,7 @@ const anemicDomainModelStage: Stage = {
                     responsibility: 'balance',
                     uses: ['method-get-balance', 'method-set-balance'],
                     suggestedName: 'creditBalance',
-                   code: { csharp: "var balance = getBalance();\nvar updatedBalance = balance + amount;\nsetBalance(updatedBalance);" }},
+                   code: { csharp: "var balanceBefore = getBalance();\nvar updatedBalance = balanceBefore + amount;\nsetBalance(updatedBalance);" }, variables: { declares: [{ name: 'balanceBefore', type: { csharp: 'decimal' } }, { name: 'updatedBalance', type: { csharp: 'decimal' } }], uses: ['amount'] } },
                   {
                     id: 'frag-deposit-log',
                     label: '取引履歴に記録する',
@@ -996,7 +1013,7 @@ const anemicDomainModelStage: Stage = {
                     responsibility: 'history',
                     reads: ['field-transaction-log'],
                     suggestedName: 'logDeposit',
-                   code: { csharp: "if (input is null) throw new ArgumentNullException(nameof(input));\nawait _transactionLog.AppendAsync(accountId, amount, DateTimeOffset.UtcNow);\nreturn true;" }},
+                   code: { csharp: "transactionLog.Append(accountId, amount);\nLog.Debug($\"口座 {accountId} の取引履歴に入金 {amount} を記録しました\");\nLog.Info(\"入金の記録が完了しました\");" }, variables: { uses: ['accountId', 'amount'] } },
                 ],
               },
             ],
@@ -1027,6 +1044,7 @@ const extractClassStage: Stage = {
     "address": "updateAddress",
   },
   id: 'intermediate-extract-class',
+  runtime: intermediateExtractClassRuntime,
   problem: '社員の給与と住所の情報が同じクラスにある',
   level: 'intermediate',
   title: '中級8: 給与と住所を抱えた社員クラス',
@@ -1092,7 +1110,7 @@ const extractClassStage: Stage = {
               {
                 id: 'method-calculate-monthly-pay',
                 name: 'calculateMonthlyPay',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'decimal', name: 'overtimeHours' }, { type: 'bool', name: 'isReducedRate' }, { type: 'Payroll', name: 'payroll' }], returns: [{ name: 'transfer', type: { csharp: 'BankTransfer' } }],
                 fragments: [
                   {
                     id: 'frag-overtime-pay',
@@ -1101,14 +1119,14 @@ const extractClassStage: Stage = {
                     responsibility: 'payroll',
                     reads: ['field-base-salary', 'field-overtime-rate'],
                     suggestedName: 'calculateOvertimePay',
-                   code: { csharp: "if (input is null) throw new ArgumentNullException(nameof(input));\nvar overtimePay = overtimeHours * overtimeRate;\nvar totalPay = baseSalary + overtimePay;" }},
+                   code: { csharp: "if (overtimeHours < 0) throw new ArgumentOutOfRangeException(nameof(overtimeHours));\nvar overtimePay = overtimeHours * overtimeRate;\nvar totalPay = baseSalary + overtimePay;" }, variables: { declares: [{ name: 'overtimePay', type: { csharp: 'decimal' } }, { name: 'totalPay', type: { csharp: 'decimal' } }], uses: ['overtimeHours'] } },
                   {
                     id: 'frag-withholding',
                     label: '所得税と社会保険料を差し引く',
                     lines: 3,
                     responsibility: 'withholding',
                     suggestedName: 'withholdTaxes',
-                   code: { csharp: "var incomeTax = totalPay * (isReducedRate ? reducedTaxRate : standardTaxRate);\nvar socialInsurance = totalPay * socialInsuranceRate;\npayroll.NetSalary = totalPay - incomeTax - socialInsurance;" }},
+                   code: { csharp: "var incomeTax = totalPay * (isReducedRate ? 0.05m : 0.10m);\nvar socialInsurance = totalPay * 0.15m;\npayroll.NetSalary = totalPay - incomeTax - socialInsurance;" }, variables: { declares: [{ name: 'incomeTax', type: { csharp: 'decimal' } }, { name: 'socialInsurance', type: { csharp: 'decimal' } }], uses: ['totalPay', 'isReducedRate', 'payroll'] } },
                   {
                     id: 'frag-pay-transfer',
                     label: '給与の振込データを作る',
@@ -1116,13 +1134,13 @@ const extractClassStage: Stage = {
                     responsibility: 'transfer',
                     reads: ['field-bank-account'],
                     suggestedName: 'buildTransferData',
-                   code: { csharp: "var netPay = payroll.NetSalary;\nvar transfer = new BankTransfer(bankAccount, netPay);\nreturn transfer;" }},
+                   code: { csharp: "var netPay = payroll.NetSalary;\nvar transfer = new BankTransfer(bankAccount, netPay);\nLog.Info($\"振込データを作成しました: {transfer.Amount}\");" }, variables: { declares: [{ name: 'netPay', type: { csharp: 'decimal' } }, { name: 'transfer', type: { csharp: 'BankTransfer' } }], uses: ['payroll'] } },
                 ],
               },
               {
                 id: 'method-format-mailing-address',
                 name: 'formatMailingAddress',
-                visibility: 'public',
+                visibility: 'public', returns: [{ name: 'label', type: { csharp: 'string' } }],
                 fragments: [
                   {
                     id: 'frag-format-address',
@@ -1131,13 +1149,13 @@ const extractClassStage: Stage = {
                     responsibility: 'address',
                     reads: ['field-postal-code', 'field-prefecture', 'field-address-line'],
                     suggestedName: 'formatLabel',
-                   code: { csharp: "var normalizedPostalCode = postalCode.Replace(\"-\", string.Empty);\nvar label = $\"{normalizedPostalCode} {prefecture} {addressLine}\";\nreturn label;" }},
+                   code: { csharp: "var normalizedPostalCode = postalCode.Replace(\"-\", string.Empty);\nvar label = normalizedPostalCode + \" \" + prefecture + \" \" + addressLine;\nLog.Debug(\"宛名ラベルを作成しました\");" }, variables: { declares: [{ name: 'normalizedPostalCode', type: { csharp: 'string' } }, { name: 'label', type: { csharp: 'string' } }] } },
                 ],
               },
               {
                 id: 'method-change-address',
                 name: 'changeAddress',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'AddressInput', name: 'input' }],
                 fragments: [
                   {
                     id: 'frag-validate-postal-code',
@@ -1146,7 +1164,7 @@ const extractClassStage: Stage = {
                     responsibility: 'address',
                     reads: ['field-postal-code'],
                     suggestedName: 'validatePostalCode',
-                   code: { csharp: "var normalizedPostalCode = postalCode.Replace(\"-\", string.Empty);\nif (!Regex.IsMatch(normalizedPostalCode, @\"^\\d{7}$\")) throw new ValidationException(\"郵便番号の形式が不正です\");" }},
+                   code: { csharp: "var normalizedPostalCode = input.PostalCode.Replace(\"-\", string.Empty);\nif (normalizedPostalCode == postalCode || normalizedPostalCode.Length != 7 || !normalizedPostalCode.All(char.IsDigit)) throw new ValidationException(\"郵便番号が変わっていないか、形式が不正です\");" }, variables: { declares: [{ name: 'normalizedPostalCode', type: { csharp: 'string' } }], uses: ['input'] } },
                   {
                     id: 'frag-update-address',
                     label: '住所を書き換える',
@@ -1154,7 +1172,7 @@ const extractClassStage: Stage = {
                     responsibility: 'address',
                     writes: ['field-postal-code', 'field-prefecture', 'field-address-line'],
                     suggestedName: 'updateAddress',
-                   code: { csharp: "postalCode = input.PostalCode.Replace(\"-\", string.Empty);\nprefecture = input.Prefecture;\naddressLine = input.AddressLine;" }},
+                   code: { csharp: "postalCode = input.PostalCode.Replace(\"-\", string.Empty);\nprefecture = input.Prefecture;\naddressLine = input.AddressLine;" }, variables: { uses: ['input'] } },
                 ],
               },
             ],
@@ -1185,6 +1203,7 @@ const copyPasteTaxStage: Stage = {
     "quoting": "createQuote",
   },
   id: 'intermediate-copy-paste-tax',
+  runtime: intermediateCopyPasteTaxRuntime,
   problem: '同じ消費税計算が複数の場所に書かれている',
   level: 'intermediate',
   title: '中級9: コピペされた消費税計算を1か所にまとめる',
@@ -1241,11 +1260,11 @@ const copyPasteTaxStage: Stage = {
               {
                 id: 'method-confirm-order',
                 name: 'confirm',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'Order', name: 'order' }, { type: 'int', name: 'productId' }, { type: 'int', name: 'quantity' }, { type: 'decimal', name: 'taxRate' }],
                 fragments: [
-                  { id: 'frag-order-check', label: '在庫と注文内容を確かめる', lines: 2, responsibility: 'ordering', suggestedName: 'checkOrder' , code: { csharp: "var aggregate = order;\nawait _inventory.ReserveAsync(productId, quantity);" }},
-                  { id: 'frag-order-tax', label: '消費税を計算する', lines: 3, responsibility: 'tax', suggestedName: 'calculateOrderTax', duplicateGroup: 'tax-calc' , code: { csharp: "var taxableAmount = aggregate.Subtotal;\nvar tax = taxableAmount * taxRate;\nvar roundedTax = decimal.Round(tax, 2);" }},
-                  { id: 'frag-order-save', label: '注文を確定して保存する', lines: 3, responsibility: 'ordering', suggestedName: 'saveOrder' , code: { csharp: "aggregate.ApplyTax(roundedTax);\nawait _repository.SaveAsync(aggregate, cancellationToken);\nreturn aggregate.Id;" }},
+                  { id: 'frag-order-check', label: '在庫と注文内容を確かめる', lines: 2, responsibility: 'ordering', suggestedName: 'checkOrder' , code: { csharp: "ITaxable aggregate = order;\nFakeInventory.Reserve(productId, quantity);" }, variables: { declares: [{ name: 'aggregate', type: { csharp: 'ITaxable' } }], uses: ['order', 'productId', 'quantity'] } },
+                  { id: 'frag-order-tax', label: '消費税を計算する', lines: 3, responsibility: 'tax', suggestedName: 'calculateOrderTax', duplicateGroup: 'tax-calc' , code: { csharp: "var taxableAmount = aggregate.Subtotal;\nvar tax = taxableAmount * taxRate;\nvar roundedTax = decimal.Round(tax, 2);" }, variables: { declares: [{ name: 'taxableAmount', type: { csharp: 'decimal' } }, { name: 'tax', type: { csharp: 'decimal' } }, { name: 'roundedTax', type: { csharp: 'decimal' } }], uses: ['aggregate', 'taxRate'] } },
+                  { id: 'frag-order-save', label: '注文を確定して保存する', lines: 3, responsibility: 'ordering', suggestedName: 'saveOrder' , code: { csharp: "aggregate.ApplyTax(roundedTax);\nFakeRepository.Save(aggregate);\nLog.Info($\"注文 {aggregate.Id} を確定しました\");" }, variables: { uses: ['aggregate', 'roundedTax'] } },
                 ],
               },
             ],
@@ -1263,11 +1282,11 @@ const copyPasteTaxStage: Stage = {
               {
                 id: 'method-issue-invoice',
                 name: 'issue',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'Order', name: 'order' }, { type: 'string', name: 'recipient' }, { type: 'string', name: 'subject' }, { type: 'decimal', name: 'taxRate' }],
                 fragments: [
-                  { id: 'frag-invoice-build', label: '請求明細を組み立てる', lines: 2, responsibility: 'invoicing', suggestedName: 'buildInvoiceLines' , code: { csharp: "var invoiceLines = order.Items.Select(item => new InvoiceLine(item.Description, item.Quantity, item.UnitPrice)).ToList();\nvar aggregate = new Invoice(order.Number, invoiceLines);" }},
-                  { id: 'frag-invoice-tax', label: '消費税を計算する', lines: 3, responsibility: 'tax', suggestedName: 'calculateInvoiceTax', duplicateGroup: 'tax-calc' , code: { csharp: "var taxableAmount = aggregate.Subtotal;\nvar tax = taxableAmount * taxRate;\nvar roundedTax = decimal.Round(tax, 2);" }},
-                  { id: 'frag-invoice-issue', label: '請求書を発行して送る', lines: 3, responsibility: 'invoicing', suggestedName: 'issueInvoice' , code: { csharp: "aggregate.ApplyTax(roundedTax);\naggregate.Issue(DateTime.UtcNow);\nawait _mailer.SendAsync(new MailMessage(recipient, subject, aggregate), cancellationToken);" }},
+                  { id: 'frag-invoice-build', label: '請求明細を組み立てる', lines: 2, responsibility: 'invoicing', suggestedName: 'buildInvoiceLines' , code: { csharp: "var invoiceLines = order.Items.Select(item => new InvoiceLine(item.Description, item.Quantity, item.UnitPrice)).ToList();\nITaxable aggregate = new Invoice(order.Number, invoiceLines);" }, variables: { declares: [{ name: 'invoiceLines', type: { csharp: 'List<InvoiceLine>' } }, { name: 'aggregate', type: { csharp: 'ITaxable' } }], uses: ['order'] } },
+                  { id: 'frag-invoice-tax', label: '消費税を計算する', lines: 3, responsibility: 'tax', suggestedName: 'calculateInvoiceTax', duplicateGroup: 'tax-calc' , code: { csharp: "var taxableAmount = aggregate.Subtotal;\nvar tax = taxableAmount * taxRate;\nvar roundedTax = decimal.Round(tax, 2);" }, variables: { declares: [{ name: 'taxableAmount', type: { csharp: 'decimal' } }, { name: 'tax', type: { csharp: 'decimal' } }, { name: 'roundedTax', type: { csharp: 'decimal' } }], uses: ['aggregate', 'taxRate'] } },
+                  { id: 'frag-invoice-issue', label: '請求書を発行して送る', lines: 3, responsibility: 'invoicing', suggestedName: 'issueInvoice' , code: { csharp: "aggregate.ApplyTax(roundedTax);\nvar message = new MailMessage(recipient, subject, $\"請求額: {aggregate.Subtotal + roundedTax}\");\nFakeMailer.Send(message);" }, variables: { declares: [{ name: 'message', type: { csharp: 'MailMessage' } }], uses: ['aggregate', 'roundedTax', 'recipient', 'subject'] } },
                 ],
               },
             ],
@@ -1285,11 +1304,11 @@ const copyPasteTaxStage: Stage = {
               {
                 id: 'method-create-quote',
                 name: 'create',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'List<OrderItem>', name: 'items' }, { type: 'DateTime', name: 'expiresAt' }, { type: 'decimal', name: 'taxRate' }],
                 fragments: [
-                  { id: 'frag-quote-estimate', label: '見積項目を集計する', lines: 2, responsibility: 'quoting', suggestedName: 'estimateItems' , code: { csharp: "var total = items.Sum(item => item.Quantity * item.UnitPrice);\nvar aggregate = new Quote(items, total, expiresAt);" }},
-                  { id: 'frag-quote-tax', label: '消費税を計算する', lines: 3, responsibility: 'tax', suggestedName: 'calculateQuoteTax', duplicateGroup: 'tax-calc' , code: { csharp: "var taxableAmount = aggregate.Subtotal;\nvar tax = taxableAmount * taxRate;\nvar roundedTax = decimal.Round(tax, 2);" }},
-                  { id: 'frag-quote-save', label: '見積書を作って保存する', lines: 3, responsibility: 'quoting', suggestedName: 'saveQuote' , code: { csharp: "aggregate.ApplyTax(roundedTax);\nawait _repository.SaveAsync(aggregate, cancellationToken);\nreturn aggregate.Id;" }},
+                  { id: 'frag-quote-estimate', label: '見積項目を集計する', lines: 2, responsibility: 'quoting', suggestedName: 'estimateItems' , code: { csharp: "var total = items.Sum(item => item.Quantity * item.UnitPrice);\nITaxable aggregate = new Quote(items, total, expiresAt);" }, variables: { declares: [{ name: 'total', type: { csharp: 'decimal' } }, { name: 'aggregate', type: { csharp: 'ITaxable' } }], uses: ['items', 'expiresAt'] } },
+                  { id: 'frag-quote-tax', label: '消費税を計算する', lines: 3, responsibility: 'tax', suggestedName: 'calculateQuoteTax', duplicateGroup: 'tax-calc' , code: { csharp: "var taxableAmount = aggregate.Subtotal;\nvar tax = taxableAmount * taxRate;\nvar roundedTax = decimal.Round(tax, 2);" }, variables: { declares: [{ name: 'taxableAmount', type: { csharp: 'decimal' } }, { name: 'tax', type: { csharp: 'decimal' } }, { name: 'roundedTax', type: { csharp: 'decimal' } }], uses: ['aggregate', 'taxRate'] } },
+                  { id: 'frag-quote-save', label: '見積書を作って保存する', lines: 3, responsibility: 'quoting', suggestedName: 'saveQuote' , code: { csharp: "aggregate.ApplyTax(roundedTax);\nFakeRepository.Save(aggregate);\nLog.Info($\"見積 {aggregate.Id} を保存しました\");" }, variables: { uses: ['aggregate', 'roundedTax'] } },
                 ],
               },
             ],
@@ -1330,6 +1349,7 @@ const memberRankBranchingStage: Stage = {
     "ordering": "saveOrder",
   },
   id: 'intermediate-member-rank-branching',
+  runtime: intermediateMemberRankBranchingRuntime,
   problem: '会員ランクごとの振る舞いが条件分岐に集まっている',
   level: 'intermediate',
   title: '中級10: 会員ランクごとのif分岐をクラスに分ける',
@@ -1388,10 +1408,10 @@ const memberRankBranchingStage: Stage = {
               {
                 id: 'method-quote-price',
                 name: 'quotePrice',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'List<OrderItem>', name: 'items' }, { type: 'string', name: 'rank' }, { type: 'QuoteResult', name: 'quote' }],
                 fragments: [
-                  { id: 'frag-price-regular', label: '会員ランクが「通常」なら、定価で計算する', lines: 6, responsibility: 'price-regular', suggestedName: 'calculatePrice' , code: { csharp: "if (items.Count == 0) return 0;\nvar regularAmount = items.Sum(item =>\n    item.UnitPrice * item.Quantity);\nvar regularTotal = decimal.Round(regularAmount,\n    2);\nif (rank == MemberRank.Regular) return regularTotal;" }},
-                  { id: 'frag-price-premium', label: '会員ランクが「プレミアム」なら、10%引きで計算する', lines: 6, responsibility: 'premium-rank', suggestedName: 'calculatePrice' , code: { csharp: "if (items.Count == 0) return 0;\nvar premiumAmount = items.Sum(item =>\n    item.UnitPrice * item.Quantity);\nvar discountedTotal = premiumAmount * 0.90m;\nreturn rank == MemberRank.Premium ? decimal.Round(discountedTotal,\n    2) : throw new ArgumentOutOfRangeException(nameof(rank));" }},
+                  { id: 'frag-price-regular', label: '会員ランクが「通常」なら、定価で計算する', lines: 6, responsibility: 'price-regular', suggestedName: 'calculatePrice' , code: { csharp: "var regularAmount = items.Sum(item =>\n    item.UnitPrice * item.Quantity);\nvar regularTotal = decimal.Round(regularAmount,\n    2);\nLog.Debug($\"通常会員の価格を計算しました: {regularTotal}\");\nif (rank == \"Regular\") quote.Amount = regularTotal;" }, variables: { declares: [{ name: 'regularAmount', type: { csharp: 'decimal' } }, { name: 'regularTotal', type: { csharp: 'decimal' } }], uses: ['items', 'rank', 'quote'] } },
+                  { id: 'frag-price-premium', label: '会員ランクが「プレミアム」なら、10%引きで計算する', lines: 6, responsibility: 'premium-rank', suggestedName: 'calculatePrice' , code: { csharp: "var premiumAmount = items.Sum(item =>\n    item.UnitPrice * item.Quantity);\nvar discountedTotal = decimal.Round(premiumAmount * 0.90m,\n    2);\nLog.Debug($\"プレミアム会員の価格を計算しました: {discountedTotal}\");\nif (rank == \"Premium\") quote.Amount = discountedTotal;" }, variables: { declares: [{ name: 'premiumAmount', type: { csharp: 'decimal' } }, { name: 'discountedTotal', type: { csharp: 'decimal' } }], uses: ['items', 'rank', 'quote'] } },
                 ],
               },
             ],
@@ -1409,10 +1429,10 @@ const memberRankBranchingStage: Stage = {
               {
                 id: 'method-quote-shipping',
                 name: 'quoteShipping',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'string', name: 'address' }, { type: 'decimal', name: 'weight' }, { type: 'string', name: 'rank' }, { type: 'QuoteResult', name: 'quote' }],
                 fragments: [
-                  { id: 'frag-shipping-regular', label: '会員ランクが「通常」なら、送料を全額かける', lines: 6, responsibility: 'shipping-regular', suggestedName: 'calculateShipping' , code: { csharp: "if (weight <= 0) throw new ArgumentOutOfRangeException(nameof(weight));\nvar regularZone = _zoneResolver.Resolve(\n    address);\nvar regularShippingFee = _shippingRates.Calculate(\n    regularZone, weight);\nif (rank == MemberRank.Regular) return regularShippingFee;" }},
-                  { id: 'frag-shipping-premium', label: '会員ランクが「プレミアム」なら、送料を半額にする', lines: 6, responsibility: 'premium-rank', suggestedName: 'calculateShipping' , code: { csharp: "if (weight <= 0) throw new ArgumentOutOfRangeException(nameof(weight));\nvar premiumZone = _zoneResolver.Resolve(\n    address);\nvar premiumShippingFee = _shippingRates.Calculate(\n    premiumZone, weight);\nreturn rank == MemberRank.Premium ? premiumShippingFee * 0.5m : throw new ArgumentOutOfRangeException(nameof(rank));" }},
+                  { id: 'frag-shipping-regular', label: '会員ランクが「通常」なら、送料を全額かける', lines: 6, responsibility: 'shipping-regular', suggestedName: 'calculateShipping' , code: { csharp: "if (weight <= 0) throw new ArgumentOutOfRangeException(nameof(weight));\nvar regularZone = ZoneResolver.Resolve(\n    address);\nvar regularShippingFee = ShippingRates.Calculate(\n    regularZone, weight);\nif (rank == \"Regular\") quote.Amount = regularShippingFee;" }, variables: { declares: [{ name: 'regularZone', type: { csharp: 'string' } }, { name: 'regularShippingFee', type: { csharp: 'decimal' } }], uses: ['weight', 'address', 'rank', 'quote'] } },
+                  { id: 'frag-shipping-premium', label: '会員ランクが「プレミアム」なら、送料を半額にする', lines: 6, responsibility: 'premium-rank', suggestedName: 'calculateShipping' , code: { csharp: "if (weight <= 0) throw new ArgumentOutOfRangeException(nameof(weight));\nvar premiumZone = ZoneResolver.Resolve(\n    address);\nvar premiumShippingFee = ShippingRates.Calculate(\n    premiumZone, weight);\nif (rank == \"Premium\") quote.Amount = premiumShippingFee * 0.5m;" }, variables: { declares: [{ name: 'premiumZone', type: { csharp: 'string' } }, { name: 'premiumShippingFee', type: { csharp: 'decimal' } }], uses: ['weight', 'address', 'rank', 'quote'] } },
                 ],
               },
             ],
@@ -1430,11 +1450,11 @@ const memberRankBranchingStage: Stage = {
               {
                 id: 'method-checkout',
                 name: 'checkout',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'List<OrderItem>', name: 'items' }, { type: 'string', name: 'rank' }, { type: 'string', name: 'address' }, { type: 'decimal', name: 'weight' }],
                 fragments: [
-                  { id: 'frag-checkout-validate', label: '注文内容を検証する', lines: 2, responsibility: 'validation', suggestedName: 'validateOrder' , code: { csharp: "if (items.Count == 0) throw new ValidationException(\"対象がありません\");\nif (items.Any(item => !item.IsValid)) throw new ValidationException(\"入力が不正です\");" }},
-                  { id: 'frag-checkout-rank', label: 'MemberRank(インターフェース)経由で価格と送料を求める', lines: 4, responsibility: 'pricing', uses: ['method-member-rank-price', 'method-member-rank-shipping'], suggestedName: 'priceOrder' , code: { csharp: "var price = calculatePrice(items, rank);\nvar shippingFee = calculateShipping(rank, address);\nvar total = price + shippingFee;\nvar order = new Order(items, total);" }},
-                  { id: 'frag-checkout-save', label: '注文を確定して保存する', lines: 3, responsibility: 'ordering', suggestedName: 'saveOrder' , code: { csharp: "cancellationToken.ThrowIfCancellationRequested();\nawait _repository.SaveAsync(order, cancellationToken);\nreturn order.Id;" }},
+                  { id: 'frag-checkout-validate', label: '注文内容を検証する', lines: 2, responsibility: 'validation', suggestedName: 'validateOrder' , code: { csharp: "if (items.Count == 0) throw new ValidationException(\"対象がありません\");\nif (items.Any(item => !item.IsValid)) throw new ValidationException(\"入力が不正です\");" }, variables: { uses: ['items'] } },
+                  { id: 'frag-checkout-rank', label: 'MemberRank(インターフェース)経由で価格と送料を求める', lines: 4, responsibility: 'pricing', uses: ['method-member-rank-price', 'method-member-rank-shipping'], suggestedName: 'priceOrder' , code: { csharp: "var priceQuote = new QuoteResult();\nvar shippingQuote = new QuoteResult();\ncalculatePrice(items, rank, priceQuote);\ncalculateShipping(address, weight, rank, shippingQuote);" }, variables: { declares: [{ name: 'priceQuote', type: { csharp: 'QuoteResult' } }, { name: 'shippingQuote', type: { csharp: 'QuoteResult' } }], uses: ['items', 'rank', 'address', 'weight'] } },
+                  { id: 'frag-checkout-save', label: '注文を確定して保存する', lines: 3, responsibility: 'ordering', suggestedName: 'saveOrder' , code: { csharp: "var order = new Order(items, priceQuote.Amount + shippingQuote.Amount);\nFakeRepository.Save(order);\nLog.Info($\"注文 {order.Id} を確定しました\");" }, variables: { declares: [{ name: 'order', type: { csharp: 'Order' } }], uses: ['items', 'priceQuote', 'shippingQuote'] } },
                 ],
               },
             ],
@@ -1449,8 +1469,8 @@ const memberRankBranchingStage: Stage = {
             id: 'class-member-rank',
             name: 'MemberRank',
             methods: [
-              { id: 'method-member-rank-price', name: 'calculatePrice', visibility: 'public', fragments: [] },
-              { id: 'method-member-rank-shipping', name: 'calculateShipping', visibility: 'public', fragments: [] },
+              { id: 'method-member-rank-price', name: 'calculatePrice', visibility: 'public', parameters: [{ type: 'List<OrderItem>', name: 'items' }, { type: 'string', name: 'rank' }, { type: 'QuoteResult', name: 'quote' }], fragments: [] },
+              { id: 'method-member-rank-shipping', name: 'calculateShipping', visibility: 'public', parameters: [{ type: 'string', name: 'address' }, { type: 'decimal', name: 'weight' }, { type: 'string', name: 'rank' }, { type: 'QuoteResult', name: 'quote' }], fragments: [] },
             ],
           },
         ],
@@ -1477,6 +1497,7 @@ const layeredOrderApiStage: Stage = {
     "persistence": "saveOrder",
   },
   id: 'intermediate-layered-order-api',
+  runtime: intermediateLayeredOrderApiRuntime,
   problem: '注文APIに画面・業務・保存の処理が混在している',
   level: 'intermediate',
   title: '中級11: Controller に全部書いてある注文API',
@@ -1548,24 +1569,24 @@ const layeredOrderApiStage: Stage = {
               {
                 id: 'method-place-order',
                 name: 'placeOrder',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'int', name: 'customerId' }, { type: 'List<OrderItem>', name: 'items' }, { type: 'int', name: 'productId' }, { type: 'int', name: 'quantity' }, { type: 'string', name: 'address' }, { type: 'decimal', name: 'weight' }],
                 fragments: [
-                  { id: 'frag-place-parse', label: 'リクエストを検証する', lines: 2, responsibility: 'http', suggestedName: 'parsePlaceRequest' , code: { csharp: "if (customerId <= 0) throw new ValidationException(\"顧客IDが不正です\");\nif (items is null || items.Count == 0) throw new ValidationException(\"注文商品がありません\");" }},
-                  { id: 'frag-place-stock', label: '在庫を確認する', lines: 2, responsibility: 'order-rule', suggestedName: 'checkStock' , code: { csharp: "if (quantity <= 0) throw new ArgumentOutOfRangeException(nameof(quantity));\nawait _inventory.ReserveAsync(productId, quantity);" }},
-                  { id: 'frag-place-price', label: '送料込みの金額を計算する', lines: 2, responsibility: 'order-rule', suggestedName: 'calculateTotal' , code: { csharp: "var subtotal = items.Sum(item => item.Quantity * item.UnitPrice);\nvar total = subtotal + _shippingRates.Calculate(_zoneResolver.Resolve(address), weight);" }},
-                  { id: 'frag-place-save', label: '注文を保存して在庫を減らす', lines: 3, responsibility: 'persistence', suggestedName: 'saveOrder' , code: { csharp: "var order = new Order(items, total);\nawait _repository.SaveAsync(order, cancellationToken);\nawait _unitOfWork.CommitAsync(cancellationToken);" }},
-                  { id: 'frag-place-respond', label: 'レスポンスを組み立てる', lines: 3, responsibility: 'http', suggestedName: 'buildPlaceResponse' , code: { csharp: "if (input is null) throw new ArgumentNullException(nameof(input));\nvar response = new ApiResponse(statusCode, message);\nreturn Results.Json(response, statusCode: statusCode);" }},
+                  { id: 'frag-place-parse', label: 'リクエストを検証する', lines: 2, responsibility: 'http', suggestedName: 'parsePlaceRequest' , code: { csharp: "if (customerId <= 0) throw new ValidationException(\"顧客IDが不正です\");\nif (items is null || items.Count == 0) throw new ValidationException(\"注文商品がありません\");" }, variables: { uses: ['customerId', 'items'] } },
+                  { id: 'frag-place-stock', label: '在庫を確認する', lines: 2, responsibility: 'order-rule', suggestedName: 'checkStock' , code: { csharp: "if (quantity <= 0) throw new ArgumentOutOfRangeException(nameof(quantity));\nFakeInventory.Reserve(productId, quantity);" }, variables: { uses: ['quantity', 'productId'] } },
+                  { id: 'frag-place-price', label: '送料込みの金額を計算する', lines: 2, responsibility: 'order-rule', suggestedName: 'calculateTotal' , code: { csharp: "var subtotal = items.Sum(item => item.Quantity * item.UnitPrice);\nvar total = subtotal + ShippingRates.Calculate(ZoneResolver.Resolve(address), weight);" }, variables: { declares: [{ name: 'subtotal', type: { csharp: 'decimal' } }, { name: 'total', type: { csharp: 'decimal' } }], uses: ['items', 'address', 'weight'] } },
+                  { id: 'frag-place-save', label: '注文を保存して在庫を減らす', lines: 3, responsibility: 'persistence', suggestedName: 'saveOrder' , code: { csharp: "var order = new Order(items, total);\nFakeRepository.Save(order);\nFakeUnitOfWork.Commit();" }, variables: { declares: [{ name: 'order', type: { csharp: 'Order' } }], uses: ['items', 'total'] } },
+                  { id: 'frag-place-respond', label: 'レスポンスを組み立てる', lines: 3, responsibility: 'http', suggestedName: 'buildPlaceResponse' , code: { csharp: "Log.Info($\"注文 {order.Id} を受け付けました\");\nvar response = new ApiResponse(201, \"注文を受け付けました\");\nConsole.WriteLine($\"[HTTP {response.StatusCode}] {response.Message}\");" }, variables: { declares: [{ name: 'response', type: { csharp: 'ApiResponse' } }], uses: ['order'] } },
                 ],
               },
               {
                 id: 'method-cancel-order',
                 name: 'cancelOrder',
-                visibility: 'public',
+                visibility: 'public', parameters: [{ type: 'int', name: 'orderId' }, { type: 'string', name: 'status' }, { type: 'decimal', name: 'paidAmount' }, { type: 'decimal', name: 'refundRate' }],
                 fragments: [
-                  { id: 'frag-cancel-parse', label: 'リクエストを検証する', lines: 2, responsibility: 'http', suggestedName: 'parseCancelRequest' , code: { csharp: "if (orderId <= 0) throw new ValidationException(\"注文IDが不正です\");\nif (status is not (\"Pending\" or \"Confirmed\")) throw new ValidationException(\"キャンセルできない状態です\");" }},
-                  { id: 'frag-cancel-rule', label: 'キャンセルできるか判定し、返金額を計算する', lines: 2, responsibility: 'order-rule', suggestedName: 'judgeCancel' , code: { csharp: "if (status is not (\"Pending\" or \"Confirmed\")) throw new InvalidOperationException(\"この状態では注文をキャンセルできません\");\nvar refundAmount = decimal.Round(paidAmount * refundRate, 2);" }},
-                  { id: 'frag-cancel-save', label: 'キャンセルを保存して在庫を戻す', lines: 4, responsibility: 'persistence', suggestedName: 'saveCancellation' , code: { csharp: "entity.Cancel(refundAmount);\nawait _repository.SaveCancellationAsync(entity, cancellationToken);\nawait _inventory.RestockAsync(entity.Items, cancellationToken);\nawait _unitOfWork.CommitAsync(cancellationToken);" }},
-                  { id: 'frag-cancel-respond', label: 'レスポンスを組み立てる', lines: 3, responsibility: 'http', suggestedName: 'buildCancelResponse' , code: { csharp: "if (input is null) throw new ArgumentNullException(nameof(input));\nvar response = new ApiResponse(statusCode, message);\nreturn Results.Json(response, statusCode: statusCode);" }},
+                  { id: 'frag-cancel-parse', label: 'リクエストを検証する', lines: 2, responsibility: 'http', suggestedName: 'parseCancelRequest' , code: { csharp: "if (orderId <= 0) throw new ValidationException(\"注文IDが不正です\");\nif (status is not (\"Pending\" or \"Confirmed\")) throw new ValidationException(\"キャンセルできない状態です\");" }, variables: { uses: ['orderId', 'status'] } },
+                  { id: 'frag-cancel-rule', label: 'キャンセルできるか判定し、返金額を計算する', lines: 2, responsibility: 'order-rule', suggestedName: 'judgeCancel' , code: { csharp: "if (status is not (\"Pending\" or \"Confirmed\")) throw new InvalidOperationException(\"この状態では注文をキャンセルできません\");\nvar refundAmount = decimal.Round(paidAmount * refundRate, 2);" }, variables: { declares: [{ name: 'refundAmount', type: { csharp: 'decimal' } }], uses: ['status', 'paidAmount', 'refundRate'] } },
+                  { id: 'frag-cancel-save', label: 'キャンセルを保存して在庫を戻す', lines: 4, responsibility: 'persistence', suggestedName: 'saveCancellation' , code: { csharp: "var entity = new CancelEntity(orderId);\nentity.Cancel(refundAmount);\nFakeRepository.SaveCancellation(entity);\nFakeInventory.Restock(entity.OrderId);" }, variables: { declares: [{ name: 'entity', type: { csharp: 'CancelEntity' } }], uses: ['orderId', 'refundAmount'] } },
+                  { id: 'frag-cancel-respond', label: 'レスポンスを組み立てる', lines: 3, responsibility: 'http', suggestedName: 'buildCancelResponse' , code: { csharp: "Log.Info($\"注文 {entity.OrderId} をキャンセルしました\");\nvar response = new ApiResponse(200, $\"{refundAmount} 円を返金します\");\nConsole.WriteLine($\"[HTTP {response.StatusCode}] {response.Message}\");" }, variables: { declares: [{ name: 'response', type: { csharp: 'ApiResponse' } }], uses: ['entity', 'refundAmount'] } },
                 ],
               },
             ],
@@ -1597,6 +1618,7 @@ const middleManStage: Stage = {
     "order-rule": "processOrder",
   },
   id: 'intermediate-middle-man',
+  runtime: intermediateMiddleManRuntime,
   problem: '注文の受付とキャンセルが横流しだけの管理クラスを経由している',
   level: 'intermediate',
   title: '中級12: 横流しするだけの OrderManager',
@@ -1639,32 +1661,32 @@ const middleManStage: Stage = {
     files: [
       {
         id: 'file-order-controller', path: 'src/order/OrderController.ts', classes: [{ id: 'class-order-controller', name: 'OrderController', methods: [
-          { id: 'method-place-order', name: 'placeOrder', visibility: 'public', fragments: [
-            { id: 'frag-place-request', label: 'リクエストを検証する', lines: 10, responsibility: 'http', code: { csharp: 'if (request is null) throw new ArgumentNullException(nameof(request));\nif (request.CustomerId <= 0) throw new ValidationException("顧客IDが不正です");\nif (request.Items is null) throw new ValidationException("商品がありません");\nif (request.Items.Count == 0) throw new ValidationException("商品がありません");\nif (request.Address is null) throw new ValidationException("住所がありません");\nif (request.Items.Any(item => item.Quantity <= 0)) throw new ValidationException("数量が不正です");\nif (request.Items.Any(item => item.UnitPrice < 0)) throw new ValidationException("価格が不正です");\nif (request.Currency is null) throw new ValidationException("通貨がありません");\nvar customer = await _customers.FindAsync(request.CustomerId);\nvar validated = OrderRequest.Validate(request, customer);' } },
-            { id: 'frag-place-manager', label: 'OrderManager.placeOrder() を呼び出す', lines: 1, responsibility: 'call', uses: ['method-manager-place'] },
-            { id: 'frag-place-response', label: 'レスポンスを組み立てる', lines: 8, responsibility: 'http', code: { csharp: 'var response = new OrderResponse(order.Id, order.Total);\nresponse.Status = "created";\nresponse.CustomerId = order.CustomerId;\nresponse.ItemCount = order.Items.Count;\nresponse.Total = order.Total;\nresponse.Currency = order.Currency;\nresponse.Message = "注文を受け付けました";\nreturn Results.Ok(response);' } },
+          { id: 'method-place-order', name: 'placeOrder', visibility: 'public', parameters: [{ type: 'OrderRequest', name: 'request' }], fragments: [
+            { id: 'frag-place-request', label: 'リクエストを検証する', lines: 10, responsibility: 'http', code: { csharp: "if (request is null) throw new ArgumentNullException(nameof(request));\nif (request.CustomerId <= 0) throw new ValidationException(\"顧客IDが不正です\");\nif (request.Items is null) throw new ValidationException(\"商品がありません\");\nif (request.Items.Count == 0) throw new ValidationException(\"商品がありません\");\nif (request.Address is null) throw new ValidationException(\"住所がありません\");\nif (request.Items.Any(item => item.Quantity <= 0)) throw new ValidationException(\"数量が不正です\");\nif (request.Items.Any(item => item.UnitPrice < 0)) throw new ValidationException(\"価格が不正です\");\nif (request.Currency is null) throw new ValidationException(\"通貨がありません\");\nvar customer = FakeCustomers.Find(request.CustomerId);\nvar validated = OrderRequest.Validate(request, customer);" }, variables: { declares: [{ name: 'customer', type: { csharp: 'Customer' } }, { name: 'validated', type: { csharp: 'OrderRequest' } }], uses: ['request'] } },
+            { id: 'frag-place-manager', label: 'OrderManager.placeOrder() を呼び出す', lines: 1, responsibility: 'call', uses: ['method-manager-place'], callArguments: ['validated'], variables: { declares: [{ name: 'order', type: { csharp: 'Order' } }], uses: ['validated'] } },
+            { id: 'frag-place-response', label: 'レスポンスを組み立てる', lines: 8, responsibility: 'http', code: { csharp: "var response = new OrderResponse(order.Id, order.Total);\nresponse.Status = \"created\";\nresponse.CustomerId = order.CustomerId;\nresponse.ItemCount = order.Items.Count;\nresponse.Total = order.Total;\nresponse.Currency = order.Currency;\nresponse.Message = \"注文を受け付けました\";\nConsole.WriteLine($\"[HTTP 200] {response.Status} {response.Message} (合計 {response.Total} {response.Currency})\");" }, variables: { declares: [{ name: 'response', type: { csharp: 'OrderResponse' } }], uses: ['order'] } },
           ] },
-          { id: 'method-cancel-order', name: 'cancelOrder', visibility: 'public', fragments: [
-            { id: 'frag-cancel-request', label: 'リクエストを検証する', lines: 8, responsibility: 'http', code: { csharp: 'if (request is null) throw new ArgumentNullException(nameof(request));\nif (request.OrderId <= 0) throw new ValidationException("注文IDが不正です");\nif (request.Reason is null) throw new ValidationException("理由がありません");\nif (request.Reason.Length > 200) throw new ValidationException("理由が長すぎます");\nvar order = await _orders.FindAsync(request.OrderId);\nif (order is null) throw new NotFoundException("注文がありません");\nif (order.IsClosed) throw new ValidationException("注文は終了しています");\nvar validated = CancelRequest.Validate(request, order);' } },
-            { id: 'frag-cancel-manager', label: 'OrderManager.cancelOrder() を呼び出す', lines: 1, responsibility: 'call', uses: ['method-manager-cancel'] },
-            { id: 'frag-cancel-response', label: 'レスポンスを組み立てる', lines: 6, responsibility: 'http', code: { csharp: 'var response = new CancelResponse(orderId, refundAmount);\nresponse.Status = "cancelled";\nresponse.RefundAmount = refundAmount;\nresponse.Message = "注文をキャンセルしました";\nresponse.Timestamp = DateTimeOffset.UtcNow;\nreturn Results.Ok(response);' } },
+          { id: 'method-cancel-order', name: 'cancelOrder', visibility: 'public', parameters: [{ type: 'CancelRequest', name: 'request' }], fragments: [
+            { id: 'frag-cancel-request', label: 'リクエストを検証する', lines: 8, responsibility: 'http', code: { csharp: "if (request is null) throw new ArgumentNullException(nameof(request));\nif (request.OrderId <= 0) throw new ValidationException(\"注文IDが不正です\");\nif (request.Reason is null) throw new ValidationException(\"理由がありません\");\nif (request.Reason.Length > 200) throw new ValidationException(\"理由が長すぎます\");\nvar order = FakeOrders.Find(request.OrderId);\nif (order is null) throw new NotFoundException(\"注文がありません\");\nif (order.IsClosed) throw new ValidationException(\"注文は終了しています\");\nvar validated = CancelRequest.Validate(request, order);" }, variables: { declares: [{ name: 'order', type: { csharp: 'Order' } }, { name: 'validated', type: { csharp: 'CancelRequest' } }], uses: ['request'] } },
+            { id: 'frag-cancel-manager', label: 'OrderManager.cancelOrder() を呼び出す', lines: 1, responsibility: 'call', uses: ['method-manager-cancel'], callArguments: ['validated'], variables: { declares: [{ name: 'refundAmount', type: { csharp: 'decimal' } }], uses: ['validated'] } },
+            { id: 'frag-cancel-response', label: 'レスポンスを組み立てる', lines: 6, responsibility: 'http', code: { csharp: "var response = new CancelResponse(validated.OrderId, refundAmount);\nresponse.Status = \"cancelled\";\nresponse.RefundAmount = refundAmount;\nresponse.Message = \"注文をキャンセルしました\";\nresponse.Timestamp = SampleData.Now;\nConsole.WriteLine($\"[HTTP 200] {response.Status} {response.Message} ({response.RefundAmount} 円)\");" }, variables: { declares: [{ name: 'response', type: { csharp: 'CancelResponse' } }], uses: ['validated', 'refundAmount'] } },
           ] },
         ] }],
       },
       {
         id: 'file-order-manager', path: 'src/order/OrderManager.ts', classes: [{ id: 'class-order-manager', name: 'OrderManager', methods: [
-          { id: 'method-manager-place', name: 'placeOrder', visibility: 'public', fragments: [{ id: 'frag-manager-place', label: 'OrderService.place() を呼び出す', lines: 1, responsibility: 'call', uses: ['method-service-place'] }] },
-          { id: 'method-manager-cancel', name: 'cancelOrder', visibility: 'public', fragments: [{ id: 'frag-manager-cancel', label: 'OrderService.cancel() を呼び出す', lines: 1, responsibility: 'call', uses: ['method-service-cancel'] }] },
+          { id: 'method-manager-place', name: 'placeOrder', visibility: 'public', parameters: [{ type: 'OrderRequest', name: 'validated' }], returns: [{ name: 'order', type: { csharp: 'Order' } }], fragments: [{ id: 'frag-manager-place', label: 'OrderService.place() を呼び出す', lines: 1, responsibility: 'call', uses: ['method-service-place'], callArguments: ['validated'], variables: { declares: [{ name: 'order', type: { csharp: 'Order' } }], uses: ['validated'] } }] },
+          { id: 'method-manager-cancel', name: 'cancelOrder', visibility: 'public', parameters: [{ type: 'CancelRequest', name: 'validated' }], returns: [{ name: 'refundAmount', type: { csharp: 'decimal' } }], fragments: [{ id: 'frag-manager-cancel', label: 'OrderService.cancel() を呼び出す', lines: 1, responsibility: 'call', uses: ['method-service-cancel'], callArguments: ['validated'], variables: { declares: [{ name: 'refundAmount', type: { csharp: 'decimal' } }], uses: ['validated'] } }] },
         ] }],
       },
       {
         id: 'file-order-service', path: 'src/order/OrderService.ts', classes: [{ id: 'class-order-service', name: 'OrderService', methods: [
-          { id: 'method-service-place', name: 'place', visibility: 'public', fragments: [
-            { id: 'frag-service-stock', label: '在庫を確認する', lines: 18, responsibility: 'order-rule', code: { csharp: 'if (quantity <= 0) throw new ArgumentOutOfRangeException(nameof(quantity));\nvar product = await _products.FindAsync(productId);\nif (product is null) throw new NotFoundException("商品がありません");\nif (!product.IsActive) throw new InvalidOperationException("販売停止中です");\nvar available = await _inventory.GetAvailableAsync(productId);\nif (available < quantity) throw new InsufficientStockException(productId);\nvar reservation = new StockReservation(productId, quantity);\nreservation.RequestedAt = DateTimeOffset.UtcNow;\nreservation.OrderId = orderId;\nreservation.CustomerId = customerId;\nreservation.Status = ReservationStatus.Pending;\nawait _inventory.ReserveAsync(reservation);\nawait _inventory.SaveAsync(reservation);\nawait _unitOfWork.CommitAsync();\nvar current = await _inventory.GetAvailableAsync(productId);\nif (current < 0) throw new InvalidOperationException("在庫数が不正です");\n_logger.Information("在庫を予約しました: {ProductId}", productId);\nreservationId = reservation.Id;' } },
-            { id: 'frag-service-total', label: '送料込みの金額を計算する', lines: 22, responsibility: 'order-rule', code: { csharp: 'if (items.Count == 0) throw new ArgumentException("商品がありません", nameof(items));\nvar subtotal = items.Sum(item => item.Quantity * item.UnitPrice);\nvar weight = items.Sum(item => item.Quantity * item.Weight);\nvar zone = _zoneResolver.Resolve(address);\nvar shipping = _shippingRates.Calculate(zone, weight);\nvar discount = _discounts.Calculate(customerId, subtotal);\nvar taxable = subtotal - discount;\nvar taxRate = _taxPolicy.RateFor(address.Prefecture);\nvar tax = decimal.Round(taxable * taxRate, 0);\nvar total = taxable + tax + shipping;\nif (total < 0) throw new InvalidOperationException("合計が不正です");\nvar quote = new OrderQuote();\nquote.Subtotal = subtotal;\nquote.Discount = discount;\nquote.TaxableAmount = taxable;\nquote.Tax = tax;\nquote.ShippingFee = shipping;\nquote.Total = total;\nquote.Currency = items[0].Currency;\nquote.CalculatedAt = DateTimeOffset.UtcNow;\n_logger.Information("注文合計を計算しました: {Total}", total);\nreturn quote;' } },
+          { id: 'method-service-place', name: 'place', visibility: 'public', parameters: [{ type: 'OrderRequest', name: 'validated' }], returns: [{ name: 'order', type: { csharp: 'Order' } }], fragments: [
+            { id: 'frag-service-stock', label: '在庫を確認する', lines: 18, responsibility: 'order-rule', code: { csharp: "var productId = validated.Items[0].ProductId;\nvar quantity = validated.Items[0].Quantity;\nif (quantity <= 0) throw new ArgumentOutOfRangeException(nameof(quantity));\nvar product = FakeProducts.Find(productId);\nif (product is null) throw new NotFoundException(\"商品がありません\");\nif (!product.IsActive) throw new InvalidOperationException(\"販売停止中です\");\nvar available = FakeStockStore.GetAvailable(productId);\nif (available < quantity) throw new InsufficientStockException(productId);\nvar reservation = new StockReservation(productId, quantity);\nreservation.RequestedAt = SampleData.Now;\nreservation.OrderId = 1001;\nreservation.CustomerId = validated.CustomerId;\nreservation.Status = \"Pending\";\nFakeStockStore.Reserve(reservation);\nFakeStockStore.Save(reservation);\nvar current = FakeStockStore.GetAvailable(productId);\nif (current < 0) throw new InvalidOperationException(\"在庫数が不正です\");\nLog.Info($\"在庫を予約しました: {productId}\");" }, variables: { declares: [{ name: 'productId', type: { csharp: 'int' } }, { name: 'quantity', type: { csharp: 'int' } }, { name: 'product', type: { csharp: 'Product' } }, { name: 'available', type: { csharp: 'int' } }, { name: 'reservation', type: { csharp: 'StockReservation' } }, { name: 'current', type: { csharp: 'int' } }], uses: ['validated'] } },
+            { id: 'frag-service-total', label: '送料込みの金額を計算する', lines: 22, responsibility: 'order-rule', code: { csharp: "var items = validated.Items;\nvar subtotal = items.Sum(item => item.Quantity * item.UnitPrice);\nvar weight = items.Sum(item => item.Quantity * item.Weight);\nvar zone = ZoneResolver.Resolve(validated.Address.Prefecture);\nvar shipping = ShippingRates.Calculate(zone, weight);\nvar discount = Discounts.Calculate(validated.CustomerId, subtotal);\nvar taxable = subtotal - discount;\nvar taxRate = TaxPolicy.RateFor(validated.Address.Prefecture);\nvar tax = decimal.Round(taxable * taxRate, 0);\nvar total = taxable + tax + shipping;\nif (total < 0) throw new InvalidOperationException(\"合計が不正です\");\nvar quote = new OrderQuote();\nquote.Subtotal = subtotal;\nquote.Discount = discount;\nquote.TaxableAmount = taxable;\nquote.Tax = tax;\nquote.ShippingFee = shipping;\nquote.Total = total;\nquote.Currency = items[0].Currency;\nquote.CalculatedAt = SampleData.Now;\nLog.Info($\"注文合計を計算しました: {total}\");\nvar order = new Order(reservation.OrderId, validated.CustomerId, items, quote.Total, quote.Currency);" }, variables: { declares: [{ name: 'items', type: { csharp: 'List<OrderItem>' } }, { name: 'subtotal', type: { csharp: 'decimal' } }, { name: 'weight', type: { csharp: 'decimal' } }, { name: 'zone', type: { csharp: 'string' } }, { name: 'shipping', type: { csharp: 'decimal' } }, { name: 'discount', type: { csharp: 'decimal' } }, { name: 'taxable', type: { csharp: 'decimal' } }, { name: 'taxRate', type: { csharp: 'decimal' } }, { name: 'tax', type: { csharp: 'decimal' } }, { name: 'total', type: { csharp: 'decimal' } }, { name: 'quote', type: { csharp: 'OrderQuote' } }, { name: 'order', type: { csharp: 'Order' } }], uses: ['validated', 'reservation'] } },
           ] },
-          { id: 'method-service-cancel', name: 'cancel', visibility: 'public', fragments: [
-            { id: 'frag-service-refund', label: 'キャンセルできるか判定し、返金額を計算する', lines: 16, responsibility: 'order-rule', code: { csharp: 'if (order.Status != OrderStatus.Confirmed) throw new InvalidOperationException("キャンセルできません");\nif (order.ShippedAt is not null) throw new InvalidOperationException("発送済みです");\nif (order.CancelledAt is not null) throw new InvalidOperationException("キャンセル済みです");\nvar policy = await _refundPolicies.FindAsync(order.CustomerType);\nvar elapsed = DateTimeOffset.UtcNow - order.ConfirmedAt;\nvar rate = policy.RateFor(elapsed);\nvar amount = decimal.Round(order.PaidAmount * rate, 2);\nif (amount < 0) throw new InvalidOperationException("返金額が不正です");\nvar refund = new Refund(order.Id, amount);\nrefund.RequestedAt = DateTimeOffset.UtcNow;\nawait _payments.ValidateRefundAsync(refund);\norder.MarkCancellationRequested(refund.Id);\nawait _orders.SaveAsync(order);\nawait _refunds.SaveAsync(refund);\nawait _unitOfWork.CommitAsync();\nreturn refund.Amount;' } },
+          { id: 'method-service-cancel', name: 'cancel', visibility: 'public', parameters: [{ type: 'CancelRequest', name: 'validated' }], returns: [{ name: 'refundAmount', type: { csharp: 'decimal' } }], fragments: [
+            { id: 'frag-service-refund', label: 'キャンセルできるか判定し、返金額を計算する', lines: 16, responsibility: 'order-rule', code: { csharp: "var order = FakeOrders.Find(validated.OrderId);\nif (order.Status != \"Confirmed\") throw new InvalidOperationException(\"キャンセルできません\");\nif (order.ShippedAt is not null) throw new InvalidOperationException(\"発送済みです\");\nif (order.CancelledAt is not null) throw new InvalidOperationException(\"キャンセル済みです\");\nvar policy = FakeRefundPolicies.Find(order.CustomerType);\nvar elapsed = SampleData.Now - order.ConfirmedAt;\nvar rate = policy.RateFor(elapsed);\nvar amount = decimal.Round(order.PaidAmount * rate, 2);\nif (amount < 0) throw new InvalidOperationException(\"返金額が不正です\");\nvar refund = new Refund(order.Id, amount);\nrefund.RequestedAt = SampleData.Now;\nFakePayments.ValidateRefund(refund);\norder.MarkCancellationRequested(refund.Id);\nFakeOrders.Save(order);\nFakeRefunds.Save(refund);\nvar refundAmount = refund.Amount;" }, variables: { declares: [{ name: 'order', type: { csharp: 'Order' } }, { name: 'policy', type: { csharp: 'RefundPolicy' } }, { name: 'elapsed', type: { csharp: 'TimeSpan' } }, { name: 'rate', type: { csharp: 'decimal' } }, { name: 'amount', type: { csharp: 'decimal' } }, { name: 'refund', type: { csharp: 'Refund' } }, { name: 'refundAmount', type: { csharp: 'decimal' } }], uses: ['validated'] } },
           ] },
         ] }],
       },

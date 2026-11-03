@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { allClasses, fieldsOf } from '../../domain/codebase/Codebase';
 import { generateClassSource } from '../../domain/codebase/generateClassSource';
+import { findBuildIssues } from '../../domain/codebase/buildIssues';
+import { sampleAnswerSteps, solutionSnapshots } from '../../domain/stage/sampleAnswer';
 import type { Fragment, Method } from '../../domain/codebase/Codebase';
 import type { Stage } from '../../domain/stage/Stage';
 import { blankDesignProblems } from '../blankDesigns/blankDesignProblems';
@@ -181,11 +183,11 @@ describe('ステージのC#コード', () => {
   });
 
   it('注文・請求・見積もり処理は取得または作成した値を後続へ渡す', () => {
-    expect(fragmentById('frag-list-lines').code?.csharp).toMatch(/GetLinesAsync/);
+    expect(fragmentById('frag-list-lines').code?.csharp).toContain('FakeOrderStore.GetLines');
     expect(fragmentById('frag-invoice-build').code?.csharp).toMatch(/InvoiceLine/);
-    expect(fragmentById('frag-invoice-issue').code?.csharp).toMatch(/IssueAsync|SendAsync/);
+    expect(fragmentById('frag-invoice-issue').code?.csharp).toContain('FakeMailer.Send');
     expect(fragmentById('frag-quote-estimate').code?.csharp).toMatch(/Sum\(|Total/);
-    expect(fragmentById('frag-quote-save').code?.csharp).toContain('SaveAsync(aggregate');
+    expect(fragmentById('frag-quote-save').code?.csharp).toContain('FakeRepository.Save(aggregate)');
   });
 
   it('決済プロバイダー設定とCSVヘッダー作成は固有の値を構成・返却する', () => {
@@ -284,7 +286,7 @@ describe('ステージのC#コード', () => {
   });
 
   it('会員割引後の金額を決済し、住所変更は宣言した3フィールドを更新する', () => {
-    expect(fragmentById('frag-pay').code?.csharp).toContain('ChargeAsync(discountedTotal');
+    expect(fragmentById('frag-pay').code?.csharp).toContain('FakePaymentGateway.Charge(discountedTotal');
     const address = fragmentById('frag-update-address');
     expect(address.code?.csharp).toContain('postalCode =');
     expect(address.code?.csharp).toContain('prefecture =');
@@ -293,11 +295,12 @@ describe('ステージのC#コード', () => {
   });
 
   it('MemberRankと送料から注文を作り、作成した注文を保存する', () => {
-    expect(fragmentById('frag-checkout-rank').code?.csharp).toContain('new Order(items, total)');
-    expect(fragmentById('frag-checkout-save').code?.csharp).toContain('SaveAsync(order');
+    expect(fragmentById('frag-checkout-rank').code?.csharp).toContain('calculatePrice(items, rank, priceQuote)');
+    expect(fragmentById('frag-checkout-save').code?.csharp).toContain('new Order(items, priceQuote.Amount + shippingQuote.Amount)');
+    expect(fragmentById('frag-checkout-save').code?.csharp).toContain('FakeRepository.Save(order)');
     expect(fragmentById('frag-place-price').code?.csharp).toContain('var total =');
     expect(fragmentById('frag-place-save').code?.csharp).toContain('new Order(items, total)');
-    expect(fragmentById('frag-place-save').code?.csharp).toContain('SaveAsync(order');
+    expect(fragmentById('frag-place-save').code?.csharp).toContain('FakeRepository.Save(order)');
     expect(fragmentById('frag-cancel-save').code?.csharp).toContain('Cancel(refundAmount)');
   });
 
@@ -323,10 +326,10 @@ describe('ステージのC#コード', () => {
     const shippingCall = fragmentById('frag-call-shipping-fee').code?.csharp ?? '';
     const pointsCall = fragmentById('frag-call-add-points').code?.csharp ?? '';
     expect(shipping).toContain('order.Total += shippingFee');
-    expect(subtotal).toContain('new Order(items, roundedTotal)');
+    expect(subtotal).toContain('new Order(items, roundedTotal, address, weight)');
     expect(shippingCall).toBe('');
     expect(pointsCall).toBe('');
-    expect(fragmentById('frag-add-points').code?.csharp).toContain('order.Total / pointsUnit');
+    expect(fragmentById('frag-add-points').code?.csharp).toContain('order.Total / 100m');
   });
 
   it('payroll uses total pay for deductions and the transfer amount', () => {
@@ -341,8 +344,8 @@ describe('ステージのC#コード', () => {
 
   it('mailing label formats the declared address fields without mutating them', () => {
     const label = fragmentById('frag-format-address').code?.csharp ?? '';
-    expect(label).toContain('{normalizedPostalCode} {prefecture} {addressLine}');
-    expect(label).toContain('return label');
+    expect(label).toContain('normalizedPostalCode + " " + prefecture + " " + addressLine');
+    expect(label).toContain('var label =');
     expect(label).not.toMatch(/(?:postalCode|prefecture|addressLine)\s*=/);
   });
 
@@ -358,18 +361,16 @@ describe('ステージのC#コード', () => {
     expect(declared(shipping, 'shippingFee')).toBeLessThanOrEqual(1);
   });
 
-  it('中級10の価格・送料は2ランクを明示し、未対応ランクを例外にする', () => {
+  it('中級10の価格・送料は2ランクを明示し、該当するランクだけ結果の入れ物へ書き込む', () => {
     const regularPrice = fragmentById('frag-price-regular').code?.csharp ?? '';
     const premiumPrice = fragmentById('frag-price-premium').code?.csharp ?? '';
     const regularShipping = fragmentById('frag-shipping-regular').code?.csharp ?? '';
     const premiumShipping = fragmentById('frag-shipping-premium').code?.csharp ?? '';
 
-    expect(regularPrice).toContain('rank == MemberRank.Regular');
-    expect(premiumPrice).toContain('rank == MemberRank.Premium');
-    expect(premiumPrice).toContain('throw new ArgumentOutOfRangeException(nameof(rank));');
-    expect(regularShipping).toContain('rank == MemberRank.Regular');
-    expect(premiumShipping).toContain('rank == MemberRank.Premium');
-    expect(premiumShipping).toContain('throw new ArgumentOutOfRangeException(nameof(rank));');
+    expect(regularPrice).toContain('if (rank == "Regular") quote.Amount =');
+    expect(premiumPrice).toContain('if (rank == "Premium") quote.Amount =');
+    expect(regularShipping).toContain('if (rank == "Regular") quote.Amount =');
+    expect(premiumShipping).toContain('if (rank == "Premium") quote.Amount =');
   });
 
   it('premium and VIP discounts use distinct locals in the shared method scope', () => {
@@ -404,9 +405,9 @@ describe('ステージのC#コード', () => {
     const pointsHelper = fragmentById('frag-add-points').code?.csharp ?? '';
     const shippingCall = fragmentById('frag-call-shipping-fee').code?.csharp;
     const points = fragmentById('frag-call-add-points').code?.csharp;
-    expect(subtotal).toContain('new Order(items, roundedTotal)');
+    expect(subtotal).toContain('new Order(items, roundedTotal, address, weight)');
     expect(shipping).toContain('order.Total += shippingFee');
-    expect(pointsHelper).toContain('order.Total / pointsUnit');
+    expect(pointsHelper).toContain('order.Total / 100m');
     expect(shippingCall).toBeUndefined();
     expect(points).toBeUndefined();
   });
@@ -419,9 +420,9 @@ describe('ステージのC#コード', () => {
     const source = generateClassSource(stage.codebase, cartClass.id, 'csharp');
 
     expect(source).toContain('calculateShippingFee(order);');
-    expect(source).toContain('await addPoints(order);');
+    expect(source).toContain('addPoints(order, customerId);');
     expect(source).toContain('void calculateShippingFee(Order order)');
-    expect(source).toContain('async Task addPoints(Order order)');
+    expect(source).toContain('void addPoints(Order order, int customerId)');
   });
 
   it('call fragments with uses leave their C# code for automatic call generation', () => {
@@ -532,6 +533,18 @@ function variableFlowProblems(): string[] {
     .flatMap((stage) => allClasses(stage.codebase).flatMap((codeClass) => codeClass.methods).flatMap((method) => methodFlowProblems(stage.id, method)));
 }
 
+function expectedBuildFailureProblems(stage: Stage): string[] {
+  const expected = stage.runtime?.expectedBuildFailures ?? [];
+  if (expected.length === 0) return [];
+  const steps = sampleAnswerSteps[stage.id] ?? [];
+  const snapshots = solutionSnapshots(stage.codebase, steps, { visibilityEnforced: stage.visibilityEnforced });
+  return expected.filter((name) => {
+    const index = name === 'initial' ? 0 : Number(name);
+    return !Number.isInteger(index) || index < 0 || index >= snapshots.length
+      || findBuildIssues(snapshots[index], stage.runtime?.bindings).length === 0;
+  }).map((name) => `${stage.id}/${name}`);
+}
+
 describe('runtime を持つステージの変数', () => {
   it('第4弾の7ステージが runtime を持つ', () => {
     // Arrange
@@ -545,7 +558,28 @@ describe('runtime を持つステージの変数', () => {
     expect(missing).toEqual([]);
   });
 
+  it('第5弾の中級12ステージが runtime を持つ', () => {
+    // Arrange
+    const ids = ['intermediate-cyclic-dependency', 'intermediate-god-file', 'intermediate-misplaced-private', 'intermediate-volatile-tax', 'intermediate-volatile-format', 'intermediate-feature-envy', 'intermediate-anemic-domain-model', 'intermediate-extract-class', 'intermediate-copy-paste-tax', 'intermediate-member-rank-branching', 'intermediate-layered-order-api', 'intermediate-middle-man'];
+
+    // Act
+    const withRuntime = stages.filter((stage) => stage.runtime !== undefined).map((stage) => stage.id);
+    const missing = ids.filter((id) => !withRuntime.includes(id));
+
+    // Assert
+    expect(missing).toEqual([]);
+  });
+
   it('全処理の variables.uses が、手前の処理かメソッドの引数で作られていて、同じ変数名を2つの処理が作っていない', () => {
     expect(variableFlowProblems()).toEqual([]);
+  });
+
+  it('ビルド失敗予定のスナップショットには実際にビルド問題がある', () => {
+    // Arrange
+    const configuredStages = stages.filter((stage) => stage.runtime?.expectedBuildFailures !== undefined);
+    // Act
+    const mismatches = configuredStages.flatMap(expectedBuildFailureProblems);
+    // Assert
+    expect(mismatches).toEqual([]);
   });
 });

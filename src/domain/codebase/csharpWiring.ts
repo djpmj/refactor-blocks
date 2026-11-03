@@ -1,4 +1,4 @@
-import { allClasses, findClass, findClassOfField, findClassOfMethod, findField, isInterfaceLike, parentIds, touchedFieldIds, type CodeClass, type Codebase, type Fragment } from './Codebase';
+import { allClasses, findClass, findClassOfField, findClassOfMethod, findField, findMethod, isInterfaceLike, parentIds, touchedFieldIds, type CodeClass, type Codebase, type Fragment } from './Codebase';
 import type { BuildIssue } from './buildIssues';
 import { fieldOwnerMap, methodOwnerMap } from './dependencies';
 import { resolvesToOwnDeclaration } from './overrides';
@@ -148,14 +148,20 @@ export function qualifyForeignMembers(code: string, replacements: ReadonlyMap<st
   return code.replace(identifierPattern, (token) => (token.startsWith('"') ? token : replacements.get(token) ?? token));
 }
 
-/** 処理が読み書きする別クラスのフィールドに、受け手を付けたコード。 */
+/** 処理が読み書きする別クラスのフィールドと、呼ぶ別クラスのメソッドに、受け手を付けたコード。 */
 export function qualifyFragmentCode(codebase: Codebase, receivers: ReadonlyMap<string, string>, fragment: Fragment, code: string): string {
-  const replacements = new Map(touchedFieldIds(fragment).flatMap((fieldId) => {
+  const fieldReplacements = touchedFieldIds(fragment).flatMap((fieldId) => {
     const field = findField(codebase, fieldId);
     const ownerId = findClassOfField(codebase, fieldId)?.id;
     const receiver = ownerId === undefined ? undefined : receivers.get(ownerId);
     return field === undefined || receiver === undefined ? [] : [[field.name, `${receiver}.${field.name}`] as const];
-  }));
+  });
+  const methodReplacements = (fragment.uses ?? []).flatMap((methodId) => {
+    const method = findMethod(codebase, methodId);
+    const receiver = receiverOfMethod(codebase, receivers, methodId);
+    return method === undefined || receiver === undefined ? [] : [[method.name, `${receiver}.${method.name}`] as const];
+  });
+  const replacements = new Map([...fieldReplacements, ...methodReplacements]);
   return replacements.size === 0 ? code : qualifyForeignMembers(code, replacements);
 }
 

@@ -1,4 +1,4 @@
-import { fieldsOf, findClass, parentIds, type LocalVariable, type CodeLanguage, type Codebase, type CodeClass } from './Codebase';
+import { fieldsOf, findClass, isInterfaceLike, parentIds, type LocalVariable, type CodeLanguage, type Codebase, type CodeClass } from './Codebase';
 import { isAsyncMethod } from './methodSignature';
 import { fragmentCode } from './fragmentCode';
 import { qualifyFragmentCode, receiverOfMethod, wiringOf, type ClassWiring } from './csharpWiring';
@@ -10,7 +10,7 @@ export type SourceLine = {
 };
 
 /** クラス宣言の頭。画面の疑似ソースは 'public class'、C#プロジェクトは補助コードから足せるよう 'public partial class'。 */
-export type ClassDeclaration = 'public class' | 'public partial class';
+export type ClassDeclaration = 'public class' | 'public partial class' | 'public partial interface';
 
 function plain(text: string): SourceLine {
   return { text };
@@ -38,11 +38,14 @@ function returnStatement(returns: readonly LocalVariable[]): string {
   return returns.length === 1 ? `return ${returns[0].name};` : `return (${returns.map((item) => item.name).join(', ')});`;
 }
 
-function renderMethod(codebase: Codebase, method: CodeClass['methods'][number], language: CodeLanguage, wiring: ClassWiring): SourceLine[] {
+function renderMethod(codebase: Codebase, method: CodeClass['methods'][number], language: CodeLanguage, context: { readonly wiring: ClassWiring; readonly implementedNames: ReadonlySet<string> }): SourceLine[] {
+  const { wiring, implementedNames } = context;
   const parameters = (method.parameters ?? []).map((parameter) => `${parameter.type} ${parameter.name}`).join(', ');
   const returns = method.returns ?? [];
   const type = returnType(returns, isAsyncMethod(codebase, method.id), language);
-  const declaration = `    ${method.visibility} ${type} ${method.name}(${parameters})`;
+  // インターフェースの実装は、C# では必ず public
+  const visibility = implementedNames.has(method.name) ? 'public' : method.visibility;
+  const declaration = `    ${visibility} ${type} ${method.name}(${parameters})`;
   if (method.fragments.length === 0) return [plain(`${declaration};`)];
   const body = method.fragments.flatMap((fragment, index) => {
     const rawCode = fragmentCode(codebase, fragment, language, (methodId) => receiverOfMethod(codebase, wiring.receivers, methodId));
@@ -72,9 +75,13 @@ export function generateClassSourceLines(codebase: Codebase, classId: string, la
     ];
   });
   const wiring = wiringOf(codebase, classId);
+  const implementedNames = new Set((codeClass.interfaceIds ?? []).flatMap((id) => {
+    const parent = findClass(codebase, id);
+    return parent !== undefined && isInterfaceLike(parent) ? parent.methods.map((method) => method.name) : [];
+  }));
   const methods = codeClass.methods.flatMap((method, index) => [
     ...(index > 0 ? [plain('')] : []),
-    ...renderMethod(codebase, method, language, wiring),
+    ...renderMethod(codebase, method, language, { wiring, implementedNames }),
   ]);
   const injected = wiring.declarations.map(plain);
   const members = [fields, injected, methods].filter((group) => group.length > 0).flatMap((group, index) => [...(index > 0 ? [plain('')] : []), ...group]);
