@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-11-03 UTC PR #411 CI の C# 検証で全手順を書き出して、master の csharp ジョブを直す
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅
+- マージ: 見送り(.github/workflows/配下を含むためGitHub Appの権限で自動マージ不可。人が手動でマージする)
+
 ## 2026-11-03 00:30 UTC PR #408 chore(deps): bump the development-dependencies group across 1 directory with 4 updates
 
 - 判定: 合格(blocker無し)
