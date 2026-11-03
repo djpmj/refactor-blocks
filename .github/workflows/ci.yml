@@ -58,5 +58,5 @@ jobs:
           cache: "npm"
 
       - run: npm ci
-      - run: CSHARP_EXPORT_DIR=out/csharp npx vitest run src/domain/codebase/csharpExport.export.test.ts
+      - run: CSHARP_EXPORT_DIR=out/csharp CSHARP_EXPORT_STEPS=1 npx vitest run src/domain/codebase/csharpExport.export.test.ts
       - run: bash scripts/verify-csharp.sh out/csharp
