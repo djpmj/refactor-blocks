@@ -13,9 +13,14 @@ export function fragmentCode(codebase: Codebase, fragment: Fragment, language: C
     .filter((method) => method !== undefined);
   if (calledMethods.length === 0) return undefined;
 
-  return calledMethods
-    .map((method, index) => {
-      const receiver = receiverOf?.(method.id);
+  // 統合で、子クラスごとのフック(同じ名前の parse など)が1つの呼び出しにまとまることがある。同じ名前の呼び出しは1回だけにし、自分のクラスのメソッド(受け手なし)を先に選ぶ
+  const calls = calledMethods.map((method, index) => ({ method, index, receiver: receiverOf?.(method.id) }));
+  const ownFirst = [...calls].sort((a, b) => Number(a.receiver !== undefined) - Number(b.receiver !== undefined));
+  const seen = new Set<string>();
+  return ownFirst
+    .filter(({ method }) => !seen.has(method.name) && seen.add(method.name))
+    .sort((a, b) => a.index - b.index)
+    .map(({ method, index, receiver }) => {
       const prefix = receiver === undefined ? '' : receiver + '.';
       const call = `${prefix}${method.name}(${fragment.callArguments?.[index] ?? ''})`;
       const awaited = isAsyncMethod(codebase, method.id) ? 'await ' : '';

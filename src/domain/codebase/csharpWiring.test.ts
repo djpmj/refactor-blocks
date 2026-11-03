@@ -132,6 +132,24 @@ describe('compositionOrder', () => {
   });
 });
 
+describe('compositionOrder: 抽象クラス', () => {
+  /** A が抽象クラス Base(本体の無い protected メソッドを持つ)のメソッドを呼び、Child がそれを継承する。 */
+  const withAbstractBase = codebaseOf(
+    klass('a', 'A', [method('a-run', 'Run', [fragment('fa', { uses: ['base-run'] })])]),
+    klass('base', 'Base', [{ id: 'base-hook', name: 'Hook', visibility: 'protected', fragments: [] }, method('base-run', 'Run', [fragment('fb')])]),
+    klass('child', 'Child', [{ id: 'child-hook', name: 'Hook', visibility: 'protected', fragments: [fragment('fc')] }], { superclassId: 'base' }),
+  );
+
+  it('抽象クラスは new せず、継承した具象クラスを渡す', () => {
+    // Arrange / Act
+    const plan = compositionOrder(withAbstractBase);
+    // Assert
+    expect(plan.steps.map((step) => step.className)).toEqual(['Child', 'A']);
+    expect(plan.steps[1].args).toEqual(['child']);
+    expect(plan.issues).toEqual([]);
+  });
+});
+
 describe('wiringOf', () => {
   it('注入する相手のフィールドとコンストラクタを宣言し、受け手を返す', () => {
     // Arrange / Act
@@ -186,6 +204,16 @@ describe('qualifyFragmentCode', () => {
     const codebase = codebaseOf(klass('a', 'A', [method('a-run', 'Run', [fragment('fb')]), method('a-go', 'Go', [caller])]));
     // Act
     const code = qualifyFragmentCode(codebase, new Map(), caller, 'Run(1);');
+    // Assert
+    expect(code).toBe('Run(1);');
+  });
+
+  it('同じ名前のメソッドを自分のクラスと別クラスの両方から使う処理は、自分のクラスのメソッドとして呼ぶ', () => {
+    // Arrange
+    const caller = fragment('fa', { uses: ['a-run', 'b-run'] });
+    const codebase = codebaseOf(klass('a', 'A', [method('a-run', 'Run', [fragment('fa2')]), method('a-go', 'Go', [caller])]), klass('b', 'B', [method('b-run', 'Run', [fragment('fb')])]));
+    // Act
+    const code = qualifyFragmentCode(codebase, new Map([['b', '_b']]), caller, 'Run(1);');
     // Assert
     expect(code).toBe('Run(1);');
   });

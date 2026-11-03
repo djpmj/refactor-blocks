@@ -486,11 +486,11 @@ export const sampleAnswerSteps: Partial<Record<string, readonly SolutionStep[]>>
     { setSuperclass: { class: 'JsonOrderImporter', superclass: 'OrderImporter' } },
     { changeVisibility: { method: 'parse', class: 'CsvOrderImporter', visibility: 'protected' } },
     { changeVisibility: { method: 'parse', class: 'JsonOrderImporter', visibility: 'protected' } },
-    { merge: { methodA: 'importOrders', methodAClass: 'CsvOrderImporter', methodB: 'importOrders', methodBClass: 'JsonOrderImporter', name: 'importOrders' } },
-    { move: { method: 'importOrders', toClass: 'OrderImporter' } },
     { move: { method: 'readLines', toClass: 'OrderImporter' } },
     { move: { method: 'validateOrders', toClass: 'OrderImporter' } },
     { move: { method: 'saveOrders', toClass: 'OrderImporter' } },
+    { merge: { methodA: 'importOrders', methodAClass: 'CsvOrderImporter', methodB: 'importOrders', methodBClass: 'JsonOrderImporter', name: 'importOrders' } },
+    { move: { method: 'importOrders', toClass: 'OrderImporter' } },
   ],
   'advanced-value-object': [
     { extract: { from: 'submitExpense', fragmentIds: ['frag-apply-validate-money'], name: 'validateMoney' } },

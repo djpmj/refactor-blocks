@@ -75,4 +75,34 @@ describe('findBuildIssues', () => {
     expect(unbound).toEqual([{ classId: 'a', methodId: 'm', memberName: 'IPolicy', ownerClassId: 'i', reason: 'ambiguous-binding' }]);
     expect(bound).toEqual([]);
   });
+  describe('継承', () => {
+    const fragment = { id: 'f', label: 'f', lines: 1, responsibility: 'x' };
+    /** 親 Base が、子 Child のメソッド Hook を呼ぶ。親が Hook の宣言(本体なし)を持つかどうかで変わる。 */
+    const hookCodebase = (declared: boolean, childVisibility: Visibility = 'protected'): Codebase => ({ files: [{ id: 'f', path: 'x', classes: [
+      { id: 'base', name: 'Base', methods: [
+        { id: 'run', name: 'Run', visibility: 'public', fragments: [{ ...fragment, uses: ['child-hook'] }] },
+        ...(declared ? [{ id: 'base-hook', name: 'Hook', visibility: 'protected' as const, fragments: [] }] : []),
+      ] },
+      { id: 'child', name: 'Child', superclassId: 'base', methods: [{ id: 'child-hook', name: 'Hook', visibility: childVisibility, fragments: [fragment] }] },
+    ] }] });
+
+    it('親が子のメソッドを呼ぶのに、親に宣言が無ければ hook-not-declared として返す', () => {
+      // Arrange / Act
+      const issues = findBuildIssues(hookCodebase(false));
+      // Assert
+      expect(issues).toEqual([{ classId: 'base', methodId: 'run', memberName: 'Hook', ownerClassId: 'child', reason: 'hook-not-declared' }]);
+    });
+
+    it('親が同じ名前の抽象メソッドを宣言していれば、問題にしない', () => {
+      // Arrange / Act / Assert
+      expect(findBuildIssues(hookCodebase(true))).toEqual([]);
+    });
+
+    it('抽象メソッドの実装を、宣言より狭い可視性にすると narrow-override として返す', () => {
+      // Arrange / Act
+      const issues = findBuildIssues(hookCodebase(true, 'private'));
+      // Assert
+      expect(issues).toContainEqual({ classId: 'child', methodId: 'child-hook', memberName: 'Hook', ownerClassId: 'base', reason: 'narrow-override' });
+    });
+  });
 });

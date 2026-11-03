@@ -146,6 +146,16 @@ export function isInterfaceLike(codeClass: CodeClass): boolean {
   return codeClass.methods.length > 0 && codeClass.methods.every((method) => method.visibility === 'public' && method.fragments.length === 0);
 }
 
+/** 本体が無く、継承先で実装する前提のメソッド(private は呼び出し先の宣言なので除く)。インターフェース役のクラスの中では対象外。 */
+export function isAbstractMethod(method: Method): boolean {
+  return method.fragments.length === 0 && method.visibility !== 'private';
+}
+
+/** 継承先で実装するメソッドを持つクラス(`abstract class`)。インターフェース役のクラスは含めない。 */
+export function isAbstractClass(codeClass: CodeClass): boolean {
+  return !isInterfaceLike(codeClass) && codeClass.methods.some(isAbstractMethod);
+}
+
 /** 空実装のメソッド = 処理が1つ以上あり、すべてstub。中身のない契約メソッド(fragments: [])は空実装ではない。 */
 export function isStubMethod(method: Method): boolean {
   return method.fragments.length > 0 && method.fragments.every((fragment) => fragment.stub === true);

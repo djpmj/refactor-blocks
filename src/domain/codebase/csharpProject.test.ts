@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Codebase } from './Codebase';
-import { generateCSharpProject } from './csharpProject';
+import { expectedBindingLines, generateCSharpProject } from './csharpProject';
 import type { StageRuntime } from '../stage/StageRuntime';
 
 function codebaseOf(entryOwner: 'A' | 'B'): Codebase {
@@ -169,5 +169,42 @@ describe('generateCSharpProject: プレイヤーが入力したパスの正規�
     const source = contentOf(files, 'Demo/src/Rank.cs');
     expect(source).toContain('public partial interface Rank');
     expect(source).toContain('public partial class A');
+  });
+});
+
+describe('generateCSharpProject: bindings で選んだ実装の実行', () => {
+  const method = (id: string, name: string, visibility: 'public' | 'protected' = 'public') => ({ id, name, visibility, fragments: [{ id: `f-${id}`, label: 'x', lines: 1, responsibility: 'x', code: { csharp: 'Console.WriteLine(1);' } }] });
+  /** インターフェース Policy を、実装 Vip・Normal(実装するかどうかは implemented で切り替える)と、入口を持つ A で構成する。 */
+  const codebaseWith = (implemented: boolean): Codebase => ({ files: [{ id: 'f', path: 'x', classes: [
+    { id: 'c-policy', name: 'Policy', methods: [{ id: 'm-policy', name: 'apply', visibility: 'public', fragments: [] }] },
+    { id: 'c-vip', name: 'Vip', ...(implemented ? { interfaceIds: ['c-policy'] } : {}), methods: [method('m-vip', 'apply')] },
+    { id: 'c-normal', name: 'Normal', ...(implemented ? { interfaceIds: ['c-policy'] } : {}), methods: [method('m-normal', 'apply')] },
+    { id: 'c-a', name: 'A', methods: [method('m-entry', 'run')] },
+  ] }] });
+  const demoRuntime = (bound: string): StageRuntime => ({ ...runtime, bindings: { Policy: bound }, bindingDemos: { Policy: 'BindingDemo.Run("apply", {0}, () => {0}.apply());' } });
+
+  it('選んだ実装が interface を実装していれば、その変数で補助コードを呼ぶ', () => {
+    // Arrange / Act
+    const vip = contentOf(generateCSharpProject(codebaseWith(true), demoRuntime('Vip'), 'Demo'), 'Demo/Program.cs');
+    const normal = contentOf(generateCSharpProject(codebaseWith(true), demoRuntime('Normal'), 'Demo'), 'Demo/Program.cs');
+    // Assert
+    expect(vip).toContain('BindingDemo.Run("apply", vip, () => vip.apply());');
+    expect(normal).toContain('BindingDemo.Run("apply", normal, () => normal.apply());');
+  });
+
+  it('まだ interface を実装していない手順では、補助コードを呼ばない', () => {
+    // Arrange / Act
+    const program = contentOf(generateCSharpProject(codebaseWith(false), demoRuntime('Vip'), 'Demo'), 'Demo/Program.cs');
+    // Assert
+    expect(program).not.toContain('BindingDemo');
+  });
+
+  it('期待する [bindings] の見出し行は、選んだ実装のクラス名と操作名になる(interface を実装していなければ空)', () => {
+    // Arrange / Act
+    const vip = expectedBindingLines(codebaseWith(true), demoRuntime('Vip'));
+    const none = expectedBindingLines(codebaseWith(false), demoRuntime('Vip'));
+    // Assert
+    expect(vip).toEqual(['[bindings] Vip.apply']);
+    expect(none).toEqual([]);
   });
 });

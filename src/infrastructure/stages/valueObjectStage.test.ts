@@ -34,7 +34,7 @@ describe('上級7: 金額と通貨を Money にまとめる', () => {
     expect(score.deductions.find((d) => d.rule === 'coupling')?.count).toBe(0);
   });
 
-  it('payOut のコード例は合計→整形→振込の順で、振込は合計の結果を使い true を返す', () => {
+  it('payOut のコード例は合計→整形→振込の順で、振込は整形した金額を使う', () => {
     // Arrange
     const payOut = allClasses(stage.codebase).flatMap((codeClass) => codeClass.methods).find((method) => method.name === 'payOut');
 
@@ -44,8 +44,7 @@ describe('上級7: 金額と通貨を Money にまとめる', () => {
 
     // Assert
     expect(ids).toEqual(['frag-payout-sum-money', 'frag-payout-format-money', 'frag-payout-transfer']);
-    expect(transferCode).toContain('result.Amount');
-    expect(transferCode).toMatch(/return true;$/);
+    expect(transferCode).toContain('formattedAmount');
   });
 
   it('approveMonthlyExpenses は合計を return せず、合計 result を使う記録の文で終わり、その文は金額計算ではない', () => {

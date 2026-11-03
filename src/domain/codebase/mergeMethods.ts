@@ -66,10 +66,11 @@ function mergedCode(fragmentA: Fragment, fragmentB: Fragment): Partial<Pick<Frag
   return code === undefined ? {} : { code };
 }
 
-/** Aの suggestedName・duplicateGroup・variables をそのまま引き継ぐ。 */
-function inheritedFromA(fragmentA: Fragment): Partial<Pick<Fragment, 'suggestedName' | 'duplicateGroup' | 'variables'>> {
-  const { suggestedName, duplicateGroup, variables } = fragmentA;
+/** Aの suggestedName・duplicateGroup・variables・callArguments をそのまま引き継ぐ。 */
+function inheritedFromA(fragmentA: Fragment): Partial<Pick<Fragment, 'suggestedName' | 'duplicateGroup' | 'variables' | 'callArguments'>> {
+  const { suggestedName, duplicateGroup, variables, callArguments } = fragmentA;
   return {
+    ...(callArguments === undefined ? {} : { callArguments }),
     ...(suggestedName === undefined ? {} : { suggestedName }),
     ...(duplicateGroup === undefined ? {} : { duplicateGroup }),
     ...(variables === undefined ? {} : { variables }),
