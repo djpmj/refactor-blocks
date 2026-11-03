@@ -156,4 +156,18 @@ describe('generateCSharpProject: プレイヤーが入力したパスの正規�
     // Assert
     expect(paths).toContain('Demo/File.cs');
   });
+
+  it('インターフェース役のクラスは interface として出す', () => {
+    // Arrange
+    const codebase: Codebase = { files: [{ id: 'f', path: 'src/Rank.cs', classes: [
+      { id: 'c-rank', name: 'Rank', methods: [{ id: 'm-price', name: 'price', visibility: 'public', fragments: [] }] },
+      { id: 'c-a', name: 'A', methods: [{ id: 'm-entry', name: 'run', visibility: 'public', fragments: [{ id: 'f1', label: 'x', lines: 1, responsibility: 'x', code: { csharp: 'Console.WriteLine(1);' } }] }] },
+    ] }] };
+    // Act
+    const files = generateCSharpProject(codebase, runtime, 'Demo');
+    // Assert
+    const source = contentOf(files, 'Demo/src/Rank.cs');
+    expect(source).toContain('public partial interface Rank');
+    expect(source).toContain('public partial class A');
+  });
 });
