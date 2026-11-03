@@ -101,3 +101,14 @@ describe('isAsyncMethod', () => {
     expect(isAsyncMethod(codebase, 'p')).toBe(false);
   });
 });
+
+describe('inferExtractedSignature: 元のメソッドの戻り値', () => {
+  it('元のメソッドが返す変数を作る処理を抽出すると、その変数が戻り値になる', () => {
+    // Arrange
+    const source: Method = { ...method('m', [step('a', [variable('x', 'int')], []), step('b', [variable('text', 'string')], ['x'])]), returns: [variable('text', 'string')] };
+    // Act
+    const signature = inferExtractedSignature(source, ['b']);
+    // Assert
+    expect(signature.returns).toEqual([variable('text', 'string')]);
+  });
+});

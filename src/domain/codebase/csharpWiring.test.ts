@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { CodeClass, Codebase, Fragment, Method } from './Codebase';
-import { collaboratorsOf, compositionOrder, qualifyForeignMembers, wiringOf } from './csharpWiring';
+import { collaboratorsOf, compositionOrder, qualifyFragmentCode, qualifyForeignMembers, wiringOf } from './csharpWiring';
 
 function fragment(id: string, extra: Partial<Fragment> = {}): Fragment {
   return { id, label: id, lines: 1, responsibility: 'x', ...extra };
@@ -166,5 +166,27 @@ describe('qualifyForeignMembers', () => {
   it('文字列リテラルの中は置き換えない', () => {
     // Act / Assert
     expect(qualifyForeignMembers('Log("_repository"); _repository.Save();', replacements)).toBe('Log("_repository"); _orderService._repository.Save();');
+  });
+});
+
+describe('qualifyFragmentCode', () => {
+  it('処理が使う別クラスのメソッドの呼び出しに、受け手を付ける', () => {
+    // Arrange
+    const caller = fragment('fa', { uses: ['b-run'], code: { csharp: 'var x = Run(1);' } });
+    const codebase = codebaseOf(klass('a', 'A', [method('a-run', 'Go', [caller])]), klass('b', 'B', [method('b-run', 'Run', [fragment('fb')])]));
+    // Act
+    const code = qualifyFragmentCode(codebase, new Map([['b', '_b']]), caller, 'var x = Run(1);');
+    // Assert
+    expect(code).toBe('var x = _b.Run(1);');
+  });
+
+  it('同じクラスのメソッドの呼び出しは、そのままにする', () => {
+    // Arrange
+    const caller = fragment('fa', { uses: ['a-run'] });
+    const codebase = codebaseOf(klass('a', 'A', [method('a-run', 'Run', [fragment('fb')]), method('a-go', 'Go', [caller])]));
+    // Act
+    const code = qualifyFragmentCode(codebase, new Map(), caller, 'Run(1);');
+    // Assert
+    expect(code).toBe('Run(1);');
   });
 });

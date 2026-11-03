@@ -76,7 +76,7 @@ test('答えの前に問題ヒント、次の一手の順に開き、同じス�
 
 test('メニューは矢印キーで移動・選択でき、未登録の答えは無効で、確認ダイアログはEscで閉じる', async ({ page }) => {
   await page.goto('/');
-  await selectStage(page, '中級6: 他人のデータばかり触るメソッド');
+  await selectStage(page, '上級1: 通知クラスの共通処理を基底クラスへ集める');
   const menuButton = page.getByTestId('reference-menu-button');
   await menuButton.click();
   const before = page.getByTestId('reference-before');
@@ -92,10 +92,10 @@ test('メニューは矢印キーで移動・選択でき、未登録の答え�
   await page.evaluate(async () => {
     const modulePath: string = '/src/domain/stage/sampleAnswer.ts';
     const answers = await import(modulePath);
-    delete answers.sampleAnswerSteps['intermediate-feature-envy'];
+    delete answers.sampleAnswerSteps['advanced-notifier-hierarchy'];
   });
   await selectStage(page, 'チュートリアル1: 長いメソッドを分ける');
-  await selectStage(page, '中級6: 他人のデータばかり触るメソッド');
+  await selectStage(page, '上級1: 通知クラスの共通処理を基底クラスへ集める');
   await menuButton.click();
   await expect(sample).toHaveAttribute('aria-disabled', 'true');
   await expect(sample).toHaveAttribute('title', 'このステージには解答例が未登録です');
@@ -153,6 +153,18 @@ const runtimeStages = [
   ['ドリル3: メソッドを持ち主のクラスへ移す', 'drill-move-method'],
   ['初級1: 何でも屋の UserController', 'beginner-user-controller'],
   ['初級2: クラスを自分で作る', 'beginner-invoice-service'],
+  ['中級1: 循環依存を断ち切る', 'intermediate-cyclic-dependency'],
+  ['中級2: 何でも入った1つのファイル', 'intermediate-god-file'],
+  ['中級3: 越境する private メソッド', 'intermediate-misplaced-private'],
+  ['中級4: 変わるのは税の計算', 'intermediate-volatile-tax'],
+  ['中級5: 変わるのは帳票の形式', 'intermediate-volatile-format'],
+  ['中級6: 他人のデータばかり触るメソッド', 'intermediate-feature-envy'],
+  ['中級7: getter/setter だけの口座クラス', 'intermediate-anemic-domain-model'],
+  ['中級8: 給与と住所を抱えた社員クラス', 'intermediate-extract-class'],
+  ['中級9: コピペされた消費税計算を1か所にまとめる', 'intermediate-copy-paste-tax'],
+  ['中級10: 会員ランクごとのif分岐をクラスに分ける', 'intermediate-member-rank-branching'],
+  ['中級11: Controller に全部書いてある注文API', 'intermediate-layered-order-api'],
+  ['中級12: 横流しするだけの OrderManager', 'intermediate-middle-man'],
 ] as const;
 
 for (const [title, stageId] of runtimeStages) {
@@ -173,7 +185,7 @@ for (const [title, stageId] of runtimeStages) {
 
 test('runtime の無いステージでは、メニューに C# のダウンロードが出ない', async ({ page }) => {
   await page.goto('/');
-  await selectStage(page, '中級1: 循環依存を断ち切る', { completeOpeningFix: false });
+  await selectStage(page, '上級1: 通知クラスの共通処理を基底クラスへ集める', { completeOpeningFix: false });
   await page.getByTestId('reference-menu-button').click();
   await expect(page.getByTestId('reference-before')).toBeVisible();
   await expect(page.getByTestId('reference-source-download')).toHaveCount(0);

@@ -222,6 +222,22 @@ describe('generateClassSource', () => {
     expect(source).not.toContain('public void contract() {');
   });
 
+  it('renders a method that implements an interface member as public even if it is private', () => {
+    // Arrange
+    const codebase: Codebase = { files: [{ id: 'f', path: 'x', classes: [
+      { id: 'iface', name: 'Rank', methods: [{ id: 'contract', name: 'price', visibility: 'public', fragments: [] }] },
+      { id: 'c', name: 'Regular', interfaceIds: ['iface'], methods: [
+        { id: 'impl', name: 'price', visibility: 'private', fragments: [{ id: 'a', label: 'a', lines: 1, responsibility: 'x', code: { csharp: 'work();' } }] },
+        { id: 'other', name: 'helper', visibility: 'private', fragments: [{ id: 'b', label: 'b', lines: 1, responsibility: 'x', code: { csharp: 'work();' } }] },
+      ] },
+    ] }] };
+    // Act
+    const source = generateClassSource(codebase, 'c', 'csharp');
+    // Assert
+    expect(source).toContain('public void price()');
+    expect(source).toContain('private void helper()');
+  });
+
   it('returns empty string for an unknown class', () => {
     // Arrange
     const codebase: Codebase = { files: [] };
