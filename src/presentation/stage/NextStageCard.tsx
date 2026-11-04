@@ -16,7 +16,8 @@ export function NextStageCard({ stage, perfect }: Readonly<{ stage: Stage; perfe
   const manualFixing = useGameStore((state) => state.manualFix !== null);
   const outroShown = storyEnabled && chapterOf(storyChapters, stage.id) !== undefined;
   if (!perfect || outroShown || manualFixing) return null;
-  const next = recommendNextStage(stages.filter((candidate) => candidate.id !== stage.id), progress, milestones);
+  const recommendation = recommendNextStage(stages, progress, stage.id);
+  const next = recommendation?.id === stage.id ? undefined : recommendation;
   const remaining = remainingMilestones(stage, milestones);
   const heading = remaining.length === 0 ? 'ステージクリア' : '100点達成';
   return (

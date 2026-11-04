@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { retryMark, type AssistLevel } from '../../domain/progress/assists';
-import { conceptMastery, isStageCleared, recommendNextStage, recommendReviewStage, stageStatus, type StageStatus } from '../../domain/progress/roadmap';
-import type { Milestones } from '../../domain/progress/milestones';
+import { conceptMastery, isStageCleared, recommendNextStage, recommendReviewStage, recommendUnfinishedStage, stageStatus, type StageStatus } from '../../domain/progress/roadmap';
+import { remainingMilestones, type Milestones, type StageMilestone } from '../../domain/progress/milestones';
 import type { MoveBests } from '../../domain/progress/moveBests';
 import type { Progress } from '../../domain/progress/Progress';
 import type { ReflectionNotes } from '../../domain/progress/reflectionNotes';
@@ -23,6 +23,24 @@ import { PatternComparisonTable } from './PatternComparisonTable';
 
 const TITLE_ID = 'stage-roadmap-title';
 
+function remainingText(remaining: readonly StageMilestone[]): string {
+  return remaining.map((milestone) => MILESTONE_LABEL[milestone]).join('・');
+}
+
+function nextText(next: Stage | undefined, unfinished: Stage | undefined): string {
+  if (next !== undefined) return `次のおすすめ: ${next.title}`;
+  return unfinished === undefined ? '全ステージをクリアしました' : '全ステージ100点です';
+}
+
+function UnfinishedNotice({ stage, milestones }: Readonly<{ stage: Stage | undefined; milestones: Milestones }>) {
+  if (stage === undefined) return null;
+  return (
+    <p className="stage-roadmap__next" data-testid="roadmap-unfinished">
+      {`おさらい: ${stage.title}(あと: ${remainingText(remainingMilestones(stage, milestones))})`}
+    </p>
+  );
+}
+
 function describeStatus(status: StageStatus): string {
   switch (status.kind) {
     case 'not-started':
@@ -32,7 +50,7 @@ function describeStatus(status: StageStatus): string {
     case 'scored':
       return `${String(status.best)}点`;
     case 'perfect':
-      return `100点(あと: ${status.remaining.map((milestone) => MILESTONE_LABEL[milestone]).join('・')})`;
+      return `100点(あと: ${remainingText(status.remaining)})`;
     case 'cleared':
       return '✅ クリア';
   }
@@ -321,16 +339,15 @@ export function StageRoadmapDialog({ open, onClose }: StageRoadmapDialogProps) {
     if (dialog !== null && !dialog.open) dialog.showModal();
   }, [open]);
   if (!open) return null;
-  const next = recommendNextStage(stages, progress, milestones);
-  const close = () => ref.current?.close();
-  // 常時マウントされているので、閉じるときに表示切替を初期値へ戻す(開いた直後は「ステージ順」)
+  const next = recommendNextStage(stages, progress, currentId);
+  const unfinished = recommendUnfinishedStage(stages, progress, milestones, currentId);
   const handleClosed = () => {
     setView('stages');
     onClose();
   };
   const choose = (stageId: string) => {
     if (stageId !== currentId) selectStage(stageId);
-    close();
+    ref.current?.close();
   };
   return (
     <dialog ref={ref} className="stage-roadmap" aria-labelledby={TITLE_ID} onClose={handleClosed} data-testid="stage-roadmap">
@@ -338,14 +355,15 @@ export function StageRoadmapDialog({ open, onClose }: StageRoadmapDialogProps) {
         <h2 className="stage-roadmap__title" id={TITLE_ID}>
           ステージ一覧
         </h2>
-        <button type="button" onClick={close} aria-label="閉じる">
+        <button type="button" onClick={() => ref.current?.close()} aria-label="閉じる">
           ✕
         </button>
       </div>
       <div className="stage-roadmap__body">
         <p className="stage-roadmap__next" data-testid="roadmap-next">
-          {next === undefined ? '全ステージをクリアしました' : `次のおすすめ: ${next.title}`}
+          {nextText(next, unfinished)}
         </p>
+        <UnfinishedNotice stage={unfinished} milestones={milestones} />
         <Notices stages={stages} progress={progress} />
         <ViewSwitch view={view} onChange={setView} />
         <ReferenceView view={view} stages={stages} progress={progress} onChoose={choose} />
