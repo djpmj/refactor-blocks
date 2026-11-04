@@ -25,7 +25,6 @@ function ClearScreenDialog() {
   const stage = useGameStore((state) => state.stage);
   const stages = useGameStore((state) => state.stages);
   const progress = useGameStore((state) => state.progress);
-  const milestones = useGameStore((state) => state.milestones);
   const openingDone = useGameStore((state) => Object.hasOwn(state.openingFixes, state.stage.id));
   const closingSolved = useGameStore((state) => state.closingFixSolved);
   const celebration = useGameStore((state) => state.celebration);
@@ -33,7 +32,7 @@ function ClearScreenDialog() {
   const startChangeRequests = useGameStore((state) => state.startChangeRequests);
   const startManualFix = useGameStore((state) => state.startManualFix);
   const selectStage = useGameStore((state) => state.selectStage);
-  const next = recommendNextStage(stages.filter((candidate) => candidate.id !== stage.id), progress, milestones);
+  const next = recommendNextStage(stages, progress, stage.id);
   const nextStageId = next?.id === stage.id ? undefined : next?.id;
   const step = stageStep({ score: 100, hasModifyRequest: painRequestsOf(stage).modify !== undefined, openingDone, closingSolved });
   const choices = clearChoices({ step, hasChangeRequests: stage.changeRequests.length > 0, nextStageId });

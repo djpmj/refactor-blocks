@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Stage } from '../stage/Stage';
-import { conceptMastery, isStageCleared, recommendNextStage, recommendReviewStage, stageStatus, unclearedPrerequisites } from './roadmap';
+import { conceptMastery, isStageCleared, recommendNextStage, recommendUnfinishedStage, recommendReviewStage, stageStatus, unclearedPrerequisites } from './roadmap';
 
 function stageOf(id: string, learns: readonly string[] = ['Extract Method'], withSteps = false): Stage {
   return {
@@ -106,84 +106,48 @@ describe('stageStatus', () => {
 });
 
 describe('recommendNextStage', () => {
-  const stages = [stageOf('a'), stageOf('b'), stageOf('c')];
-  const allDone = {};
-
-  it('記録が空なら先頭', () => {
+  const stages = [stageOf('a', ['x'], true), stageOf('b'), stageOf('c')];
+  it.each([
+    ['記録が空なら現在のステージ', {}, 'a', 'a'],
+    ['現在が100点未満なら現在のまま', { a: 100, b: 60 }, 'b', 'b'],
+    ['現在が100点なら次へ進む', { a: 100 }, 'a', 'b'],
+    ['直前が100点でも現在のまま', { a: 100 }, 'b', 'b'],
+    ['後ろが埋まっていれば前の未完了へ戻る', { b: 100, c: 100 }, 'c', 'a'],
+    ['後ろの未完了が前の未完了より先', { b: 100 }, 'b', 'c'],
+    ['現在が不明なら先頭から探す', { a: 100 }, 'zzz', 'b'],
+    ['全て100点なら undefined', { a: 100, b: 100, c: 100 }, 'b', undefined],
+  ] as const)('%s', (_name, progress, currentId, expected) => {
     // Arrange
-    const progress = {};
-
     // Act
-    const next = recommendNextStage(stages, progress, allDone);
-
+    const next = recommendNextStage(stages, progress, currentId);
     // Assert
-    expect(next?.id).toBe('a');
-  });
-
-  it('先頭から2つが100点で3つ目が60点なら3つ目', () => {
-    // Arrange
-    const progress = { a: 100, b: 100, c: 60 };
-
-    // Act
-    const next = recommendNextStage(stages, progress, allDone);
-
-    // Assert
-    expect(next?.id).toBe('c');
-  });
-
-  it('先頭が未記録で2つ目が100点なら先頭', () => {
-    // Arrange
-    const progress = { b: 100 };
-
-    // Act
-    const next = recommendNextStage(stages, progress, allDone);
-
-    // Assert
-    expect(next?.id).toBe('a');
-  });
-
-  it('100点で残りありの a が、未挑戦の b より先におすすめされる', () => {
-    // Arrange
-    const withSteps = [stageOf('a', ['x'], true), stageOf('b')];
-
-    // Act
-    const next = recommendNextStage(withSteps, { a: 100 }, {});
-
-    // Assert
-    expect(next?.id).toBe('a');
-  });
-
-  it('a が全段階済みで b が100点残りありなら b', () => {
-    // Arrange
-    const withSteps = [stageOf('a', ['x'], true), stageOf('b', ['x'], true)];
-
-    // Act
-    const next = recommendNextStage(withSteps, { a: 100, b: 100 }, { a: ['concept-check', 'change-request'] });
-
-    // Assert
-    expect(next?.id).toBe('b');
-  });
-
-  it('全ステージが100点なら undefined', () => {
-    // Arrange
-    const progress = { a: 100, b: 100, c: 100 };
-
-    // Act
-    const next = recommendNextStage(stages, progress, allDone);
-
-    // Assert
-    expect(next).toBeUndefined();
+    expect(next?.id).toBe(expected);
   });
 
   it('stages が空なら undefined', () => {
     // Arrange
-    const progress = {};
-
+    const stages: Stage[] = [];
     // Act
-    const next = recommendNextStage([], progress, {});
-
+    const next = recommendNextStage(stages, {}, 'a');
     // Assert
     expect(next).toBeUndefined();
+  });
+});
+
+describe('recommendUnfinishedStage', () => {
+  const stages = [stageOf('a', ['x'], true), stageOf('b', ['x'], true), stageOf('c', ['x'], true)];
+  it.each([
+    ['100点で残りありのステージを返す', { a: 100 }, {}, ['b', 'a']],
+    ['後ろの100点が前の100点より先', { a: 100, c: 100 }, {}, ['b', 'c']],
+    ['現在が100点ならそれを優先', { a: 100, b: 100 }, {}, ['b', 'b']],
+    ['全段階済みは除く', { a: 100 }, { a: ['concept-check', 'change-request'] }, ['b', undefined]],
+    ['100点未満は除く', { a: 60 }, {}, ['b', undefined]],
+  ] as const)('%s', (_name, progress, milestones, [currentId, expected]) => {
+    // Arrange
+    // Act
+    const unfinished = recommendUnfinishedStage(stages, progress, milestones, currentId);
+    // Assert
+    expect(unfinished?.id).toBe(expected);
   });
 });
 
