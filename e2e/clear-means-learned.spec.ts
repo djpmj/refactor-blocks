@@ -40,9 +40,11 @@ async function readRoadmap(page: Page) {
   await expect(dialog).toBeVisible();
   const status = (await dialog.getByTestId(`roadmap-stage-${STAGE_1_ID}`).locator('.stage-roadmap__status').innerText()).trim();
   const next = (await dialog.getByTestId('roadmap-next').innerText()).trim();
+  const unfinishedNotice = dialog.getByTestId('roadmap-unfinished');
+  const unfinished = await unfinishedNotice.count() > 0 ? (await unfinishedNotice.innerText()).trim() : undefined;
   await dialog.getByRole('button', { name: '閉じる' }).click();
   await expect(dialog).toHaveCount(0);
-  return { status, next };
+  return { status, next, unfinished };
 }
 
 /** 理解度チェックの2問に答える(正解は 2問とも「正解の選択肢」)。wrongFirst なら1問目をわざと間違える。 */
@@ -75,15 +77,16 @@ async function placeAllInReportService(page: Page) {
   }
 }
 
-test('100点にしただけでは「クリア」にならず、残りの段階が一覧に出る(おすすめもそのまま)', async ({ page }) => {
+test('100点にしただけでは「クリア」にならず、おさらいと次のおすすめが一覧に出る', async ({ page }) => {
   // Arrange & Act
   await clearTutorial1(page);
-  const { status, next } = await readRoadmap(page);
+  const { status, next, unfinished } = await readRoadmap(page);
 
   // Assert
   expect(status).toContain(REMAINING_ALL);
   expect(status).not.toContain('✅');
-  expect(next).toBe(`次のおすすめ: ${STAGE_1}`);
+  expect(next).toBe(`次のおすすめ: ${STAGE_2}`);
+  expect(unfinished).toBe(`おさらい: ${STAGE_1}(あと: 理解度チェック・変更依頼)`);
 });
 
 test('理解度チェックは、1問間違えると変わらず、「もう一度」で全問正解すると残りから消える', async ({ page }) => {

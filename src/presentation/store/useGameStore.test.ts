@@ -40,6 +40,66 @@ describe('クリア画面', () => {
   const stage = stages.find((candidate) => candidate.id === 'tutorial-extract-method');
   if (stage === undefined) throw new Error('チュートリアル1が必要です');
   const complete = (store: ReturnType<typeof createGameStore>) => store.getState().extractMethod({ sourceMethodId: 'method-print-monthly-report', fragmentIds: ['frag-aggregate-sales', 'frag-compare-last-month'], newMethodName: 'aggregateSales' });
+  const reachTourResult = (store: ReturnType<typeof createGameStore>) => {
+    store.getState().startTour(true);
+    for (let index = 0; index < 4; index += 1) store.getState().advanceTour({ kind: 'next' });
+    expect(complete(store)).toBe(true);
+    const count = store.getState().codebase.files.reduce((total, file) => total + file.classes.reduce((sum, codeClass) => sum + codeClass.methods.length, 0), 0);
+    store.getState().advanceTour({ kind: 'method-count', count, countAtStepStart: 0 });
+    expect(store.getState().tourStep).toBe(5);
+    expect(store.getState().clearScreen).toBeNull();
+  };
+
+  it.each(['advance', 'end'] as const)('ツアーの100点後に%sで閉じるとクリア画面を出す', (close) => {
+    const store = createGameStore([stage], false, false);
+    reachTourResult(store);
+    if (close === 'advance') store.getState().advanceTour({ kind: 'next' });
+    else store.getState().endTour();
+    expect(store.getState().tourStep).toBeNull();
+    expect(store.getState().clearScreen).toEqual({ stageId: stage.id });
+    expect(store.getState().clearShownStages).toEqual([stage.id]);
+  });
+
+  it('ツアーの100点後に元に戻して閉じると出さない', () => {
+    const store = createGameStore([stage], false, false);
+    reachTourResult(store);
+    store.getState().undo();
+    store.getState().endTour();
+    expect(store.getState().clearScreen).toBeNull();
+    expect(store.getState().clearShownStages).toEqual([]);
+  });
+
+  it('100点にならずにツアーを閉じると出さない', () => {
+    const store = createGameStore([stage], false, false);
+    store.getState().startTour(true);
+    store.getState().endTour();
+    expect(store.getState().clearScreen).toBeNull();
+    store.getState().startTour(true);
+    for (let index = 0; index < 4; index += 1) store.getState().advanceTour({ kind: 'next' });
+    store.getState().advanceTour({ kind: 'next' });
+    expect(store.getState().tourStep).toBe(5);
+    expect(store.getState().tourResult?.kind).not.toBe('cleared');
+    store.getState().endTour();
+    expect(store.getState().clearScreen).toBeNull();
+  });
+
+  it('同じステージですでに表示済みならツアー終了時に再表示しない', () => {
+    const store = createGameStore([stage], false, false);
+    store.setState({ clearShownStages: [stage.id] });
+    reachTourResult(store);
+    store.getState().endTour();
+    expect(store.getState().clearScreen).toBeNull();
+  });
+
+  it('最初から100点の盤面でツアーをやり直しても出さない', () => {
+    const store = createGameStore([stage], false, false);
+    store.setState({ codebase: sampleAnswerCodebase(stage) });
+    store.getState().startTour(true);
+    for (let index = 0; index < 5; index += 1) store.getState().advanceTour({ kind: 'next' });
+    expect(store.getState().tourResult?.totalBefore).toBe(100);
+    store.getState().endTour();
+    expect(store.getState().clearScreen).toBeNull();
+  });
 
   it('初めて100点にした操作で一度だけ出し、閉じても記録を残す', () => {
     // Arrange
