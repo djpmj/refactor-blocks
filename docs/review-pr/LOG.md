@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-11-04 UTC PR #445 ツアー終了時にクリア画面を出す (#414)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(2749 passed) / npm run lint ✅ / npm run typecheck ✅。Issue #414の方針・受け入れ基準と差分を照合。E2Eはレビュー環境で実行できず未実施(PR本文では560 passed と記載)
+- マージ: squash & delete-branch
+
 ## 2026-11-04 UTC PR #444 クリア直後のステージを次のおすすめから外す (#420)
 
 - 判定: 合格(blocker無し)
@@ -210,11 +216,5 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm run check(2376件) ✅ / npm run lint ✅ / npm run typecheck ✅(E2EはChromium未導入で実行不可、PR記載の結果を信頼。受け入れ基準は差分で確認)
-- マージ: squash & delete-branch
-
-## 2026-10-28 13:15 UTC PR #372 AI講評の失敗時にルールベースの簡易講評を出す (#350)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(2356件) / npm run lint ✅ / npm run typecheck ✅ / 仕様(critique-failure-fallback)と差分を照合(fallback状態・describeFallbackCritique・CritiquePanel表示・E2E追加)。E2Eはレビュー環境で実行できず未実行(PR本文では全件480件成功)
 - マージ: squash & delete-branch
 
