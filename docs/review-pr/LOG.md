@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-11-04 UTC PR #444 クリア直後のステージを次のおすすめから外す (#420)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(2743 passed) / npm run lint ✅ / npm run typecheck ✅。Issue #420の決定事項と差分を照合。E2Eはレビュー環境で実行できず未実施(PR本文では全件通過と記載)
+- マージ: squash & delete-branch
+
 ## 2026-11-03 UTC PR #413 上級ステージの C# 実行化と bindings 選択結果の検証 (#395)
 
 - 判定: 合格(blocker無し)
@@ -211,11 +217,4 @@
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(2356件) / npm run lint ✅ / npm run typecheck ✅ / 仕様(critique-failure-fallback)と差分を照合(fallback状態・describeFallbackCritique・CritiquePanel表示・E2E追加)。E2Eはレビュー環境で実行できず未実行(PR本文では全件480件成功)
 - マージ: squash & delete-branch
-
-## 2026-10-28 12:55 UTC PR #371 コードの臭い図鑑を追加 (#343)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(2338件) / npm run lint ✅ / npm run typecheck ✅ / E2Eはブラウザ未導入で実行不可(コードのみ確認)
-- マージ: squash & delete-branch
-
 
