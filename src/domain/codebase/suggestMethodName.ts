@@ -1,3 +1,4 @@
+import { mixedResponsibilities } from '../scoring/mixedMethods';
 import type { Fragment } from './Codebase';
 
 const FALLBACK_NAME = 'extractedMethod';
@@ -7,6 +8,8 @@ export type MethodNaming = {
   readonly groups: readonly { readonly fragmentIds: readonly string[]; readonly name: string }[];
   /** 責務 → メソッド名。 */
   readonly byResponsibility: Readonly<Record<string, string>>;
+  /** 一緒にあっても混在とみなさない責務の組(採点と同じ判定に使う)。 */
+  readonly cohesiveResponsibilities?: readonly (readonly string[])[];
 };
 
 export const NO_METHOD_NAMING: MethodNaming = { groups: [], byResponsibility: {} };
@@ -41,6 +44,15 @@ function sameIds(first: readonly string[], second: readonly string[]): boolean {
   return firstIds.size === secondIds.size && [...firstIds].every((id) => secondIds.has(id));
 }
 
+/** 責務が混ざる選び方なら、責務ごとの名前を出てくる順につなぐ。表に無い責務があれば undefined。 */
+function mixedName(fragments: readonly Fragment[], naming: MethodNaming): string | undefined {
+  const mixed = mixedResponsibilities(fragments, naming.cohesiveResponsibilities ?? []);
+  const names = mixed.flatMap((responsibility) => {
+    return Object.hasOwn(naming.byResponsibility, responsibility) ? [naming.byResponsibility[responsibility]] : [];
+  });
+  return mixed.length > 0 && names.length === mixed.length ? combine(names) : undefined;
+}
+
 function responsibilityName(fragments: readonly Fragment[], naming: MethodNaming): string | undefined {
   const lineCounts = new Map<string, number>();
   const order: string[] = [];
@@ -70,8 +82,9 @@ export function suggestMethodName(
   } else if (fragments.length === 1) {
     base = fragments[0].suggestedName ?? FALLBACK_NAME;
   } else {
-    base = responsibilityName(fragments, naming)
-      ?? (candidates.length === 0 ? FALLBACK_NAME : combine(candidates));
+    const isMixed = mixedResponsibilities(fragments, naming.cohesiveResponsibilities ?? []).length > 0;
+    const fallback = candidates.length === 0 ? FALLBACK_NAME : combine(candidates);
+    base = (isMixed ? mixedName(fragments, naming) : responsibilityName(fragments, naming)) ?? fallback;
   }
   const taken = new Set(existingNames);
   let name = base;

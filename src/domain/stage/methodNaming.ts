@@ -3,12 +3,12 @@ import type { Stage } from './Stage';
 import { sampleAnswerSteps, type SolutionStep } from './sampleAnswer';
 
 export function methodNamingOf(
-  stage: Pick<Stage, 'id' | 'methodNames'>,
+  stage: Pick<Stage, 'id' | 'methodNames' | 'cohesiveResponsibilities'>,
   steps: Partial<Record<string, readonly SolutionStep[]>> = sampleAnswerSteps,
 ): MethodNaming {
   const groups = (steps[stage.id] ?? []).flatMap((step) => {
     if (!('extract' in step)) return [];
     return [{ fragmentIds: step.extract.fragmentIds, name: step.extract.name }];
   });
-  return { groups, byResponsibility: stage.methodNames ?? {} };
+  return { groups, byResponsibility: stage.methodNames ?? {}, cohesiveResponsibilities: stage.cohesiveResponsibilities };
 }
