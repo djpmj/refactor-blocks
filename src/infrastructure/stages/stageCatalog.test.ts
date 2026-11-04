@@ -1062,7 +1062,20 @@ describe('stageCatalog', () => {
     expect(shown.map((stage) => stage.id)).toEqual([]);
   });
 
-  it('チュートリアル1でヘッダー・行・出力を選ぶとprintReportを提案する', () => {
+  it('チュートリアル2でDB保存とメール送信を選ぶと、両方の責務名をつないで提案する', () => {
+    // Arrange
+    const stage = stages.find((candidate) => candidate.id === 'tutorial-order-service');
+    if (stage === undefined) throw new Error('チュートリアル2がありません');
+    const fragments = fragmentsByIds(stage, ['frag-save', 'frag-mail']);
+
+    // Act
+    const name = suggestMethodName(fragments, [], methodNamingOf(stage));
+
+    // Assert
+    expect(name).toBe('saveOrderAndSendConfirmationMail');
+  });
+
+  it('チュートリアル1でヘッダー・行・出力を選ぶとbuildTableAndPrintReportを提案する', () => {
     // Arrange
     const stage = stages.find((candidate) => candidate.id === 'tutorial-extract-method');
     if (stage === undefined) throw new Error('チュートリアル1がありません');
@@ -1072,7 +1085,7 @@ describe('stageCatalog', () => {
     const name = suggestMethodName(fragments, [], methodNamingOf(stage));
 
     // Assert
-    expect(name).toBe('printReport');
+    expect(name).toBe('buildTableAndPrintReport');
   });
 
   it('全ステージの自動命名表がコード上の全責務を覆い、初期クラス名と重ならない', () => {

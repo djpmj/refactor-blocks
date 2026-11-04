@@ -148,10 +148,10 @@ describe('suggestMethodName', () => {
     const name = suggestMethodName(fragments, [], naming);
 
     // Assert
-    expect(name).toBe('saveOrder');
+    expect(name).toBe('validateOrderAndSaveOrder');
   });
 
-  it('一致する模範解答がなくても、行数が最大の責務名を使う', () => {
+  it('責務が混ざるときは、責務ごとの名前を出てくる順に And でつなぐ', () => {
     // Arrange
     const fragments = [
       { ...named('buildHeader'), id: 'header', responsibility: 'formatting', lines: 2 },
@@ -164,10 +164,10 @@ describe('suggestMethodName', () => {
     const name = suggestMethodName(fragments, [], naming);
 
     // Assert
-    expect(name).toBe('printReport');
+    expect(name).toBe('buildTableAndPrintReport');
   });
 
-  it('責務の行数が同じなら、先に選んだ責務名を使う', () => {
+  it('責務が混ざるときは行数に関係なく両方の責務名を入れる', () => {
     // Arrange
     const fragments = [
       { ...named('buildHeader'), responsibility: 'formatting', lines: 3 },
@@ -179,7 +179,97 @@ describe('suggestMethodName', () => {
     const name = suggestMethodName(fragments, [], naming);
 
     // Assert
-    expect(name).toBe('buildTable');
+    expect(name).toBe('buildTableAndPrintReport');
+  });
+
+  it('DB保存とメール送信を選ぶと、両方の責務名をつなぐ', () => {
+    // Arrange
+    const fragments = [
+      { ...named('saveOrder'), id: 'save', responsibility: 'persistence', lines: 3 },
+      { ...named('sendConfirmationMail'), id: 'mail', responsibility: 'notification', lines: 3 },
+    ];
+    const naming = { ...NO_METHOD_NAMING, byResponsibility: { persistence: 'saveOrder', notification: 'sendConfirmationMail' } };
+
+    // Act
+    const name = suggestMethodName(fragments, [], naming);
+
+    // Assert
+    expect(name).toBe('saveOrderAndSendConfirmationMail');
+  });
+
+  it('混ざる責務のうち1つが表に無ければ、各処理の suggestedName を組み合わせる', () => {
+    // Arrange
+    const fragments = [
+      { ...named('saveOrder'), responsibility: 'persistence' },
+      { ...named('sendConfirmationMail'), responsibility: 'notification' },
+    ];
+    const naming = { ...NO_METHOD_NAMING, byResponsibility: { persistence: 'persistOrder' } };
+
+    // Act
+    const name = suggestMethodName(fragments, [], naming);
+
+    // Assert
+    expect(name).toBe('saveOrderAndSendConfirmationMail');
+  });
+
+  it('cohesiveResponsibilities の組に収まるときは混在扱いにせず、行数最大の責務名を使う', () => {
+    // Arrange
+    const fragments = [
+      { ...named('buildHeader'), responsibility: 'formatting', lines: 2 },
+      { ...named('print'), responsibility: 'output', lines: 9 },
+    ];
+    const naming = { ...NO_METHOD_NAMING, byResponsibility: { formatting: 'buildTable', output: 'printReport' }, cohesiveResponsibilities: [['formatting', 'output']] };
+
+    // Act
+    const name = suggestMethodName(fragments, [], naming);
+
+    // Assert
+    expect(name).toBe('printReport');
+  });
+
+  it('同じ動詞の責務名は動詞をまとめる', () => {
+    // Arrange
+    const fragments = [
+      { ...named('a'), responsibility: 'items' },
+      { ...named('b'), responsibility: 'stock' },
+    ];
+    const naming = { ...NO_METHOD_NAMING, byResponsibility: { items: 'validateItems', stock: 'validateStock' } };
+
+    // Act
+    const name = suggestMethodName(fragments, [], naming);
+
+    // Assert
+    expect(name).toBe('validateItemsAndStock');
+  });
+
+  it('混在の名前が既存名と重なるときは末尾に番号を付ける', () => {
+    // Arrange
+    const fragments = [
+      { ...named('a'), responsibility: 'formatting' },
+      { ...named('b'), responsibility: 'output' },
+    ];
+    const naming = { ...NO_METHOD_NAMING, byResponsibility: { formatting: 'buildTable', output: 'printReport' } };
+
+    // Act
+    const name = suggestMethodName(fragments, ['buildTableAndPrintReport'], naming);
+
+    // Assert
+    expect(name).toBe('buildTableAndPrintReport2');
+  });
+
+  it('模範解答の組と一致すれば、混在していても組の名前を使う', () => {
+    // Arrange
+    const fragments = [
+      { ...named('a'), id: 'a', responsibility: 'formatting' },
+      { ...named('b'), id: 'b', responsibility: 'output' },
+    ];
+    const naming = { groups: [{ fragmentIds: ['a', 'b'], name: 'report' }], byResponsibility: { formatting: 'buildTable', output: 'printReport' } };
+
+    // Act
+    const name = suggestMethodName(fragments, [], naming);
+
+    // Assert
+    expect(name).toBe('report');
   });
 
   it('call責務を集計せず、既存名と重なれば連番を付ける', () => {

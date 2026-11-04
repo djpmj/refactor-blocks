@@ -19,6 +19,17 @@ describe('methodNamingOf', () => {
     expect(naming).toEqual({ groups: [{ fragmentIds: ['a', 'b'], name: 'combine' }, { fragmentIds: ['c'], name: 'single' }], byResponsibility: methodNames });
   });
 
+  it('ステージの cohesiveResponsibilities をそのまま渡す', () => {
+    // Arrange
+    const cohesiveResponsibilities = [['a', 'b']];
+
+    // Act
+    const naming = methodNamingOf({ id: 'missing', cohesiveResponsibilities }, {});
+
+    // Assert
+    expect(naming.cohesiveResponsibilities).toEqual(cohesiveResponsibilities);
+  });
+
   it('模範解答も責務名も無ければ空の名前情報を返す', () => {
     // Arrange
 
