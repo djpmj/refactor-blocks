@@ -49,6 +49,37 @@ test('first visit guides a player through Extract Method using the actual action
   await expect(tour).not.toContainText('50行');
   await tour.getByRole('button', { name: '次へ' }).click();
   await expect(tour).toHaveCount(0);
+  await expect(page.getByTestId('clear-screen')).toBeVisible();
+  await expect(page.getByTestId('clear-choice-primary')).toBeFocused();
+});
+
+test('ending the guide at step 6 opens the clear screen', async ({ page }) => {
+  await clearTourSeenOnce(page);
+  await page.goto('/');
+  const tour = page.getByTestId('first-visit-tour');
+  await tour.getByRole('button', { name: '次へ' }).click();
+  await page.locator('[data-tour="manual-fix-start"]').click();
+  await page.getByRole('checkbox', { name: 'ReportService.printMonthlyReport() を直した' }).check();
+  await page.getByRole('button', { name: 'リリースする' }).click();
+  await page.getByRole('button', { name: '組み替えを始める' }).click();
+  await page.getByTestId('method-printMonthlyReport').click();
+  const fragments = page.locator('[data-tour="fragment-list"]');
+  await fragments.getByLabel('今月の売上を集計する').check();
+  await fragments.getByLabel('前月比を計算する').check();
+  await page.locator('[data-tour="extract-button"]').click();
+  await expect(tour).toContainText('6/6');
+  await tour.getByRole('button', { name: 'ガイドを終了' }).click();
+  await expect(tour).toHaveCount(0);
+  await expect(page.getByTestId('clear-screen')).toBeVisible();
+});
+
+test('Escape closes the guide', async ({ page }) => {
+  await clearTourSeenOnce(page);
+  await page.goto('/');
+  const tour = page.getByTestId('first-visit-tour');
+  await expect(tour).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(tour).toHaveCount(0);
 });
 
 test('step 2 spotlights the start button inside the viewport and pressing it advances', async ({ page }) => {
@@ -198,6 +229,8 @@ test('after the tour extraction, re-fixing "前年同月比も出して" has one
   await expect(tour).toContainText('6/6');
   await tour.getByRole('button', { name: '次へ' }).click();
   await expect(page.getByTestId('score-value')).toContainText('100');
+  await page.getByTestId('clear-choice-back').click();
+  await expect(page.getByTestId('clear-screen')).toHaveCount(0);
 
   // Act: the post-100 re-fix, marking only what the change list points at.
   const card = page.locator('.change-pain');
