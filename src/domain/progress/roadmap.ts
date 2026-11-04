@@ -31,9 +31,21 @@ export function stageStatus(
   return remaining.length === 0 ? { kind: 'cleared' } : { kind: 'perfect', remaining };
 }
 
-/** 並び順で最初の、クリア(100点かつ残りの段階なし)していないステージ。全部クリアしていれば undefined。 */
-export function recommendNextStage(stages: readonly Stage[], progress: Progress, milestones: Milestones): Stage | undefined {
-  return stages.find((stage) => stageStatus(stage, progress, milestones, false).kind !== 'cleared');
+function fromCurrent(stages: readonly Stage[], currentId: string): readonly Stage[] {
+  const index = stages.findIndex((stage) => stage.id === currentId);
+  return index < 0 ? stages : [...stages.slice(index), ...stages.slice(0, index)];
+}
+
+/** 現在のステージから順に、最初の100点未満のステージを返す。 */
+export function recommendNextStage(stages: readonly Stage[], progress: Progress, currentId: string): Stage | undefined {
+  return fromCurrent(stages, currentId).find((stage) => !isStageCleared(stage.id, progress));
+}
+
+/** 現在のステージから順に、100点で段階が残るステージを返す。 */
+export function recommendUnfinishedStage(
+  stages: readonly Stage[], progress: Progress, milestones: Milestones, currentId: string,
+): Stage | undefined {
+  return fromCurrent(stages, currentId).find((stage) => stageStatus(stage, progress, milestones, false).kind === 'perfect');
 }
 
 /** 1つの学べること(概念)の習得状況。 */

@@ -194,3 +194,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [left-sidebar-default-max-width](left-sidebar-default-max-width.md) | 左サイドバー(課題)を初期表示で上限の幅480pxにする |
 | [csharp-extract-dataflow](csharp-extract-dataflow.md) | 抽出したメソッドに引数・戻り値・async を付け、C#コードのプレビューに反映する |
 | [csharp-move-wiring](csharp-move-wiring.md) | C#書き出しでクラス間の依存をコンストラクタ注入として配線する |
+| [recommend-next-skip-just-cleared](recommend-next-skip-just-cleared.md) | 「次のおすすめ」を現在のステージ起点で選び、100点で段階が残るステージは「おさらい」に分ける |
