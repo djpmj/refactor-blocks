@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-11-04 UTC PR #446 メソッド名の提案と混在判定を改善し、混在の警告を表示する (#417)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(2766 passed) / npm run lint ✅ / npm run typecheck ✅。Issue #417の方針と差分を照合。E2Eはレビュー環境で実行できず未実施(PR本文の結果とCIに依存)
+- マージ: squash & delete-branch
+
 ## 2026-11-04 UTC PR #445 ツアー終了時にクリア画面を出す (#414)
 
 - 判定: 合格(blocker無し)
@@ -211,10 +217,3 @@
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(2397件) / npm run lint ✅ / npm run typecheck ✅ / E2Eはブラウザ未導入で実行不可(コードのみ確認)
 - マージ: squash & delete-branch
-
-## 2026-10-29 10:00 UTC PR #373 100点後の振り返りメモを追加 (#346)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(2376件) ✅ / npm run lint ✅ / npm run typecheck ✅(E2EはChromium未導入で実行不可、PR記載の結果を信頼。受け入れ基準は差分で確認)
-- マージ: squash & delete-branch
-
