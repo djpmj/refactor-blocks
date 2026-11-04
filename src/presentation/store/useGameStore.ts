@@ -274,7 +274,7 @@ function tourActions(set: (partial: Partial<GameState>) => void, get: () => Game
       const next = nextTourStep(TOUR_STEPS, state.tourStep, effectiveEvent);
       if (next === null) {
         saveTourSeen();
-        set({ tourStep: null, tourResult: null });
+        set({ tourStep: null, tourResult: null, ...clearScreenAfterTour(state) });
       } else if (next !== state.tourStep) {
         const score = scoreCodebase(state.codebase, state.stage);
         // 手順4に入る前提(まだメソッドを選んでいない)を揃える
@@ -289,9 +289,10 @@ function tourActions(set: (partial: Partial<GameState>) => void, get: () => Game
       }
     },
     endTour: () => {
-      if (get().tourStep === null) return;
+      const state = get();
+      if (state.tourStep === null) return;
       saveTourSeen();
-      set({ tourStep: null, tourResult: null });
+      set({ tourStep: null, tourResult: null, ...clearScreenAfterTour(state) });
     },
   };
 }
@@ -324,6 +325,15 @@ const HIGHLIGHT_RESET: Partial<GameState> = { focusedRule: null, hintTarget: nul
 function clearScreenAfterCommit(state: GameState, celebration: GameState['celebration'] | undefined): Partial<GameState> {
   const showClear = celebration != null && celebration.scoreBefore < 100 && celebration.scoreAfter === 100
     && state.changeSession === null && state.manualFix === null && state.tourStep === null
+    && !state.clearShownStages.includes(state.stage.id);
+  return showClear ? { clearScreen: { stageId: state.stage.id }, clearShownStages: [...state.clearShownStages, state.stage.id] } : {};
+}
+
+/** ツアー中の操作で100点にしていたら、ツアーを閉じた直後にクリア画面を出す。 */
+function clearScreenAfterTour(state: GameState): Partial<GameState> {
+  const showClear = state.tourResult?.kind === 'cleared' && state.tourResult.totalBefore < 100
+    && scoreCodebase(state.codebase, state.stage).total === 100
+    && state.changeSession === null && state.manualFix === null
     && !state.clearShownStages.includes(state.stage.id);
   return showClear ? { clearScreen: { stageId: state.stage.id }, clearShownStages: [...state.clearShownStages, state.stage.id] } : {};
 }
