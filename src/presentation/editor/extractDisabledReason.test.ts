@@ -63,6 +63,14 @@ describe('extractDisabledReason', () => {
     expect(reason).toBeNull();
   });
 
+  it.each(['1bad name', '  1bad name '])('不正な名前 %s を trim して説明する', (name) => {
+    // Act
+    const reason = extractDisabledReason(method, new Set(['a']), name, existing);
+
+    // Assert
+    expect(reason).toBe('「1bad name」はメソッド名に使えません。英字・数字・_ だけを使い、数字から始めないでください');
+  });
+
   it('選択なしかつ重複なら選択なしの文を優先する', () => {
     // Act
     const reason = extractDisabledReason(method, new Set(), 'aggregateSales', existing);
@@ -78,12 +86,15 @@ describe('extractNameInvalid(理由と aria-invalid の一致)', () => {
   const cases: ReadonlyArray<readonly [string, ReadonlySet<string>, string, boolean]> = [
     ['選択なし × 空', new Set(), '', false],
     ['選択なし × 重複', new Set(), 'aggregateSales', false],
+    ['選択なし × 不正', new Set(), '1bad name', false],
     ['選択なし × 正常', new Set(), 'newName', false],
     ['連続 × 空', new Set(['a']), '', false],
     ['連続 × 重複', new Set(['a']), 'aggregateSales', true],
+    ['連続 × 不正', new Set(['a']), '1bad name', true],
     ['連続 × 正常', new Set(['a']), 'newName', false],
     ['非連続 × 空', NON_CONTIGUOUS, '', false],
     ['非連続 × 重複', NON_CONTIGUOUS, 'aggregateSales', false],
+    ['非連続 × 不正', NON_CONTIGUOUS, '1bad name', false],
     ['非連続 × 正常', NON_CONTIGUOUS, 'newName', false],
   ];
 
@@ -93,6 +104,7 @@ describe('extractNameInvalid(理由と aria-invalid の一致)', () => {
 
     // Assert
     expect(invalid).toBe(expected);
-    expect(invalid).toBe(extractDisabledReason(method, selected, name, existing)?.startsWith('同じクラスに') ?? false);
+    const reason = extractDisabledReason(method, selected, name, existing);
+    expect(invalid).toBe(reason?.startsWith('同じクラスに') === true || reason?.includes('はメソッド名に使えません') === true);
   });
 });
