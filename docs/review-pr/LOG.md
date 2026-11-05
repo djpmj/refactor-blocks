@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-11-05 12:32 UTC PR #447 講評の取得タイミングを案内し、古い講評の再表示を防ぐ (#415)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(2773 passed) / npm run lint ✅ / npm run typecheck ✅。Issue #415・仕様(feedback-snapshot-staleness)と差分を照合。E2Eはレビュー環境で実行できず未実施(PR本文の全件565 passedに依存)
+- マージ: squash & delete-branch
+
 ## 2026-11-04 UTC PR #446 メソッド名の提案と混在判定を改善し、混在の警告を表示する (#417)
 
 - 判定: 合格(blocker無し)
@@ -210,10 +216,4 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(2381件) / npm run lint ✅ / npm run typecheck ✅ / 仕様(hint-extract-name-mismatch)と差分を照合(methodNamingOfのフィルタ撤去・suggestMethodNameの一致優先・ヒント文変更・E2E追加)。E2EはChromium未導入で実行不可(PR本文では487件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-29 10:20 UTC PR #374 設計くらべに2段目「理由の3択」を追加する (#348)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(2397件) / npm run lint ✅ / npm run typecheck ✅ / E2Eはブラウザ未導入で実行不可(コードのみ確認)
 - マージ: squash & delete-branch
