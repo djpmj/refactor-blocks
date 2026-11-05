@@ -7,6 +7,7 @@ import {
   useSensors,
   type DragEndEvent,
   type DragStartEvent,
+  type KeyboardSensorOptions,
   type UniqueIdentifier,
 } from '@dnd-kit/core';
 import { Background, Controls, Panel, ReactFlow, useNodesInitialized, useReactFlow, ViewportPortal, type EdgeTypes, type NodeChange, type NodeTypes, type ReactFlowInstance, type XYPosition } from '@xyflow/react';
@@ -52,6 +53,8 @@ const edgeTypes: EdgeTypes = { topRoute: TopRouteEdge, offset: OffsetEdge, warni
 
 /** クリックでの選択とドラッグを区別するため、5px以上動かしたときだけドラッグを開始する。 */
 const POINTER_ACTIVATION = { activationConstraint: { distance: 5 } };
+/** Enter はボタンのクリックに残し、キーボードドラッグは Space で始める。 */
+const KEYBOARD_DRAG: KeyboardSensorOptions = { keyboardCodes: { start: ['Space'], cancel: ['Escape'], end: ['Space', 'Enter', 'Tab'] } };
 
 function DraggingOverlay({ activeId }: Readonly<{ activeId: UniqueIdentifier | null }>) {
   const methodId = activeId === null ? null : parseMethodDragId(activeId);
@@ -546,7 +549,7 @@ export function CodebaseCanvas({ active, inert }: Readonly<{ active: boolean; in
   const [flow, setFlow] = useState<ReactFlowInstance<CodebaseFlowNode> | null>(null);
   const [revealFileId, setRevealFileId] = useState<string | null>(null);
   const { autoFitStateRef, onMoveStart, onManualFit, onControlZoom } = useAutoFitActions();
-  const sensors = useSensors(useSensor(PointerSensor, POINTER_ACTIVATION), useSensor(KeyboardSensor));
+  const sensors = useSensors(useSensor(PointerSensor, POINTER_ACTIVATION), useSensor(KeyboardSensor, KEYBOARD_DRAG));
   const announcements = useMemo(() => createAnnouncements(codebase), [codebase]);
   const contextMenu = useCanvasContextMenu();
   // メニューは document.body へのポータルなので、画面を隠しただけでは消えない(隠れたコードベースを操作できてしまう)

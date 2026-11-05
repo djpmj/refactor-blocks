@@ -1,8 +1,13 @@
 import { allClasses, type Codebase } from './Codebase';
 import { err, ok, type Result } from '../shared/Result';
 
-export type ClassNameError = 'empty-class-name' | 'duplicate-class-name';
+export type ClassNameError = 'empty-class-name' | 'invalid-class-name' | 'duplicate-class-name';
 export type FilePathError = 'empty-path' | 'duplicate-path';
+
+/** クラス名・メソッド名として使える ASCII 識別子か。呼び出し側で trim する。 */
+export function isValidIdentifier(name: string): boolean {
+  return /^[A-Za-z_]\w*$/.test(name);
+}
 
 /** 名前が使われていない番号になるまで連番(2, 3, ...)を付ける。 */
 export function uniqueName(base: string, isTaken: (candidate: string) => boolean): string {
@@ -15,6 +20,7 @@ export function uniqueName(base: string, isTaken: (candidate: string) => boolean
 export function validateClassName(codebase: Codebase, rawName: string): Result<string, ClassNameError> {
   const name = rawName.trim();
   if (name === '') return err('empty-class-name');
+  if (!isValidIdentifier(name)) return err('invalid-class-name');
   if (allClasses(codebase).some((codeClass) => codeClass.name === name)) return err('duplicate-class-name');
   return ok(name);
 }

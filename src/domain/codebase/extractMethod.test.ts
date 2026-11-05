@@ -22,6 +22,19 @@ function withExtraFragment(codebase: Codebase): Codebase {
 }
 
 describe('extractMethod', () => {
+  it('不正な名前を拒否し、空の名前は空のエラーを優先する', () => {
+    // Arrange
+    const codebase = sampleCodebase();
+
+    // Act
+    const invalid = extractMethod(codebase, request({ newMethodName: '1bad name' }));
+    const empty = extractMethod(codebase, request({ newMethodName: '  ' }));
+
+    // Assert
+    expect(invalid).toEqual({ ok: false, error: 'invalid-method-name' });
+    expect(empty).toEqual({ ok: false, error: 'empty-method-name' });
+    expect(codebase).toEqual(sampleCodebase());
+  });
   it('選んだ処理が同じクラスの新しいprivateメソッドになり、元のメソッドの直後に並ぶ', () => {
     // Arrange
     const codebase = sampleCodebase();

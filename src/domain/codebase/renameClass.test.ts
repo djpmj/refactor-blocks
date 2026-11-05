@@ -54,6 +54,7 @@ describe('renameClass', () => {
 
   it.each([
     ['名前が空白だけ', 'class-order', '  ', 'empty-class-name'],
+    ['不正な名前', 'class-order', '1Tax', 'invalid-class-name'],
     ['別のクラスと同じ名前', 'class-order', 'TaxCalculator', 'duplicate-class-name'],
     ['存在しないクラス', 'class-none', 'Foo', 'class-not-found'],
   ])('%sのときはエラーになる', (_label, classId, name, expected) => {

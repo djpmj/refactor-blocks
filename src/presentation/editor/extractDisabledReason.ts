@@ -1,5 +1,6 @@
 import type { Method } from '../../domain/codebase/Codebase';
 import { isContiguous } from '../../domain/codebase/extractMethod';
+import { isValidIdentifier } from '../../domain/codebase/naming';
 
 type ExtractBlock = { readonly reason: string; readonly nameInvalid: boolean };
 
@@ -11,6 +12,7 @@ function blockOf(method: Method, selected: ReadonlySet<string>, newName: string,
   }
   const name = newName.trim();
   if (name === '') return { reason: 'メソッド名を入れると押せます', nameInvalid: false };
+  if (!isValidIdentifier(name)) return { reason: `「${name}」はメソッド名に使えません。英字・数字・_ だけを使い、数字から始めないでください`, nameInvalid: true };
   if (existingNames.includes(name)) return { reason: `同じクラスに「${name}」というメソッドがあります。別の名前にしてください`, nameInvalid: true };
   return null;
 }
