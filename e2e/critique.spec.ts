@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+import { dismissClearScreen, selectStage } from './selectStage.js';
 
 /** AI講評の呼び出し先(.env.test の VITE_CRITIQUE_ENDPOINT)。実際のClaude APIは呼ばず、ここでモックする。 */
 const CRITIQUE_ENDPOINT = '**/__critique-test__';
@@ -85,4 +86,71 @@ test('409が返ったら、サーバーの更新待ちを知らせる', async ({
   await expect(page.locator('.critique-panel__error')).toHaveText(
     'AI講評のサーバーが、このゲームの版にまだ対応していません。サーバーの更新をお待ちください(ゲーム側の操作は不要です)',
   );
+});
+
+async function openStage1AndAskCritique(page: Page) {
+  await page.setViewportSize({ width: 1800, height: 1400 });
+  await page.goto('/');
+  await selectStage(page, 'チュートリアル1: 長いメソッドを分ける');
+  await page.getByRole('button', { name: 'AIの講評をもらう' }).click();
+}
+
+async function extractAggregateSales(page: Page) {
+  await page.getByTestId('method-printMonthlyReport').click();
+  await page.getByLabel('今月の売上を集計する').check();
+  await page.getByLabel('前月比を計算する').check();
+  await page.getByLabel('新しいメソッド名').fill('aggregateSales');
+  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+  await expect(page.getByTestId('score-announcement')).toHaveText('100点');
+  await dismissClearScreen(page);
+}
+
+test('簡易講評は、コードを変えると古いと出て、もう一度もらうと今の時点になる', async ({ page }) => {
+  // Arrange
+  await page.route(CRITIQUE_ENDPOINT, async (route) => {
+    await route.fulfill({ status: 500, json: { error: 'critique-failed' } });
+  });
+  await openStage1AndAskCritique(page);
+  const timing = page.getByTestId('critique-timing');
+  await expect(timing).toContainText('点・0手の時点の講評です');
+  await expect(page.getByRole('button', { name: 'もう一度もらう' })).toHaveCount(0);
+
+  // Act
+  await extractAggregateSales(page);
+
+  // Assert
+  await expect(timing).toContainText('この講評は古くなりました(');
+  await expect(timing).toContainText('点・0手の時点)。今のコードとは違います');
+  await expect(page.getByTestId('critique-fallback-text')).toBeVisible();
+
+  // Act
+  await page.getByRole('button', { name: 'もう一度もらう' }).click();
+
+  // Assert
+  await expect(timing).toHaveText('100点・1手の時点の講評です');
+  await expect(page.getByRole('button', { name: 'もう一度もらう' })).toHaveCount(0);
+});
+
+test('AI講評も古いと出て、元に戻して取得時と同じコードに戻ると消える', async ({ page }) => {
+  // Arrange
+  await page.route(CRITIQUE_ENDPOINT, async (route) => {
+    await route.fulfill({ json: { critique: 'よく分解できています。' } });
+  });
+  await openStage1AndAskCritique(page);
+  const timing = page.getByTestId('critique-timing');
+  await expect(timing).toContainText('点・0手の時点の講評です');
+
+  // Act
+  await extractAggregateSales(page);
+
+  // Assert
+  await expect(page.getByTestId('critique-text')).toHaveText('よく分解できています。');
+  await expect(timing).toContainText('この講評は古くなりました(');
+
+  // Act
+  await page.getByRole('button', { name: '元に戻す' }).click();
+
+  // Assert
+  await expect(timing).toContainText('点・0手の時点の講評です');
+  await expect(page.getByRole('button', { name: 'もう一度もらう' })).toHaveCount(0);
 });

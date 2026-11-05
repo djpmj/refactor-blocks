@@ -1672,3 +1672,30 @@ describe('resetStageRecord', () => {
     expect(localStorage.getItem('refactor-blocks:progress')).toBe(progressRaw);
   });
 });
+
+describe('AI講評の非同期応答', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
+
+  it('講評の取得中にステージを切り替えたら、遅れて届いた古い応答を捨てる', async () => {
+    // Arrange
+    vi.stubEnv('VITE_CRITIQUE_ENDPOINT', 'http://critique.test');
+    let resolveFetch: ((response: Response) => void) | undefined;
+    vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>((resolve) => { resolveFetch = resolve; })));
+    const [first, second] = stages;
+    const store = createGameStore([first, second], false, false);
+    store.getState().requestCritique();
+    expect(store.getState().critique.loading).toBe(true);
+
+    // Act
+    store.getState().selectStage(second.id);
+    resolveFetch?.(new Response(JSON.stringify({ critique: '古いステージの講評' }), { status: 200 }));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // Assert
+    expect(store.getState().critique.text).toBeNull();
+    expect(store.getState().critique.loading).toBe(false);
+  });
+});

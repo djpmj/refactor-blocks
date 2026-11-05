@@ -9,7 +9,7 @@ import { painRequestsOf } from '../../domain/change/changePain';
 import { stageStep, type StageStep } from '../../domain/change/stageStep';
 import { allClasses, findClassOfMethod, findField, findMethod, type Codebase, type Visibility } from '../../domain/codebase/Codebase';
 import { autoNameClasses } from '../../domain/codebase/autoNameClasses';
-import { emptyHistory, recordChange, redoHistory, undoHistory, type History, type Travel } from '../../domain/codebase/history';
+import { emptyHistory, movesSince, recordChange, redoHistory, undoHistory, type History, type Travel } from '../../domain/codebase/history';
 import { scoreCodebase, type Score, type ScoreRule } from '../../domain/scoring/score';
 import { describeNoEffect, describeOperationResult, type OperationResult } from '../stage/describeOperationResult';
 import { describeGrowthHeadsUp } from '../editor/describeGrowthHeadsUp';
@@ -18,6 +18,7 @@ import type { ViolationTarget } from '../../domain/scoring/violationTargets';
 import type { Stage } from '../../domain/stage/Stage';
 import type { GhostMove } from '../../domain/stage/ghostMove';
 import { describeFallbackCritique } from '../critique/describeFallbackCritique';
+import type { CritiqueSnapshot } from '../critique/describeCritiqueTiming';
 import { fetchCritique } from '../../infrastructure/critique/critiqueClient';
 import {
   addClassUseCase,
@@ -117,9 +118,11 @@ export type CritiqueState = {
   readonly error: string | null;
   /** AI講評を取れなかったときだけ入る、採点結果から作った簡易講評。AI講評ではない。 */
   readonly fallback: string | null;
+  /** 講評を取得した(押した)時点の記録。古くなったかの表示に使う。講評がないときは null。 */
+  readonly snapshot: CritiqueSnapshot | null;
 };
 
-const EMPTY_CRITIQUE: CritiqueState = { text: null, loading: false, error: null, fallback: null };
+const EMPTY_CRITIQUE: CritiqueState = { text: null, loading: false, error: null, fallback: null, snapshot: null };
 const EMPTY_RULE_PREVIEW = { previewRule: null, hoverPreviewRule: null, focusPreviewRule: null };
 
 /** 変更依頼を「手で直す」シミュレーション。fixedIds は「直した」印、viewedMethodId は最後にクリックしたメソッド。 */
@@ -689,17 +692,22 @@ function manualFixActions(
 /** AI講評をもらう操作。通信は注入されたinfrastructure層の関数(fetchCritique)が行う。 */
 function critiqueActions(set: (partial: Partial<GameState>) => void, get: () => GameState): Pick<GameState, 'requestCritique'> {
   return {
-    // ponytail: 講評取得後にコードベースを編集しても、講評は自動では消えない。古い講評だと分かるよう再度ボタンを押してもらう前提
+    // ponytail: 講評取得後にコードベースを編集しても、古い講評は消さない。describeCritiqueTiming で古いと出して、もう一度もらってもらう
     requestCritique: () => {
-      const { codebase, stage } = get();
+      const { codebase, stage, history } = get();
       const score = scoreCodebase(codebase, stage);
-      set({ critique: { ...EMPTY_CRITIQUE, loading: true } });
+      const snapshot: CritiqueSnapshot = { codebase, total: score.total, moves: movesSince(history, codebase, stage.codebase) };
+      const pending = { ...EMPTY_CRITIQUE, loading: true };
+      set({ critique: pending });
       void requestCritiqueUseCase(codebase, stage, score, fetchCritique).then((result) => {
+        // ステージ切替ややり直しで critique が差し替わっていたら、古い応答は捨てる
+        if (get().critique !== pending) return;
         set({
           critique: result.ok
-            ? { ...EMPTY_CRITIQUE, text: result.value }
+            ? { ...EMPTY_CRITIQUE, text: result.value, snapshot }
             : {
               ...EMPTY_CRITIQUE,
+              snapshot,
               error: describeCritiqueError(result.error),
               fallback: describeFallbackCritique({ stage, codebase, initial: scoreCodebase(stage.codebase, stage), current: score }),
             },

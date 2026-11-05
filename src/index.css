@@ -451,6 +451,9 @@ input.class-node__name { width: 14ch; }
 .critique-panel__details summary { cursor: pointer; color: var(--text); font-weight: 600; }
 .critique-panel__text { margin: 6px 0 0; line-height: 1.6; white-space: pre-wrap; }
 .critique-panel__error { margin: 0; color: var(--danger); }
+.critique-panel__timing { margin: 0 0 4px; color: var(--muted); font-size: 12px; }
+.critique-panel__timing--stale { color: var(--answer-danger-text); }
+.critique-panel__timing button { margin-left: 8px; }
 
 .class-node__handle { opacity: 0; pointer-events: none; }
 /* 同じ層(row)の隣どうしをつなぐ左右の接続点。双方向の辺が重ならないよう、出る点と入る点の高さをずらす */
