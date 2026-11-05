@@ -1,6 +1,77 @@
 import { describe, expect, it } from 'vitest';
 import type { Codebase } from '../codebase/Codebase';
-import { findMixedMethods } from './mixedMethods';
+import { findMixedMethods, mixedResponsibilities } from './mixedMethods';
+
+describe('mixedResponsibilities', () => {
+  const of = (...responsibilities: string[]) => responsibilities.map((responsibility) => ({ responsibility }));
+
+  it('違う責務の2処理は出てくる順に返す', () => {
+    // Arrange
+    const fragments = of('persistence', 'notification');
+
+    // Act
+    const result = mixedResponsibilities(fragments);
+
+    // Assert
+    expect(result).toEqual(['persistence', 'notification']);
+  });
+
+  it('同じ責務だけなら空', () => {
+    // Arrange
+    const fragments = of('validation', 'validation');
+
+    // Act
+    const result = mixedResponsibilities(fragments);
+
+    // Assert
+    expect(result).toEqual([]);
+  });
+
+  it('call は数えない', () => {
+    // Arrange
+    const fragments = of('call', 'formatting');
+
+    // Act
+    const result = mixedResponsibilities(fragments);
+
+    // Assert
+    expect(result).toEqual([]);
+  });
+
+  it('重複は除く', () => {
+    // Arrange
+    const fragments = of('formatting', 'output', 'formatting');
+
+    // Act
+    const result = mixedResponsibilities(fragments);
+
+    // Assert
+    expect(result).toEqual(['formatting', 'output']);
+  });
+
+  it('1つの組に収まれば空、はみ出せば全責務を返す', () => {
+    // Arrange
+    const groups = [['a', 'b', 'c']];
+
+    // Act
+    const inside = mixedResponsibilities(of('a', 'b', 'c'), groups);
+    const outside = mixedResponsibilities(of('a', 'b', 'd'), groups);
+
+    // Assert
+    expect(inside).toEqual([]);
+    expect(outside).toEqual(['a', 'b', 'd']);
+  });
+
+  it('処理が0個なら空', () => {
+    // Arrange
+
+    // Act
+    const result = mixedResponsibilities([]);
+
+    // Assert
+    expect(result).toEqual([]);
+  });
+});
 
 function codebaseWithMethods(methods: readonly { id: string; responsibilities: readonly string[] }[]): Codebase {
   return {

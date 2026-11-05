@@ -20,6 +20,8 @@ import { changeVisibilityUseCase } from '../../application/RefactorUseCases';
 import { previewExtractMethod } from '../../application/RefactorUseCases';
 import { describeExtractPreview } from './describeExtractPreview';
 import { describeGrowthHeadsUp } from './describeGrowthHeadsUp';
+import { describeMixedHeadsUp } from './describeMixedHeadsUp';
+import { mixedResponsibilities } from '../../domain/scoring/mixedMethods';
 import { extractDisabledReason, extractNameInvalid } from './extractDisabledReason';
 import { findCallerOf } from '../../domain/codebase/inlineMethod';
 import { findMergeCandidates, type MergeCandidate } from '../../domain/codebase/mergeMethods';
@@ -164,6 +166,7 @@ function ExtractControls({
   onExtract,
   previewSummary,
   growthHeadsUp,
+  mixedHeadsUp,
 }: Readonly<{
   newName: string;
   disabledReason: string | null;
@@ -172,6 +175,7 @@ function ExtractControls({
   onExtract: () => void;
   previewSummary: string | undefined;
   growthHeadsUp: string | undefined;
+  mixedHeadsUp: string | undefined;
 }>) {
   return (
     <>
@@ -195,7 +199,7 @@ function ExtractControls({
           選んだ処理をメソッドとして抽出
         </button>
       </div>
-      {previewSummary === undefined ? null : <div aria-live="polite"><p className="method-editor__extract-preview">{previewSummary}</p>{growthHeadsUp === undefined ? null : <p className="method-editor__growth-heads-up" data-testid="extract-growth-heads-up">{growthHeadsUp}</p>}</div>}
+      {previewSummary === undefined ? null : <div aria-live="polite"><p className="method-editor__extract-preview">{previewSummary}</p>{growthHeadsUp === undefined ? null : <p className="method-editor__growth-heads-up" data-testid="extract-growth-heads-up">{growthHeadsUp}</p>}{mixedHeadsUp === undefined ? null : <p className="method-editor__growth-heads-up method-editor__mixed-heads-up" data-testid="extract-mixed-heads-up">{mixedHeadsUp}</p>}</div>}
       {disabledReason === null ? null : (
         <p id="method-editor-extract-disabled-reason" className="method-editor__extract-hint">
           {disabledReason}
@@ -228,17 +232,21 @@ function implementsAbstractMethod(codebase: Codebase, method: Method): boolean {
   return false;
 }
 
-function useExtractPreviewSummary(method: Method, selected: ReadonlySet<string>, newName: string): { summary: string | undefined; growthHeadsUp: string | undefined } {
+function useExtractPreviewSummary(method: Method, selected: ReadonlySet<string>, newName: string, marks: ReadonlyMap<string, number>): { summary: string | undefined; growthHeadsUp: string | undefined; mixedHeadsUp: string | undefined } {
   const setExtractDraft = useGameStore((state) => state.setExtractDraft);
   const codebase = useGameStore((state) => state.codebase);
   const draft = useGameStore((state) => state.extractDraft);
   const allowed = useGameStore((state) => state.changeSession === null && state.manualFix === null);
   const limits = useGameStore((state) => state.stage.limits);
+  const cohesive = useGameStore((state) => state.stage.cohesiveResponsibilities);
+  const names = useGameStore((state) => state.stage.responsibilityNames);
   const preview = useMemo(() => draft === null || !allowed ? undefined : previewExtractMethod(codebase, draft), [allowed, codebase, draft]);
   useEffect(() => {
     setExtractDraft(selected.size === 0 ? null : { sourceMethodId: method.id, fragmentIds: [...selected], newMethodName: newName });
   }, [method.id, newName, selected, setExtractDraft]);
-  return preview === undefined ? { summary: undefined, growthHeadsUp: undefined } : { summary: describeExtractPreview(method.name, preview), growthHeadsUp: describeGrowthHeadsUp(preview, limits) };
+  if (preview === undefined) return { summary: undefined, growthHeadsUp: undefined, mixedHeadsUp: undefined };
+  const mixed = mixedResponsibilities(method.fragments.filter((fragment) => selected.has(fragment.id)), cohesive);
+  return { summary: describeExtractPreview(method.name, preview), growthHeadsUp: describeGrowthHeadsUp(preview, limits), mixedHeadsUp: describeMixedHeadsUp(mixed, marks, names) };
 }
 
 /** 可視性(public / protected / private)を選ぶ欄。選んでも前提条件を満たさない値は disabled にする。 */
@@ -365,7 +373,7 @@ function MethodEditorBody({ method, showVisibility, stage }: Readonly<{ method: 
     );
   const disabledReason = extractDisabledReason(method, selected, newName, existingNames);
 
-  const { summary: previewSummary, growthHeadsUp } = useExtractPreviewSummary(method, selected, newName);
+  const { summary: previewSummary, growthHeadsUp, mixedHeadsUp } = useExtractPreviewSummary(method, selected, newName, marks);
 
   const handleExtract = () => {
     const succeeded = extractMethod({ sourceMethodId: method.id, fragmentIds: [...selected], newMethodName: newName });
@@ -397,6 +405,7 @@ function MethodEditorBody({ method, showVisibility, stage }: Readonly<{ method: 
               onExtract={handleExtract}
               previewSummary={previewSummary}
               growthHeadsUp={growthHeadsUp}
+              mixedHeadsUp={mixedHeadsUp}
             />
           </div>
           {mergeCandidates.length > 0 ? <MergeSection method={method} candidates={mergeCandidates} /> : null}

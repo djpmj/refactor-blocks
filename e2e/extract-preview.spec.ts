@@ -145,7 +145,7 @@ test('抽出の選択中に結果をプレビューし、抽出・Undo・ステ�
   await expect(previewMethod).toHaveCount(0);
 });
 
-test('チュートリアル1で表のヘッダー・行・出力を抽出すると、責務に沿った短い名前になる', async ({ page }) => {
+test('チュートリアル1で表のヘッダー・行・出力を抽出すると、責務を And でつないだ名前になり、混ざる警告が出る', async ({ page }) => {
   // Arrange
   await page.goto('/');
   await selectStage(page, 'チュートリアル1: 長いメソッドを分ける');
@@ -158,7 +158,40 @@ test('チュートリアル1で表のヘッダー・行・出力を抽出する�
   await page.getByLabel('画面に出力する').check();
 
   // Assert: 自動名を確認して抽出する
-  await expect(name).toHaveValue('printReport');
+  await expect(page.getByTestId('extract-mixed-heads-up')).toBeVisible();
+  await expect(name).toHaveValue('buildTableAndPrintReport');
   await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
-  await expect(page.getByTestId('method-printReport')).toBeVisible();
+  await expect(page.getByTestId('method-buildTableAndPrintReport')).toBeVisible();
+});
+
+test('チュートリアル2で責務の違う処理を選ぶと警告が出て、同じ責務だけなら出ない', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await selectStage(page, 'チュートリアル2: 太った placeOrder');
+  await page.getByTestId('method-placeOrder').click();
+  const name = page.getByLabel('新しいメソッド名');
+  const headsUp = page.getByTestId('extract-mixed-heads-up');
+
+  // Act: DB保存とメール送信(責務が違う)を選ぶ
+  await page.getByLabel('注文をDBに保存する').check();
+  await page.getByLabel('確認メールを送る').check();
+
+  // Assert: 責務を And でつないだ名前と警告
+  await expect(name).toHaveValue('saveOrderAndSendConfirmationMail');
+  await expect(headsUp).toContainText('D DBへの保存・E メール通知');
+
+  // Act: メールを外す
+  await page.getByLabel('確認メールを送る').uncheck();
+
+  // Assert: 警告が消えて名前が戻る
+  await expect(headsUp).toHaveCount(0);
+  await expect(name).toHaveValue('saveOrder');
+
+  // Act: 同じ責務(検証)の2処理だけを選ぶ
+  await page.getByLabel('注文をDBに保存する').uncheck();
+  await page.getByLabel('在庫があるか検証する').check();
+  await page.getByLabel('商品が空でないか検証する').check();
+
+  // Assert: 警告は出ない
+  await expect(headsUp).toHaveCount(0);
 });
