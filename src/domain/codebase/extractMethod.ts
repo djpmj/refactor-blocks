@@ -1,5 +1,6 @@
 import { findClassOfMethod, findMethod, mapClasses, type Codebase, type Fragment, type Method } from './Codebase';
 import { inferExtractedSignature } from './methodSignature';
+import { isValidIdentifier } from './naming';
 import { err, ok, type Result } from '../shared/Result';
 
 export type ExtractMethodRequest = {
@@ -15,6 +16,7 @@ export type ExtractMethodError =
   | 'fragment-not-in-method'
   | 'cannot-extract-all-fragments'
   | 'empty-method-name'
+  | 'invalid-method-name'
   | 'duplicate-method-name'
   | 'non-contiguous-fragments';
 
@@ -43,6 +45,7 @@ function validate(codebase: Codebase, request: ExtractMethodRequest): Result<Met
   if (!isContiguous(source, request.fragmentIds)) return err('non-contiguous-fragments');
   const name = request.newMethodName.trim();
   if (name === '') return err('empty-method-name');
+  if (!isValidIdentifier(name)) return err('invalid-method-name');
   if (owner.methods.some((method) => method.name === name)) return err('duplicate-method-name');
   return ok(source);
 }

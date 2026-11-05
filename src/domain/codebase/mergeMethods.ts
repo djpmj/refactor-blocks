@@ -8,6 +8,7 @@ import {
   type Fragment,
   type Method,
 } from './Codebase';
+import { isValidIdentifier } from './naming';
 import { err, ok, type Result } from '../shared/Result';
 
 export type MergeMethodsRequest = {
@@ -24,6 +25,7 @@ export type MergeMethodsError =
   | 'not-mergeable-visibility'
   | 'shape-mismatch'
   | 'empty-method-name'
+  | 'invalid-method-name'
   | 'duplicate-method-name';
 
 export type MergeCandidate = {
@@ -89,6 +91,7 @@ function validate(codebase: Codebase, request: MergeMethodsRequest): Result<Vali
   if (!sameShape(codebase, methodA, methodB)) return err('shape-mismatch');
   const name = request.newMethodName.trim();
   if (name === '') return err('empty-method-name');
+  if (!isValidIdentifier(name)) return err('invalid-method-name');
   if (ownerA.methods.some((method) => method.id !== methodA.id && method.name === name)) return err('duplicate-method-name');
   return ok({ methodA, ownerA, methodB, ownerB });
 }

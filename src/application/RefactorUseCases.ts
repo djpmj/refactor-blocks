@@ -275,12 +275,14 @@ export function deleteMethodUseCase(codebase: Codebase, methodId: string): Resul
 const RENAME_CLASS_ERROR_MESSAGES: Record<RenameClassError, string> = {
   'class-not-found': '名前を変えるクラスが見つかりません',
   'empty-class-name': 'クラス名を入力してください',
+  'invalid-class-name': 'クラス名には英字・数字・_ だけを使い、数字から始めないでください',
   'duplicate-class-name': '同じ名前のクラスがすでにあります',
 };
 
 const RENAME_METHOD_ERROR_MESSAGES: Record<RenameMethodError, string> = {
   'method-not-found': '名前を変えるメソッドが見つかりません',
   'empty-method-name': 'メソッド名を入力してください',
+  'invalid-method-name': 'メソッド名には英字・数字・_ だけを使い、数字から始めないでください',
   'duplicate-method-name': '同じクラスに同じ名前のメソッドがあります',
 };
 
@@ -290,6 +292,7 @@ const EXTRACT_ERROR_MESSAGES: Record<ExtractMethodError, string> = {
   'fragment-not-in-method': '選んだ処理がこのメソッドに含まれていません',
   'cannot-extract-all-fragments': 'すべての処理を抽出すると元のメソッドが空になります',
   'empty-method-name': '新しいメソッド名を入力してください',
+  'invalid-method-name': 'メソッド名には英字・数字・_ だけを使い、数字から始めないでください',
   'duplicate-method-name': '同じクラスに同じ名前のメソッドがあります',
   'non-contiguous-fragments': '離れた処理をまとめると実行順が変わります。間の処理も選んでください',
 };
@@ -301,6 +304,7 @@ const MERGE_ERROR_MESSAGES: Record<MergeMethodsError, string> = {
   'not-mergeable-visibility': '可視性の条件が合わないため統合できません',
   'shape-mismatch': '処理の形が一致しないため統合できません',
   'empty-method-name': '統合後のメソッド名を入力してください',
+  'invalid-method-name': '統合後のメソッド名には英字・数字・_ だけを使い、数字から始めないでください',
   'duplicate-method-name': '統合先のクラスに同じ名前のメソッドがあります',
 };
 
@@ -319,6 +323,7 @@ const INLINE_ERROR_MESSAGES: Record<InlineMethodError, string> = {
 const ADD_CLASS_ERROR_MESSAGES: Record<AddClassError, string> = {
   'file-not-found': '追加先のファイルが見つかりません',
   'empty-class-name': 'クラス名を入力してください',
+  'invalid-class-name': 'クラス名には英字・数字・_ だけを使い、数字から始めないでください',
   'duplicate-class-name': '同じ名前のクラスがすでにあります',
 };
 
