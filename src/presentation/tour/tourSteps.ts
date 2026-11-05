@@ -11,6 +11,8 @@ export type TourStep = {
   readonly target: string;
   readonly text: string;
   readonly advance: TourAdvance;
+  /** 指示文が読ませている、吹き出しで覆いたくない要素のセレクタ(target 以外) */
+  readonly avoid?: readonly string[];
 };
 
 export const TOUR_STAGE_ID = 'tutorial-extract-method';
@@ -18,7 +20,7 @@ export const TOUR_STAGE_ID = 'tutorial-extract-method';
 export const TOUR_STEPS: readonly TourStep[] = [
   { target: '#stage-sidebar', text: 'ここに課題が出ます。まず課題の内容とクリア条件を確認しよう。', advance: { kind: 'next' } },
   { target: '[data-tour="manual-fix-start"]', text: '組み替える前に、まずこのコードのまま変更を入れてみよう。「実際に直してみる」を押そう。', advance: { kind: 'manual-fix-started' } },
-  { target: '.app__body', text: 'メソッドをクリックすると中身が右に出ます。直す必要があるメソッドの右のチェックボックスで「直した」印を付け、左の「リリースする」を押そう。結果を読んだら「組み替えを始める」へ。', advance: { kind: 'manual-fix-released' } },
+  { target: '.app__body', text: 'メソッドをクリックすると中身が右に出ます。直す必要があるメソッドの右のチェックボックスで「直した」印を付け、左の「リリースする」を押そう。結果を読んだら「組み替えを始める」へ。', advance: { kind: 'manual-fix-released' }, avoid: ['#stage-sidebar'] },
   { target: '[data-testid="method-printMonthlyReport"]', text: '長すぎるメソッド printMonthlyReport() をクリックしてみよう。', advance: { kind: 'select-method', methodName: 'printMonthlyReport' } },
   { target: '[data-tour="extract-area"]', text: '処理がまとまりごとに並んでいます。左の英字と名前は責務(その処理が受け持つ仕事)の印で、同じ英字は同じ仕事です。A の処理を全部選んで「選んだ処理をメソッドとして抽出」を押そう。', advance: { kind: 'extract' } },
   { target: '.score-badge', text: '抽出の結果、点数とクリア条件がどう変わったか確かめよう。', advance: { kind: 'next' } },
@@ -29,12 +31,12 @@ export type ModeIntroKind = 'quiz' | 'blank';
 export const MODE_INTRO_STEPS: Readonly<Record<ModeIntroKind, readonly TourStep[]>> = {
   quiz: [
     { target: '.quiz__question', text: '設計くらべでは、同じ機能を持つ2つの設計A・Bを見比べます。まず「依頼」(これから入れる変更)と行数の上限を読もう。', advance: { kind: 'next' } },
-    { target: '.quiz__designs', text: '左右の図が設計Aと設計Bです。依頼を入れるとき、触るクラスが少なく、行数の上限も超えにくいのはどちらかを比べよう。', advance: { kind: 'next' } },
+    { target: '.quiz__designs', text: '左右の図が設計Aと設計Bです。依頼を入れるとき、触るクラスが少なく、行数の上限も超えにくいのはどちらかを比べよう。', advance: { kind: 'next' }, avoid: ['.quiz__question'] },
     { target: '.quiz__actions', text: '楽だと思う方のボタンを押すと、正解と、それぞれの設計に依頼を入れた結果(点数・触るクラス数)が出ます。', advance: { kind: 'next' } },
   ],
   // 隠れたリファクタリング画面の同じ要素を拾わないよう、白紙設計の画面の中に絞る
   blank: [
-    { target: '[data-testid="blank-view"] .stage-panel__heading', text: '白紙設計では、要求文を読んで、クラスの分け方を一から組みます。まず要求文と目標を読もう。', advance: { kind: 'next' } },
+    { target: '[data-testid="blank-view"] .stage-panel__heading', text: '白紙設計では、要求文を読んで、クラスの分け方を一から組みます。まず要求文と目標を読もう。', advance: { kind: 'next' }, avoid: ['[data-testid="blank-view"] .stage-panel'] },
     { target: '[data-testid="blank-view"] .app__canvas', text: '部品置き場にメソッドの部品が並んでいます。部品をキャンバスの空いている所へドラッグすると新しいクラスができ、クラスへ落とすとそのクラスに入ります。クラス名は自動で付きます。', advance: { kind: 'next' } },
     { target: '[data-testid="blank-view"] [data-testid="blank-review"]', text: '部品を全部置き終えると「答え合わせ」が押せます。自分の設計と模範解答の点数、変更依頼を入れたときの違いが出ます。', advance: { kind: 'next' } },
   ],
