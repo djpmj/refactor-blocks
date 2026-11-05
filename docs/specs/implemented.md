@@ -200,3 +200,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [feedback-snapshot-staleness](feedback-snapshot-staleness.md) | 講評がいつの時点のものかを表示し、コードを変えて古くなったら明示して「もう一度もらう」を出す |
 | [react-flow-zero-size-warning](react-flow-zero-size-warning.md) | React Flow の外枠が0pxになる警告(error#004)を出さないようにする |
 | [identifier-name-validation](identifier-name-validation.md) | クラス名・メソッド名をASCII識別子に限り、不正な名前での追加・改名・抽出・統合を止める |
+| [keyboard-open-method-editor](keyboard-open-method-editor.md) | キーボードドラッグの開始キーを Space のみにし、Enter でメソッドの中身(抽出エディタ)を開けるようにする |

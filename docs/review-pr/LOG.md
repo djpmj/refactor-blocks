@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-11-05 14:15 UTC PR #451 キーボードだけでメソッドを開いて抽出できるようにする (#424)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(2773 passed) / npm run lint ✅ / npm run typecheck ✅。KeyboardSensor の開始キーを Space のみにする修正をIssue #424 の原因と照合。E2Eはレビュー環境で実行できず(Chromium未導入)、PR記載の実測結果を確認
+- マージ: squash & delete-branch
+
 ## 2026-11-05 14:10 UTC PR #450 クラス名とメソッド名の識別子検証を統一する (#425)
 
 - 判定: 合格(blocker無し)
