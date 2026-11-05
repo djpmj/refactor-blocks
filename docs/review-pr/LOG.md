@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-11-05 14:10 UTC PR #450 クラス名とメソッド名の識別子検証を統一する (#425)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(2802 passed) / npm run lint ✅ / npm run typecheck ✅。E2Eはレビュー環境で実行できず、PR記載の実測結果を確認
+- マージ: squash & delete-branch
+
 ## 2026-11-05 12:40 UTC PR #448 React Flow の外枠が0pxになる警告(error#004)を止める (#422)
 
 - 判定: 合格(blocker無し)
