@@ -1,4 +1,5 @@
 import { useGameStore } from '../store/useGameStore';
+import { describeCritiqueTiming } from './describeCritiqueTiming';
 
 /** AIの講評をもらうボタン(ヘッダー用)。 */
 export function CritiqueButton({ disabled }: Readonly<{ disabled: boolean }>) {
@@ -8,6 +9,26 @@ export function CritiqueButton({ disabled }: Readonly<{ disabled: boolean }>) {
     <button type="button" onClick={requestCritique} disabled={disabled || loading}>
       {loading ? 'AIが講評中…' : 'AIの講評をもらう'}
     </button>
+  );
+}
+
+/** 講評がいつの時点のものかの1行。古くなったら、消さずに「もう一度もらう」ボタンを添える。 */
+function CritiqueTiming() {
+  const critique = useGameStore((state) => state.critique);
+  const current = useGameStore((state) => state.changeSession?.base ?? state.codebase);
+  const investigating = useGameStore((state) => state.changeSession !== null);
+  const requestCritique = useGameStore((state) => state.requestCritique);
+  if (critique.snapshot === null || (critique.text === null && critique.fallback === null)) return null;
+  const { stale, text } = describeCritiqueTiming(critique.snapshot, current);
+  return (
+    <p className={stale ? 'critique-panel__timing critique-panel__timing--stale' : 'critique-panel__timing'} data-testid="critique-timing" role="status">
+      {text}
+      {stale && (
+        <button type="button" onClick={requestCritique} disabled={investigating || critique.loading}>
+          もう一度もらう
+        </button>
+      )}
+    </p>
   );
 }
 
@@ -22,6 +43,7 @@ export function CritiqueResult() {
           {critique.error}
         </p>
       )}
+      <CritiqueTiming />
       {critique.text !== null && (
         <details className="critique-panel__details" open>
           <summary>講評</summary>
