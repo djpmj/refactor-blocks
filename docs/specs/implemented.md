@@ -198,3 +198,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [tour-clear-screen-after-tour](tour-clear-screen-after-tour.md) | ツアー中に100点にした場合、ツアーを閉じた直後にクリア画面を出す |
 | [mixed-extract-name](mixed-extract-name.md) | 責務が混ざる抽出の自動命名を責務名の連結にし、抽出前のプレビューに混在の警告を出す |
 | [feedback-snapshot-staleness](feedback-snapshot-staleness.md) | 講評がいつの時点のものかを表示し、コードを変えて古くなったら明示して「もう一度もらう」を出す |
+| [react-flow-zero-size-warning](react-flow-zero-size-warning.md) | React Flow の外枠が0pxになる警告(error#004)を出さないようにする |

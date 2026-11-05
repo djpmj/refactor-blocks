@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-11-05 12:40 UTC PR #448 React Flow の外枠が0pxになる警告(error#004)を止める (#422)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint/typecheck/vitest 2766 passed)✅。差分(.react-flow の min-size 1px とE2E追加)をIssue #422 の原因と照合。E2Eはレビュー環境で実行できず未実施(CI待ち)
+- マージ: squash & delete-branch
+
 ## 2026-11-05 12:32 UTC PR #447 講評の取得タイミングを案内し、古い講評の再表示を防ぐ (#415)
 
 - 判定: 合格(blocker無し)
@@ -210,10 +216,4 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(2391件) / npm run lint ✅ / npm run typecheck ✅ / 仕様(blank-design-more-problems)と差分を照合(検証関数・白紙2/3・問題select・配置済み時の確認・E2E追加)。E2EはChromium未導入で実行不可(PR本文では482件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-29 10:50 UTC PR #375 単一処理の抽出にも模範解答の名前を適用する (#352)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(2381件) / npm run lint ✅ / npm run typecheck ✅ / 仕様(hint-extract-name-mismatch)と差分を照合(methodNamingOfのフィルタ撤去・suggestMethodNameの一致優先・ヒント文変更・E2E追加)。E2EはChromium未導入で実行不可(PR本文では487件成功)
 - マージ: squash & delete-branch
