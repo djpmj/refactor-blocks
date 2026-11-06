@@ -32,12 +32,19 @@ function CritiqueTiming() {
   );
 }
 
-/** AIの講評の結果(講評文・エラー)の表示。ヘッダーの下に出し、サイドバーを閉じていても見えるようにする。 */
+/** AIの講評の結果(講評文・エラー)の表示。キャンバスの右上に重ねて出す。レイアウトを押し下げない。 */
 export function CritiqueResult() {
   const critique = useGameStore((state) => state.critique);
+  const dismissCritique = useGameStore((state) => state.dismissCritique);
   if (critique.error === null && critique.text === null && critique.fallback === null) return null;
   return (
-    <div className="critique-panel">
+    <div className="critique-panel" role="region" aria-label="AIの講評" data-testid="critique-panel">
+      <div className="critique-panel__header">
+        <h2 className="critique-panel__title">AIの講評</h2>
+        <button type="button" className="critique-panel__close" aria-label="講評を閉じる" onClick={dismissCritique}>
+          ×
+        </button>
+      </div>
       {critique.error !== null && (
         <p className="critique-panel__error" role="status">
           {critique.error}
