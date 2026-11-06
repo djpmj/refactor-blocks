@@ -181,6 +181,7 @@ type GameState = {
   lastChangeReport: ChangeReport | null;
   critique: CritiqueState;
   requestCritique: () => void;
+  dismissCritique: () => void;
   selectMethod: (methodId: string | null) => void;
   selectField: (fieldId: string) => void;
   focusRule: (rule: ScoreRule | null) => void;
@@ -690,8 +691,9 @@ function manualFixActions(
 }
 
 /** AI講評をもらう操作。通信は注入されたinfrastructure層の関数(fetchCritique)が行う。 */
-function critiqueActions(set: (partial: Partial<GameState>) => void, get: () => GameState): Pick<GameState, 'requestCritique'> {
+function critiqueActions(set: (partial: Partial<GameState>) => void, get: () => GameState): Pick<GameState, 'requestCritique' | 'dismissCritique'> {
   return {
+    dismissCritique: () => set({ critique: EMPTY_CRITIQUE }),
     // ponytail: 講評取得後にコードベースを編集しても、古い講評は消さない。describeCritiqueTiming で古いと出して、もう一度もらってもらう
     requestCritique: () => {
       const { codebase, stage, history } = get();

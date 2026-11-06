@@ -32,7 +32,7 @@ export const OPERATION_GUIDE: readonly GuideSection[] = [
   {
     heading: '処理を抽出する',
     items: [
-      { operation: 'メソッドをクリック', description: '右側のエディタで処理を選び、新しいメソッドとして抽出できます。' },
+      { operation: 'メソッドをクリック / Enter', description: '右側のエディタで処理を選び、新しいメソッドとして抽出できます。キーボードでは、処理のチェックボックスを Space で選び、抽出ボタンで Enter を押します。' },
     ],
   },
   {
@@ -53,6 +53,7 @@ export const OPERATION_GUIDE: readonly GuideSection[] = [
     heading: 'キーボードで操作する',
     items: [
       { operation: 'Tab / Shift+Tab', description: 'クラス・メソッド・フィールドのブロックへ順に移ります。' },
+      { operation: 'Enter', description: '選んだメソッドの中身を右側のエディタに開きます。フィールドなら説明を出します。' },
       { operation: 'Shift+F10 / メニューキー', description: '選んだブロックの右クリックメニューを開きます。メニューの中は ↑ ↓ と Enter で選び、Esc で閉じます。別のクラス・ファイルへの移動もここからできます。' },
       { operation: 'Space、矢印キー、Space', description: 'ブロックを持ち上げて動かし、置きます。Esc で取り消します。' },
       { operation: '?', description: 'このガイドを開閉します。' },

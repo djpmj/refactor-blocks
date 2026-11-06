@@ -32,6 +32,7 @@ describe('addClass', () => {
   it.each([
     ['存在しないファイル', 'missing', 'TaxRateTable', 'file-not-found'],
     ['名前が空白だけ', 'file-tax', '  ', 'empty-class-name'],
+    ['不正な名前', 'file-tax', '1Tax', 'invalid-class-name'],
     ['別のファイルに同名クラスがある', 'file-tax', 'OrderService', 'duplicate-class-name'],
   ])('%sのときはエラーになる', (_label, fileId, className, expected) => {
     // Arrange

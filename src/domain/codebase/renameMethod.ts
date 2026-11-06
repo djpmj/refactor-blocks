@@ -1,7 +1,8 @@
 import { findClassOfMethod, findMethod, mapClasses, type Codebase } from './Codebase';
 import { err, ok, type Result } from '../shared/Result';
+import { isValidIdentifier } from './naming';
 
-export type RenameMethodError = 'method-not-found' | 'empty-method-name' | 'duplicate-method-name';
+export type RenameMethodError = 'method-not-found' | 'empty-method-name' | 'invalid-method-name' | 'duplicate-method-name';
 
 /** メソッド名を付け替える。今と同じ名前なら何も変えずに成功にする。重複は同じクラスの中だけで見る。 */
 export function renameMethod(codebase: Codebase, methodId: string, newName: string): Result<Codebase, RenameMethodError> {
@@ -11,6 +12,7 @@ export function renameMethod(codebase: Codebase, methodId: string, newName: stri
   const name = newName.trim();
   if (name === target.name) return ok(codebase);
   if (name === '') return err('empty-method-name');
+  if (!isValidIdentifier(name)) return err('invalid-method-name');
   if (owner.methods.some((method) => method.id !== methodId && method.name === name)) return err('duplicate-method-name');
   return ok(
     mapClasses(codebase, (codeClass) =>

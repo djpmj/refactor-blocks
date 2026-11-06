@@ -28,6 +28,18 @@ describe('renameMethod', () => {
     expect(codebase).toEqual(sampleCodebase());
   });
 
+  it('不正な名前は拒否して元のコードベースを保持する', () => {
+    // Arrange
+    const codebase = sampleCodebase();
+
+    // Act
+    const result = renameMethod(codebase, 'method-place', '1bad name');
+
+    // Assert
+    expect(result).toEqual({ ok: false, error: 'invalid-method-name' });
+    expect(codebase).toEqual(sampleCodebase());
+  });
+
   it('同じ名前への変更は、エラーにせず元のままにする', () => {
     // Arrange
     const codebase = sampleCodebase();

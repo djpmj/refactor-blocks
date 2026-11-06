@@ -38,6 +38,30 @@
 
 ## ログ一覧
 
+## 2026-11-06 23:40 UTC PR #454 講評パネルを閉じられるようにする (#416)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(2815 passed) / npm run lint ✅ / npm run typecheck ✅。差分をIssue #416 の仕様(キャンバス右上に重ねる・閉じるボタン・dismissCritique)と照合。E2Eはレビュー環境で実行できず(Chromium未導入)、PR記載の実測結果を確認。評価サイクル: 1回
+- マージ: squash & delete-branch
+
+## 2026-11-05 15:00 UTC PR #452 ツアーのポップオーバーが対象を覆わないようにする (#419)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(2814 passed) / npm run lint ✅ / npm run typecheck ✅。差分をIssue #419 の仕様(calloutPlacement・avoid・実測サイズ)と照合。E2Eはレビュー環境で実行できず(Chromium未導入)、CIのe2e全件passを確認
+- マージ: squash & delete-branch
+
+## 2026-11-05 14:15 UTC PR #451 キーボードだけでメソッドを開いて抽出できるようにする (#424)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(2773 passed) / npm run lint ✅ / npm run typecheck ✅。KeyboardSensor の開始キーを Space のみにする修正をIssue #424 の原因と照合。E2Eはレビュー環境で実行できず(Chromium未導入)、PR記載の実測結果を確認
+- マージ: squash & delete-branch
+
+## 2026-11-05 14:10 UTC PR #450 クラス名とメソッド名の識別子検証を統一する (#425)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(2802 passed) / npm run lint ✅ / npm run typecheck ✅。E2Eはレビュー環境で実行できず、PR記載の実測結果を確認
+- マージ: squash & delete-branch
+
 ## 2026-11-05 12:40 UTC PR #448 React Flow の外枠が0pxになる警告(error#004)を止める (#422)
 
 - 判定: 合格(blocker無し)
@@ -192,28 +216,4 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(2571件) / npm run lint ✅ / npm run typecheck ✅ / 差分をdocs/specs/refactor-code-diff-view.mdと照合(domain純粋関数・Fragment.id対応づけ・application無変更)。E2Eはこの環境にPlaywrightブラウザが無く未実行(PR本文の実測を参照)
-- マージ: squash & delete-branch
-
-## 2026-10-30 10:30 UTC PR #379 短い練習問題(マイクロドリル)をステージ一覧に追加する (#353)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(2562件) / npm run lint ✅ / npm run typecheck ✅ / docs/specs/micro-drills.md の変更対象一覧と差分を照合(application層無変更・checks/changeRequests 0件の守り・stageReportのドリル除外)。E2E(micro-drills/roadmap)はこの環境で実行許可が無く未実行(PR本文では既存specの1件のみ失敗、単独では通過と記載)
-- マージ: squash & delete-branch
-
-## 2026-10-29 15:10 UTC PR #378 抽出時のクラス上限案内と操作結果を追加 (#351)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(2428件) / npm run lint ✅ / npm run typecheck ✅ / Issue #351の設計判断と差分を照合(新しく超えるときだけ・クラス優先・nextStepはoperationResultがnullなら足さない・domain無変更)。E2E(extract-class-limit-heads-up)はこの環境で実行許可が無く未実行(PR本文では成功と記載)
-- マージ: squash & delete-branch
-
-## 2026-10-29 11:15 UTC PR #377 設計くらべの成績を保存し、ステージ一覧に表示する (#349)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(lint・typecheck・Vitest 2426件)✅ / 仕様(comparison-quiz-score-record)と差分を照合(quizRecord・入力検証つき保存・roadmap-quiz表示・E2E追加)。E2EはChromium未導入で実行不可(PR本文では496件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-29 11:10 UTC PR #376 白紙設計の問題を増やし、問題を選べるようにする (#345)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(2391件) / npm run lint ✅ / npm run typecheck ✅ / 仕様(blank-design-more-problems)と差分を照合(検証関数・白紙2/3・問題select・配置済み時の確認・E2E追加)。E2EはChromium未導入で実行不可(PR本文では482件成功)
 - マージ: squash & delete-branch

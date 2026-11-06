@@ -1699,3 +1699,17 @@ describe('AI講評の非同期応答', () => {
     expect(store.getState().critique.loading).toBe(false);
   });
 });
+
+describe('dismissCritique', () => {
+  it('講評の表示状態が空に戻る', () => {
+    // Arrange
+    const store = createGameStore([stages[0]], false, false);
+    store.setState({ critique: { text: null, loading: false, error: 'エラー文', fallback: '簡易講評', snapshot: null } });
+
+    // Act
+    store.getState().dismissCritique();
+
+    // Assert
+    expect(store.getState().critique).toEqual({ text: null, loading: false, error: null, fallback: null, snapshot: null });
+  });
+});

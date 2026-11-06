@@ -154,3 +154,37 @@ test('AI講評も古いと出て、元に戻して取得時と同じコードに
   await expect(timing).toContainText('点・0手の時点の講評です');
   await expect(page.getByRole('button', { name: 'もう一度もらう' })).toHaveCount(0);
 });
+
+test('講評を出してもキャンバスの高さは変わらず、閉じるボタンで消せる', async ({ page }) => {
+  // Arrange
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.route(CRITIQUE_ENDPOINT, async (route) => {
+    await route.fulfill({ status: 500, json: { error: 'critique-failed' } });
+  });
+  await page.goto('/');
+  const canvas = page.locator('.app__canvas').first();
+  const before = await canvas.boundingBox();
+
+  // Act
+  await page.getByRole('button', { name: 'AIの講評をもらう' }).click();
+  await expect(page.getByTestId('critique-fallback-text')).toBeVisible();
+
+  // Assert
+  const during = await canvas.boundingBox();
+  expect(Math.abs((during?.height ?? 0) - (before?.height ?? 0))).toBeLessThanOrEqual(1);
+  expect(Math.abs((during?.y ?? 0) - (before?.y ?? 0))).toBeLessThanOrEqual(1);
+
+  // Act
+  await page.getByRole('button', { name: '講評を閉じる' }).click();
+
+  // Assert
+  await expect(page.getByTestId('critique-panel')).toHaveCount(0);
+  const after = await canvas.boundingBox();
+  expect(Math.abs((after?.height ?? 0) - (before?.height ?? 0))).toBeLessThanOrEqual(1);
+
+  // Act
+  await page.getByRole('button', { name: 'AIの講評をもらう' }).click();
+
+  // Assert
+  await expect(page.getByTestId('critique-panel')).toBeVisible();
+});

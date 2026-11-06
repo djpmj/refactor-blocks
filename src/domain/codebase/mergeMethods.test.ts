@@ -102,6 +102,17 @@ const withVariables = (item: Method): Method => ({ ...item, parameters: [{ type:
 const withVariablesOnA = (codebase: Codebase): Codebase => mapClasses(codebase, (owner) => ({ ...owner, methods: owner.methods.map((item) => (item.id === 'method-a' ? withVariables(item) : item)) }));
 
 describe('mergeMethods', () => {
+  it('統合後の不正な名前を拒否する', () => {
+    // Arrange
+    const codebase = fixture();
+
+    // Act
+    const result = mergeMethods(codebase, request({ newMethodName: 'bad name' }));
+
+    // Assert
+    expect(result).toEqual({ ok: false, error: 'invalid-method-name' });
+    expect(codebase).toEqual(fixture());
+  });
   it('別クラスにある形の一致した2つのprivateメソッドを統合すると、Aの位置に新メソッドが入りBからは消える', () => {
     // Arrange
     const codebase = fixture();

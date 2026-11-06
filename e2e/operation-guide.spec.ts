@@ -26,7 +26,8 @@ test('操作ガイドはボタンと ? キーで開閉し、Esc・閉じるボ�
   await expect(dialog.getByText('抽出したメソッドや横流しするだけのメソッドの中身を、呼び出し元へ書き戻して消します(Inline Method)。')).toBeVisible();
   await expect(dialog.getByText('public / protected / private を選べます。可視性を扱うステージでだけ表示されます。')).toBeVisible();
   const keyboardSection = dialog.locator('.operation-guide__section').filter({ has: page.getByRole('heading', { name: 'キーボードで操作する' }) });
-  await expect(keyboardSection.locator('kbd')).toHaveCount(6);
+  await expect(keyboardSection.locator('kbd')).toHaveCount(7);
+  await expect(keyboardSection.getByText('Enter', { exact: true })).toBeVisible();
 
   await page.keyboard.press('Escape');
   await expect(dialog).not.toBeVisible();
@@ -58,19 +59,46 @@ test('キーボード操作で右クリックメニューを開ける', async ({
   await expect(page.getByTestId('context-menu')).toHaveCount(0);
 });
 
-test('メソッドで Enter を押すとエディタは開かず、Space と同じくキーボードドラッグが始まる', async ({ page }) => {
+test('メソッドで Enter を押すとエディタに中身が開き、ドラッグは始まらない', async ({ page }) => {
   await page.goto('/');
   await completeOpeningFix(page);
   const method = page.getByTestId('method-printMonthlyReport');
   await method.focus();
   await page.keyboard.press('Enter');
-  await expect(page.locator('.class-node--can-drop, .class-node--cannot-drop').first()).toBeVisible();
-  await expect(page.locator('.method-editor')).not.toContainText('printMonthlyReport');
-  await expect(page.locator('.drag-overlay')).toBeVisible();
-  // dnd-kit の KeyboardSensor は開始の次のタイマーで keydown の待ち受けを付けるので、その後に Esc を押す
-  await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 0)));
-  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('method-editor-empty')).toHaveCount(0);
+  await expect(page.locator('.method-editor')).toContainText('printMonthlyReport');
+  await expect(page.locator('.drag-overlay')).toHaveCount(0);
   await expect(page.locator('.class-node--can-drop, .class-node--cannot-drop')).toHaveCount(0);
+});
+
+test('キーボードだけでメソッドを開いて Extract Method まで完了できる', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await completeOpeningFix(page);
+  const method = page.getByTestId('method-printMonthlyReport');
+  const before = await method.locator('.method-chip__lines').textContent();
+  const classNode = method.locator('xpath=ancestor::*[contains(@class, "class-node")][1]');
+  const methodsBefore = await classNode.locator('[data-testid^="method-"]').count();
+  await method.focus();
+
+  // Act
+  await page.keyboard.press('Enter');
+  const firstFragment = page.locator('.method-editor .fragment-list input[type="checkbox"]').first();
+  for (let i = 0; i < 30 && await firstFragment.locator(':scope:focus').count() === 0; i += 1) {
+    await page.keyboard.press('Tab');
+  }
+  await expect(firstFragment).toBeFocused();
+  await page.keyboard.press('Space');
+  const extract = page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' });
+  for (let i = 0; i < 30 && await extract.locator(':scope:focus').count() === 0; i += 1) {
+    await page.keyboard.press('Tab');
+  }
+  await expect(extract).toBeFocused();
+  await page.keyboard.press('Enter');
+
+  // Assert
+  await expect(classNode.locator('[data-testid^="method-"]')).toHaveCount(methodsBefore + 1);
+  await expect(method.locator('.method-chip__lines')).not.toHaveText(before ?? '');
 });
 
 test('? は編集入力中は文字として入力でき、編集外でガイドを開く', async ({ page }) => {
@@ -85,6 +113,7 @@ test('? は編集入力中は文字として入力でき、編集外でガイド
   await expect(dialog).not.toBeVisible();
   await expect(methodInput).toHaveValue('?');
 
+  await methodInput.press('Escape');
   await page.getByTestId('roadmap-open').focus();
   await page.keyboard.press('Shift+/');
   await expect(dialog).toBeVisible();
