@@ -449,7 +449,18 @@ input.class-node__name { width: 14ch; }
 .fragment-list__label { flex: 1; }
 .fragment-list__lines { color: var(--muted); font-size: 12px; }
 
-.critique-panel { padding: 8px 16px; background: var(--surface); border-bottom: 1px solid var(--border); font-size: 13px; }
+.critique-panel {
+  position: absolute; z-index: 5; top: 48px; right: 12px;
+  display: flex; flex-direction: column;
+  width: min(420px, calc(100% - 24px)); max-height: 45%;
+  padding: 8px 12px; border-left: 5px solid var(--accent); border-radius: 8px;
+  background: var(--surface); box-shadow: 0 3px 14px rgb(0 0 0 / 20%); color: var(--text);
+  font-size: 13px; overflow-y: auto; overscroll-behavior: contain;
+}
+.critique-panel__header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.critique-panel__title { margin: 0; font-size: 14px; }
+.critique-panel__close { flex: none; padding: 0 4px; border: 0; background: transparent; color: var(--text); font-size: 20px; line-height: 1; cursor: pointer; }
+.critique-panel__close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .critique-panel__details { margin: 0; }
 .critique-panel__details summary { cursor: pointer; color: var(--text); font-weight: 600; }
 .critique-panel__text { margin: 6px 0 0; line-height: 1.6; white-space: pre-wrap; }
