@@ -156,6 +156,14 @@ describe("dependenciesWithoutTray", () => {
 });
 
 describe("dependencyEdges", () => {
+  it("依存の矢印はクリックを受け取らない", () => {
+    // Arrange
+    const codebase = codebaseOf([["a", "A", ["method-B"]], ["b", "B", []]]);
+    // Act
+    const [edge] = dependencyEdges(codebase);
+    // Assert
+    expect(edge.selectable).toBe(false);
+  });
   it("visibility違反のある依存だけを警告辺にし、通常辺にはアニメーションを付けない", () => {
     // Arrange
     const codebase = codebaseOf([["a", "A", ["method-B"]], ["b", "B", []]]);
@@ -352,6 +360,17 @@ describe("dependencyEdges", () => {
 });
 
 describe("inheritanceEdges", () => {
+  it("継承の矢印はクリックを受け取らない", () => {
+    // Arrange
+    const codebase: Codebase = { files: [
+      { id: "file-a", path: "a", classes: [{ id: "class-A", name: "A", methods: [], superclassId: "class-B" }] },
+      { id: "file-b", path: "b", classes: [{ id: "class-B", name: "B", methods: [] }] },
+    ] };
+    // Act
+    const [edge] = inheritanceEdges(codebase);
+    // Assert
+    expect(edge.selectable).toBe(false);
+  });
   it("親IDがsuperclassIdと一致すればextendsを優先し、それ以外のinterfaceIdsならimplementsと判定する", () => {
     // Arrange
     const codeClass = { id: "class-C", name: "C", methods: [], superclassId: "class-parent", interfaceIds: ["class-parent", "class-contract"] };
