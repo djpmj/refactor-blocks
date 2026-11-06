@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
-import { clampSidebarWidth, widthAfterDrag } from './clampSidebarWidth';
+import { clampSidebarWidth, sidebarWidthBounds, widthAfterDrag } from './clampSidebarWidth';
 
 const KEYBOARD_STEP = 16;
 
 type DragStart = { readonly pointerId: number; readonly x: number; readonly width: number };
-type WidthBounds = Readonly<{ min: number; max: number }>;
 type SidebarWidthOptions = Readonly<{
   side: 'left' | 'right';
   defaultWidth: number;
@@ -13,24 +12,17 @@ type SidebarWidthOptions = Readonly<{
   ariaLabel?: string;
 }>;
 
-function effectiveBounds(side: 'left' | 'right', minWidth: number, maxWidth: number): WidthBounds {
-  if (side === 'right' || window.innerWidth > 700) return { min: minWidth, max: maxWidth };
-
-  const max = Math.min(maxWidth, window.innerWidth * 0.4);
-  return { min: Math.min(120, max), max };
-}
-
 export function useResizableSidebarWidth({ side, defaultWidth, minWidth, maxWidth, ariaLabel = 'サイドバーの幅を変更' }: SidebarWidthOptions) {
   const [width, setWidth] = useState(() => {
-    const bounds = effectiveBounds(side, minWidth, maxWidth);
+    const bounds = sidebarWidthBounds(side, window.innerWidth, minWidth, maxWidth);
     return clampSidebarWidth(defaultWidth, bounds.min, bounds.max);
   });
   const dragStart = useRef<DragStart | null>(null);
-  const bounds = effectiveBounds(side, minWidth, maxWidth);
+  const bounds = sidebarWidthBounds(side, window.innerWidth, minWidth, maxWidth);
 
   useEffect(() => {
     function updateWidthForViewport() {
-      const nextBounds = effectiveBounds(side, minWidth, maxWidth);
+      const nextBounds = sidebarWidthBounds(side, window.innerWidth, minWidth, maxWidth);
       setWidth((currentWidth) => clampSidebarWidth(currentWidth, nextBounds.min, nextBounds.max));
     }
 
