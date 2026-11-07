@@ -4,6 +4,23 @@ import { selectStage } from './selectStage.js';
 const STAGE_2 = 'チュートリアル2: 太った placeOrder';
 const COUPLING_STAGE = '中級3: 越境する private メソッド';
 
+test('用語の例文のコード片はバッククォートなしで等幅表示する', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await selectStage(page, COUPLING_STAGE);
+  await page.getByRole('button', { name: 'サイドバーを開く' }).click();
+  const term = page.locator('.clear-conditions').getByTestId('glossary-term-coupling');
+  const popover = page.locator('.clear-conditions').getByTestId('glossary-popover-coupling');
+
+  // Act
+  await term.hover();
+
+  // Assert
+  await expect(popover).toBeVisible();
+  await expect(popover).not.toContainText('`');
+  await expect(popover.locator('code')).toHaveText('OrderService');
+});
+
 test('クリア条件の用語にマウスを乗せると定義が出て、ポップオーバーの上でも消えず、外へ出すと消える', async ({ page }) => {
   // Arrange
   await page.goto('/');

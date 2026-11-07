@@ -1,11 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import { splitByTerms } from '../../domain/glossary/Glossary';
+import { splitInlineCode } from '../../presentation/glossary/splitInlineCode';
 import { stages } from '../stages/stageCatalog';
 import { glossaryTerms } from './glossaryTerms';
 
 const isBlank = (text: string): boolean => text.trim() === '';
 
 describe('glossaryTerms', () => {
+  it('definition と example のコード記法に閉じ忘れがない', () => {
+    // Arrange
+    const descriptions = glossaryTerms.flatMap((term) => [term.definition, term.example]);
+    // Act / Assert
+    for (const description of descriptions) {
+      const textSegments = splitInlineCode(description).filter((segment) => segment.kind === 'text');
+      expect(textSegments.every((segment) => !segment.text.includes('`')), description).toBe(true);
+    }
+  });
   it('id が重複しない', () => {
     // Arrange
     const ids = glossaryTerms.map((term) => term.id);

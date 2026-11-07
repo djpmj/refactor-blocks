@@ -1,7 +1,16 @@
 import { useId, useRef, useState } from 'react';
 import { splitByTerms, type GlossaryTerm, type TextSegment } from '../../domain/glossary/Glossary';
 import { glossaryTerms } from '../../infrastructure/glossary/glossaryTerms';
+import { splitInlineCode } from './splitInlineCode';
 import { usePopoverDismiss } from '../stage/usePopoverDismiss';
+
+function InlineCodeText({ text }: Readonly<{ text: string }>) {
+  return <>{splitInlineCode(text).map((segment, index) => (
+    segment.kind === 'code'
+      ? <code key={`${String(index)}-${segment.text}`}>{segment.text}</code>
+      : <span key={`${String(index)}-${segment.text}`}>{segment.text}</span>
+  ))}</>;
+}
 
 type TermButtonProps = {
   readonly term: GlossaryTerm;
@@ -45,8 +54,8 @@ function GlossaryTermButton({ term, text }: TermButtonProps) {
       </button>
       <span id={popoverId} className="glossary-term__popover" data-testid={`glossary-popover-${term.id}`} hidden={!open} aria-hidden="true">
         <strong>{term.name}</strong>
-        <span>{term.definition}</span>
-        <span>例: {term.example}</span>
+        <span><InlineCodeText text={term.definition} /></span>
+        <span>例: <InlineCodeText text={term.example} /></span>
       </span>
     </span>
   );
