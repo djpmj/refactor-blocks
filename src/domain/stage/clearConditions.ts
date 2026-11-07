@@ -38,10 +38,21 @@ export function clearConditions(
 ): ClearCondition[] {
   const initialCounts = new Map(initial.deductions.map(({ rule, count }) => [rule, count]));
   return current.deductions
-    .filter(({ rule, count }) => ALWAYS_SHOWN_RULES.includes(rule) || count > 0 || (initialCounts.get(rule) ?? 0) > 0)
+    .filter(({ rule }) => ALWAYS_SHOWN_RULES.includes(rule) || (initialCounts.get(rule) ?? 0) > 0)
     .flatMap(({ rule, count }): ClearCondition[] => rule === 'line-limit'
       ? LINE_KINDS.map((lineKind) => ({ rule, lineKind, count: lineViolations.filter((item) => item.kind === lineKind).length }))
       : [{ rule, count }]);
+}
+
+/**
+ * 初期は違反0件で、今は違反があるルール(操作で生じた問題)。clearConditions とは重ならない。採点順。
+ * `ALWAYS_SHOWN_RULES` のルールは常に clearConditions 側にあるので含めない(line-limit の lineKind 分割も不要)。
+ */
+export function arisenProblems(initial: Score, current: Score): ClearCondition[] {
+  const initialRules = new Set(initial.deductions.filter(({ count }) => count > 0).map(({ rule }) => rule));
+  return current.deductions
+    .filter(({ rule, count }) => count > 0 && !ALWAYS_SHOWN_RULES.includes(rule) && !initialRules.has(rule))
+    .map(({ rule, count }) => ({ rule, count }));
 }
 
 function maximum(values: readonly number[]): number | undefined {

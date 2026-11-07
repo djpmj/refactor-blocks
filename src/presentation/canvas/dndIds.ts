@@ -1,4 +1,5 @@
 import type { UniqueIdentifier } from '@dnd-kit/core';
+import { TRAY_FILE_ID } from '../../domain/blank/tray';
 
 const METHOD_PREFIX = 'method:';
 const CLASS_PREFIX = 'class:';
@@ -49,4 +50,9 @@ export function parseFileDropId(id: UniqueIdentifier): string | null {
 
 export function parseFieldDragId(id: UniqueIdentifier): string | null {
   return stripPrefix(id, FIELD_PREFIX);
+}
+
+/** 余白への落下として扱うドロップか。ドロップ先が無い、または部品置き場のファイルへの直接のドロップ(置き場の中にクラスができると配置済みに数えられない)。 */
+export function isEmptyAreaDrop(overId: UniqueIdentifier | null): boolean {
+  return overId === null || parseFileDropId(overId) === TRAY_FILE_ID;
 }

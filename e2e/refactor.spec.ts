@@ -1061,7 +1061,7 @@ test('クラスを右クリックして実装するインターフェースを�
   await expect(edge).toHaveClass(/edge--implements/);
   await expect(edge.locator('.react-flow__edge-path')).toHaveAttribute('marker-end', "url('#implements-arrow')");
   await expect(edge.locator('.react-flow__edge-path')).toHaveCSS('stroke-dasharray', '6px, 4px');
-  await expect(page.getByTestId('class-StripeGateway').locator('.class-node__relation--implements')).toHaveCSS('color', 'rgb(217, 115, 13)');
+  await expect(page.getByTestId('class-StripeGateway').locator('.class-node__relation--implements')).toHaveCSS('color', 'rgb(180, 83, 9)');
   // チェック式サブメニューは選んでも閉じない(Esc・外側クリックで閉じる)
   await expect(menu).toHaveCount(1);
   await expect(menu.getByRole('menuitemcheckbox', { name: 'PaymentGateway' })).toHaveAttribute('aria-checked', 'true');
@@ -1162,7 +1162,7 @@ test('上級3で3クラスがDiscountStrategyを実装すると、終点が分�
   expect(new Set(endpoints).size).toBe(3);
   const markerPath = page.locator('#implements-arrow path');
   await expect(markerPath).toHaveCSS('fill', 'rgb(255, 255, 255)');
-  await expect(markerPath).toHaveCSS('stroke', 'rgb(217, 115, 13)');
+  await expect(markerPath).toHaveCSS('stroke', 'rgb(180, 83, 9)');
   await page.emulateMedia({ colorScheme: 'dark' });
   await expect(markerPath).toHaveCSS('fill', 'rgb(31, 34, 44)');
   await expect(markerPath).toHaveCSS('stroke', 'rgb(240, 160, 80)');
