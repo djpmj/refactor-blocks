@@ -23,6 +23,7 @@ import { CanvasContextMenu } from './CanvasContextMenu';
 import { ClassNode } from './ClassNode';
 import { createAnnouncements, SCREEN_READER_INSTRUCTIONS } from './dndAnnouncements';
 import { parseClassDragId, parseClassDropId, parseFieldDragId, parseFileDropId, parseMethodDragId } from './dndIds';
+import { TRAY_FILE_ID } from '../../domain/blank/tray';
 import { FieldChipView } from './FieldChip';
 import { FileNode } from './FileNode';
 import { InheritanceMarker } from './InheritanceMarker';
@@ -500,7 +501,8 @@ function useDropHandler(codebase: Codebase, onEnd: () => void, flow: ReactFlowIn
     const methodId = parseMethodDragId(event.active.id);
     const classId = parseClassDragId(event.active.id);
     const fieldId = parseFieldDragId(event.active.id);
-    if (event.over === null) {
+    // 部品置き場のファイルへの直接のドロップは余白への落下として扱う(置き場のファイルの中にクラスができると、配置済みに数えられない)
+    if (event.over === null || parseFileDropId(event.over.id) === TRAY_FILE_ID) {
       handleEmptyDrop(event, methodId, classId);
       // ponytail: フィールドを余白へ落として新しいクラスを作る操作(moveFieldToNewClass)はスコープ外。何もしない
       return;

@@ -1010,3 +1010,11 @@ input.class-node__name { width: 14ch; }
 .pattern-comparison tbody th { min-width: 80px; }
 .pattern-comparison__name { display: block; margin-bottom: 4px; }
 .pattern-comparison th button { font-size: 11px; text-align: left; }
+/* 白紙設計は700px以下でもエディタがドロワーにならないので、キャンバスの下に縦に積んで幅を残す(#449) */
+@media (max-width: 700px) {
+  .app__view--blank > .app__body { flex-direction: column; flex: none; min-height: 0; }
+  .app__view--blank > .app__body > .app__canvas { flex: none; width: 100%; height: 420px; }
+  .app__view--blank > .app__body > .sidebar-resizable { width: 100% !important; flex: none; }
+  .app__view--blank > .app__body > .sidebar-resizable > .sidebar-resizable__handle { display: none; }
+  .app__view--blank .sidebar-resizable .method-editor { border-left: 0; border-top: 1px solid var(--border); }
+}
