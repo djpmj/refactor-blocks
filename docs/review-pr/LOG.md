@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-11-07 UTC PR #460 クリア画面の100点表示を1行に収める (#437)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint・typecheck・Vitest 2833 passed)✅。差分(CSS 1行 nowrap+font-size とE2E1本)をIssue #437・仕様書と照合。E2EはレビューCIにChromiumが無く未実行、PR記載の結果を確認
+- マージ: squash & delete-branch
+
 ## 2026-11-07 UTC PR #459 エディタ見出しが長いメソッド名で溢れないようにする (#433)
 
 - 判定: 合格(blocker無し)
@@ -210,10 +216,4 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm run check(lint・typecheck・Vitest 2602件)✅。差分をIssue #354/仕様書mode-intro-guidesと照合(presentation/infrastructureのみ、SpotlightOverlayのtotal・testId化で既存ツアー維持、storageState追加)。E2Eはこの環境でブラウザ未導入のため未実行(PR本文では関係E2E 60件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-31 01:35 UTC PR #382 操作ごとの採点の推移を履歴として見られるようにする (#355)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(lint・typecheck・Vitest 2594件)✅。差分をIssue #355の設計判断と照合(operationLabelsのMap・Historyは不変・presentation層のみ)。E2Eはこの環境で実行許可が無く未実行(PR本文では関係E2E 70件成功)
 - マージ: squash & delete-branch
