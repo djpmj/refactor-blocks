@@ -206,3 +206,6 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [editor-title-overflow](editor-title-overflow.md) | メソッドエディタの見出しが長いクラス名.メソッド名でも右に切れずパネル幅で折り返す |
 | [add-class-name-input](add-class-name-input.md) | 「クラスを追加」を名前入力なしの即時操作にし、NewClass(重なれば連番)で作る |
 | [clear-screen-score-nowrap](clear-screen-score-nowrap.md) | クリア画面の100点が円の中で折り返さないよう nowrap と文字サイズで1行に収める |
+| [editor-open-canvas-refit](editor-open-canvas-refit.md) | メソッドエディタを開いて狭くなったキャンバスで、選んだクラスが見えるようパンする |
+| [blank-design-short-viewport](blank-design-short-viewport.md) | 短い画面でも白紙設計の部品を操作できるよう、画面を縦スクロール可能にしキャンバスの最小高さを確保する |
+| [glossary-example-code-format](glossary-example-code-format.md) | 用語集の定義・例文のバッククォート囲みのコード片を等幅の code 要素で表示する |

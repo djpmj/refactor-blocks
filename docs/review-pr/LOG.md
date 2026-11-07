@@ -38,6 +38,30 @@
 
 ## ログ一覧
 
+## 2026-11-07 05:00 UTC PR #463 用語集のコード片を等幅表示する (#441)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(2846 passed) / npm run lint ✅ / npm run typecheck ✅。差分をIssue #441 と照合。E2Eはレビュー環境で実行できず(Chromium未導入)、CIのe2e全件passを確認。suggestion: infrastructureのテストがpresentationのsplitInlineCodeをimportしている
+- マージ: squash & delete-branch
+
+## 2026-11-07 05:00 UTC PR #462 短い画面でも白紙設計の部品を操作できるようにする (#434)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(2836 passed) / npm run lint ✅ / npm run typecheck ✅。CSSのみの最小変更をIssue #434 と照合。E2Eはレビュー環境で実行できず(Chromium未導入)、CIのe2e全件passを確認
+- マージ: squash & delete-branch
+
+## 2026-11-07 05:00 UTC PR #457 メソッドエディタを開いて狭くなったキャンバスで、選んだクラスが見えるようパンする (#430)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(2831 passed) / npm run lint ✅ / npm run typecheck ✅。revealInViewport が既存の panToReveal を再利用していることをIssue #430 と照合。E2Eはレビュー環境で実行できず(Chromium未導入)、CIのe2e全件passを確認
+- マージ: squash & delete-branch
+
+## 2026-11-07 05:00 UTC PR #453 狭いデスクトップ幅でサイドバー幅を画面に収める (#429)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(2822 passed) / npm run lint ✅ / npm run typecheck ✅。sidebarWidthBounds の境界値テストをIssue #429 と照合。E2Eはレビュー環境で実行できず(Chromium未導入)、CIのe2e全件passを確認
+- マージ: squash & delete-branch
+
 ## 2026-11-07 UTC PR #461 クラス追加時の名前入力を廃止する (#426)
 
 - 判定: 合格(blocker無し)
@@ -194,27 +218,4 @@
 - 確認した内容: npm run check(lint・typecheck・Vitest 179ファイル/2637件)✅。差分をIssue #360・docs/specs/stage-record-reset.mdと照合(withoutStageをdomainにテスト先行で追加、storeに resetStageRecord、UIは確認付きボタン)。E2E(roadmap.spec.ts)はこの環境でブラウザ未導入のため未実行(PR本文では19件成功)
 - マージ: squash & delete-branch
 
-## 2026-11-01 03:38 UTC PR #396 score-floor-progress の E2E で、開いた減点の内訳を閉じてから右クリックする
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅。E2Eヘルパー closeBreakdown 追加のみのテスト変更。E2Eはこの環境で実行許可が無く未実行
-- マージ: squash & delete-branch
-
-## 2026-10-31 08:40 UTC PR #387 前提ステージが未クリアのとき、課題パネルに先にやるステージを案内する (#359)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(178ファイル/2626件) / npm run lint ✅ / npm run typecheck ✅。差分をIssue #359/仕様書stage-prerequisite-noteと照合(unclearedPrerequisitesをdomainにテスト先行で追加、presentationは表示のみ)。E2E(prerequisite-note.spec.ts)はこの環境でブラウザ未導入のため未実行(CIで確認)
-- マージ: squash & delete-branch
-
-## 2026-10-31 07:45 UTC PR #386 ステージを開いた直後の点数に「スタート時の点数」の注記を出す (#361)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(178ファイル/2618件) / npm run lint ✅ / npm run typecheck ✅。差分をIssue #361/仕様書start-score-untouched-labelと照合(presentation層のみ、isStartingScoreで点数同一の間だけ注記)。E2Eはこの環境でブラウザ未導入のため未実行(PR本文では全件527 passed)
-- マージ: squash & delete-branch
-
-## 2026-10-31 03:30 UTC PR #385 減点が変わらなかった組み替えに、効いていない理由を出す (#362)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(178ファイル/2613件) / npm run lint ✅ / npm run typecheck ✅。差分をIssue #362と仕様書wrong-move-reason-hintの設計判断(配置が変わった時のみ・減点0と白紙設計は除外・presentation層のみ)と照合。E2Eはこの環境でブラウザ未導入のため未実行(PR本文では関係E2E 20件通過)
-- マージ: squash & delete-branch
 
