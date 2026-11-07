@@ -3,7 +3,7 @@ import type { Codebase } from '../../domain/codebase/Codebase';
 import { scoreCodebase, type Score } from '../../domain/scoring/score';
 import { biggestProblem } from '../../domain/scoring/biggestProblem';
 import type { Stage } from '../../domain/stage/Stage';
-import { CritiqueButton, CritiqueResult } from '../critique/CritiquePanel';
+import { CritiqueButton } from '../critique/CritiquePanel';
 import { ReferenceMenu } from './ReferenceMenu';
 import { OperationGuideDialog } from '../guide/OperationGuideDialog';
 import { useGuideShortcut } from '../guide/useGuideShortcut';
@@ -431,7 +431,6 @@ function StagePanelContent({ stage, children, active }: Readonly<{ stage: Stage;
       <SpotlightTour />
       <ClearScreen />
       <StageHeader stage={stage} codebase={codebase} score={score} initialScore={initialScore} investigating={investigating} />
-      <CritiqueResult />
       <ManualFixSidebarOpener setSidebarOpen={setSidebarOpen} />
       <ChangeRequestSidebarCloser setSidebarOpen={setSidebarOpen} toggleRef={sidebarToggleRef} />
       <div className={`app__body${sidebarOpen ? ' app__body--sidebar-open' : ''}`} style={sidebarStyle}>

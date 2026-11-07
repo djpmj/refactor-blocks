@@ -11,6 +11,7 @@ import { useGameStore, useGameStoreApi } from './store/useGameStore';
 import { useUndoRedoShortcut } from './useUndoRedoShortcut';
 import { useResizableSidebarWidth } from './useResizableSidebarWidth';
 import { ManualFixMethodViewer } from './stage/ManualFixMethodViewer';
+import { CritiqueResult } from './critique/CritiquePanel';
 import { pageTitle } from './pageTitle';
 import { ModeIntroGuide } from './tour/SpotlightTour';
 
@@ -128,6 +129,7 @@ function RefactorView({ active }: Readonly<{ active: boolean }>) {
         <section className="app__canvas" aria-label="コードベース">
           <CodebaseCanvas active={active} inert={mobileDrawerActive || reviewing} />
           <div inert={mobileDrawerActive || reviewing}><ErrorToast /></div>
+          <CritiqueResult />
         </section>
         {!mobileDrawerActive && <EditorPanel rail={rail} emptyOpen={shouldRail && emptyEditorOpen} width={width} handleProps={handleProps} content={editorContent} onOpenGuide={() => setEmptyEditorOpen(true)} onCloseGuide={() => setEmptyEditorOpen(false)} />}
         <MobileEditorDrawer open={mobileDrawerActive} onClose={closeMobileEditor}>{editorContent}</MobileEditorDrawer>
