@@ -3,6 +3,7 @@ import type { Codebase } from '../../domain/codebase/Codebase';
 import { useGameStore } from '../store/useGameStore';
 import { loadModeIntroSeen, saveModeIntroSeen } from '../../infrastructure/tour/tourPreference';
 import { placeCallout, type CalloutPosition, type Rect } from './calloutPlacement';
+import { useScoreCountUp } from '../stage/useCountUp';
 import { MODE_INTRO_STEPS, nextTourStep, TOUR_STEPS, tourResultText, type ModeIntroKind, type TourStep } from './tourSteps';
 
 type Spotlight = Rect;
@@ -114,12 +115,14 @@ export function SpotlightTour() {
   const tourResult = useGameStore((state) => state.tourResult);
   const advanceTour = useGameStore((state) => state.advanceTour);
   const endTour = useGameStore((state) => state.endTour);
+  // ponytail: ツアーとリングは別々の useCountUp(別々の rAF)で数えるので、終わる瞬間が1フレームずれることがありうる。目に見える差ではないので共有の時計は作らない。ずれが問題になったら celebration に開始時刻を持たせて両方がそれを使う形に直す。
+  const countUp = useScoreCountUp(tourResult?.totalAfter ?? 0);
   const step = tourStep === null ? undefined : TOUR_STEPS[tourStep];
   const { spotlight, callout, calloutRef } = useSpotlightPosition(step, tourStep);
   useExtractAdvance(step, tourStep, codebase, advanceTour);
   useEscapeEnd(tourStep, endTour);
   if (tourStep === null || step === undefined || callout === null) return null;
-  return <SpotlightOverlay stepNumber={tourStep + 1} total={TOUR_STEPS.length} testId="first-visit-tour" label="初回ガイド" step={step} text={tourStep === TOUR_STEPS.length - 1 && tourResult !== null ? tourResultText(tourResult) : step.text} spotlight={spotlight} callout={callout} calloutRef={calloutRef} onAdvance={advanceTour} onEnd={endTour} />;
+  return <SpotlightOverlay stepNumber={tourStep + 1} total={TOUR_STEPS.length} testId="first-visit-tour" label="初回ガイド" step={step} text={tourStep === TOUR_STEPS.length - 1 && tourResult !== null && !countUp.active ? tourResultText(tourResult) : step.text} spotlight={spotlight} callout={callout} calloutRef={calloutRef} onAdvance={advanceTour} onEnd={endTour} />;
 }
 
 function SpotlightOverlay({

@@ -244,6 +244,41 @@ test('after the tour extraction, re-fixing "前年同月比も出して" has one
   await expect(page.locator('.manual-fix [role="status"]')).toContainText('1 か所すべて');
 });
 
+test('step 6 shows the result only after the score ring has counted up to 100', async ({ page }) => {
+  // Arrange
+  await clearTourSeenOnce(page);
+  await page.goto('/');
+  const tour = page.getByTestId('first-visit-tour');
+  await tour.getByRole('button', { name: '次へ' }).click();
+  await page.locator('[data-tour="manual-fix-start"]').click();
+  await page.getByRole('checkbox', { name: 'ReportService.printMonthlyReport() を直した' }).check();
+  await page.getByRole('button', { name: 'リリースする' }).click();
+  await page.getByRole('button', { name: '組み替えを始める' }).click();
+  await page.getByTestId('method-printMonthlyReport').click();
+  const fragments = page.locator('[data-tour="fragment-list"]');
+  await fragments.getByLabel('今月の売上を集計する').check();
+  await fragments.getByLabel('前月比を計算する').check();
+  await page.evaluate(`(() => {
+    const mismatches = [];
+    window.tourScoreMismatches = mismatches;
+    new MutationObserver(() => {
+      const text = document.querySelector('[data-testid="first-visit-tour"]')?.textContent ?? '';
+      const score = document.querySelector('[data-testid="score-value"]')?.textContent ?? '';
+      if (text.includes('クリア条件をすべて満たしました') && score !== '100点') mismatches.push(score);
+    }).observe(document.body, { subtree: true, childList: true, characterData: true });
+  })()`);
+
+  // Act
+  await page.locator('[data-tour="extract-button"]').click();
+
+  // Assert
+  await expect(tour).toContainText('6/6');
+  await expect(tour).toContainText('確かめよう');
+  await expect(tour).toContainText('クリア条件をすべて満たしました(100 点)');
+  await expect(page.getByTestId('score-value')).toHaveText('100点');
+  expect(await page.evaluate('window.tourScoreMismatches')).toEqual([]);
+});
+
 test('step 6 does not claim progress when B and C fragments are extracted and the score does not rise', async ({ page }) => {
   // Arrange
   await clearTourSeenOnce(page);

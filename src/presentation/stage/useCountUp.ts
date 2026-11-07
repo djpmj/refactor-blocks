@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useGameStore } from '../store/useGameStore';
 
 type AnimationValue = { readonly seq: number; readonly value: number };
 
@@ -29,4 +30,21 @@ export function useCountUp(value: number, seq: number | null, start: number, ena
   }
   const active = counting && (animation?.seq !== seq || animation.value !== value);
   return { value: current, active };
+}
+
+type ScoreCelebrationLike = { readonly seq: number; readonly scoreBefore: number; readonly scoreAfter: number } | null;
+
+/** 点数リングを数え上げるか、どこから数えるか。点数が上がった直後の celebration がそのときの点数と一致するときだけ数える。 */
+export function scoreCountUpInput(celebration: ScoreCelebrationLike, total: number): { readonly seq: number | null; readonly start: number; readonly enabled: boolean } {
+  if (celebration !== null && celebration.scoreAfter === total && celebration.scoreAfter > celebration.scoreBefore) {
+    return { seq: celebration.seq, start: celebration.scoreBefore, enabled: true };
+  }
+  return { seq: null, start: total, enabled: false };
+}
+
+/** 点数リングと同じ条件で数え上げる。ヘッダーのリングとツアーが同じ判定を使う。 */
+export function useScoreCountUp(total: number): { readonly value: number; readonly active: boolean } {
+  const celebration = useGameStore((state) => state.celebration);
+  const input = scoreCountUpInput(celebration, total);
+  return useCountUp(total, input.seq, input.start, input.enabled);
 }

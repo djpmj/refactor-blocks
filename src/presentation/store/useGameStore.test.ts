@@ -123,6 +123,23 @@ describe('クリア画面', () => {
     expect(store.getState().clearShownStages).toEqual([stage.id]);
   });
 
+  it('ツアー1のA抽出の通知は確定値の差分(+10)で、マイナスの符号を含まない', () => {
+    // Arrange
+    const stage = stages.find((candidate) => candidate.id === 'tutorial-extract-method');
+    if (stage === undefined) throw new Error('tutorial-extract-method が見つからない');
+    const store = createGameStore([stage], false, false);
+    store.setState({ tourStep: 0 });
+
+    // Act
+    store.getState().extractMethod({ sourceMethodId: 'method-print-monthly-report', fragmentIds: ['frag-aggregate-sales', 'frag-compare-last-month'], newMethodName: 'aggregateSales' });
+
+    // Assert
+    const result = store.getState().operationResult;
+    expect(result?.tone).toBe('better');
+    expect(result?.lines).toContain('「行数」の減点が1件消えました(+10)');
+    expect(result?.lines.some((line) => line.includes('(-'))).toBe(false);
+  });
+
   it('ツアー中の100点では出さず、ステージ移動では表示だけを閉じる', () => {
     // Arrange
     const first = stages.find((candidate) => candidate.id === 'tutorial-extract-method');
