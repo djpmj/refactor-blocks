@@ -178,7 +178,7 @@ export function App() {
         </div>
       ) : null}
       {blankOpened ? (
-        <div className="app__view" hidden={mode !== 'blank'} data-testid="blank-view">
+        <div className="app__view app__view--blank" hidden={mode !== 'blank'} data-testid="blank-view">
           <BlankDesignView active={mode === 'blank'} />
           <ModeIntroGuide kind="blank" active={mode === 'blank'} />
         </div>
