@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Codebase, Fragment } from "../../domain/codebase/Codebase";
 import { advancedStages } from "../../infrastructure/stages/advancedStages";
+import { TRAY_FILE_ID } from "../../domain/blank/tray";
 import { dependenciesWithoutTray, dependencyEdges, fileRectsFromNodes, handleSidesForFiles, inheritanceEdges, fileSizeOf, inheritanceKind, laneBands, layoutCodebase, spreadOffsets, type FileRect } from "./layoutCodebase";
 
 function callFragment(id: string, uses: readonly string[]): Fragment {
@@ -41,6 +42,32 @@ function fileNodeY(nodes: ReturnType<typeof layoutCodebase>, fileId: string): nu
 }
 
 describe("layoutCodebase", () => {
+  it("部品置き場を通常ファイル群の左下に置く", () => {
+    // Arrange
+    const base = codebaseOf([["a", "A", []], ["b", "B", []]]);
+    const tray = { ...codebaseOf([["tray", "部品置き場", []]]).files[0], id: TRAY_FILE_ID };
+    const codebase = { files: [...base.files, tray] };
+
+    // Act
+    const rects = fileRectsFromNodes(layoutCodebase(codebase));
+
+    // Assert
+    const placedTray = rects.get(TRAY_FILE_ID);
+    expect(placedTray?.x).toBe(0);
+    expect(placedTray?.y).toBeGreaterThan(Math.max(...[...rects].filter(([id]) => id !== TRAY_FILE_ID).map(([, rect]) => rect.y + rect.height)));
+  });
+
+  it("部品置き場だけなら原点に置く", () => {
+    // Arrange
+    const tray = { ...codebaseOf([["tray", "部品置き場", []]]).files[0], id: TRAY_FILE_ID };
+
+    // Act
+    const rects = fileRectsFromNodes(layoutCodebase({ files: [tray] }));
+
+    // Assert
+    expect(rects.get(TRAY_FILE_ID)).toMatchObject({ x: 0, y: 0 });
+  });
+
   it("依存し合わないファイルは同じ層(横一列)に並べる", () => {
     // Arrange
     const codebase = codebaseOf([
@@ -690,14 +717,18 @@ describe("層を扱うステージの段", () => {
     // Arrange
     const codebase = layeredCodebase([]);
     const withUnclassified: Codebase = { files: [...codebase.files, { id: "file-X", path: "X", classes: [] }] };
+    const tray = { ...codebaseOf([["tray", "部品置き場", []]]).files[0], id: TRAY_FILE_ID };
+    const withTray: Codebase = { files: [...codebase.files, tray] };
 
     // Act
     const names = laneBands(codebase, layers).map((band) => band.name);
     const namesWithUnclassified = laneBands(withUnclassified, layers).map((band) => band.name);
+    const namesWithTray = laneBands(withTray, layers).map((band) => band.name);
 
     // Assert
     expect(names).toEqual(["Controller", "Service", "Repository"]);
     expect(namesWithUnclassified).toEqual(["Controller", "Service", "Repository", "未分類"]);
+    expect(namesWithTray).toEqual(names);
     expect(laneBands(codebase, undefined)).toEqual([]);
   });
 
