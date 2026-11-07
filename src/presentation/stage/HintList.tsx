@@ -3,6 +3,8 @@ import { stepTargets } from '../../domain/stage/stepTargets';
 import type { SolutionStep } from '../../domain/stage/sampleAnswer';
 import type { SolutionPhase } from '../../domain/stage/solutionPhases';
 import { useGameStore } from '../store/useGameStore';
+import { ReasonButton } from '../ReasonButton';
+import { INVESTIGATING_REASON } from './disabledReasons';
 
 type Hint = { readonly text: string; readonly step: SolutionStep; readonly phaseStart?: SolutionPhase };
 
@@ -22,6 +24,8 @@ export function HintList({ hints, codebase, disabled = false, onFocus }: Readonl
       {hints.map(({ text, step, phaseStart }, index) => {
         const target = stepTargets(codebase, step);
         const hasTargets = targetsAreReady(step, target);
+        const missingTargetReason = hasTargets ? null : 'まだこの名前のブロックがありません';
+        const disabledReason = disabled ? INVESTIGATING_REASON : missingTargetReason;
         const hintKey = String(index);
         const pressed = hintTarget !== null && hintTargetKey === hintKey;
         return (
@@ -33,16 +37,14 @@ export function HintList({ hints, codebase, disabled = false, onFocus }: Readonl
               </div>
             )}
             {text}{' '}
-            <button
-              type="button"
+            <ReasonButton
               aria-label={`ヒント${index + 1}の場所をキャンバスで見る`}
               aria-pressed={pressed}
-              title={hasTargets ? undefined : 'まだこの名前のブロックがありません'}
-              disabled={disabled || !hasTargets}
+              disabledReason={disabledReason}
               onClick={() => { focusHint(pressed ? null : target, hintKey); onFocus?.(); }}
             >
               キャンバスで見る
-            </button>
+            </ReasonButton>
           </li>
         );
       })}

@@ -1,14 +1,18 @@
 import { useGameStore } from '../store/useGameStore';
 import { describeCritiqueTiming } from './describeCritiqueTiming';
+import { ReasonButton } from '../ReasonButton';
+import { INVESTIGATING_REASON } from '../stage/disabledReasons';
 
 /** AIの講評をもらうボタン(ヘッダー用)。 */
 export function CritiqueButton({ disabled }: Readonly<{ disabled: boolean }>) {
   const loading = useGameStore((state) => state.critique.loading);
   const requestCritique = useGameStore((state) => state.requestCritique);
+  const disabledReason = disabled ? INVESTIGATING_REASON : null;
+  const reason = loading && !disabled ? 'AIの講評を待っています' : disabledReason;
   return (
-    <button type="button" onClick={requestCritique} disabled={disabled || loading}>
+    <ReasonButton onClick={requestCritique} disabledReason={reason}>
       {loading ? 'AIが講評中…' : 'AIの講評をもらう'}
-    </button>
+    </ReasonButton>
   );
 }
 
@@ -20,13 +24,15 @@ function CritiqueTiming() {
   const requestCritique = useGameStore((state) => state.requestCritique);
   if (critique.snapshot === null || (critique.text === null && critique.fallback === null)) return null;
   const { stale, text } = describeCritiqueTiming(critique.snapshot, current);
+  const disabledReason = investigating ? INVESTIGATING_REASON : null;
+  const reason = critique.loading && !investigating ? 'AIの講評を待っています' : disabledReason;
   return (
     <p className={stale ? 'critique-panel__timing critique-panel__timing--stale' : 'critique-panel__timing'} data-testid="critique-timing" role="status">
       {text}
       {stale && (
-        <button type="button" onClick={requestCritique} disabled={investigating || critique.loading}>
+        <ReasonButton onClick={requestCritique} disabledReason={reason}>
           もう一度もらう
-        </button>
+        </ReasonButton>
       )}
     </p>
   );

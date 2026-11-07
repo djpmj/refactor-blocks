@@ -124,7 +124,8 @@ export async function selectStage(page: Page, title: string, options: { readonly
 export async function startChangeRequests(page: Page): Promise<void> {
   await dismissClearScreen(page);
   const button = page.getByTestId('change-request-start');
-  if (await button.isDisabled() && (await button.getAttribute('title'))?.includes('もう一度解いて')) {
+  const reason = page.locator('.reason-button', { has: button }).locator('.reason-button__reason');
+  if (await button.getAttribute('aria-disabled') === 'true' && (await reason.textContent())?.includes('もう一度解いて')) {
     await completeManualFix(page);
   }
   await button.click();

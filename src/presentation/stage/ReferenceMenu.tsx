@@ -200,17 +200,16 @@ export function ReferenceMenu({ stage, disabled, menuOpen, onMenuOpenChange, rev
 
   return (
     <div className="reference-menu" ref={menuRef} onKeyDown={(event) => moveMenuFocus(event, menuRef, buttonRef, closeMenu)}>
-      <button
+      <ReasonButton
         ref={buttonRef}
-        type="button"
         data-testid="reference-menu-button"
         aria-haspopup="menu"
         aria-expanded={menuOpen}
-        disabled={disabled}
+        disabledReason={disabled ? INVESTIGATING_REASON : null}
         onClick={() => onMenuOpenChange(!menuOpen)}
       >
         参考・答え ▾
-      </button>
+      </ReasonButton>
       {menuOpen && <ReferenceMenuItems hasSampleAnswer={hasSampleAnswer} canDownload={stage.runtime !== undefined} onBefore={() => { onMenuOpenChange(false); setPreview('before'); }} onAnswer={(answer) => { if (hasSampleAnswer) openAnswer(answer); }} onDownload={() => { onMenuOpenChange(false); setDownloading(true); }} />}
       {downloading && stage.runtime !== undefined && <SourceDownloadDialog stageId={stage.id} runtime={stage.runtime} codebase={currentCodebase} onClose={() => setDownloading(false)} />}
       <ReferenceMenuPopups
@@ -231,3 +230,5 @@ export function ReferenceMenu({ stage, disabled, menuOpen, onMenuOpenChange, rev
     </div>
   );
 }
+import { ReasonButton } from '../ReasonButton';
+import { INVESTIGATING_REASON } from './disabledReasons';

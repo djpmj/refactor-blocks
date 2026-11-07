@@ -35,7 +35,9 @@ test('tutorial buttons use shared default and primary styles without changing Re
   }
 
   const primaryToolbarButton = page.locator('.toolbar__primary');
-  await primaryToolbarButton.evaluate((button) => button.removeAttribute('disabled'));
+  await expect(primaryToolbarButton).toBeDisabled();
+  await expectButtonBackgroundToMatchVariable(primaryToolbarButton, '--surface');
+  await primaryToolbarButton.evaluate((element) => element.removeAttribute('aria-disabled'));
   await expectButtonBackgroundToMatchVariable(primaryToolbarButton, '--accent');
 
   const zoomButton = page.locator('.react-flow__controls-button').first();

@@ -32,7 +32,7 @@ test('ツールバーが 挑戦・元に戻す・やり直し・操作の記録�
   await openTutorial1(page);
 
   // Act
-  const names = await page.locator('.stage-panel__actions > button, .stage-panel__actions > div > button').evaluateAll((buttons) => buttons.map((button) => button.textContent.trim()));
+  const names = await page.locator('.stage-panel__actions > button, .stage-panel__actions > .reason-button > button, .stage-panel__actions > div > button, .stage-panel__actions > div > .reason-button > button').evaluateAll((buttons) => buttons.map((button) => button.textContent.trim()));
 
   // Assert
   expect(names).toEqual(['変更依頼に挑戦', '元に戻す', 'やり直し', '操作の記録 ▾', '最初に戻す', '参考・答え ▾', 'ヒント ▾', 'うわさ(2) ▾', '操作ガイド']);

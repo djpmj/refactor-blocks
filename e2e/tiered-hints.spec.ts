@@ -17,9 +17,9 @@ test('中級1では問題の場所を見てから次の一手と動きが使え�
   // Assert
   await expect(problem).toBeVisible();
   await expect(next).toBeDisabled();
-  await expect(next).toHaveAttribute('title', '先に「どこが問題?」を見てみよう');
+  await expect(next).toHaveAccessibleDescription('先に「どこが問題?」を見てみよう');
   await expect(ghost).toBeDisabled();
-  await expect(ghost).toHaveAttribute('title', '先に「どこが問題?」を見てみよう');
+  await expect(ghost).toHaveAccessibleDescription('先に「どこが問題?」を見てみよう');
 
   // Act
   await problem.click();
