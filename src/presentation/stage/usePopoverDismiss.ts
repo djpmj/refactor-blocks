@@ -37,6 +37,6 @@ export function useFocusOnOpen(open: boolean, panelRef: RefObject<HTMLDivElement
   useEffect(() => {
     if (!open) return;
     const panel = panelRef.current;
-    (panel?.querySelector<HTMLButtonElement>('button:not(:disabled)') ?? panel)?.focus();
+    (panel?.querySelector<HTMLButtonElement>('button:not(:disabled):not([aria-disabled="true"])') ?? panel)?.focus();
   }, [open, panelRef]);
 }

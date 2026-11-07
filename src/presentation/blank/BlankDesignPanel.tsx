@@ -4,6 +4,9 @@ import { findUnplacedParts } from '../../domain/blank/tray';
 import { allClasses } from '../../domain/codebase/Codebase';
 import { blankDesignProblems } from '../../infrastructure/blankDesigns/blankDesignProblems';
 import { useGameStore } from '../store/useGameStore';
+import { ReasonButton } from '../ReasonButton';
+import { disabledButtonProps } from '../disabledButtonProps';
+import { REDO_UNAVAILABLE_REASON, UNDO_UNAVAILABLE_REASON } from '../stage/disabledReasons';
 
 type BlankDesignPanelProps = {
   readonly problem: BlankDesignProblem;
@@ -70,15 +73,15 @@ export function BlankDesignPanel({ problem, reviewButtonRef, onReview, onProblem
       <div className="stage-panel__actions">
         {/* 見出しの上に置くと panel が1行高くなり、Fit View の倍率が下がってメソッドが隠れるため、ボタンと同じ行に置く */}
         <ProblemSelect problem={problem} onProblemChange={onProblemChange} />
-        <button ref={reviewButtonRef} type="button" data-testid="blank-review" onClick={onReview} disabled={unplaced.length > 0} aria-describedby={unplaced.length > 0 ? 'blank-review-disabled-reason' : undefined}>
+        <button ref={reviewButtonRef} type="button" data-testid="blank-review" {...disabledButtonProps({ reason: unplaced.length > 0 ? '未配置の部品があります' : null, reasonId: 'blank-review-disabled-reason', onClick: onReview })}>
           答え合わせ
         </button>
-        <button type="button" onClick={undo} disabled={!canUndo} title="Ctrl+Z">
+        <ReasonButton onClick={undo} disabledReason={canUndo ? null : UNDO_UNAVAILABLE_REASON} title="Ctrl+Z">
           元に戻す
-        </button>
-        <button type="button" onClick={redo} disabled={!canRedo} title="Ctrl+Y">
+        </ReasonButton>
+        <ReasonButton onClick={redo} disabledReason={canRedo ? null : REDO_UNAVAILABLE_REASON} title="Ctrl+Y">
           やり直し
-        </button>
+        </ReasonButton>
         <button type="button" className="stage-panel__reset" onClick={resetStage}>
           最初に戻す
         </button>

@@ -3,9 +3,11 @@ export function HintButton({ revealed, total, disabled, onReveal }: Readonly<{ r
   return (
     <div className="stage-panel__hint-step">
       <span className="stage-panel__hint-number" aria-hidden="true">2</span>
-      <button type="button" onClick={onReveal} disabled={disabled || revealed >= total} title={disabled ? '先に「どこが問題?」を見てみよう' : undefined}>
+      <ReasonButton onClick={onReveal} disabledReason={hintStepReason({ problemRevealed: !disabled, revealed, total })}>
         次の一手{revealed > 0 ? `(${String(revealed)}/${String(total)})` : ''}
-      </button>
+      </ReasonButton>
     </div>
   );
 }
+import { ReasonButton } from '../ReasonButton';
+import { hintStepReason } from './disabledReasons';
