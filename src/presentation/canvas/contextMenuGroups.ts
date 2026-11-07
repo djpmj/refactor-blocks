@@ -2,8 +2,8 @@ import type { ContextMenuTarget } from './useCanvasContextMenu';
 
 export type MenuGroupKind = 'member' | 'class' | 'file' | 'canvas';
 export type MenuItem =
-  | { readonly kind: 'form'; readonly mode: 'class' | 'renameClass'; readonly label: string }
-  | { readonly kind: 'action'; readonly action: 'addFile' | 'deleteClass' | 'deleteFile' | 'moveClassToNewFile'; readonly label: string }
+  | { readonly kind: 'form'; readonly mode: 'renameClass'; readonly label: string }
+  | { readonly kind: 'action'; readonly action: 'addClass' | 'addFile' | 'deleteClass' | 'deleteFile' | 'moveClassToNewFile'; readonly label: string }
   | { readonly kind: 'move-class-submenu'; readonly label: string }
   | { readonly kind: 'move-submenu'; readonly label: string }
   | { readonly kind: 'extends-submenu'; readonly label: string }
@@ -34,7 +34,7 @@ export function contextMenuGroups(target: ContextMenuTarget, names: Readonly<{ m
   }
   if (target.fileId !== null) {
     groups.push({ kind: 'file', heading: 'このファイル', items: [
-      { kind: 'form', mode: 'class', label: 'クラスを追加' },
+      { kind: 'action', action: 'addClass', label: 'クラスを追加' },
       { kind: 'action', action: 'deleteFile', label: 'このファイルを削除' },
     ] });
   }

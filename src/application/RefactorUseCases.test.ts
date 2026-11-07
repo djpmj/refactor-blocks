@@ -415,16 +415,52 @@ describe('inlineMethodUseCase', () => {
 });
 
 describe('addClassUseCase / addNewFileUseCase', () => {
-  it('注入されたIDで新しいクラスを作る', () => {
+  it('注入されたIDで、名前を聞かずに NewClass を作る', () => {
     // Arrange
     const codebase = sampleCodebase();
 
     // Act
-    const result = addClassUseCase(codebase, 'file-tax', 'TaxRateTable', () => 'generated-class');
+    const result = addClassUseCase(codebase, 'file-tax', () => 'generated-class');
 
     // Assert
     if (!result.ok) throw new Error(result.error);
-    expect(result.value.files[1].classes[1]).toEqual({ id: 'generated-class', name: 'TaxRateTable', methods: [], autoNamed: true });
+    expect(result.value.files[1].classes[1]).toEqual({ id: 'generated-class', name: 'NewClass', methods: [], autoNamed: true });
+  });
+
+  it('NewClass がすでにあれば NewClass2 になり、エラーにならない', () => {
+    // Arrange
+    const first = addClassUseCase(sampleCodebase(), 'file-tax', () => 'first');
+    if (!first.ok) throw new Error(first.error);
+
+    // Act
+    const result = addClassUseCase(first.value, 'file-tax', () => 'second');
+
+    // Assert
+    if (!result.ok) throw new Error(result.error);
+    expect(result.value.files[1].classes.map((codeClass) => codeClass.name)).toContain('NewClass2');
+  });
+
+  it('存在しないファイルIDでは file-not-found になる', () => {
+    // Arrange
+    const codebase = sampleCodebase();
+
+    // Act
+    const result = addClassUseCase(codebase, 'no-such-file', () => 'x');
+
+    // Assert
+    expect(result).toEqual({ ok: false, error: 'file-not-found' });
+  });
+
+  it('元の Codebase を変更しない', () => {
+    // Arrange
+    const codebase = sampleCodebase();
+    const before = JSON.stringify(codebase);
+
+    // Act
+    addClassUseCase(codebase, 'file-tax', () => 'x');
+
+    // Assert
+    expect(JSON.stringify(codebase)).toBe(before);
   });
 
   it('注入されたIDで新しいファイルを作る', () => {

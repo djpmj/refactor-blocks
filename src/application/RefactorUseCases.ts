@@ -1,6 +1,6 @@
 import { addClass, type AddClassError } from '../domain/codebase/addClass';
 import { addNewFile } from '../domain/codebase/addNewFile';
-import { findClassOfMethod, findFileOfClass, findMethod, type Codebase, type CodeClass, type Visibility } from '../domain/codebase/Codebase';
+import { allClasses, findClassOfMethod, findFileOfClass, findMethod, type Codebase, type CodeClass, type Visibility } from '../domain/codebase/Codebase';
 import { changeVisibility, type ChangeVisibilityError } from '../domain/codebase/changeVisibility';
 import { publicizeCrossClassCalls } from '../domain/codebase/publicizeCrossClassCalls';
 import { deleteClass, type DeleteClassError, type DeleteResult } from '../domain/codebase/deleteClass';
@@ -10,6 +10,7 @@ import { extractMethod, type ExtractMethodError } from '../domain/codebase/extra
 import { classLines, fileLines, methodLines } from '../domain/codebase/lineCount';
 import { findCallerOf, inlineMethod, type InlineMethodError } from '../domain/codebase/inlineMethod';
 import { mergeMethods, type MergeMethodsError } from '../domain/codebase/mergeMethods';
+import { uniqueName } from '../domain/codebase/naming';
 import { moveClass, type MoveClassError } from '../domain/codebase/moveClass';
 import { moveField, type MoveFieldError } from '../domain/codebase/moveField';
 import { moveClassToNewFile, moveMethodToNewClass, moveMethodToNewClassInFile, type MoveClassToNewFileError, type MoveMethodToNewClassError, type MoveMethodToNewClassInFileError } from '../domain/codebase/moveToNewHome';
@@ -167,14 +168,10 @@ export function inlineMethodUseCase(
   return callerId === undefined ? err('call-not-found') : ok({ codebase: result.value, callerId });
 }
 
-/** プレイヤーの「クラスを追加」操作。新しいクラスのIDは注入されたジェネレーターで採番する。 */
-export function addClassUseCase(
-  codebase: Codebase,
-  fileId: string,
-  className: string,
-  generateId: IdGenerator,
-): Result<Codebase, AddClassError> {
-  return addClass(codebase, fileId, className, { id: generateId(), autoNamed: true });
+/** プレイヤーの「クラスを追加」操作。名前は聞かず NewClass(重なれば連番)で作り、中身が入ったら autoNameClasses が付け直す。 */
+export function addClassUseCase(codebase: Codebase, fileId: string, generateId: IdGenerator): Result<Codebase, AddClassError> {
+  const name = uniqueName('NewClass', (candidate) => allClasses(codebase).some((codeClass) => codeClass.name === candidate));
+  return addClass(codebase, fileId, name, { id: generateId(), autoNamed: true });
 }
 
 /** プレイヤーの「ファイルを追加」操作。 */
