@@ -1,3 +1,4 @@
+import { TRAY_CLASS_ID, TRAY_FILE_ID } from '../../domain/blank/tray';
 import type { ContextMenuTarget } from './useCanvasContextMenu';
 
 export type MenuGroupKind = 'member' | 'class' | 'file' | 'canvas';
@@ -16,7 +17,7 @@ export function contextMenuGroups(target: ContextMenuTarget, names: Readonly<{ m
     const heading = target.member.kind === 'method' ? `メソッド ${names.member ?? ''}()` : `フィールド ${names.member ?? ''}`;
     groups.push({ kind: 'member', heading, items: [{ kind: 'move-submenu', label: '別のクラスへ移動' }] });
   }
-  if (target.classId !== null) {
+  if (target.classId !== null && target.classId !== TRAY_CLASS_ID) {
     const className = names.className ?? '';
     groups.push({
       kind: 'class', heading: `クラス ${className}`,
@@ -32,7 +33,7 @@ export function contextMenuGroups(target: ContextMenuTarget, names: Readonly<{ m
       ],
     });
   }
-  if (target.fileId !== null) {
+  if (target.fileId !== null && target.fileId !== TRAY_FILE_ID) {
     groups.push({ kind: 'file', heading: 'このファイル', items: [
       { kind: 'action', action: 'addClass', label: 'クラスを追加' },
       { kind: 'action', action: 'deleteFile', label: 'このファイルを削除' },
