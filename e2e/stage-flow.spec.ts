@@ -42,7 +42,7 @@ test('冒頭の手直しを終えるまで編集を止め、仕上げを正解�
   await page.getByTestId('method-placeOrder').click();
   await page.getByLabel('消費税を計算する(軽減税率あり)').check();
   await page.getByLabel('新しいメソッド名').fill('calculateTax');
-  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click({ force: true });
   await expect(page.locator('.error-toast')).toContainText('まず「もし、この変更が来たら?」');
   await expect(page.getByTestId('method-calculateTax')).toHaveCount(0);
 

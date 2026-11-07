@@ -23,7 +23,7 @@ import { describeExtractPreview } from './describeExtractPreview';
 import { describeGrowthHeadsUp } from './describeGrowthHeadsUp';
 import { describeMixedHeadsUp } from './describeMixedHeadsUp';
 import { mixedResponsibilities } from '../../domain/scoring/mixedMethods';
-import { extractDisabledReason, extractNameInvalid } from './extractDisabledReason';
+import { extractButtonReason, extractDisabledReason, extractNameInvalid } from './extractDisabledReason';
 import { findCallerOf } from '../../domain/codebase/inlineMethod';
 import { findMergeCandidates, type MergeCandidate } from '../../domain/codebase/mergeMethods';
 import { fragmentLines, methodLines } from '../../domain/codebase/lineCount';
@@ -36,7 +36,7 @@ import { showsVisibilityControl } from '../../domain/stage/showsVisibilityContro
 import { ChangeMemo } from '../change/ChangeMemo';
 import { ClassCodePreview } from './ClassCodePreview';
 import { CodeChangeDialog } from './CodeChangeDialog';
-import { useGameStore } from '../store/useGameStore';
+import { isOpeningFixLocked, useGameStore } from '../store/useGameStore';
 import { FieldInfo } from './FieldInfo';
 import { ResponsibilityMark } from './ResponsibilityMark';
 import { describeVisibility } from './describeVisibility';
@@ -162,7 +162,7 @@ const VISIBILITY_OPTIONS: readonly Visibility[] = ['public', 'protected', 'priva
 function ExtractControls({
   newName,
   disabledReason,
-  isDuplicate,
+  nameInvalid,
   onNameChange,
   onExtract,
   previewSummary,
@@ -171,13 +171,16 @@ function ExtractControls({
 }: Readonly<{
   newName: string;
   disabledReason: string | null;
-  isDuplicate: boolean;
+  nameInvalid: boolean;
   onNameChange: (name: string) => void;
   onExtract: () => void;
   previewSummary: string | undefined;
   growthHeadsUp: string | undefined;
   mixedHeadsUp: string | undefined;
 }>) {
+  const locked = useGameStore(isOpeningFixLocked);
+  const buttonReason = extractButtonReason(locked, disabledReason);
+  const isDuplicate = !locked && nameInvalid;
   return (
     <>
       <div className="method-editor__extract">
@@ -191,17 +194,17 @@ function ExtractControls({
         />
         <button
           type="button"
-          className={disabledReason === null ? 'button--primary' : undefined}
-          {...disabledButtonProps({ reason: disabledReason, reasonId: 'method-editor-extract-disabled-reason', onClick: onExtract })}
+          className={buttonReason === null ? 'button--primary' : undefined}
+          {...disabledButtonProps({ reason: buttonReason, reasonId: 'method-editor-extract-disabled-reason', onClick: onExtract, onBlockedClick: locked ? onExtract : undefined })}
           data-tour="extract-button"
         >
           選んだ処理をメソッドとして抽出
         </button>
       </div>
       {previewSummary === undefined ? null : <div aria-live="polite"><p className="method-editor__extract-preview">{previewSummary}</p>{growthHeadsUp === undefined ? null : <p className="method-editor__growth-heads-up" data-testid="extract-growth-heads-up">{growthHeadsUp}</p>}{mixedHeadsUp === undefined ? null : <p className="method-editor__growth-heads-up method-editor__mixed-heads-up" data-testid="extract-mixed-heads-up">{mixedHeadsUp}</p>}</div>}
-      {disabledReason === null ? null : (
+      {buttonReason === null ? null : (
         <p id="method-editor-extract-disabled-reason" className="method-editor__extract-hint">
-          {disabledReason}
+          {buttonReason}
         </p>
       )}
     </>
@@ -399,7 +402,7 @@ function MethodEditorBody({ method, showVisibility, stage }: Readonly<{ method: 
             <ExtractControls
               newName={newName}
               disabledReason={disabledReason}
-              isDuplicate={extractNameInvalid(method, selected, newName, existingNames)}
+              nameInvalid={extractNameInvalid(method, selected, newName, existingNames)}
               onNameChange={setCustomName}
               onExtract={handleExtract}
               previewSummary={previewSummary}

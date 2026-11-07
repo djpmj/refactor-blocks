@@ -8,7 +8,7 @@ import { checkManualFix } from '../../domain/change/checkManualFix';
 import { painRequestsOf } from '../../domain/change/changePain';
 import { sampleImplementation } from '../../domain/change/sampleImplementation';
 import { stages } from '../../infrastructure/stages/stageCatalog';
-import { createGameStore, NOTICE_VISIBLE_MS } from './useGameStore';
+import { createGameStore, isOpeningFixLocked, NOTICE_VISIBLE_MS } from './useGameStore';
 import { scoreCodebase } from '../../domain/scoring/score';
 import { sampleAnswerCodebase } from '../../domain/stage/sampleAnswer';
 import { putDraft } from '../../domain/progress/drafts';
@@ -1728,5 +1728,70 @@ describe('dismissCritique', () => {
 
     // Assert
     expect(store.getState().critique).toEqual({ text: null, loading: false, error: null, fallback: null, snapshot: null });
+  });
+});
+
+describe('isOpeningFixLocked', () => {
+  const modifyStage = stages.find((candidate) => painRequestsOf(candidate).modify !== undefined);
+  const plainStage = stages.find((candidate) => painRequestsOf(candidate).modify === undefined);
+  const LOCK_TEXT = 'まず「もし、この変更が来たら?」';
+
+  /** ロック中だけ extractMethod がこの案内で弾かれる(blockDuringOpeningFix との一致を見る)。 */
+  const extractMessage = (store: ReturnType<typeof createGameStore>) => {
+    store.getState().extractMethod({ sourceMethodId: 'no-such-method', fragmentIds: [], newMethodName: 'x' });
+    return store.getState().message ?? '';
+  };
+
+  it('手直しの依頼があるステージを開いた直後はロック中で、操作は案内で弾かれる', () => {
+    // Arrange
+    if (modifyStage === undefined) throw new Error('modify stage is required');
+    const store = createGameStore([modifyStage], false);
+
+    // Act
+    const locked = isOpeningFixLocked(store.getState());
+
+    // Assert
+    expect(locked).toBe(true);
+    expect(extractMessage(store)).toContain(LOCK_TEXT);
+  });
+
+  it('手直し済みなら解ける', () => {
+    // Arrange
+    if (modifyStage === undefined) throw new Error('modify stage is required');
+    const store = createGameStore([modifyStage], false);
+    store.setState({ openingFixes: { [modifyStage.id]: null } });
+
+    // Act
+    const locked = isOpeningFixLocked(store.getState());
+
+    // Assert
+    expect(locked).toBe(false);
+    expect(extractMessage(store)).not.toContain(LOCK_TEXT);
+  });
+
+  it('openingFixEnabled が false なら止めない', () => {
+    // Arrange
+    if (modifyStage === undefined) throw new Error('modify stage is required');
+    const store = createGameStore([modifyStage], false, false);
+
+    // Act
+    const locked = isOpeningFixLocked(store.getState());
+
+    // Assert
+    expect(locked).toBe(false);
+    expect(extractMessage(store)).not.toContain(LOCK_TEXT);
+  });
+
+  it('手直しの依頼がないステージは止めない', () => {
+    // Arrange
+    if (plainStage === undefined) throw new Error('plain stage is required');
+    const store = createGameStore([plainStage], false);
+
+    // Act
+    const locked = isOpeningFixLocked(store.getState());
+
+    // Assert
+    expect(locked).toBe(false);
+    expect(extractMessage(store)).not.toContain(LOCK_TEXT);
   });
 });
