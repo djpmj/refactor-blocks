@@ -978,7 +978,7 @@ input.class-node__name { width: 14ch; }
 .clear-screen__eyebrow { margin: 0; font-size: clamp(14px, 3vw, 22px); font-weight: 700; }
 .clear-screen__title { margin: 0; font-size: clamp(48px, 12vw, 120px); line-height: 1; text-shadow: 0 8px 35px rgba(0,0,0,.4); animation: clear-pop .65s both; }
 .clear-screen__ring { display: grid; place-items: center; width: clamp(130px, 24vw, 190px); aspect-ratio: 1; border-radius: 50%; box-shadow: 0 0 25px color-mix(in srgb, var(--accent) 55%, transparent); }
-.clear-screen__ring span { display: grid; place-items: center; width: 78%; aspect-ratio: 1; border-radius: 50%; background: #111827; font-size: clamp(34px, 7vw, 60px); font-weight: 800; }
+.clear-screen__ring span { display: grid; place-items: center; width: 78%; aspect-ratio: 1; border-radius: 50%; background: #111827; font-size: clamp(28px, 6vw, 48px); font-weight: 800; white-space: nowrap; }
 .clear-screen__ring--complete { animation: clear-glow .9s .1s both; }
 .clear-screen__perfect { margin: 0; font-size: 22px; font-weight: 700; }
 .clear-screen__choices { display: flex; flex-direction: column; gap: 10px; width: min(100%, 430px); animation: clear-choices-in .5s 1.4s both; }

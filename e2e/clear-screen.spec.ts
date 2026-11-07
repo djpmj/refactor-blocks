@@ -18,6 +18,32 @@ async function clearTutorial1(page: import('@playwright/test').Page, preserveFoc
   await expect(page.getByTestId('clear-screen')).toBeVisible();
 }
 
+test('100点のスコアは円の中で1行に収まる', async ({ page }) => {
+  await clearTutorial1(page);
+  const score = page.getByTestId('clear-screen-score');
+  await expect(score).toHaveText('100点');
+  const bounds = await score.evaluate((element) => {
+    const range = element.ownerDocument.createRange();
+    range.selectNodeContents(element);
+    const rects = range.getClientRects();
+    const tops: number[] = [];
+    for (let index = 0; index < rects.length; index++) {
+      tops.push(rects[index].top);
+    }
+    const rect = element.getBoundingClientRect();
+    return {
+      singleLine: tops.every((top) => Math.abs(top - tops[0]) <= 1),
+      width: rect.width,
+      height: rect.height,
+      scrollWidth: element.scrollWidth,
+      clientWidth: element.clientWidth,
+    };
+  });
+  expect(bounds.singleLine).toBe(true);
+  expect(bounds.height).toBeLessThanOrEqual(bounds.width + 1);
+  expect(bounds.scrollWidth).toBeLessThanOrEqual(bounds.clientWidth);
+});
+
 test('初めて100点にするとクリア画面が出て、戻ると再表示しない', async ({ page }) => {
   await clearTutorial1(page);
   const screen = page.getByTestId('clear-screen');
