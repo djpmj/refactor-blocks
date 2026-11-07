@@ -243,12 +243,9 @@ async function addFileFromMenu(page: Page) {
 }
 
 /** メソッドを右クリックし、メニューからそのメソッドのファイルにクラスを追加する。 */
-async function addClassFromMenu(page: Page, methodName: string, className: string) {
+async function addClassFromMenu(page: Page, methodName: string) {
   await page.getByTestId(`method-${methodName}`).click({ button: 'right' });
-  const menu = page.getByTestId('context-menu');
-  await menu.getByRole('menuitem', { name: 'クラスを追加' }).click();
-  await menu.getByLabel('追加するクラス名').fill(className);
-  await menu.getByRole('button', { name: '追加' }).click();
+  await page.getByTestId('context-menu').getByRole('menuitem', { name: 'クラスを追加' }).click();
 }
 
 test('メソッドを選んで処理を抽出すると、クラスに新しいメソッドが増える', async ({ page }) => {
@@ -722,7 +719,7 @@ test('クラスとファイルを追加し、クラスを新しいファイル�
   // Arrange
   await openOrderStage(page);
   await addFileFromMenu(page);
-  await addClassFromMenu(page, 'placeOrder', 'Mailer');
+  await addClassFromMenu(page, 'placeOrder');
   // クラスノードはファイルノードのDOMの子にならないため、空ファイルの案内の有無で移動先を確かめる
   const emptyFileHint = page.getByText('ここにクラスをドロップ');
   await expect(emptyFileHint).toHaveCount(1);
@@ -768,16 +765,20 @@ test('追加した空ファイルへメソッドをドラッグすると、新�
   await expect(target).toBeVisible();
 });
 
-test('同じ名前のクラスは追加できず、理由が表示される', async ({ page }) => {
+test('クラスを追加は名前を聞かずにすぐ追加し、2回目は NewClass2 になる', async ({ page }) => {
   // Arrange
   await openOrderStage(page);
 
   // Act
-  await addClassFromMenu(page, 'placeOrder', 'TaxCalculator');
+  await addClassFromMenu(page, 'placeOrder');
+  await expect(page.getByTestId('class-NewClass')).toBeVisible();
+  await addClassFromMenu(page, 'placeOrder');
 
   // Assert
-  await expect(page.locator('.app__canvas').getByRole('alert')).toContainText('同じ名前のクラスがすでにあります');
-  await expect(page.getByTestId('context-menu')).toBeVisible();
+  await expect(page.getByTestId('class-NewClass2')).toBeVisible();
+  await expect(page.getByLabel('追加するクラス名')).toHaveCount(0);
+  await expect(page.getByTestId('context-menu')).toHaveCount(0);
+  await expect(page.getByRole('alert')).toHaveCount(0);
 });
 
 test('ステージを選ぶと、そのステージのコードベースと目標に切り替わり、点数も付け直される', async ({ page }) => {
@@ -873,8 +874,6 @@ test('メソッドを右クリックしてメニューから、そのクラス�
   const menu = page.getByTestId('context-menu');
   await expect(menu).not.toContainText('.ts');
   await menu.getByRole('menuitem', { name: 'クラスを追加' }).click();
-  await menu.getByLabel('追加するクラス名').fill('OrderValidator');
-  await menu.getByLabel('追加するクラス名').press('Enter');
 
   // Assert
   await expect(page.getByTestId('class-NewClass')).toBeVisible();
@@ -1135,8 +1134,8 @@ test('上級3で3クラスがDiscountStrategyを実装すると、終点が分�
   await page.goto('/');
   await selectStage(page, '上級3: 会員ランクの割引をStrategyパターンへ組み替える');
   const classNames = ['NewClass', 'NewClass2', 'NewClass3'];
-  for (const className of classNames) {
-    await addClassFromMenu(page, 'calculateDiscount', className);
+  for (const _className of classNames) {
+    await addClassFromMenu(page, 'calculateDiscount');
   }
 
   // Act: 3クラスそれぞれに共通の実装先を設定する
@@ -2308,8 +2307,6 @@ test('中級8: 住所のフィールドとメソッドを新しいクラスへ�
   await page.getByTestId('class-header-Employee').click({ button: 'right' });
   const menu = page.getByTestId('context-menu');
   await menu.getByRole('menuitem', { name: 'クラスを追加' }).click();
-  await menu.getByLabel('追加するクラス名').fill('Address');
-  await menu.getByLabel('追加するクラス名').press('Enter');
   await expect(page.getByTestId('class-NewClass')).toBeVisible();
 
   // Act: 住所の3フィールドと2メソッドをAddressへドラッグする

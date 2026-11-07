@@ -44,8 +44,6 @@ test('中級8: Addressクラスへ分けると、クラスを開いて読む行�
   await page.getByTestId('class-header-Employee').click({ button: 'right' });
   const menu = page.getByTestId('context-menu');
   await menu.getByRole('menuitem', { name: 'クラスを追加' }).click();
-  await menu.getByLabel('追加するクラス名').fill('Address');
-  await menu.getByLabel('追加するクラス名').press('Enter');
   await expect(page.getByTestId('class-NewClass')).toBeVisible();
   await drag(page, 'field-postalCode', 'class-NewClass');
   const addressClass = page.locator('.class-node').filter({ has: page.getByTestId('field-postalCode') });

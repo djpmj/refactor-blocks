@@ -52,8 +52,6 @@ test('中級3では越境先を別クラスへ移してもprivateを自動public
   await page.getByTestId('method-renderTemplate').click({ button: 'right' });
   const menu = page.getByTestId('context-menu');
   await menu.getByRole('menuitem', { name: 'クラスを追加' }).click();
-  await menu.getByLabel('追加するクラス名').fill('NewClass');
-  await menu.getByRole('button', { name: '追加' }).click();
 
   // Act
   const target = page.getByTestId('class-InvoicePdfRenderer');

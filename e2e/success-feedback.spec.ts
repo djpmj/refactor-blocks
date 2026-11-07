@@ -98,8 +98,6 @@ test('通常の操作で点数が下がるときは即時更新し成功演出�
   await page.getByTestId('method-placeOrder').click({ button: 'right' });
   const menu = page.getByTestId('context-menu');
   await menu.getByRole('menuitem', { name: 'クラスを追加' }).click();
-  await menu.getByLabel('追加するクラス名').fill('EmptyClass');
-  await menu.getByRole('button', { name: '追加' }).click();
 
   // Assert
   await expect(page.getByTestId('class-NewClass')).toBeVisible();

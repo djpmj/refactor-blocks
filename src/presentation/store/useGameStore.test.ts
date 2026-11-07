@@ -569,7 +569,7 @@ describe('opening and closing manual-fix flow', () => {
 
     // Arrange: 初期の減点100に空クラスを足して120にする
     const beforeClassIds = new Set(allClasses(store.getState().codebase).map(({ id }) => id));
-    expect(store.getState().addClass(fileId, 'TemporaryEmpty')).toBe(true);
+    expect(store.getState().addClass(fileId)).toBe(true);
     const addedClass = allClasses(store.getState().codebase).find(({ id }) => !beforeClassIds.has(id));
     if (addedClass === undefined) throw new Error('added class is required');
     expect(scoreCodebase(store.getState().codebase, stage)).toMatchObject({ total: 0, deducted: 120 });
@@ -584,7 +584,7 @@ describe('opening and closing manual-fix flow', () => {
 
     // Act: 減点を増やす操作では新しい成功演出を作らない
     const sequence = store.getState().celebration?.seq;
-    expect(store.getState().addClass(fileId, 'AnotherTemporaryEmpty')).toBe(true);
+    expect(store.getState().addClass(fileId)).toBe(true);
 
     // Assert
     expect(scoreCodebase(store.getState().codebase, stage)).toMatchObject({ total: 0, deducted: 120 });
@@ -674,7 +674,7 @@ describe('opening-fix lock regressions', () => {
     const store = createGameStore(blankDesignProblems, false, false);
     const initial = store.getState().codebase;
     const fileId = initial.files[0]?.id;
-    expect(store.getState().addClass(fileId, 'BlankGroup')).toBe(true);
+    expect(store.getState().addClass(fileId)).toBe(true);
     expect(store.getState().codebase).not.toBe(initial);
     expect(store.getState().message).toBeNull();
   });

@@ -12,8 +12,6 @@ test('中級9は0点でも減点の合計を表示し、減った操作でゲー
   await page.getByTestId('method-confirm').click({ button: 'right' });
   const addMenu = page.getByTestId('context-menu');
   await addMenu.getByRole('group', { name: 'このファイル' }).getByRole('menuitem', { name: 'クラスを追加' }).click();
-  await addMenu.getByLabel('追加するクラス名').fill('TemporaryEmpty');
-  await addMenu.getByRole('button', { name: '追加' }).click();
   await expectDeductions(page, [['行数 ×7', 70], ['責務の混在 ×3', 30], ['空のクラス・ファイル ×2', 20]]);
   await closeBreakdown(page);
   await page.getByTestId('class-header-NewClass').click({ button: 'right' });
