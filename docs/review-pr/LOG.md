@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-11-07 23:10 UTC PR #470 クリア条件の分母を固定し操作で生じた問題を別表示する (#438)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅ / E2Eはこのジョブの権限で実行できず未実行(PR記載では通過)
+- マージ: squash & delete-branch
+
 ## 2026-11-07 22:35 UTC PR #469 部品置き場のファイルへのドロップの読み上げを余白落下に揃える(#449)
 
 - 判定: 合格(blocker無し)
@@ -211,17 +217,5 @@
 - 判定: 合格(blocker無し)
 - 確認した内容: npm run check(lint・typecheck・Vitest 183ファイル/2690件)✅。差分をIssue #391・docs/specs/csharp-extract-dataflow.md と照合(domainのmethodSignature/extractMethod/fragmentCode/generateClassSource/isCodebase)。E2Eはこの環境で未実行(PR本文では538件成功)
 - マージ: squash & delete-branch
-
-## 2026-11-01 10:50 UTC PR #401 左サイドバーの初期幅を480に統一する (#388)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(179ファイル/2637件) / npm run lint ✅ / npm run typecheck ✅。差分をIssue #388・docs/specs/left-sidebar-default-max-width.mdと照合(上限定数の共通化、CSSフォールバック480px、E2E期待値/ビューポートの更新のみ)。E2Eはこの環境で実行できず未実行(PR本文に実測結果あり)
-- マージ: squash & delete-branch
-
-## 2026-11-01 09:30 UTC PR #399 ステージのソースをC#の実行可能プロジェクトとして書き出す (#390)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(181ファイル/2654件) / npm run lint ✅ / npm run typecheck ✅。差分をIssue #390と照合(domainのcsharpProject/buildIssues/StageRuntime、infrastructureのzip、presentationのSourceDownloadDialog。zip-slipはsanitizeSourcePath経由で対策済み)。E2E(reference-menu)とdotnet検証はこの環境で実行できず未実行(PR本文に実測結果あり)
-- マージ: 見送り(.github/workflows/配下を含むためGitHub Appの権限で自動マージ不可。人が手動でマージする)
 
 
