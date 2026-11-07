@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { TRAY_CLASS_ID, TRAY_FILE_ID } from '../../domain/blank/tray';
 import { contextMenuGroups } from './contextMenuGroups';
 import type { ContextMenuTarget } from './useCanvasContextMenu';
 
@@ -7,6 +8,22 @@ const target = (member: ContextMenuTarget['member'], classId: string | null, fil
 });
 
 describe('contextMenuGroups', () => {
+  it('部品置き場のメソッドには移動とキャンバスの組だけを返す', () => {
+    // Arrange
+    const trayMethod = target({ kind: 'method', id: 'm' }, TRAY_CLASS_ID, TRAY_FILE_ID);
+    // Act
+    const groups = contextMenuGroups(trayMethod, { member: 'placeOrder', className: '部品置き場' });
+    // Assert
+    expect(groups.map(({ kind }) => kind)).toEqual(['member', 'canvas']);
+  });
+  it('部品置き場のクラスにはキャンバスの組だけを返す', () => {
+    // Arrange
+    const trayClass = target(null, TRAY_CLASS_ID, TRAY_FILE_ID);
+    // Act
+    const groups = contextMenuGroups(trayClass, { className: '部品置き場' });
+    // Assert
+    expect(groups.map(({ kind }) => kind)).toEqual(['canvas']);
+  });
   it('メソッドは対象名を見出しにして4組を順に返す', () => {
     const groups = contextMenuGroups(target({ kind: 'method', id: 'm' }, 'c', 'f'), { member: 'calculatePrice', className: 'PriceCalculator' });
     expect(groups.map(({ kind }) => kind)).toEqual(['member', 'class', 'file', 'canvas']);

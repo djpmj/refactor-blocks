@@ -62,7 +62,7 @@ async function startPaymentChangeRequests(page: Page, width: number, height = 76
 
 async function openChangeRequestResult(page: Page) {
   await startPaymentChangeRequests(page, 1366);
-  // 1400px未満では変更依頼を始めると左サイドバーが閉じ、キャンバスが広がる(#404)
+  // 701px以上では変更依頼を始めると左サイドバーが閉じ、キャンバスが広がる(#404)
   await expect(page.getByRole('button', { name: 'サイドバーを開く' })).toBeVisible();
   await dragPlayerMethodToEmptyCanvas(page, page.getByTestId('class-部品置き場').getByTestId('method-charge'));
   await page.getByTestId('class-header-GatewayIntegrationHandler').click({ button: 'right' });
@@ -87,15 +87,14 @@ test('1366幅で変更依頼を始めるとサイドバーが閉じ、フォー�
   await expect(page.getByTestId('sidebar-announcement')).toHaveText(/課題サイドバーを閉じました/);
 });
 
-// 広い画面(1400px以上)では、キャンバスが足りるのでサイドバーを自動で閉じない(受け入れ基準3)
-test('1800幅では変更依頼を始めても、サイドバーは開いたままで通知も出ない', async ({ page }) => {
+test('1800幅でも変更依頼を始めるとサイドバーが閉じ、閉じたことが読み上げられる', async ({ page }) => {
   // Arrange / Act
   await startPaymentChangeRequests(page, 1800, 1000);
 
   // Assert
   await expect(page.getByTestId('change-panel')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'サイドバーを閉じる' })).toBeVisible();
-  await expect(page.getByTestId('sidebar-announcement')).toHaveText('');
+  await expect(page.getByRole('button', { name: 'サイドバーを開く' })).toBeFocused();
+  await expect(page.getByTestId('sidebar-announcement')).toHaveText(/課題サイドバーを閉じました/);
 });
 
 async function dragPlayerMethodToEmptyCanvas(page: Page, source: Locator) {

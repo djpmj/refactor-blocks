@@ -9,6 +9,43 @@ async function openBlank(page: Page) {
   await page.getByTestId('mode-blank').click();
 }
 
+async function expectTrayMethodMenu(page: Page) {
+  const menu = page.getByTestId('context-menu');
+  await expect(menu.getByRole('group')).toHaveCount(2);
+  await expect(menu.getByRole('group').nth(0)).toHaveAttribute('aria-label', 'メソッド placeOrder()');
+  await expect(menu.getByRole('group').nth(1)).toHaveAttribute('aria-label', 'キャンバス');
+  for (const name of ['部品置き場 を削除', 'このファイルを削除', '継承元を設定', '実装するインターフェースを設定', '名前を変更', 'クラスを追加']) {
+    await expect(menu.getByRole('menuitem', { name })).toHaveCount(0);
+  }
+  const move = menu.getByRole('menuitem', { name: '別のクラスへ移動' });
+  await expect(move).toBeVisible();
+  await expect(move).toBeFocused();
+}
+
+test('部品置き場のメソッドでは配置操作だけを右クリックとキーボードのメニューに出す', async ({ page }) => {
+  // Arrange
+  await openBlank(page);
+  const method = blankView(page).getByTestId('method-placeOrder');
+  // Act & Assert
+  await method.click({ button: 'right' });
+  await expectTrayMethodMenu(page);
+  await page.keyboard.press('Escape');
+  await method.focus();
+  await page.keyboard.press('Shift+F10');
+  await expectTrayMethodMenu(page);
+});
+
+test('部品置き場の見出しではキャンバスの組だけを出す', async ({ page }) => {
+  // Arrange
+  await openBlank(page);
+  // Act
+  await blankView(page).getByTestId('tray-label').click({ button: 'right' });
+  // Assert
+  const groups = page.getByTestId('context-menu').getByRole('group');
+  await expect(groups).toHaveCount(1);
+  await expect(groups.first()).toHaveAttribute('aria-label', 'キャンバス');
+});
+
 test('白紙設計の部品置き場には責務のバッジも警告色も出ず、見出しに残りの部品数が出る', async ({ page }) => {
   // Arrange & Act
   await openBlank(page);

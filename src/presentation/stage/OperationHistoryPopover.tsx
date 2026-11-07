@@ -54,18 +54,17 @@ export function OperationHistoryPopover({ stage, open, onOpenChange }: Readonly<
   const currentStep = history.past.length;
   return (
     <div className="popover" ref={containerRef}>
-      <button
+      <ReasonButton
         ref={buttonRef}
-        type="button"
         data-testid="operation-history-button"
         aria-haspopup="dialog"
         aria-expanded={shown}
         aria-controls={panelId}
-        disabled={investigating}
+        disabledReason={investigating ? INVESTIGATING_REASON : null}
         onClick={() => onOpenChange(!shown)}
       >
         操作の記録 ▾
-      </button>
+      </ReasonButton>
       {shown && (
         <div ref={panelRef} id={panelId} className="popover__panel operation-history" role="dialog" aria-label="操作の記録" tabIndex={-1} data-testid="operation-history">
           {entries.length === 0 ? (
@@ -80,3 +79,5 @@ export function OperationHistoryPopover({ stage, open, onOpenChange }: Readonly<
     </div>
   );
 }
+import { ReasonButton } from '../ReasonButton';
+import { INVESTIGATING_REASON } from './disabledReasons';
