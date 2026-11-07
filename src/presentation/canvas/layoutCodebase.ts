@@ -520,6 +520,7 @@ function edgeFor(
     target,
     ...routing,
     zIndex: EDGE_Z_INDEX,
+    selectable: false,
     ...edgeAppearance(descriptor),
     ...(warning ? { type: "warning", data: warningData(descriptor, routing, codebase) } : {}),
   };
