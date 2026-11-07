@@ -201,4 +201,5 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [react-flow-zero-size-warning](react-flow-zero-size-warning.md) | React Flow の外枠が0pxになる警告(error#004)を出さないようにする |
 | [identifier-name-validation](identifier-name-validation.md) | クラス名・メソッド名をASCII識別子に限り、不正な名前での追加・改名・抽出・統合を止める |
 | [keyboard-open-method-editor](keyboard-open-method-editor.md) | キーボードドラッグの開始キーを Space のみにし、Enter でメソッドの中身(抽出エディタ)を開けるようにする |
+| [clear-screen-block-shortcuts](clear-screen-block-shortcuts.md) | クリア画面などのモーダル表示中は Ctrl+Z / Ctrl+Y / ? を背面に効かせない(操作ガイドは例外) |
 | [tour-popover-no-cover](tour-popover-no-cover.md) | ツアーの吹き出しを、対象と読ませたい要素(avoid)に重ならない位置へ置く |

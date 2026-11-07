@@ -32,7 +32,7 @@ import { StageRoadmapDialog } from './StageRoadmapDialog';
 import { TestStatus } from './TestStatus';
 import { useHints } from './useHints';
 import { useStageSidebar } from './useStageSidebar';
-import { useCountUp } from './useCountUp';
+import { useScoreCountUp } from './useCountUp';
 import { useResizableSidebarWidth } from '../useResizableSidebarWidth';
 import { ClearConditionList } from './ClearConditionList';
 import { painRequestsOf } from '../../domain/change/changePain';
@@ -199,9 +199,8 @@ function isFloorProgress(score: Score, celebration: ScoreCelebration): boolean {
 /** 点数を丸いゲージで見せる。隣のテキストは減点の件数だけで、内訳は「減点の内訳」に出す。 */
 function ScoreBadge({ score, initialScore }: Readonly<{ score: Score; initialScore: Score }>) {
   const celebration = useGameStore((state) => state.celebration);
-  const rising = celebration !== null && celebration.scoreAfter === score.total && celebration.scoreAfter > celebration.scoreBefore;
   const floorProgress = isFloorProgress(score, celebration);
-  const animation = useCountUp(score.total, rising ? celebration.seq : null, rising ? celebration.scoreBefore : score.total, rising);
+  const animation = useScoreCountUp(score.total);
   const degrees = Math.max(0, Math.min(100, animation.value)) * 3.6;
   const celebrating = animation.active || floorProgress;
   const ringClass = ['score-badge__ring', celebrating ? 'score-badge__ring--celebrate' : '', animation.active && score.total === 100 ? 'score-badge__ring--perfect' : ''].filter(Boolean).join(' ');

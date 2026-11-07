@@ -54,7 +54,7 @@ export function OperationGuideDialog({ open, onClose, onRepeatTour, repeatTourDi
     }
   }, [open]);
   return (
-    <dialog ref={ref} className="operation-guide" aria-labelledby={TITLE_ID} onCancel={onClose} data-testid="operation-guide">
+    <dialog ref={ref} className="operation-guide" aria-labelledby={TITLE_ID} onCancel={onClose} data-allows-shortcuts="" data-testid="operation-guide">
       <div className="operation-guide__header">
         <h2 className="operation-guide__title" id={TITLE_ID}>操作ガイド</h2>
         <button type="button" onClick={onClose} aria-label="閉じる" data-testid="operation-guide-close">✕</button>

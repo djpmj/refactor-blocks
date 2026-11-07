@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-11-07 00:25 UTC PR #456 モーダル表示中は Undo/Redo と ? を背面に効かせない (#428)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(2827 passed) / npm run lint ✅ / npm run typecheck ✅。差分をIssue #428 の仕様(isShortcutBlocked・data-allows-shortcuts による操作ガイドの例外)と照合。E2Eはレビュー環境で実行できず、PR記載の実測結果を確認。評価サイクル: 1回
+- マージ: squash & delete-branch
+
 ## 2026-11-06 23:40 UTC PR #454 講評パネルを閉じられるようにする (#416)
 
 - 判定: 合格(blocker無し)
@@ -210,10 +216,4 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(2575件) / npm run lint ✅ / npm run typecheck ✅ / docs/specs/pattern-comparison-table.md と差分を照合(presentationのみの変更・静的データとステージ定義のずれ検出テスト・E2E追加)。E2Eはこの環境で実行許可が無く未実行(PR本文ではroadmap.spec 14件通過と記載)
-- マージ: squash & delete-branch
-
-## 2026-10-30 10:45 UTC PR #380 抽出・移動の前後のコード差分を表示する (#357)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(2571件) / npm run lint ✅ / npm run typecheck ✅ / 差分をdocs/specs/refactor-code-diff-view.mdと照合(domain純粋関数・Fragment.id対応づけ・application無変更)。E2Eはこの環境にPlaywrightブラウザが無く未実行(PR本文の実測を参照)
 - マージ: squash & delete-branch
