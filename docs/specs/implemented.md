@@ -204,4 +204,5 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [clear-screen-block-shortcuts](clear-screen-block-shortcuts.md) | クリア画面などのモーダル表示中は Ctrl+Z / Ctrl+Y / ? を背面に効かせない(操作ガイドは例外) |
 | [tour-popover-no-cover](tour-popover-no-cover.md) | ツアーの吹き出しを、対象と読ませたい要素(avoid)に重ならない位置へ置く |
 | [editor-title-overflow](editor-title-overflow.md) | メソッドエディタの見出しが長いクラス名.メソッド名でも右に切れずパネル幅で折り返す |
+| [add-class-name-input](add-class-name-input.md) | 「クラスを追加」を名前入力なしの即時操作にし、NewClass(重なれば連番)で作る |
 | [clear-screen-score-nowrap](clear-screen-score-nowrap.md) | クリア画面の100点が円の中で折り返さないよう nowrap と文字サイズで1行に収める |

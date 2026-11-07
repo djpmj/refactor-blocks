@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-11-07 UTC PR #461 クラス追加時の名前入力を廃止する (#426)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(2836 passed / 1 skipped)/ npm run lint ✅ / npm run typecheck ✅。差分をIssue #426・仕様書add-class-name-inputと照合(addClassUseCaseの名前引数削除とuniqueNameでNewClass連番、名前入力欄の削除、domainのaddClassは未変更)。E2Eはこの環境で実行できず未実行(PR本文では関連5 spec・全件成功)
+- マージ: squash & delete-branch
+
 ## 2026-11-07 UTC PR #460 クリア画面の100点表示を1行に収める (#437)
 
 - 判定: 合格(blocker無し)
@@ -212,8 +218,3 @@
 - 確認した内容: npm test ✅(178ファイル/2613件) / npm run lint ✅ / npm run typecheck ✅。差分をIssue #362と仕様書wrong-move-reason-hintの設計判断(配置が変わった時のみ・減点0と白紙設計は除外・presentation層のみ)と照合。E2Eはこの環境でブラウザ未導入のため未実行(PR本文では関係E2E 20件通過)
 - マージ: squash & delete-branch
 
-## 2026-10-31 02:15 UTC PR #384 クイズ・ブランクモードの初回紹介ガイドを追加する (#354)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(lint・typecheck・Vitest 2602件)✅。差分をIssue #354/仕様書mode-intro-guidesと照合(presentation/infrastructureのみ、SpotlightOverlayのtotal・testId化で既存ツアー維持、storageState追加)。E2Eはこの環境でブラウザ未導入のため未実行(PR本文では関係E2E 60件成功)
-- マージ: squash & delete-branch
