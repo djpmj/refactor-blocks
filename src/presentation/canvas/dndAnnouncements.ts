@@ -1,6 +1,6 @@
 import type { Announcements, ScreenReaderInstructions, UniqueIdentifier } from '@dnd-kit/core';
 import { findClass, findClassOfField, findClassOfMethod, findField, findMethod, type Codebase } from '../../domain/codebase/Codebase';
-import { parseClassDragId, parseClassDropId, parseFieldDragId, parseFileDropId, parseMethodDragId } from './dndIds';
+import { isEmptyAreaDrop, parseClassDragId, parseClassDropId, parseFieldDragId, parseFileDropId, parseMethodDragId } from './dndIds';
 
 export const SCREEN_READER_INSTRUCTIONS: ScreenReaderInstructions = {
   draggable: 'スペースキーで持ち上げ、矢印キーで動かします。もう一度スペースキーで置き、Esc で取り消します。',
@@ -54,7 +54,8 @@ export function createAnnouncements(codebase: Codebase): Announcements {
     },
     onDragEnd: ({ active, over }) => {
       const name = describeDraggable(codebase, active.id);
-      if (over !== null) return `${name} を ${describeDroppable(codebase, over.id)} に置きました。`;
+      if (over !== null && !isEmptyAreaDrop(over.id)) return `${name} を ${describeDroppable(codebase, over.id)} に置きました。`;
+      // 部品置き場のファイルへのドロップも余白落下として扱う(CodebaseCanvas と同じ)
       // フィールドを余白へ落としても何も作らない(CodebaseCanvas の useDropHandler と同じ)
       if (parseFieldDragId(active.id) !== null) return `${name} は元の場所に戻りました。`;
       return `${name} を余白に置きました。新しいクラスを作ります。`;

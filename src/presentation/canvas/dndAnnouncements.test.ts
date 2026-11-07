@@ -3,6 +3,7 @@ import type { Active, Over } from '@dnd-kit/core';
 import type { Codebase } from '../../domain/codebase/Codebase';
 import { sampleCodebase } from '../../domain/codebase/testFixtures';
 import { createAnnouncements, describeDraggable, describeDroppable, SCREEN_READER_INSTRUCTIONS } from './dndAnnouncements';
+import { TRAY_FILE_ID } from '../../domain/blank/tray';
 import { classDragId, classDropId, fieldDragId, fileDropId, methodDragId } from './dndIds';
 
 function activeOf(id: string): Active {
@@ -159,6 +160,14 @@ describe('createAnnouncements', () => {
   it('余白に置いたとき', () => {
     // Act
     const text = announcements.onDragEnd({ active, over: null });
+
+    // Assert
+    expect(text).toBe('OrderService.placeOrder() を余白に置きました。新しいクラスを作ります。');
+  });
+
+  it('部品置き場のファイルに置いても、余白に置いたときと同じ通知にする', () => {
+    // Act
+    const text = announcements.onDragEnd({ active, over: overOf(fileDropId(TRAY_FILE_ID)) });
 
     // Assert
     expect(text).toBe('OrderService.placeOrder() を余白に置きました。新しいクラスを作ります。');
