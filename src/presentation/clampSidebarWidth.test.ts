@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clampSidebarWidth } from './clampSidebarWidth';
-import { widthAfterDrag } from './clampSidebarWidth';
+import { clampSidebarWidth, sidebarWidthBounds, widthAfterDrag } from './clampSidebarWidth';
 
 describe('clampSidebarWidth', () => {
   it.each([
@@ -48,5 +47,27 @@ describe('widthAfterDrag', () => {
 
     // Assert
     expect(clamped).toBe(200);
+  });
+});
+
+describe('sidebarWidthBounds', () => {
+  it.each([
+    { name: '701〜1023px では右パネルの上限を画面幅の30%にする', side: 'right', viewport: 800, min: 280, max: 640, expected: { min: 240, max: 240 } },
+    { name: '701〜1023px では左パネルの上限も画面幅の30%にする', side: 'left', viewport: 800, min: 200, max: 280, expected: { min: 200, max: 240 } },
+    { name: '1023px は30%の上限を使う', side: 'right', viewport: 1023, min: 280, max: 640, expected: { min: 280, max: 306 } },
+    { name: '1024px 以上は呼び出し元の範囲のまま', side: 'right', viewport: 1024, min: 280, max: 640, expected: { min: 280, max: 640 } },
+    { name: '701px は最小幅も上限に収める', side: 'right', viewport: 701, min: 280, max: 640, expected: { min: 210, max: 210 } },
+    { name: '700px 以下の左パネルは今の式のまま', side: 'left', viewport: 375, min: 200, max: 480, expected: { min: 120, max: 150 } },
+    { name: '700px 以下の右パネルは呼び出し元の範囲のまま', side: 'right', viewport: 375, min: 280, max: 640, expected: { min: 280, max: 640 } },
+    { name: '30%より maxWidth が小さければ maxWidth を使う', side: 'left', viewport: 1000, min: 200, max: 250, expected: { min: 200, max: 250 } },
+  ] as const)('$name', ({ side, viewport, min, max, expected }) => {
+    // Arrange
+    // (it.each の入力)
+
+    // Act
+    const bounds = sidebarWidthBounds(side, viewport, min, max);
+
+    // Assert
+    expect(bounds).toEqual(expected);
   });
 });
