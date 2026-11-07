@@ -223,7 +223,7 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .sidebar[hidden] { display: none; }
 .sidebar-backdrop { display: none; }
 .sidebar { width: var(--sidebar-width, 480px); flex: none; padding: 12px 16px; background: var(--surface); border-right: 1px solid var(--border); overflow-y: auto; overflow-wrap: anywhere; }
-.sidebar-toggle { position: absolute; z-index: 10; top: 8px; left: 0; width: 22px; height: 40px; padding: 0; border: 1px solid var(--border); border-left: 0; border-radius: 0 8px 8px 0; background: var(--surface); color: var(--text); font-size: 16px; line-height: 1; cursor: pointer; }
+.sidebar-toggle { position: absolute; z-index: 10; top: 8px; left: 0; width: 24px; height: 40px; padding: 0; border: 1px solid var(--border); border-left: 0; border-radius: 0 8px 8px 0; background: var(--surface); color: var(--text); font-size: 16px; line-height: 1; cursor: pointer; }
 .app__body--sidebar-open > .sidebar-toggle { left: var(--sidebar-width, 480px); }
 .sidebar-toggle:hover { border-color: var(--accent); }
 .sidebar-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -243,10 +243,10 @@ body { margin: 0; background: var(--bg); color: var(--text); }
   .app__body:not(.app__body--sidebar-open) > .sidebar { position: absolute; width: 0; min-width: 0; padding: 0; border: 0; }
   .app__body--sidebar-open > .sidebar { position: absolute; z-index: 21; inset: 0 auto 0 0; width: 85vw; max-width: 85vw; box-sizing: border-box; box-shadow: 8px 0 24px rgb(0 0 0 / 24%); }
   .sidebar-backdrop { display: block; position: fixed; z-index: 20; inset: 0; border: 0; border-radius: 0; background: rgb(0 0 0 / 35%); }
-  .app__body--sidebar-open > .sidebar-toggle { z-index: 22; left: calc(85vw - 22px); }
+  .app__body--sidebar-open > .sidebar-toggle { z-index: 22; left: calc(85vw - 24px); }
   .app__body--sidebar-open > .sidebar-resizable__handle--left { display: none; }
   .app__body--sidebar-open > .sidebar-resizable__handle--left + .sidebar-toggle { z-index: 22; }
-  .app__body--sidebar-open > .sidebar-resizable__handle--left + .sidebar-toggle { left: calc(85vw - 22px); }
+  .app__body--sidebar-open > .sidebar-resizable__handle--left + .sidebar-toggle { left: calc(85vw - 24px); }
   .sidebar-resizable { min-width: 0; }
   .app__body .sidebar-resizable--rail, .app__body .sidebar-resizable--empty-open, .app__body .editor-rail { display: none; }
   .sidebar-resizable--rail, .sidebar-resizable--empty-open { width: 0 !important; min-width: 0; }
@@ -601,7 +601,7 @@ input.class-node__name { width: 14ch; }
 .score-breakdown__why[hidden] { display: none; }
 .score-breakdown__why p { margin: 0 0 4px; line-height: 1.5; }
 .score-breakdown__items button { padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); text-align: left; }
-.score-breakdown__items button.score-breakdown__target { padding: 1px 6px; }
+.score-breakdown__items button.score-breakdown__target { min-height: 24px; padding: 1px 6px; }
 .score-breakdown__items button[aria-pressed='true'] { border: 3px solid var(--warning); }
 .class-node--flagged, .file-node--flagged { border: 4px solid var(--warning); background-color: color-mix(in srgb, var(--warning) 10%, var(--surface)); }
 .class-node--resolved, .file-node--resolved { animation: resolved-success 650ms ease-out; }
@@ -693,7 +693,7 @@ input.class-node__name { width: 14ch; }
 .reflection-note textarea { box-sizing: border-box; width: 100%; resize: vertical; font: inherit; }
 .reflection-note p { margin: 4px 0; color: var(--muted); }
 .glossary-term-wrap { position: relative; display: inline; }
-.glossary-term { display: inline; padding: 0; border: 0; border-bottom: 1px dotted currentColor; border-radius: 0; background: none; color: inherit; font: inherit; cursor: help; }
+.glossary-term { display: inline; min-height: 24px; padding: 0; border: 0; border-bottom: 1px dotted currentColor; border-radius: 0; background: none; color: inherit; font: inherit; cursor: help; }
 .glossary-term:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .glossary-term__popover { position: absolute; top: 100%; left: 0; z-index: 10; display: flex; flex-direction: column; gap: 2px; width: max-content; max-width: 240px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); font-size: 12px; font-weight: normal; text-align: left; box-shadow: 0 2px 8px rgb(0 0 0 / 20%); }
 .glossary-term__popover[hidden] { display: none; }
