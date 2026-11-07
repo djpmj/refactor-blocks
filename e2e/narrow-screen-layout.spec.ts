@@ -33,8 +33,10 @@ test('狭い画面では課題とエディタをキャンバスに重ねて開�
   expect((await editor.boundingBox())?.width).toBeGreaterThanOrEqual(315);
   const fragment = page.getByRole('checkbox').first();
   await fragment.check();
-  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
-  await expect(editor).toContainText('抽出');
+  const methodCount = await page.locator('[data-testid^="method-"]').count();
+  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click({ force: true });
+  await expect(page.locator('.error-toast')).toContainText('まず「もし、この変更が来たら?」');
+  await expect(page.locator('[data-testid^="method-"]')).toHaveCount(methodCount);
   const editorClose = page.getByRole('button', { name: 'メソッドエディタを閉じる' });
   await editorClose.click();
   await expect(editor).toBeHidden();

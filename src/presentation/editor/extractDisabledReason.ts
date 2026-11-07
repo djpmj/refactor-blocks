@@ -26,3 +26,10 @@ export function extractDisabledReason(method: Method, selected: ReadonlySet<stri
 export function extractNameInvalid(method: Method, selected: ReadonlySet<string>, newName: string, existingNames: readonly string[]): boolean {
   return blockOf(method, selected, newName, existingNames)?.nameInvalid ?? false;
 }
+
+export const OPENING_FIX_LOCK_REASON = '先に「実際に直してみる」を押してください';
+
+/** ボタンの下に出す理由(押せるなら null)。locked は isOpeningFixLocked の結果。ロック中は、どの理由を解消しても押せないのでロックを優先する。 */
+export function extractButtonReason(locked: boolean, disabledReason: string | null): string | null {
+  return locked ? OPENING_FIX_LOCK_REASON : disabledReason;
+}

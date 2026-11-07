@@ -414,8 +414,13 @@ function currentStep(state: GameState) {
   });
 }
 
+/** 冒頭の手直し(opening-fix)が終わるまで、組み替えの操作をロックしているか。stageStep が 'opening-fix' を返す条件と同じ(点数に依らないので採点しない)。 */
+export function isOpeningFixLocked(state: Pick<GameState, 'openingFixEnabled' | 'openingFixes' | 'stage'>): boolean {
+  return state.openingFixEnabled && painRequestsOf(state.stage).modify !== undefined && !Object.hasOwn(state.openingFixes, state.stage.id);
+}
+
 function blockDuringOpeningFix(state: GameState): Partial<GameState> | null {
-  return state.openingFixEnabled && currentStep(state) === 'opening-fix' ? { message: OPENING_FIX_MESSAGE, notice: null } : null;
+  return isOpeningFixLocked(state) ? { message: OPENING_FIX_MESSAGE, notice: null } : null;
 }
 
 const CHANGE_REQUEST_LOCK_MESSAGE = '変更依頼に進む前に、手直しと組み替えを完了してください';

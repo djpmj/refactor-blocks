@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Method } from '../../domain/codebase/Codebase';
-import { extractDisabledReason, extractNameInvalid } from './extractDisabledReason';
+import { extractButtonReason, extractDisabledReason, extractNameInvalid, OPENING_FIX_LOCK_REASON } from './extractDisabledReason';
 
 const fragment = (id: string) => ({ id, label: id, lines: 1, responsibility: 'r' });
 const method: Method = { id: 'm', name: 'printMonthlyReport', visibility: 'public', fragments: [fragment('a'), fragment('b'), fragment('c')] };
@@ -106,5 +106,44 @@ describe('extractNameInvalid(理由と aria-invalid の一致)', () => {
     expect(invalid).toBe(expected);
     const reason = extractDisabledReason(method, selected, name, existing);
     expect(invalid).toBe(reason?.startsWith('同じクラスに') === true || reason?.includes('はメソッド名に使えません') === true);
+  });
+});
+
+describe('extractButtonReason', () => {
+  it('ロック中は理由がなくてもロックの理由を出す', () => {
+    // Act
+    const reason = extractButtonReason(true, null);
+
+    // Assert
+    expect(reason).toBe(OPENING_FIX_LOCK_REASON);
+  });
+
+  it('ロック中は他の理由よりロックの理由を優先する', () => {
+    // Act
+    const reason = extractButtonReason(true, '処理を1つ以上選ぶと押せます');
+
+    // Assert
+    expect(reason).toBe(OPENING_FIX_LOCK_REASON);
+  });
+
+  it('ロックなしなら通常の理由をそのまま返す', () => {
+    // Act
+    const reason = extractButtonReason(false, 'メソッド名を入れると押せます');
+
+    // Assert
+    expect(reason).toBe('メソッド名を入れると押せます');
+  });
+
+  it('ロックなし・理由なしなら null(押せる)', () => {
+    // Act
+    const reason = extractButtonReason(false, null);
+
+    // Assert
+    expect(reason).toBeNull();
+  });
+
+  it('ロックの理由文は「実際に直してみる」へ誘導する', () => {
+    // Assert
+    expect(OPENING_FIX_LOCK_REASON).toBe('先に「実際に直してみる」を押してください');
   });
 });
