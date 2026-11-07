@@ -187,7 +187,8 @@ function withoutEmptyTray(codebase: Codebase): Codebase {
 
 function placeRows(codebase: Codebase, layers: readonly StageLayer[] | undefined): PlacedRows {
   const visibleCodebase = withoutEmptyTray(codebase);
-  const rows = fileRows(visibleCodebase, layers);
+  const tray = visibleCodebase.files.find((file) => file.id === TRAY_FILE_ID);
+  const rows = fileRows({ files: visibleCodebase.files.filter((file) => file.id !== TRAY_FILE_ID) }, layers);
   const metrics = new Map(visibleCodebase.files.map((file) => [file.id, measureFile(file)] as const));
   const widestRow = Math.max(0, ...rows.map((files) => rowWidth(files, metrics)));
   const nodes: CodebaseFlowNode[] = [];
@@ -208,6 +209,7 @@ function placeRows(codebase: Codebase, layers: readonly StageLayer[] | undefined
     });
     rowY += rowHeight + ROW_GAP;
   });
+  if (tray !== undefined) nodes.push(...layoutFile(tray, 0, rows.length === 0 ? 0 : rowY, metrics.get(tray.id) ?? measureFile(tray)));
   return { nodes, bands, width: widestRow };
 }
 
