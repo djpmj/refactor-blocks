@@ -14,7 +14,7 @@ import { Background, Controls, Panel, ReactFlow, useNodesInitialized, useReactFl
 import { useCallback, useEffect, useMemo, useRef, useState, type Dispatch, type RefObject, type SetStateAction } from 'react';
 import { DropTargetsContext, type DropTargetsState } from './DropTargetsContext';
 import { createPortal } from 'react-dom';
-import { findClass, findClassOfMethod, findField, findFileOfClass, findMethod, type Codebase } from '../../domain/codebase/Codebase';
+import { findClass, findClassOfField, findClassOfMethod, findField, findFileOfClass, findMethod, type CodeClass, type Codebase } from '../../domain/codebase/Codebase';
 import { methodLines } from '../../domain/codebase/lineCount';
 import { violationTargets } from '../../domain/scoring/violationTargets';
 import { visibilityViolationDependencies } from '../../domain/scoring/visibility';
@@ -40,7 +40,7 @@ import { GhostAnimation } from './GhostAnimation';
 import type { Edge } from '@xyflow/react';
 import { dropTargetIds, type Dragging } from './dropTargets';
 import { placeFiles } from './keepFilePositions';
-import { autoViewport } from './autoViewport';
+import { autoViewport, revealInViewport, type Rect } from './autoViewport';
 import { DETAIL_ZOOM, useShowDetails } from './semanticZoom';
 import { shouldRefit, type AutoFitState } from './autoFit';
 import { OpeningFixBanner } from './OpeningFixBanner';
@@ -110,18 +110,32 @@ function canvasSize(): { width: number; height: number } | null {
   return width > 0 && height > 0 ? { width, height } : null;
 }
 
+/** 選んでいるメソッド・フィールドのクラスのノードの矩形(絶対座標)。選択が無い・ノードが無いときは null。 */
+function selectedClassBounds(api: ReturnType<typeof useGameStoreApi>, nodes: CodebaseFlowNode[], getNodesBounds: (nodes: CodebaseFlowNode[]) => Rect): Rect | null {
+  const { selectedMethodId, selectedFieldId, codebase } = api.getState();
+  let codeClass: CodeClass | undefined;
+  if (selectedMethodId !== null) codeClass = findClassOfMethod(codebase, selectedMethodId);
+  else if (selectedFieldId !== null) codeClass = findClassOfField(codebase, selectedFieldId);
+  const classNode = codeClass === undefined ? undefined : nodes.find((node) => node.id === codeClass.id);
+  return classNode === undefined ? null : getNodesBounds([classNode]);
+}
+
 /** 図全体を自動で合わせる。メソッドが隠れる倍率(DETAIL_ZOOM)未満にはせず、収まらない分は左上から見せる。 */
 function useAutoViewportFit() {
   const { getNodes, getNodesBounds, setViewport } = useReactFlow<CodebaseFlowNode>();
   const measured = () => getNodes().every((node) => node.measured?.width !== undefined && node.measured.height !== undefined);
   // 変更依頼の実装中は倍率に関わらずメソッドを出し、部品置き場まで全体を見渡せる必要があるので、床を設けない
   const implementing = useGameStore((state) => state.changeSession !== null);
+  const api = useGameStoreApi();
   /** 合わせたら true。ノードが増えた直後は useNodesInitialized が古いままのことがあるので、計測が済んでいなければ何もせず false。 */
   return (): boolean => {
     const size = canvasSize();
     const nodes = getNodes();
     if (size === null || nodes.length === 0 || !measured()) return false;
-    void setViewport(autoViewport(getNodesBounds(nodes), size, { minZoom: implementing ? CANVAS_MIN_ZOOM : DETAIL_ZOOM, maxZoom: 2, padding: 0.1 }));
+    const fitted = autoViewport(getNodesBounds(nodes), size, { minZoom: implementing ? CANVAS_MIN_ZOOM : DETAIL_ZOOM, maxZoom: 2, padding: 0.1 });
+    // 下限で収まらないとき、エディタで触っているクラスだけは見えるようにパンする(倍率は変えない)
+    const selected = selectedClassBounds(api, nodes, getNodesBounds);
+    void setViewport(selected === null ? fitted : revealInViewport(fitted, selected, size, REVEAL_MARGIN));
     return true;
   };
 }
