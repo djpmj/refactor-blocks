@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-11-07 UTC PR #459 エディタ見出しが長いメソッド名で溢れないようにする (#433)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(2833 passed) / npm run lint ✅ / npm run typecheck ✅。差分(CSS 1行 overflow-wrap: anywhere とE2E追加)をIssue #433 の修正方針と照合。新規E2Eはレビュー環境で実行できず未実行、PR記載の結果を確認。評価サイクル: 1回
+- マージ: squash & delete-branch
+
 ## 2026-11-07 00:25 UTC PR #456 モーダル表示中は Undo/Redo と ? を背面に効かせない (#428)
 
 - 判定: 合格(blocker無し)
@@ -210,10 +216,4 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm run check(lint・typecheck・Vitest 2594件)✅。差分をIssue #355の設計判断と照合(operationLabelsのMap・Historyは不変・presentation層のみ)。E2Eはこの環境で実行許可が無く未実行(PR本文では関係E2E 70件成功)
-- マージ: squash & delete-branch
-
-## 2026-10-30 11:20 UTC PR #381 似たパターンの使い分けを比較表で見られるようにする (#356)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(2575件) / npm run lint ✅ / npm run typecheck ✅ / docs/specs/pattern-comparison-table.md と差分を照合(presentationのみの変更・静的データとステージ定義のずれ検出テスト・E2E追加)。E2Eはこの環境で実行許可が無く未実行(PR本文ではroadmap.spec 14件通過と記載)
 - マージ: squash & delete-branch

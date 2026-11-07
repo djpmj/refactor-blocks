@@ -203,3 +203,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [keyboard-open-method-editor](keyboard-open-method-editor.md) | キーボードドラッグの開始キーを Space のみにし、Enter でメソッドの中身(抽出エディタ)を開けるようにする |
 | [clear-screen-block-shortcuts](clear-screen-block-shortcuts.md) | クリア画面などのモーダル表示中は Ctrl+Z / Ctrl+Y / ? を背面に効かせない(操作ガイドは例外) |
 | [tour-popover-no-cover](tour-popover-no-cover.md) | ツアーの吹き出しを、対象と読ませたい要素(avoid)に重ならない位置へ置く |
+| [editor-title-overflow](editor-title-overflow.md) | メソッドエディタの見出しが長いクラス名.メソッド名でも右に切れずパネル幅で折り返す |
