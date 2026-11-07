@@ -2,7 +2,7 @@ import type { Codebase } from '../../domain/codebase/Codebase';
 import { biggestProblem } from '../../domain/scoring/biggestProblem';
 import { findLineLimitViolations } from '../../domain/scoring/lineLimits';
 import type { Score } from '../../domain/scoring/score';
-import { clearConditions, worstMeasures } from '../../domain/stage/clearConditions';
+import { arisenProblems, clearConditions, worstMeasures } from '../../domain/stage/clearConditions';
 import type { Stage } from '../../domain/stage/Stage';
 import { describeCondition } from '../stage/describeCondition';
 import { RULE_LABEL } from '../stage/describeScore';
@@ -29,6 +29,15 @@ export function describeFallbackCritique(input: Readonly<{
     const measures = worstMeasures(codebase, stage);
     lines.push('まだ達成していない条件:');
     for (const condition of unmet) {
+      const { goal, current: status } = describeCondition(condition, stage, measures, codebase);
+      lines.push(status === null ? `・${goal}` : `・${goal}(${status})`);
+    }
+  }
+  const problems = arisenProblems(initial, current);
+  if (problems.length > 0) {
+    const measures = worstMeasures(codebase, stage);
+    lines.push('操作で生じた問題:');
+    for (const condition of problems) {
       const { goal, current: status } = describeCondition(condition, stage, measures, codebase);
       lines.push(status === null ? `・${goal}` : `・${goal}(${status})`);
     }

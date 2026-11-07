@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Codebase } from '../../domain/codebase/Codebase';
-import { clearConditionKey, clearConditions, worstMeasures } from '../../domain/stage/clearConditions';
+import { arisenProblems, clearConditionKey, clearConditions, worstMeasures } from '../../domain/stage/clearConditions';
 import type { Score } from '../../domain/scoring/score';
 import type { Stage } from '../../domain/stage/Stage';
 import type { History } from '../../domain/codebase/history';
@@ -86,10 +86,32 @@ function useJustMetRules(stageId: string, conditions: ReturnType<typeof clearCon
   return { rules: justMetConditions.stageId === stageId ? justMetConditions.rules : new Set<string>(), clear };
 }
 
-function conditionLabel(achieved: boolean, goal: string, current: string | null): string {
-  const status = achieved ? '達成' : '未達成';
+function conditionStatus(achieved: boolean): string {
+  return achieved ? '達成' : '未達成';
+}
+
+function conditionLabel(arisen: boolean, achieved: boolean, goal: string, current: string | null): string {
+  const status = arisen ? '操作で生じた問題' : conditionStatus(achieved);
   const currentText = current === null ? '' : ` (${current})`;
   return `${status}: ${goal}${currentText}`;
+}
+
+function ConditionHeading({ achievedCount, total, problemCount }: Readonly<{ achievedCount: number; total: number; problemCount: number }>) {
+  const complete = achievedCount === total && problemCount === 0;
+  return (
+    <div className="clear-conditions__heading">
+      <h3 id="clear-conditions-title">クリア条件</h3>
+      <span
+        className={`clear-conditions__progress${complete ? ' clear-conditions__progress--complete' : ''}`}
+        data-testid="clear-conditions-progress"
+      >
+        {achievedCount}/{total} 達成
+      </span>
+      {problemCount > 0 && (
+        <span className="clear-conditions__arisen" data-testid="clear-conditions-arisen">操作で生じた問題 {problemCount}件</span>
+      )}
+    </div>
+  );
 }
 
 export function ClearConditionList({ stage, codebase, initial, current }: Readonly<{
@@ -102,32 +124,26 @@ export function ClearConditionList({ stage, codebase, initial, current }: Readon
     () => clearConditions(initial, current, findLineLimitViolations(codebase, stage.limits)),
     [initial, current, codebase, stage.limits],
   );
+  const problems = useMemo(() => arisenProblems(initial, current), [initial, current]);
   const measures = useMemo(() => worstMeasures(codebase, stage), [codebase, stage]);
-  const justMet = useJustMetRules(stage.id, conditions, codebase);
+  const tracked = useMemo(() => [...conditions, ...problems], [conditions, problems]);
+  const justMet = useJustMetRules(stage.id, tracked, codebase);
 
   const achievedCount = conditions.filter((condition) => condition.count === 0).length;
-  const allAchieved = achievedCount === conditions.length;
   return (
     <section className="clear-conditions" aria-labelledby="clear-conditions-title">
-      <div className="clear-conditions__heading">
-        <h3 id="clear-conditions-title">クリア条件</h3>
-        <span
-          className={`clear-conditions__progress${allAchieved ? ' clear-conditions__progress--complete' : ''}`}
-          data-testid="clear-conditions-progress"
-        >
-          {achievedCount}/{conditions.length} 達成
-        </span>
-      </div>
+      <ConditionHeading achievedCount={achievedCount} total={conditions.length} problemCount={problems.length} />
       <ul aria-live="polite">
-        {conditions.map((condition) => {
+        {tracked.map((condition, index) => {
+          const arisen = index >= conditions.length;
           const achieved = condition.count === 0;
           const description = describeCondition(condition, stage, measures, codebase);
           const recentlyAchieved = justMet.rules.has(clearConditionKey(condition));
-          const label = conditionLabel(achieved, description.goal, description.current);
+          const label = conditionLabel(arisen, achieved, description.goal, description.current);
           return (
             <li
               key={clearConditionKey(condition)}
-              className={`clear-condition--${achieved ? 'met' : 'unmet'}${recentlyAchieved ? ' clear-condition--just-met' : ''}`}
+              className={`clear-condition--${achieved ? 'met' : 'unmet'}${arisen ? ' clear-condition--arisen' : ''}${recentlyAchieved ? ' clear-condition--just-met' : ''}`}
               aria-label={label}
               onAnimationEnd={(event) => {
                 if (event.target === event.currentTarget) justMet.clear(clearConditionKey(condition));
@@ -135,6 +151,7 @@ export function ClearConditionList({ stage, codebase, initial, current }: Readon
             >
               <span className="clear-condition__badge" aria-hidden="true">{achieved ? '✓' : '✗'}</span>
               <span className="clear-condition__description">
+                {arisen && <small className="clear-condition__arisen-label">操作で生じた問題</small>}
                 <span className="clear-condition__goal"><GlossaryText text={description.goal} /></span>
                 {description.current !== null && <span className="clear-condition__current">{description.current}</span>}
                 {stage.conditionNotes?.[condition.rule] === undefined ? null : (

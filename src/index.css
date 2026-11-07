@@ -156,6 +156,8 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .clear-conditions__heading h3 { margin: 0; }
 .clear-conditions__progress { padding: 1px 7px; border: 1px solid var(--border); border-radius: 999px; color: var(--muted); font-size: 11px; line-height: 1.5; }
 .clear-conditions__progress--complete { border-color: var(--success); background: color-mix(in srgb, var(--success) 12%, var(--surface)); color: var(--success); }
+.clear-conditions__arisen { color: var(--answer-danger-text); font-size: 11px; font-weight: 700; }
+.clear-condition__arisen-label { display: block; color: var(--answer-danger-text); font-size: 11px; font-weight: 700; }
 .clear-conditions ul { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; list-style: none; }
 .clear-conditions li { display: flex; align-items: flex-start; gap: 8px; margin: 0; padding: 6px 8px; border-radius: 7px; }
 .clear-condition--unmet { background: color-mix(in srgb, var(--danger) 8%, var(--surface)); color: var(--answer-danger-text); }

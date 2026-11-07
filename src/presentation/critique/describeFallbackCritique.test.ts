@@ -102,6 +102,26 @@ describe('describeFallbackCritique', () => {
     expect(text).not.toContain(`いちばん大きい減点: ${RULE_LABEL['line-limit']}`);
   });
 
+  it('操作で生じた問題は、条件の分母を変えず「操作で生じた問題:」に並べる', () => {
+    // Arrange
+    const current: Score = {
+      ...initial,
+      deducted: initial.deducted + 5,
+      deductions: initial.deductions.map((deduction) => deduction.rule === 'empty' ? { ...deduction, count: 1, points: 5 } : deduction),
+    };
+    const base = describeFallbackCritique({ stage, codebase: stage.codebase, initial, current: initial });
+
+    // Act
+    const text = describeFallbackCritique({ stage, codebase: stage.codebase, initial, current });
+
+    // Assert
+    const total = (value: string) => /クリア条件: \d+\/(\d+) 達成/.exec(value)?.[1];
+    expect(total(text)).toBe(total(base));
+    const lines = text.split('\n');
+    expect(lines).toContain('操作で生じた問題:');
+    expect(lines.slice(lines.indexOf('操作で生じた問題:') + 1).some((line) => line.startsWith('・') && line.includes('空のクラス・ファイル'))).toBe(true);
+  });
+
   it('減点なしなら、褒める一文だけを出す', () => {
     // Arrange
     const current: Score = { total: 100, deducted: 0, deductions: [] };

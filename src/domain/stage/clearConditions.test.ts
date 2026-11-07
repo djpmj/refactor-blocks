@@ -2,15 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { sampleCodebase } from '../codebase/testFixtures';
 import type { Codebase } from '../codebase/Codebase';
 import type { Score } from '../scoring/score';
-import { clearConditionKey, clearConditions, worstMeasures } from './clearConditions';
+import { arisenProblems, clearConditionKey, clearConditions, worstMeasures } from './clearConditions';
 
 function score(counts: Partial<Record<Score['deductions'][number]['rule'], number>>): Score {
-  const rules: Score['deductions'][number]['rule'][] = ['line-limit', 'coupling', 'cycle', 'responsibility', 'visibility', 'unused'];
+  const rules: Score['deductions'][number]['rule'][] = ['line-limit', 'coupling', 'cycle', 'responsibility', 'visibility', 'empty', 'unused'];
   return { total: 100, deducted: 0, deductions: rules.map((rule) => ({ rule, count: counts[rule] ?? 0, points: 0 })) };
 }
 
 describe('clearConditions', () => {
-  it('常時表示の3条件を含め、初期か現在のどちらかで違反した条件だけを採点順に返す', () => {
+  it('常時表示の3条件を含め、初期に違反があった条件だけを採点順に返す(操作で生じた違反は含めない)', () => {
     // Arrange
     const initial = score({ visibility: 2 });
     const current = score({ 'line-limit': 1, coupling: 2, responsibility: 3, unused: 1 });
@@ -26,8 +26,32 @@ describe('clearConditions', () => {
       { rule: 'coupling', count: 2 },
       { rule: 'responsibility', count: 3 },
       { rule: 'visibility', count: 0 },
-      { rule: 'unused', count: 1 },
     ]);
+  });
+
+  it('現在の違反が変わっても、返る条件の並び(分母)は変わらない', () => {
+    // Arrange
+    const initial = score({ visibility: 2 });
+    const currents = [score({ visibility: 2 }), score({ visibility: 2, empty: 1, unused: 2 }), score({})];
+
+    // Act
+    const keys = currents.map((current) => clearConditions(initial, current, []).map(clearConditionKey));
+
+    // Assert
+    expect(keys[1]).toEqual(keys[0]);
+    expect(keys[2]).toEqual(keys[0]);
+  });
+
+  it('初期に違反があった任意ルールは、今0件でも残る', () => {
+    // Arrange
+    const initial = score({ empty: 1 });
+    const current = score({});
+
+    // Act
+    const conditions = clearConditions(initial, current, []);
+
+    // Assert
+    expect(conditions).toContainEqual({ rule: 'empty', count: 0 });
   });
 
   it('どちらも違反がない任意ルールは含めない', () => {
@@ -45,6 +69,55 @@ describe('clearConditions', () => {
       { rule: 'coupling', count: 0 },
       { rule: 'responsibility', count: 0 },
     ]);
+  });
+});
+
+describe('arisenProblems', () => {
+  it('初期は0件で今は違反があるルールを採点順に返す', () => {
+    // Arrange
+    const initial = score({});
+    const current = score({ empty: 1, unused: 2 });
+
+    // Act
+    const problems = arisenProblems(initial, current);
+
+    // Assert
+    expect(problems).toEqual([{ rule: 'empty', count: 1 }, { rule: 'unused', count: 2 }]);
+  });
+
+  it('初期に違反があったルールは含めない', () => {
+    // Arrange
+    const initial = score({ empty: 1 });
+    const current = score({ empty: 2 });
+
+    // Act
+    const problems = arisenProblems(initial, current);
+
+    // Assert
+    expect(problems).toEqual([]);
+  });
+
+  it('常時表示のルールは含めない', () => {
+    // Arrange
+    const initial = score({});
+    const current = score({ coupling: 1, 'line-limit': 1 });
+
+    // Act
+    const problems = arisenProblems(initial, current);
+
+    // Assert
+    expect(problems).toEqual([]);
+  });
+
+  it('今0件のルールは含めない', () => {
+    // Arrange
+    const clean = score({});
+
+    // Act
+    const problems = arisenProblems(clean, clean);
+
+    // Assert
+    expect(problems).toEqual([]);
   });
 });
 
