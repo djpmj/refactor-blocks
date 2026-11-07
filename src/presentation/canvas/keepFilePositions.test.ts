@@ -1,12 +1,39 @@
 import { describe, expect, it } from 'vitest';
 import { placeFiles } from './keepFilePositions';
 import type { CodebaseFlowNode } from './layoutCodebase';
+import { TRAY_FILE_ID } from '../../domain/blank/tray';
 
 function file(id: string, x: number, y: number, size = { width: 120, height: 100 }): CodebaseFlowNode {
   return { id, type: 'fileNode', position: { x, y }, style: size, data: { fileId: id } };
 }
 
 describe('placeFiles', () => {
+  it('未知の部品置き場を既存ファイル群の左下に置き、次の新規ファイルは右隣に置く', () => {
+    // Arrange
+    const rects = new Map([
+      ['a', { x: 20, y: 80, width: 180, height: 120 }],
+      ['b', { x: 260, y: 40, width: 180, height: 300 }],
+    ]);
+
+    // Act
+    const placed = placeFiles([file(TRAY_FILE_ID, 0, 0), file('c', 0, 0)], new Map(), rects);
+
+    // Assert
+    expect(placed.map((node) => node.position)).toEqual([{ x: 20, y: 400 }, { x: 500, y: 40 }]);
+  });
+
+  it('既知の部品置き場は記憶した位置に置く', () => {
+    // Arrange
+    const known = new Map([[TRAY_FILE_ID, { x: 700, y: 80 }]]);
+    const rects = new Map([['a', { x: 20, y: 80, width: 180, height: 120 }]]);
+
+    // Act
+    const placed = placeFiles([file(TRAY_FILE_ID, 0, 0)], known, rects);
+
+    // Assert
+    expect(placed[0]?.position).toEqual({ x: 700, y: 80 });
+  });
+
   it('知っているファイルは依存関係が変わっても記憶した位置に置く', () => {
     // Arrange
     const known = new Map([['a', { x: 400, y: 120 }], ['b', { x: 50, y: 300 }]]);

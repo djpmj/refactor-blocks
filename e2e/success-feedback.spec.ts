@@ -121,5 +121,5 @@ test('reduced motion では点数は即時更新し、解決したメソッド�
   await expect(ring).not.toHaveClass(/score-badge__ring--celebrate/);
   await expect(method).toHaveClass(/method-chip-button--resolved/);
   await expect(method.locator('.method-chip')).toHaveCSS('animation-name', 'none', { timeout: 500 });
-  await expect(method.locator('.method-chip')).toHaveCSS('outline-color', 'rgb(46, 158, 106)', { timeout: 500 });
+  await expect(method.locator('.method-chip')).toHaveCSS('outline-color', 'rgb(27, 115, 73)', { timeout: 500 });
 });

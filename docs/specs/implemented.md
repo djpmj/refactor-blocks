@@ -210,3 +210,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [blank-design-short-viewport](blank-design-short-viewport.md) | 短い画面でも白紙設計の部品を操作できるよう、画面を縦スクロール可能にしキャンバスの最小高さを確保する |
 | [glossary-example-code-format](glossary-example-code-format.md) | 用語集の定義・例文のバッククォート囲みのコード片を等幅の code 要素で表示する |
 | [disabled-button-reason-visible](disabled-button-reason-visible.md) | 押せないボタンを aria-disabled にし、押せない理由を見える文と aria-describedby で伝える |
+| [text-contrast-fixes](text-contrast-fixes.md) | ライトテーマの文字色・アクセント色を WCAG 4.5:1 以上にし、コントラストをテストで固定する |

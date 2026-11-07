@@ -106,7 +106,7 @@ function useOpenSidebarForManualFix(active: boolean, setSidebarOpen: (open: bool
 }
 
 /**
- * 変更依頼の間は右に依頼パネルが出るため、701〜1399pxでは左サイドバーを閉じてキャンバスを広く使う(700px以下は元々ドロワー)(#404)。
+ * 変更依頼の間は右に依頼パネルが出るため、701px以上では左サイドバーを閉じてキャンバスを広く使う(700px以下は元々ドロワー)(#404)。1440pxでも倍率が0.335になったため上限を外した。
  * 閉じるとフォーカスが消えるので開閉ボタンへ移し、閉じたことを読み上げる。終了後は閉じたまま(手動で開ける)。
  */
 function ChangeRequestSidebarCloser({ setSidebarOpen, toggleRef }: Readonly<{ setSidebarOpen: (open: boolean) => void; toggleRef: RefObject<HTMLButtonElement | null> }>) {
@@ -114,7 +114,7 @@ function ChangeRequestSidebarCloser({ setSidebarOpen, toggleRef }: Readonly<{ se
   const wasActive = useRef(active);
   const [message, setMessage] = useState('');
   useEffect(() => {
-    if (!wasActive.current && active && window.matchMedia('(min-width: 701px) and (max-width: 1399px)').matches) {
+    if (!wasActive.current && active && window.matchMedia('(min-width: 701px)').matches) {
       setSidebarOpen(false);
       toggleRef.current?.focus();
       setMessage('課題サイドバーを閉じました。開くには「サイドバーを開く」ボタンを押してください');

@@ -1,5 +1,18 @@
 import type { XYPosition } from '@xyflow/react';
+import { TRAY_FILE_ID } from '../../domain/blank/tray';
 import { FILE_GAP, type CodebaseFlowNode, type FileRect } from './layoutCodebase';
+
+function trayPosition(rects: ReadonlyMap<string, FileRect>): XYPosition {
+  const existing = [...rects.values()];
+  return {
+    x: Math.min(...existing.map((rect) => rect.x)),
+    y: Math.max(...existing.map((rect) => rect.y + rect.height)) + FILE_GAP,
+  };
+}
+
+function isUnplacedTray(node: CodebaseFlowNode, rects: ReadonlyMap<string, FileRect>): boolean {
+  return node.id === TRAY_FILE_ID && rects.size > 0;
+}
 
 /** 既知のファイル位置と新規ファイルの配置規則を反映する。配置済みの箱が育って重なる場合も動かさない。 */
 export function placeFiles(
@@ -16,6 +29,9 @@ export function placeFiles(
     const position = known.get(node.id) ?? dropPositions.get(node.id);
     if (position !== undefined) return { ...node, position };
     if (existingRects.size === 0 && dropPositions.size === 0) return node;
+    if (isUnplacedTray(node, existingRects)) {
+      return { ...node, position: trayPosition(existingRects) };
+    }
     const next = { x: right + FILE_GAP, y: top };
     const width = typeof node.style?.width === 'number' ? node.style.width : Number.parseFloat(String(node.style?.width ?? '0'));
     right = next.x + (Number.isFinite(width) ? width : 0);
