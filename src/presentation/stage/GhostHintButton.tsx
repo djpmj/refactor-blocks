@@ -2,13 +2,8 @@ import { nextGhostMove } from '../../domain/stage/ghostMove';
 import { sampleAnswerSteps } from '../../domain/stage/sampleAnswer';
 import type { Stage } from '../../domain/stage/Stage';
 import { useGameStore } from '../store/useGameStore';
-
-function ghostHintTitle(unlocked: boolean, hasMove: boolean): string {
-  if (!unlocked) return '先に「どこが問題?」を見てみよう';
-  return hasMove
-    ? '次に動かす手を、キャンバスの上で動きで見せます(答えが分かります)'
-    : 'ドラッグで動かす手は残っていません';
-}
+import { ReasonButton } from '../ReasonButton';
+import { ghostHintReason } from './disabledReasons';
 
 export function GhostHintButton({ stage, score, investigating, unlocked, onPlay }: Readonly<{ stage: Stage; score: number; investigating: boolean; unlocked: boolean; onPlay?: () => void }>) {
   const codebase = useGameStore((state) => state.codebase);
@@ -17,15 +12,13 @@ export function GhostHintButton({ stage, score, investigating, unlocked, onPlay 
   const playGhost = useGameStore((state) => state.playGhost);
   const recordAssist = useGameStore((state) => state.recordAssist);
   const move = nextGhostMove(codebase, sampleAnswerSteps[stage.id] ?? []);
-  const disabled = investigating || manualFixing || ghost !== null || move === undefined || score >= 100;
-  const title = ghostHintTitle(unlocked, move !== undefined);
+  const disabledReason = ghostHintReason({ investigating, unlocked, manualFixing, playing: ghost !== null, hasMove: move !== undefined, perfect: score >= 100 });
   return (
-    <button
-      type="button"
+    <ReasonButton
       className="ghost-hint-button"
       data-testid="ghost-hint"
-      disabled={disabled || !unlocked}
-      title={title}
+      disabledReason={disabledReason}
+      title="次に動かす手を、キャンバスの上で動きで見せます(答えが分かります)"
       onClick={() => {
         if (move === undefined) return;
         playGhost(move);
@@ -34,6 +27,6 @@ export function GhostHintButton({ stage, score, investigating, unlocked, onPlay 
       }}
     >
       動きで見る
-    </button>
+    </ReasonButton>
   );
 }

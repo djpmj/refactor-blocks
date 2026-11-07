@@ -78,9 +78,13 @@
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--text); }
 :where(button:not(.react-flow__controls-button)) { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 6px; padding: 5px 12px; font: inherit; font-size: 13px; line-height: 1.4; cursor: pointer; }
-:where(button:not(.react-flow__controls-button):hover:not(:disabled)) { border-color: var(--accent); }
+:where(button:not(.react-flow__controls-button):hover:not(:disabled):not([aria-disabled="true"])) { border-color: var(--accent); }
 :where(button:not(.react-flow__controls-button):focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
-:where(button:not(.react-flow__controls-button):disabled) { opacity: 0.4; cursor: default; }
+:where(button:not(.react-flow__controls-button):is(:disabled, [aria-disabled="true"])) { opacity: 0.4; cursor: default; }
+.reason-button { position: relative; display: inline-flex; }
+.reason-button__reason { display: none; position: absolute; top: calc(100% + 4px); left: 0; z-index: 40; width: max-content; max-width: 16rem; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); box-shadow: 0 8px 24px rgb(0 0 0 / 18%); color: var(--text); font-size: 12px; line-height: 1.5; white-space: normal; pointer-events: none; }
+.reason-button:hover > .reason-button__reason, .reason-button[data-reason-shown] > .reason-button__reason { display: block; }
+.toolbar .reason-button__reason { left: auto; right: 0; }
 /* React Flow は外枠の幅・高さが0だと警告(error#004)を出し、500×500 とみなして表示を合わせてしまうので、0にならないようにする */
 .react-flow { min-width: 1px; min-height: 1px; }
 
@@ -207,7 +211,7 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .answer-confirm p { margin: 8px 0; line-height: 1.6; }
 .answer-confirm__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 18px; }
 .button--primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-.button--primary:disabled { background: var(--surface); border-color: var(--border); color: var(--text); }
+.button--primary:is(:disabled, [aria-disabled="true"]) { background: var(--surface); border-color: var(--border); color: var(--text); }
 .stage-panel__hint-list { margin: 8px 0 0; padding-left: 20px; font-size: 13px; line-height: 1.6; }
 .stage-panel__hint-phase { margin: 8px 0 4px; padding: 4px 8px; border-left: 3px solid var(--accent, currentColor); }
 .stage-panel__hint-phase p { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
@@ -874,7 +878,7 @@ input.class-node__name { width: 14ch; }
   gap: 8px;
 }
 
-.ghost-hint-button--idle:not(:disabled) {
+.ghost-hint-button--idle:not(:disabled):not([aria-disabled="true"]) {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 28%, transparent);
   animation: ghost-hint-pulse 2.4s ease-in-out infinite;
@@ -911,7 +915,7 @@ input.class-node__name { width: 14ch; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ghost-hint-button--idle:not(:disabled) { animation: none; }
+  .ghost-hint-button--idle:not(:disabled):not([aria-disabled="true"]) { animation: none; }
   .ghost-hint-animation { display: none; transition: none; }
   .ghost-hint-target { transition: none; }
 }

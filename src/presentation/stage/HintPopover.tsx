@@ -10,6 +10,8 @@ import { HintButton } from './HintPanel';
 import { ProblemHint } from './ProblemHint';
 import { useIdle } from './useIdle';
 import { useFocusOnOpen, usePopoverDismiss } from './usePopoverDismiss';
+import { ReasonButton } from '../ReasonButton';
+import { INVESTIGATING_REASON } from './disabledReasons';
 
 type HintPopoverProps = Readonly<{
   stage: Stage;
@@ -39,19 +41,18 @@ export function HintPopover({ stage, codebase, score, investigating, open, onOpe
   useFocusOnOpen(shown, panelRef);
   return (
     <div className="popover" ref={containerRef}>
-      <button
+      <ReasonButton
         ref={buttonRef}
-        type="button"
         className={idle && !shown ? 'ghost-hint-button--idle' : undefined}
         data-testid="hint-popover-button"
         aria-haspopup="dialog"
         aria-expanded={shown}
         aria-controls={panelId}
-        disabled={investigating}
+        disabledReason={investigating ? INVESTIGATING_REASON : null}
         onClick={() => onOpenChange(!shown)}
       >
         ヒント ▾
-      </button>
+      </ReasonButton>
       {shown && (
         <div ref={panelRef} id={panelId} className="popover__panel" role="dialog" aria-label="ヒント" tabIndex={-1} data-testid="hint-popover">
           <div className="stage-panel__hint-steps">

@@ -1,4 +1,6 @@
 import { Fragment, useEffect, useRef } from 'react';
+import { ReasonButton } from '../ReasonButton';
+import { INVESTIGATING_REASON } from '../stage/disabledReasons';
 import { OPERATION_GUIDE } from './operationGuide';
 
 const TITLE_ID = 'operation-guide-title';
@@ -76,9 +78,9 @@ export function OperationGuideDialog({ open, onClose, onRepeatTour, repeatTourDi
             {section.heading === '処理を抽出する' ? <RefactoringGuideSection /> : null}
           </Fragment>
         ))}
-        <button type="button" onClick={onRepeatTour} disabled={repeatTourDisabled} data-testid="repeat-first-visit-tour">
+        <ReasonButton onClick={onRepeatTour} disabledReason={repeatTourDisabled ? INVESTIGATING_REASON : null} data-testid="repeat-first-visit-tour">
           初回ガイドをもう一度
-        </button>
+        </ReasonButton>
       </div>
     </dialog>
   );

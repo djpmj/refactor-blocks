@@ -4,6 +4,8 @@ import { useGameStore } from '../store/useGameStore';
 import { RumorList } from './RumorList';
 import { rumorsOf } from './rumorsOf';
 import { useFocusOnOpen, usePopoverDismiss } from './usePopoverDismiss';
+import { ReasonButton } from '../ReasonButton';
+import { INVESTIGATING_REASON } from './disabledReasons';
 
 /** ツールバーの「うわさ(N) ▾」。うわさの無いステージでは出さない。 */
 export function RumorPopover({ stage, open, onOpenChange }: Readonly<{ stage: Stage; open: boolean; onOpenChange: (open: boolean) => void }>) {
@@ -19,18 +21,17 @@ export function RumorPopover({ stage, open, onOpenChange }: Readonly<{ stage: St
   if (count === 0) return null;
   return (
     <div className="popover" ref={containerRef}>
-      <button
+      <ReasonButton
         ref={buttonRef}
-        type="button"
         data-testid="rumor-popover-button"
         aria-haspopup="dialog"
         aria-expanded={shown}
         aria-controls={panelId}
-        disabled={investigating}
+        disabledReason={investigating ? INVESTIGATING_REASON : null}
         onClick={() => onOpenChange(!shown)}
       >
         うわさ({count}) ▾
-      </button>
+      </ReasonButton>
       {shown && (
         <div ref={panelRef} id={panelId} className="popover__panel" role="dialog" aria-label="気になるうわさ" tabIndex={-1} data-testid="rumor-popover">
           <RumorList stage={stage} />

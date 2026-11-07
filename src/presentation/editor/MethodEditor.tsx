@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { disabledButtonProps } from '../disabledButtonProps';
 import {
   accessorFieldAccess,
   findClass,
@@ -191,10 +192,8 @@ function ExtractControls({
         <button
           type="button"
           className={disabledReason === null ? 'button--primary' : undefined}
-          disabled={disabledReason !== null}
-          aria-describedby={disabledReason === null ? undefined : 'method-editor-extract-disabled-reason'}
+          {...disabledButtonProps({ reason: disabledReason, reasonId: 'method-editor-extract-disabled-reason', onClick: onExtract })}
           data-tour="extract-button"
-          onClick={onExtract}
         >
           選んだ処理をメソッドとして抽出
         </button>

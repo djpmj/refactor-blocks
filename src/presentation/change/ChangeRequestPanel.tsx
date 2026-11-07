@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ReasonButton } from '../ReasonButton';
 import type { ChangeOutcome } from '../../application/ChangeRequestUseCases';
 import { changeKindOf, type ChangeKind, type ChangeRequest } from '../../domain/change/ChangeRequest';
 import { changePart, isChangePartPlaced } from '../../domain/change/changePart';
@@ -255,9 +256,9 @@ function Implementing({ request, session }: Readonly<{ request: ChangeRequest; s
       </p>
       <PartStatus request={request} />
       <InspectedMethod />
-      <button type="button" data-testid="change-request-finish" onClick={finishImplementation} disabled={!isChangePartPlaced(codebase, request)}>
+      <ReasonButton data-testid="change-request-finish" onClick={finishImplementation} disabledReason={isChangePartPlaced(codebase, request) ? null : `部品置き場の ${changePart(request).name}() をクラスへ置くと押せます`}>
         実装を終える
-      </button>
+      </ReasonButton>
       <button type="button" onClick={endChangeRequests}>
         やめる
       </button>

@@ -72,7 +72,7 @@ test('plays a visual-only ghost, leaves hint count and undo history alone, then 
   // Assert: only non-drag steps remain.
   await openHints(page);
   await expect(button).toBeDisabled();
-  await expect(button).toHaveAttribute('title', 'ドラッグで動かす手は残っていません');
+  await expect(button).toHaveAccessibleDescription('ドラッグで動かす手は残っていません');
 });
 
 test('shows the idle affordance without playing a ghost and clears it on interaction', async ({ page }) => {

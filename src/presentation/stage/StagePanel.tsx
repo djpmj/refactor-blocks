@@ -39,6 +39,8 @@ import { painRequestsOf } from '../../domain/change/changePain';
 import { stageStep } from '../../domain/change/stageStep';
 import type { StageStep } from '../../domain/change/stageStep';
 import { useNarrowScreen } from '../useNarrowScreen';
+import { ReasonButton } from '../ReasonButton';
+import { changeRequestStartReason, INVESTIGATING_REASON, REDO_UNAVAILABLE_REASON, UNDO_UNAVAILABLE_REASON } from './disabledReasons';
 
 /** ステージ一覧のダイアログを開くボタン。 */
 function RoadmapButton() {
@@ -47,9 +49,9 @@ function RoadmapButton() {
   const investigating = useGameStore((state) => state.changeSession !== null);
   return (
     <>
-      <button ref={openerRef} type="button" data-testid="roadmap-open" disabled={investigating} onClick={() => setOpen(true)}>
+      <ReasonButton ref={openerRef} data-testid="roadmap-open" disabledReason={investigating ? INVESTIGATING_REASON : null} onClick={() => setOpen(true)}>
         ステージ一覧
-      </button>
+      </ReasonButton>
       <StageRoadmapDialog open={open} onClose={() => { setOpen(false); openerRef.current?.focus(); }} />
     </>
   );
@@ -248,30 +250,27 @@ function ActionToolbar({ stage, isPerfect, active, revealedCount, onRevealHint, 
   const openingDone = useGameStore((state) => Object.prototype.hasOwnProperty.call(state.openingFixes, stage.id));
   const closingSolved = useGameStore((state) => state.closingFixSolved);
   const step = stageStep({ score: isPerfect ? 100 : 0, hasModifyRequest: painRequestsOf(stage).modify !== undefined, openingDone, closingSolved });
-  const challengeTitle = step === 'closing-fix' ? '先に「もし、この変更が来たら?」をもう一度解いてください' : '点数が100点になると挑戦できます';
   useGuideShortcut(active, setGuideOpen);
   return (
     <div className="toolbar stage-panel__actions">
-      {stage.changeRequests.length > 0 && <button
-        type="button"
+      {stage.changeRequests.length > 0 && <ReasonButton
         className="toolbar__primary button--primary"
         data-testid="change-request-start"
         onClick={startChangeRequests}
-        disabled={investigating || step !== 'change-request'}
-        title={step === 'change-request' ? undefined : challengeTitle}
+        disabledReason={changeRequestStartReason({ investigating, step })}
       >
         {challenged ? 'もう一度挑戦' : '変更依頼に挑戦'}
-      </button>}
-      <button type="button" onClick={undo} disabled={!canUndo} title="Ctrl+Z">
+      </ReasonButton>}
+      <ReasonButton onClick={undo} disabledReason={canUndo ? null : UNDO_UNAVAILABLE_REASON} title="Ctrl+Z">
         元に戻す
-      </button>
-      <button type="button" onClick={redo} disabled={!canRedo} title="Ctrl+Y">
+      </ReasonButton>
+      <ReasonButton onClick={redo} disabledReason={canRedo ? null : REDO_UNAVAILABLE_REASON} title="Ctrl+Y">
         やり直し
-      </button>
+      </ReasonButton>
       <OperationHistoryPopover key={`history-${stage.id}`} stage={stage} open={panel === 'history'} onOpenChange={(open) => onPanelChange('history', open)} />
-      <button type="button" className="stage-panel__reset" onClick={resetStage} disabled={investigating}>
+      <ReasonButton className="stage-panel__reset" onClick={resetStage} disabledReason={investigating ? INVESTIGATING_REASON : null}>
         最初に戻す
-      </button>
+      </ReasonButton>
       <ReferenceMenu key={stage.id} stage={stage} disabled={investigating} menuOpen={panel === 'reference'} onMenuOpenChange={(open) => onPanelChange('reference', open)} revealedCount={revealedCount} onRevealHint={onRevealHint} onOpenHints={onOpenHints} />
       {hintPopover}
       <RumorPopover key={`rumor-${stage.id}`} stage={stage} open={panel === 'rumor'} onOpenChange={(open) => onPanelChange('rumor', open)} />

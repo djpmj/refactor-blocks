@@ -78,7 +78,7 @@ test('まだ存在しない対象のヒントは、前の操作で作られる�
 
   // Assert
   await expect(hint).toBeDisabled();
-  await expect(hint).toHaveAttribute('title', 'まだこの名前のブロックがありません');
+  await expect(hint).toHaveAccessibleDescription('まだこの名前のブロックがありません');
 
   // 同じ placeOrder を指すヒントでも、押下状態は選んだ一件だけにする
   await hintOne.click();
