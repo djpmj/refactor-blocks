@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-11-07 12:30 UTC PR #464 無効なボタンに操作できない理由を表示する (#423)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint/typecheck/test 2876件) ✅。E2Eはこの環境で実行できず、PR記載の全件E2E結果に依拠。ReasonButton+純粋関数への集約・DDD境界を差分で確認
+- マージ: squash & delete-branch
+
 ## 2026-11-07 05:00 UTC PR #463 用語集のコード片を等幅表示する (#441)
 
 - 判定: 合格(blocker無し)
@@ -210,12 +216,6 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(179ファイル/2637件) / npm run lint ✅ / npm run typecheck ✅。差分をIssue #389と照合(StageSidebarの並び替え1行+E2E期待順序の更新のみ、順序依存CSSなし)。E2E(sidebar-structure)はこの環境でブラウザ未導入のため未実行(PR本文では単独再実行で全件成功)
-- マージ: squash & delete-branch
-
-## 2026-11-01 07:55 UTC PR #397 ステージ一覧から1ステージ分の記録をリセットできるようにする (#360)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(lint・typecheck・Vitest 179ファイル/2637件)✅。差分をIssue #360・docs/specs/stage-record-reset.mdと照合(withoutStageをdomainにテスト先行で追加、storeに resetStageRecord、UIは確認付きボタン)。E2E(roadmap.spec.ts)はこの環境でブラウザ未導入のため未実行(PR本文では19件成功)
 - マージ: squash & delete-branch
 
 
