@@ -10,6 +10,8 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: false,
+    // 色のコントラストテスト(colorContrast.test.ts)が src/index.css を ?raw で読むため、CSS を空にせず中身を渡す。
+    css: { include: [/index\.css/] },
     // feature-harnessのimplementerがリポジトリ内(.claude/worktrees/)に作るgit worktreeと、
     // PlaywrightのE2Eテスト(e2e/)をVitestで実行しないよう除外する(デフォルトの除外設定は維持する)。
     exclude: [...configDefaults.exclude, '.claude/worktrees/**', 'e2e/**', 'explore/**'],
