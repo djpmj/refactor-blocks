@@ -66,3 +66,28 @@ test('動きを減らす設定では最初から100点', async ({ page }) => {
   await page.keyboard.press('Escape');
   await expect(page.getByTestId('clear-screen')).toHaveCount(0);
 });
+
+test('クリア画面の表示中は Ctrl+Z / Ctrl+Y / ? が背面に効かない', async ({ page }) => {
+  await clearTutorial1(page);
+  const screen = page.getByTestId('clear-screen');
+  await page.keyboard.press('Control+z');
+  await page.keyboard.press('Control+y');
+  await page.keyboard.press('Control+Shift+z');
+  await page.keyboard.press('?');
+  await expect(screen).toBeVisible();
+  await expect(page.getByTestId('operation-guide')).not.toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(screen).toHaveCount(0);
+  await expect(page.getByTestId('method-aggregateSales')).toBeVisible();
+  await expect(page.getByTestId('score-announcement')).toHaveText('100点');
+  await page.getByTestId('roadmap-open').click();
+  await page.keyboard.press('Control+z');
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('method-aggregateSales')).toBeVisible();
+  // モーダルを閉じた後は ? と Undo が使える
+  await page.keyboard.press('?');
+  await expect(page.getByTestId('operation-guide')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Control+z');
+  await expect(page.getByTestId('method-aggregateSales')).toHaveCount(0);
+});
