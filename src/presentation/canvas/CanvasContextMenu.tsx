@@ -304,7 +304,7 @@ function ImplementsMenuItem({ target, label }: Readonly<ImplementsMenuItemProps>
   );
 }
 
-type MenuItemsProps = { target: ContextMenuTarget; onSelectForm: (mode: FormMode) => void; onClose: () => void; api: GameStore };
+type MenuItemsProps = { target: ContextMenuTarget; onSelectForm: (mode: FormMode) => void; onClose: () => void; onReveal: (nodeId: string) => void; api: GameStore };
 
 function memberName(target: ContextMenuTarget, codebase: Codebase): string | undefined {
   if (target.member?.kind === 'method') return findMethod(codebase, target.member.id)?.name;
@@ -361,7 +361,14 @@ function useTabNavigation(menuRef: RefObject<HTMLDivElement | null>): void {
   }, [menuRef]);
 }
 
-function MenuGroupItems({ group, target, onSelectForm, onClose, api }: MenuItemsProps & { group: MenuGroup }) {
+function addClassAndReveal(api: GameStore, fileId: string, onReveal: (nodeId: string) => void): void {
+  const before = new Set(api.getState().codebase.files.find((file) => file.id === fileId)?.classes.map((codeClass) => codeClass.id));
+  if (!api.getState().addClass(fileId)) return;
+  const added = api.getState().codebase.files.find((file) => file.id === fileId)?.classes.find((codeClass) => !before.has(codeClass.id));
+  if (added !== undefined) onReveal(added.id);
+}
+
+function MenuGroupItems({ group, target, onSelectForm, onClose, onReveal, api }: MenuItemsProps & { group: MenuGroup }) {
   return <div role="group" aria-label={group.heading} className="context-menu__group">
     <div role="presentation" className="context-menu__heading">{group.heading}</div>
     {group.items.map((item) => {
@@ -370,7 +377,10 @@ function MenuGroupItems({ group, target, onSelectForm, onClose, api }: MenuItems
       if (item.kind === 'extends-submenu') return <ExtendsMenuItem key={item.kind} target={target} label={item.label} onClose={onClose} />;
       if (item.kind === 'implements-submenu') return <ImplementsMenuItem key={item.kind} target={target} label={item.label} />;
       if (item.kind === 'action') return <button key={item.action} type="button" role="menuitem" className={item.action.startsWith('delete') ? 'context-menu__danger' : undefined} onClick={() => {
-        if (item.action === 'addFile') api.getState().addFile();
+        if (item.action === 'addFile') {
+          const fileId = api.getState().addFile();
+          if (fileId !== null) onReveal(fileId);
+        }
         if (item.action === 'moveClassToNewFile' && target.classId !== null) {
           const classId = target.classId;
           onClose();
@@ -379,7 +389,7 @@ function MenuGroupItems({ group, target, onSelectForm, onClose, api }: MenuItems
           }
           return;
         }
-        if (item.action === 'addClass' && target.fileId !== null) api.getState().addClass(target.fileId);
+        if (item.action === 'addClass' && target.fileId !== null) addClassAndReveal(api, target.fileId, onReveal);
         if (item.action === 'deleteClass' && target.classId !== null) api.getState().deleteClass(target.classId);
         if (item.action === 'deleteFile' && target.fileId !== null) api.getState().deleteFile(target.fileId);
         onClose();
@@ -389,7 +399,7 @@ function MenuGroupItems({ group, target, onSelectForm, onClose, api }: MenuItems
   </div>;
 }
 
-function MenuItems({ target, onSelectForm, onClose, api }: Readonly<MenuItemsProps>) {
+function MenuItems({ target, onSelectForm, onClose, onReveal, api }: Readonly<MenuItemsProps>) {
   const menuRef = useRef<HTMLDivElement>(null);
   useTabNavigation(menuRef);
   const codebase = useGameStore((state) => state.codebase);
@@ -415,7 +425,7 @@ function MenuItems({ target, onSelectForm, onClose, api }: Readonly<MenuItemsPro
       {visibleGroups.map((group, groupIndex) => (
         <Fragment key={group.kind}>
         {groupIndex > 0 ? <div role="separator" className="context-menu__separator" /> : null}
-        <MenuGroupItems group={group} target={target} onSelectForm={onSelectForm} onClose={onClose} api={api} />
+        <MenuGroupItems group={group} target={target} onSelectForm={onSelectForm} onClose={onClose} onReveal={onReveal} api={api} />
         </Fragment>
       ))}
     </div>
@@ -462,7 +472,7 @@ function MenuForm({ target, onDone }: Readonly<MenuFormProps>) {
 }
 
 /** キャンバスの右クリックメニュー。クラスの名前の変更はその場で名前を入れて行う。クラス・ファイルの追加は名前を聞かずにすぐ作る。 */
-export function CanvasContextMenu({ target, onClose, onDismiss }: Readonly<{ target: ContextMenuTarget; onClose: () => void; onDismiss: () => void }>) {
+export function CanvasContextMenu({ target, onClose, onDismiss, onReveal }: Readonly<{ target: ContextMenuTarget; onClose: () => void; onDismiss: () => void; onReveal: (nodeId: string) => void }>) {
   const api = useGameStoreApi();
   const [mode, setMode] = useState<Mode>('menu');
   const menuRef = useRef<HTMLDivElement>(null);
@@ -473,7 +483,7 @@ export function CanvasContextMenu({ target, onClose, onDismiss }: Readonly<{ tar
   return createPortal(
     <div ref={menuRef} className="context-menu" style={{ left: position.x, top: position.y }} data-testid="context-menu">
       {mode === 'menu' ? (
-        <MenuItems target={target} onSelectForm={setMode} onClose={onClose} api={api} />
+        <MenuItems target={target} onSelectForm={setMode} onClose={onClose} onReveal={onReveal} api={api} />
       ) : (
         <MenuForm target={target} onDone={onClose} />
       )}
