@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-11-08 UTC PR #474 中級4の税クラスの自動名を TaxCalculator にする (#440)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm run check(lint・typecheck・Vitest 2934 passed) ✅。Issue #440の1行修正と追加テストを確認、中級9は未変更(E2EはCI任せ、PR記載の通りフレークのみ)。評価サイクル: 2回
+- マージ: squash & delete-branch
+
 ## 2026-11-08 UTC PR #473 ファイル追加メニューで追加した要素を画面内に表示する (#431)
 
 - 判定: 合格(blocker無し)
@@ -210,12 +216,6 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅ / npm run build ✅
-- マージ: squash & delete-branch
-
-## 2026-11-01 13:20 UTC PR #405 狭い画面で課題サイドバーがキャンバスを覆わないよう幅を抑える (#400)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅(E2Eはレビュー環境で実行できず、PR本文の実測結果539通過・1件は負荷タイムアウトで単独再実行は通過を根拠にした)
 - マージ: squash & delete-branch
 
 

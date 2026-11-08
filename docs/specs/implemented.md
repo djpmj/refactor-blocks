@@ -214,3 +214,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [clear-condition-total-stable](clear-condition-total-stable.md) | クリア条件の分母を開始時に固定し、操作で生じた問題を別枠で表示する |
 | [blocked-operation-affordance](blocked-operation-affordance.md) | 冒頭の手直し中、抽出ボタンをaria-disabledにしロック理由を表示する |
 | [add-file-menu-into-view](add-file-menu-into-view.md) | メニューから追加したファイル・クラスが画面外に出たら、ズームを保ってパンして見せる |
+| [tax-class-name-intermediate4](tax-class-name-intermediate4.md) | 中級4で税のメソッドを移した新クラスの自動名を TaxCalculator にする |
