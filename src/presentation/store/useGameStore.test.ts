@@ -592,6 +592,35 @@ describe('opening and closing manual-fix flow', () => {
   });
 });
 
+describe('addFile', () => {
+  it('追加したファイルのIDを返す', () => {
+    // Arrange
+    const store = createGameStore(blankDesignProblems, false, false);
+
+    // Act
+    const fileId = store.getState().addFile();
+
+    // Assert
+    expect(typeof fileId).toBe('string');
+    expect(store.getState().codebase.files.some((file) => file.id === fileId)).toBe(true);
+  });
+
+  it('冒頭の手直し中は null を返し、ファイルを増やさない', () => {
+    // Arrange
+    const stage = stages.find((candidate) => painRequestsOf(candidate).modify !== undefined);
+    if (stage === undefined) throw new Error('modify stage is required');
+    const store = createGameStore([stage], false);
+    const before = store.getState().codebase.files.length;
+
+    // Act
+    const fileId = store.getState().addFile();
+
+    // Assert
+    expect(fileId).toBeNull();
+    expect(store.getState().codebase.files).toHaveLength(before);
+  });
+});
+
 describe('impact review dialog state', () => {
   it('open/close actions change the state and selecting another stage closes it', () => {
     const first = stages[0];

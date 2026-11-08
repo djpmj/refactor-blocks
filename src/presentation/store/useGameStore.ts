@@ -194,7 +194,7 @@ type GameState = {
   mergeMethods: (methodAId: string, methodBId: string, newMethodName: string) => boolean;
   inlineMethod: (methodId: string) => void;
   addClass: (fileId: string) => boolean;
-  addFile: () => void;
+  addFile: () => string | null;
   moveClass: (classId: string, targetFileId: string) => void;
   moveClassToNewFile: (classId: string) => string | null;
   moveMethodToNewClass: (methodId: string) => string | null;
@@ -1078,7 +1078,10 @@ function restoreFirstDraft(holder: { drafts: Drafts }, firstStage: Stage): Codeb
 function basicClassActions(apply: Apply, get: () => GameState): Pick<GameState, 'addClass' | 'addFile'> {
   return {
     addClass: (fileId) => apply(addClassUseCase(get().codebase, fileId, () => crypto.randomUUID()), describeAddClassError, 'クラスの追加'),
-    addFile: () => { apply(addNewFileUseCase(get().codebase, () => crypto.randomUUID()), () => '', 'ファイルの追加'); },
+    addFile: () => {
+      const fileId = crypto.randomUUID();
+      return apply(addNewFileUseCase(get().codebase, () => fileId), () => '', 'ファイルの追加') ? fileId : null;
+    },
   };
 }
 
