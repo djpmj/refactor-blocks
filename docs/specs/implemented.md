@@ -213,3 +213,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [text-contrast-fixes](text-contrast-fixes.md) | ライトテーマの文字色・アクセント色を WCAG 4.5:1 以上にし、コントラストをテストで固定する |
 | [clear-condition-total-stable](clear-condition-total-stable.md) | クリア条件の分母を開始時に固定し、操作で生じた問題を別枠で表示する |
 | [blocked-operation-affordance](blocked-operation-affordance.md) | 冒頭の手直し中、抽出ボタンをaria-disabledにしロック理由を表示する |
+| [add-file-menu-into-view](add-file-menu-into-view.md) | メニューから追加したファイル・クラスが画面外に出たら、ズームを保ってパンして見せる |

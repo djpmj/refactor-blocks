@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-11-08 UTC PR #473 ファイル追加メニューで追加した要素を画面内に表示する (#431)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅(2933 passed) / npm run lint ✅ / npm run typecheck ✅(E2Eはこの環境で実行できずCI任せ、PR記載の618 passedを確認)
+- マージ: squash & delete-branch
+
 ## 2026-11-07 23:50 UTC PR #472 冒頭の手直し中に抽出操作のロック理由を表示する (#421)
 
 - 判定: 合格(blocker無し)
@@ -210,18 +216,6 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅(E2Eはレビュー環境で実行できず、PR本文の実測結果539通過・1件は負荷タイムアウトで単独再実行は通過を根拠にした)
-- マージ: squash & delete-branch
-
-## 2026-11-01 12:10 UTC PR #403 C#書き出しでクラス間の依存をコンストラクタ注入として配線する (#392)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅、差分がIssue #392・仕様 csharp-move-wiring とDDD層境界に沿うことを確認(E2EはPR本文の全件通過報告を参照)
-- マージ: squash & delete-branch
-
-## 2026-11-01 11:20 UTC PR #402 メソッド抽出・統合で変数の受け渡しをC#コードに反映する (#391)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check(lint・typecheck・Vitest 183ファイル/2690件)✅。差分をIssue #391・docs/specs/csharp-extract-dataflow.md と照合(domainのmethodSignature/extractMethod/fragmentCode/generateClassSource/isCodebase)。E2Eはこの環境で未実行(PR本文では538件成功)
 - マージ: squash & delete-branch
 
 
