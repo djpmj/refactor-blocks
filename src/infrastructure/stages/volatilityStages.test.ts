@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { measureChange } from '../../domain/change/measureChange';
 import { averageScore, scoreChange } from '../../domain/change/scoreChange';
-import { type Codebase } from '../../domain/codebase/Codebase';
+import { autoNameClasses } from '../../domain/codebase/autoNameClasses';
+import { allClasses, mapClasses, type Codebase } from '../../domain/codebase/Codebase';
 import { scoreCodebase } from '../../domain/scoring/score';
 import type { Result } from '../../domain/shared/Result';
 import { applySolutionSteps, sampleAnswerCodebase, type SolutionStep } from '../../domain/stage/sampleAnswer';
@@ -165,5 +166,19 @@ describe('中級4・中級5(変わる場所しだいで正解が変わる)', () 
 
     // Assert
     expect(helperScore).toBeLessThan(sampleScore);
+  });
+
+  it('中級4: 税のメソッドだけを持つ新しいクラスには、自動で TaxCalculator という名前が付く', () => {
+    // Arrange
+    const codebase = mapClasses(sampleAnswerCodebase(taxStage), (codeClass) =>
+      codeClass.name === 'TaxCalculator' ? { ...codeClass, name: 'NewClass', autoNamed: true } : codeClass,
+    );
+
+    // Act
+    const names = allClasses(autoNameClasses(codebase, taxStage.classNames)).map((codeClass) => codeClass.name);
+
+    // Assert
+    expect(names).toContain('TaxCalculator');
+    expect(names).not.toContain('CopyTaxCalculator');
   });
 });

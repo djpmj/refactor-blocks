@@ -517,7 +517,7 @@ const volatileTaxStage: Stage = {
   responsibilityNames: { aggregation: '売上の集計', tax: '税の計算', formatting: '帳票の整形', http: '帳票の振り分け' },
   classNames: {
     "aggregation": "AggregationHandler",
-    "tax": "CopyTaxCalculator",
+    "tax": "TaxCalculator",
     "formatting": "ReportFormatter",
     "http": "HttpHandler",
   },
