@@ -345,8 +345,8 @@ function clearScreenAfterTour(state: GameState): Partial<GameState> {
 /** プレイヤーの操作の前後を採点して、演出と操作の結果を作る。1回の操作で採点は前後1回ずつ。 */
 function scoredOperation(state: GameState, codebase: Codebase, celebrate: boolean): Partial<GameState> {
   if (!celebrate || state.changeSession !== null) return { operationResult: null };
-  const before = scoreCodebase(state.codebase, state.stage);
-  const after = scoreCodebase(codebase, state.stage);
+  const before = scoreCodebase(withoutTray(state.codebase), state.stage);
+  const after = scoreCodebase(withoutTray(codebase), state.stage);
   const celebration = celebrationFor(state, codebase, before, after);
   const operationResult = describeOperationResult(before, after) ?? describeNoEffect({ before: state.codebase, after: codebase, limits: state.stage.limits, score: after });
   return { operationResult, ...(celebration === undefined ? {} : { celebration }), ...clearScreenAfterCommit(state, celebration) };
