@@ -215,3 +215,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [blocked-operation-affordance](blocked-operation-affordance.md) | 冒頭の手直し中、抽出ボタンをaria-disabledにしロック理由を表示する |
 | [add-file-menu-into-view](add-file-menu-into-view.md) | メニューから追加したファイル・クラスが画面外に出たら、ズームを保ってパンして見せる |
 | [tax-class-name-intermediate4](tax-class-name-intermediate4.md) | 中級4で税のメソッドを移した新クラスの自動名を TaxCalculator にする |
+| [blank-design-false-empty-deduction](blank-design-false-empty-deduction.md) | 白紙設計の操作通知で部品置き場を除外し、偽の「空のクラス・ファイル」減点を出さない |

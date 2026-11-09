@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-11-09 20:35 UTC PR #476 scoredOperation の前後採点をトレイ除外してから行う (#435)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅(E2Eはこの環境では実行できず未実施、PR記載の全件E2E通過を確認)
+- マージ: squash & delete-branch
+
 ## 2026-11-08 UTC PR #474 中級4の税クラスの自動名を TaxCalculator にする (#440)
 
 - 判定: 合格(blocker無し)
