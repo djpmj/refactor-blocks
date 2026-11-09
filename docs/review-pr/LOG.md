@@ -38,6 +38,18 @@
 
 ## ログ一覧
 
+## 2026-11-09 20:45 UTC PR #477 chore(deps): bump the production-dependencies group with 3 updates
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅(Dependabot PRのためE2E未実施)
+- マージ: squash & delete-branch
+
+## 2026-11-09 20:45 UTC PR #479 chore(deps): bump jsdom from 30.1.3 to 31.0.0
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅(Dependabot PRのためE2E未実施)
+- マージ: squash & delete-branch
+
 ## 2026-11-09 20:35 UTC PR #476 scoredOperation の前後採点をトレイ除外してから行う (#435)
 
 - 判定: 合格(blocker無し)
