@@ -202,6 +202,23 @@ test('白紙設計の新しいクラスは部品の責務で命名し、同数�
   await expect(view.getByTestId('class-OrderMailer')).toHaveCount(0);
 });
 
+test('7部品を1クラスへ置いて部品置き場が空になっても、「空のクラス・ファイル」の減点は通知されない', async ({ page }) => {
+  // Arrange
+  await openBlank(page);
+  const view = blankView(page);
+  const emptyLines = view.getByTestId('operation-result-line').filter({ hasText: '空のクラス・ファイル' });
+
+  // Act
+  await placeAllParts(page, view);
+
+  // Assert
+  await expect(view.getByTestId('blank-unplaced')).toContainText('全部品を配置しました');
+  await expect(emptyLines).toHaveCount(0);
+  await view.getByTestId('blank-review').click();
+  await expect(view.getByTestId('blank-result')).toBeVisible();
+  await expect(emptyLines).toHaveCount(0);
+});
+
 test('全部品を配置すると答え合わせができ、両者の設計スコアと変更依頼の結果、模範解答の図が出る', async ({ page }) => {
   // Arrange
   await openBlank(page);

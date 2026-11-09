@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { changePart, withChangePart } from '../../domain/change/changePart';
-import { withoutTray } from '../../domain/blank/tray';
-import { allClasses, findMethod } from '../../domain/codebase/Codebase';
+import { TRAY_CLASS_ID, withoutTray } from '../../domain/blank/tray';
+import { allClasses, findClassOfMethod, findMethod } from '../../domain/codebase/Codebase';
 import { movesSince } from '../../domain/codebase/history';
 import { moveMethod } from '../../domain/codebase/moveMethod';
 import { checkManualFix } from '../../domain/change/checkManualFix';
@@ -1822,5 +1822,29 @@ describe('isOpeningFixLocked', () => {
     // Assert
     expect(locked).toBe(false);
     expect(extractMessage(store)).not.toContain(LOCK_TEXT);
+  });
+});
+
+describe('白紙設計の操作の通知', () => {
+  it('部品置き場が空になっても、ありもしない「空のクラス・ファイル」の減点を通知しない', () => {
+    // Arrange
+    const store = createGameStore(blankDesignProblems, false, false);
+    const trayClass = allClasses(store.getState().codebase).find((cls) => cls.id === TRAY_CLASS_ID);
+    if (trayClass === undefined) throw new Error('tray class is required');
+    const [first, ...rest] = trayClass.methods.map((method) => method.id);
+    store.getState().moveMethodToNewClass(first);
+    const classId = findClassOfMethod(store.getState().codebase, first)?.id;
+    if (classId === undefined) throw new Error('new class id is required');
+    const lines: string[] = [];
+
+    // Act
+    for (const methodId of rest) {
+      store.getState().moveMethod(methodId, classId);
+      lines.push(...(store.getState().operationResult?.lines ?? []));
+    }
+
+    // Assert
+    expect(store.getState().codebase.files.flatMap((file) => file.classes).find((cls) => cls.id === TRAY_CLASS_ID)?.methods ?? []).toHaveLength(0);
+    expect(lines.filter((line) => line.includes('空のクラス・ファイル'))).toEqual([]);
   });
 });
