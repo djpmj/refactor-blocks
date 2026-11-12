@@ -116,7 +116,7 @@ export function ScoreBreakdown({ score, disabled }: Readonly<{
   return (
     <details className="score-breakdown" onToggle={(event) => { if (!event.currentTarget.open) clearPreviewRules(previewRuleFor); }}>
       <summary>減点の内訳({deductions.length})</summary>
-      <div className="score-breakdown__items">
+      <div className="score-breakdown__items" tabIndex={0} role="region" aria-label="減点の内訳">
         {deductions.map(({ rule, count }) => {
           const open = openRules.has(rule);
           const whyId = `score-why-${rule}`;

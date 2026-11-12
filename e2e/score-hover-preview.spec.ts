@@ -67,6 +67,11 @@ test('減点ルールはホバーとキーボードフォーカス中だけ原�
   // Act: ホバーとフォーカスの対象を別々に動かす
   await breakdown.locator('summary').focus();
   await page.keyboard.press('Tab');
+  const items = breakdown.locator('.score-breakdown__items');
+  await expect(items).toBeFocused();
+  await expect(items).toHaveCSS('outline-style', 'solid');
+  await expect(items).toHaveCSS('outline-width', '2px');
+  await page.keyboard.press('Tab');
   await expect(fixedRule).toBeFocused();
   const focusTargets = await page.locator('.method-chip--flagged, .class-node--flagged, .file-node--flagged').evaluateAll((elements) =>
     elements.map((element) => element.getAttribute('data-testid')).sort(),
