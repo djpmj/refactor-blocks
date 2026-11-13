@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-11-13 11:45 UTC PR #492 メールアダプターステージを追加 (#480)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅(ステージデータ追加のためE2Eは未実施)
+- マージ: squash & delete-branch
+
 ## 2026-11-10 00:02 UTC PR #478 chore(deps): bump the development-dependencies group across 1 directory with 7 updates
 
 - 判定: 合格(blocker無し)
@@ -211,35 +217,4 @@
 - 判定: 合格(blocker無し)
 - 確認した内容: npm run check ✅(lint・typecheck・Vitest 2736件)。Issue #395の内容と差分を照合。.github/workflows/配下なし。E2E・dotnetはこの環境で未実行、PR記載のCI実績に依拠
 - マージ: squash & delete-branch
-
-## 2026-11-03 UTC PR #412 狭い画面で変更依頼を始めたとき課題サイドバーを自動で閉じる (#404)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(2717件) / npm run lint ✅ / npm run typecheck ✅。Issue #404の受け入れ基準と差分を照合(701〜1399pxで自動クローズ・フォーカス移動・読み上げ・1366幅へのE2E復帰)。E2Eはこの環境で実行できず、PR記載のCI実績に依拠
-- マージ: squash & delete-branch
-
-## 2026-11-03 UTC PR #411 CI の C# 検証で全手順を書き出して、master の csharp ジョブを直す
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅
-- マージ: 見送り(.github/workflows/配下を含むためGitHub Appの権限で自動マージ不可。人が手動でマージする)
-
-## 2026-11-03 00:30 UTC PR #408 chore(deps): bump the development-dependencies group across 1 directory with 4 updates
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm ci ✅ / npm test ✅ / npm run lint ✅ / npm run typecheck ✅
-- マージ: squash & delete-branch
-
-## 2026-11-02 20:30 UTC PR #409 chore(deps): bump actions/setup-dotnet from 5 to 6
-
-- 判定: 合格(blocker無し)
-- 確認した内容: 変更は .github/workflows/ci.yml の setup-dotnet バージョン1行のみ。CLAUDE.mdの開発ルールに反しない
-- マージ: 見送り(.github/workflows/配下を含むためGitHub Appの権限で自動マージ不可。人が手動でマージする)
-
-## 2026-11-02 20:30 UTC PR #407 chore(deps): bump @rolldown/binding-linux-x64-gnu from 1.2.15 to 1.2.16 in the production-dependencies group
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅ / npm run build ✅
-- マージ: squash & delete-branch
-
 
