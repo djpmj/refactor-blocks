@@ -8,6 +8,7 @@ import { advancedInterfaceSegregationRuntime } from './runtime/advanced-interfac
 import { advancedValueObjectRuntime } from './runtime/advanced-value-object';
 import { advancedTemplateMethodRuntime } from './runtime/advanced-template-method';
 import { advancedOrderStateRuntime } from './runtime/advanced-order-state';
+import { advancedMailAdapterRuntime } from './runtime/advanced-mail-adapter';
 
 /**
  * 上級1: メール通知(EmailNotifier)とSMS通知(SmsNotifier)が、
@@ -1588,6 +1589,69 @@ const orderStateStage: Stage = {
   ] },
 };
 
+const mailSendFragment = {
+  label: 'SendGrid SDK の形式でメールを組み立てて送る', lines: 4,
+  responsibility: 'mail-sdk-call', uses: ['method-mail-sendgrid-send-email'],
+  duplicateGroup: 'sendgrid-send', suggestedName: 'sendMail',
+  code: { csharp: 'var message = new SendGridMessage { From = new EmailAddress("noreply@shop.example"), Subject = subject };\nmessage.AddTo(new EmailAddress(to));\nmessage.AddContent("text/plain", body);\nsendEmail(message);' },
+  variables: { declares: [{ name: 'message', type: { csharp: 'SendGridMessage' } }], uses: ['to', 'subject', 'body'] },
+};
+
+const mailAdapterStage: Stage = {
+  id: 'advanced-mail-adapter', level: 'advanced', runtime: advancedMailAdapterRuntime,
+  title: '上級10: 散らばったメール送信SDKの呼び出しを Adapter に閉じ込める',
+  problem: 'メール送信SDKの呼び出しが、注文・会員登録・パスワード再設定に散らばっている',
+  outcome: '外部ライブラリの呼び出しを、自前の窓口と Adapter に閉じ込められる',
+  learns: ['Adapter', '腐敗防止層'], principles: ['dip'],
+  description: 'ネットショップのメール送信。注文確定(OrderService.confirmOrder)・会員登録(MemberService.register)・パスワード再設定(PasswordResetService.requestReset)が、それぞれメール配信サービスのSDK(SendGridClient)を直接呼んでいる。SDK専用の SendGridMessage を組み立てる処理までコピペで3か所にあり、SDKの呼び方が変わると業務のクラスを3つとも直すことになる。自分たちの言葉で「メールを送る」と頼むためのインターフェース MailSender(sendMail)は用意したが、まだ誰も実装していない。SendGridClient は外部のライブラリなので中身は変えない。',
+  goal: 'SDKを呼ぶ処理を Extract Method で sendMail として取り出し、メソッドエディタの「似た処理を持つメソッド」から3つを統合して、新しいクラス(自動で SendGridMailAdapter と名前が付く)へ移そう。最後に SendGridMailAdapter が MailSender を実装(implements)するよう設定する。業務のクラスがSDKを直接呼ばなくなり、層を飛ばす赤い矢印が消える。このゲームでは呼び出し先を書き換えられないので、業務のクラスの矢印は MailSender ではなく SendGridMailAdapter を指す。メソッドは18行・クラスは25行・ファイルは27行以内、1クラスの責務は1種類まで、依存先は1クラスまで',
+  why: 'メール配信SDKの呼び方が変わるたびに、注文・会員登録・パスワード再設定のクラスを全部開いて直していました。SDKを呼ぶのを Adapter 1つにまとめたので、外部の変更は Adapter で止まり、業務のコードは自分たちの言葉で「メールを送る」と頼むだけになります。',
+  responsibilityNames: { ordering: '注文の確定', membership: '会員の登録', 'password-reset': 'パスワード再設定', 'mail-sdk-call': 'SDKでの送信', 'sendgrid-sdk': 'SDKの内部処理' },
+  classNames: { ordering: 'OrderConfirmationHandler', membership: 'MemberRegistrationHandler', 'password-reset': 'PasswordResetHandler', 'mail-sdk-call': 'SendGridMailAdapter', 'sendgrid-sdk': 'SendGridApiTransport' },
+  // issueResetToken は業務のメソッド名であり、資格情報ではない。
+  // eslint-disable-next-line sonarjs/no-hardcoded-passwords
+  methodNames: { ordering: 'completeOrder', membership: 'registerMember', 'password-reset': 'issueResetToken', 'mail-sdk-call': 'sendMail', 'sendgrid-sdk': 'postToSendGrid' },
+  limits: { method: 18, class: 25, file: 27 }, dependencyLimit: 1, responsibilityLimit: 1,
+  layers: [{ name: 'ドメイン', responsibilities: ['ordering', 'membership', 'password-reset'] }, { name: 'Adapter', responsibilities: ['mail-sdk-call'] }, { name: '外部SDK', responsibilities: ['sendgrid-sdk'] }],
+  changeRequests: [
+    { id: 'req-sendgrid-v4', title: 'メール送信SDKの新しいバージョンに追従して', description: 'メール配信SDKがv4になり、宛先の指定方法と送信メソッドの呼び方が変わった。新しい呼び方に直したい。', responsibility: 'mail-sdk-call', linesPerSite: 4, partName: 'adaptToSendGridV4' },
+    { id: 'req-mail-sandbox', title: 'テスト環境ではメールを実際に送らないで', description: 'テスト環境から送るメールは、SDKのサンドボックスモードを使って実際には届かないようにしたい。', responsibility: 'mail-sdk-call', linesPerSite: 3, partName: 'enableSandboxMode', rumor: { from: '先輩の田中さん', text: '「テスト環境からのメールの送り方」を見直したいという話が、いつか出てくるかもしれないらしいです。' } },
+  ],
+  checks: [
+    { id: 'check-1', question: 'メール送信SDKの呼び出しを Adapter に閉じ込めると、SDKのバージョンアップのとき何が良くなる?', choices: [
+      { text: 'SDKのバージョンアップが要らなくなり、古いSDKを使い続けられる', explanation: 'バージョンアップ自体は必要です。変わるのは、直す場所の数です。' },
+      { text: '直すのは Adapter だけで、注文や会員登録のクラスは開かずに済む', explanation: 'SDKの呼び方を知っているのが1クラスだけなので、外部の変更がそこで止まります。' },
+      { text: 'メールの件名や本文の文言まで、Adapter を1か所直すだけで全部まとめて変えられる', explanation: '文面はそれぞれの業務の知識なので、各サービスに残しています。Adapter が知るのは送り方だけです。' },
+    ], answer: 1 },
+    { id: 'check-2', question: 'SendGridMailAdapter の sendMail が、SendGridMessage ではなく宛先・件名・本文の文字列を受け取るのはなぜ?', choices: [
+      { text: 'SendGridMessage は外部ライブラリの型なので、業務のクラスからはどうやっても参照できないから', explanation: '参照はできます。呼ぶ側にSDKの型を見せないために、あえて使っていません。' },
+      { text: '文字列で受け取ったほうが、メールが速く届くから', explanation: '速さの話ではありません。境界の形の話です。' },
+      { text: '呼ぶ側が自分たちの言葉だけで頼めて、SDKの型を知らずに済むから', explanation: 'SDKの型が呼ぶ側に漏れると、SDKの変更が呼ぶ側まで届いてしまいます。' },
+    ], answer: 2 },
+  ],
+  codebase: { files: [
+    { id: 'file-mail-order-service', path: 'src/order/OrderService.ts', classes: [{ id: 'class-mail-order-service', name: 'OrderService', methods: [{ id: 'method-mail-confirm-order', name: 'confirmOrder', visibility: 'public', parameters: [{ type: 'Order', name: 'order' }], fragments: [
+      { id: 'frag-mail-order-confirm', label: '注文内容を確かめて確定し、保存する', lines: 3, responsibility: 'ordering', suggestedName: 'completeOrder', code: { csharp: 'if (order.Items.Count == 0) throw new ValidationException("注文に商品がありません");\norder.Status = "Confirmed";\nFakeOrderRepository.Save(order);' }, variables: { uses: ['order'] } },
+      { id: 'frag-mail-order-content', label: '注文確認メールの宛先・件名・本文を作る', lines: 3, responsibility: 'ordering', suggestedName: 'buildOrderMail', code: { csharp: 'var to = order.CustomerEmail;\nvar subject = $"ご注文を承りました(注文番号 {order.Id})";\nvar body = $"{order.CustomerName} 様、ご注文ありがとうございます。合計 {order.Total} 円です。";' }, variables: { declares: ['to', 'subject', 'body'].map((name) => ({ name, type: { csharp: 'string' } })), uses: ['order'] } },
+      { id: 'frag-mail-order-sendgrid', ...mailSendFragment },
+    ] }] }] },
+    { id: 'file-mail-member-service', path: 'src/member/MemberService.ts', classes: [{ id: 'class-mail-member-service', name: 'MemberService', methods: [{ id: 'method-mail-register-member', name: 'register', visibility: 'public', parameters: [{ type: 'string', name: 'email' }, { type: 'string', name: 'name' }], fragments: [
+      { id: 'frag-mail-member-register', label: '会員を作って保存する', lines: 3, responsibility: 'membership', suggestedName: 'registerMember', code: { csharp: 'if (string.IsNullOrWhiteSpace(email)) throw new ValidationException("メールアドレスが必要です");\nvar member = new Member(email, name);\nFakeMemberRepository.Save(member);' }, variables: { declares: [{ name: 'member', type: { csharp: 'Member' } }], uses: ['email', 'name'] } },
+      { id: 'frag-mail-member-content', label: '登録完了メールの宛先・件名・本文を作る', lines: 3, responsibility: 'membership', suggestedName: 'buildWelcomeMail', code: { csharp: 'var to = member.Email;\nvar subject = "会員登録が完了しました";\nvar body = $"{member.Name} 様、ブロック商事へようこそ。";' }, variables: { declares: ['to', 'subject', 'body'].map((name) => ({ name, type: { csharp: 'string' } })), uses: ['member'] } },
+      { id: 'frag-mail-member-sendgrid', ...mailSendFragment },
+    ] }] }] },
+    { id: 'file-mail-reset-service', path: 'src/member/PasswordResetService.ts', classes: [{ id: 'class-mail-reset-service', name: 'PasswordResetService', methods: [{ id: 'method-mail-request-reset', name: 'requestReset', visibility: 'public', parameters: [{ type: 'string', name: 'email' }], fragments: [
+      { id: 'frag-mail-reset-token', label: '会員を探して再設定用のトークンを発行する', lines: 3, responsibility: 'password-reset', suggestedName: 'issueResetToken', code: { csharp: 'var member = FakeMemberRepository.FindByEmail(email) ?? throw new NotFoundException(email);\nvar token = Guid.NewGuid().ToString("N");\nFakeResetTokenStore.Save(member.Id, token);' }, variables: { declares: [{ name: 'member', type: { csharp: 'Member' } }, { name: 'token', type: { csharp: 'string' } }], uses: ['email'] } },
+      { id: 'frag-mail-reset-content', label: '再設定メールの宛先・件名・本文を作る', lines: 3, responsibility: 'password-reset', suggestedName: 'buildResetMail', code: { csharp: 'var to = member.Email;\nvar subject = "パスワード再設定のご案内";\nvar body = $"次のURLから30分以内に再設定してください: https://shop.example/reset?token={token}";' }, variables: { declares: ['to', 'subject', 'body'].map((name) => ({ name, type: { csharp: 'string' } })), uses: ['member', 'token'] } },
+      { id: 'frag-mail-reset-sendgrid', ...mailSendFragment },
+    ] }] }] },
+    { id: 'file-mail-sender', path: 'src/mail/MailSender.ts', classes: [{ id: 'class-mail-sender', name: 'MailSender', methods: [{ id: 'method-mail-sender-send', name: 'sendMail', visibility: 'public', parameters: [{ type: 'string', name: 'to' }, { type: 'string', name: 'subject' }, { type: 'string', name: 'body' }], fragments: [] }] }] },
+    { id: 'file-mail-sendgrid-client', path: 'src/vendor/SendGridClient.ts', classes: [{ id: 'class-mail-sendgrid-client', name: 'SendGridClient', methods: [{ id: 'method-mail-sendgrid-send-email', name: 'sendEmail', visibility: 'public', parameters: [{ type: 'SendGridMessage', name: 'message' }], fragments: [
+      { id: 'frag-mail-sendgrid-post', label: 'SendGrid の API へメールを送信する(ライブラリの中身)', lines: 3, responsibility: 'sendgrid-sdk', suggestedName: 'postToSendGrid', code: { csharp: 'var payload = message.ToJson();\nvar response = FakeSendGridApi.Post("/v3/mail/send", payload);\nif (response.StatusCode >= 400) throw new SendGridException(response.Body);' }, variables: { uses: ['message'] } },
+    ] }] }] },
+  ] },
+};
+
 export const advancedStages: readonly Stage[] = [
   notifierHierarchyStage,
   paymentGatewayInterfaceStage,
@@ -1598,4 +1662,5 @@ export const advancedStages: readonly Stage[] = [
   valueObjectStage,
   templateMethodStage,
   orderStateStage,
+  mailAdapterStage,
 ];

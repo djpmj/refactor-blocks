@@ -189,6 +189,7 @@ describe('初期違反の種類', () => {
     ['advanced-payment-gateway-interface', ['line-limit', 'contract']],
     ['advanced-discount-strategy', ['line-limit', 'responsibility']],
     ['advanced-order-state', ['line-limit', 'responsibility']],
+    ['advanced-mail-adapter', ['responsibility', 'layer']],
     ['advanced-report-factory', ['line-limit', 'responsibility', 'empty']],
     ['advanced-collapse-hierarchy', ['coupling', 'cycle', 'visibility', 'lone-superclass']],
     ['advanced-interface-segregation', ['stub']],
@@ -373,6 +374,33 @@ describe('責務の混ざったメソッド', () => {
 
 /** ステージの狙いを飛ばした手順。これで100点になってしまうなら、ステージの数値の作りが甘い。 */
 const shortcuts: ReadonlyArray<{ readonly stageId: string; readonly description: string; readonly steps: readonly SolutionStep[]; readonly expectedScore?: number }> = [
+  {
+    stageId: 'advanced-mail-adapter',
+    description: 'Adapter へ移すが MailSender を実装しない',
+    steps: (sampleAnswerSteps['advanced-mail-adapter'] ?? []).filter((step) => !('addInterface' in step)),
+  },
+  {
+    stageId: 'advanced-mail-adapter',
+    description: '統合せずに3つとも新しいクラスへ移す',
+    steps: [
+      { extract: { from: 'confirmOrder', fragmentIds: ['frag-mail-order-sendgrid'], name: 'sendOrderMail' } },
+      { extract: { from: 'register', fragmentIds: ['frag-mail-member-sendgrid'], name: 'sendWelcomeMail' } },
+      { extract: { from: 'requestReset', fragmentIds: ['frag-mail-reset-sendgrid'], name: 'sendResetMail' } },
+      { addFile: 'src/mail/SendGridMailAdapter.ts' },
+      { addClass: { name: 'SendGridMailAdapter', file: 'src/mail/SendGridMailAdapter.ts' } },
+      { move: { method: 'sendOrderMail', fromClass: 'OrderService', toClass: 'SendGridMailAdapter' } },
+      { move: { method: 'sendWelcomeMail', fromClass: 'MemberService', toClass: 'SendGridMailAdapter' } },
+      { move: { method: 'sendResetMail', fromClass: 'PasswordResetService', toClass: 'SendGridMailAdapter' } },
+    ],
+  },
+  {
+    stageId: 'advanced-mail-adapter',
+    description: '統合した sendMail を SendGridClient へ移す',
+    steps: [
+      ...(sampleAnswerSteps['advanced-mail-adapter'] ?? []).slice(0, 5),
+      { move: { method: 'sendMail', fromClass: 'OrderService', toClass: 'SendGridClient' } },
+    ],
+  },
   {
     stageId: 'advanced-order-state',
     description: '状態クラスへ移すが OrderState を実装しない',

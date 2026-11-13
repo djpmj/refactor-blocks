@@ -31,5 +31,6 @@ export const glossaryTerms: readonly GlossaryTerm[] = [
   term('factory', 'Factory', [], ['どのクラスのインスタンスを作るかの判断を、1か所に集める設計パターン。', '種類に応じて `CsvReport` か `PdfReport` を作る。']),
   term('template-method', 'Template Method', [], ['処理の流れを親クラスに書き、違う手順だけを子クラスで書き換える設計パターン。', '出力の流れは共通、見出しの書き方だけ子が決める。']),
   term('state', 'State', [], ['状態ごとの振る舞いをクラスに分け、状態が変わると使うクラスを差し替える設計パターン。', '注文の「受付中」「発送済み」を別々のクラスにする。']),
+  term('adapter', 'Adapter', [], ['外部のクラスの呼び方を、自分たちが使いたい窓口に合わせて包む設計パターン。', 'メール配信SDKを `MailSender` の形で呼べるようにする。']),
   term('layer', 'レイヤー(層)', ['層'], ['役割ごとにクラスを段に分け、依存を上の段から下の段への一方通行にする構成。', 'Controller → Service → Repository。']),
 ];
