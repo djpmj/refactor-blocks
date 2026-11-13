@@ -510,6 +510,17 @@ export const sampleAnswerSteps: Partial<Record<string, readonly SolutionStep[]>>
     { move: { method: 'add', toClass: 'Money' } },
     { move: { method: 'format', toClass: 'Money' } },
   ],
+  'advanced-mail-adapter': [
+    { extract: { from: 'confirmOrder', fragmentIds: ['frag-mail-order-sendgrid'], name: 'sendMail' } },
+    { extract: { from: 'register', fragmentIds: ['frag-mail-member-sendgrid'], name: 'sendMail' } },
+    { extract: { from: 'requestReset', fragmentIds: ['frag-mail-reset-sendgrid'], name: 'sendMail' } },
+    { merge: { methodA: 'sendMail', methodAClass: 'OrderService', methodB: 'sendMail', methodBClass: 'MemberService', name: 'sendMail' } },
+    { merge: { methodA: 'sendMail', methodAClass: 'OrderService', methodB: 'sendMail', methodBClass: 'PasswordResetService', name: 'sendMail' } },
+    { addFile: 'src/mail/SendGridMailAdapter.ts' },
+    { addClass: { name: 'SendGridMailAdapter', file: 'src/mail/SendGridMailAdapter.ts' } },
+    { move: { method: 'sendMail', fromClass: 'OrderService', toClass: 'SendGridMailAdapter' } },
+    { addInterface: { class: 'SendGridMailAdapter', interface: 'MailSender' } },
+  ],
 };
 
 /** ステージの模範解答を適用した最終形のコードベース。「解答例の図」に使う。 */

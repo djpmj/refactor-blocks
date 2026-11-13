@@ -20,7 +20,8 @@ describe('上級8: Template Method', () => {
     // Arrange / Act
     const score = scoreCodebase(stage.codebase, stage);
     // Assert
-    expect(stages.filter((item) => item.level === 'advanced').at(-2)?.id).toBe(stage.id);
+    const advanced = stages.filter((item) => item.level === 'advanced');
+    expect(advanced.findIndex((item) => item.id === stage.id)).toBe(advanced.findIndex((item) => item.id === 'advanced-order-state') - 1);
     expect(score.total).toBeLessThan(100);
     expect(score.deductions.find((item) => item.rule === 'line-limit')?.count).toBeGreaterThan(0);
     expect(score.deductions.find((item) => item.rule === 'coupling')?.count).toBeGreaterThan(0);

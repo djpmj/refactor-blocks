@@ -74,6 +74,11 @@ export const solutionPhaseTable: Partial<Record<string, readonly SolutionPhase[]
     { from: 9, title: '「支払済み」も同じ形で PaidState にまとめる', why: '同じ手順で作れば、どの状態も OrderState として同じように扱えるため' },
     { from: 18, title: '「発送済み」も ShippedState にまとめる', why: '最後の状態も分ければ、Order に状態ごとの判断が残らなくなるため' },
   ],
+  'advanced-mail-adapter': [
+    { from: 0, title: 'SDKを呼ぶ処理を、3つのサービスから sendMail として取り出す', why: '業務の処理とSDKの呼び方が同じメソッドに混ざっていると、SDKの変更のたびに業務のコードまで読むことになるため' },
+    { from: 3, title: 'コピペされた3つの sendMail を1つに統合する', why: 'SDKの呼び方を知っている場所を1つにすれば、外部の変更で直すのも1か所になるため' },
+    { from: 5, title: '統合した sendMail を Adapter へ移し、MailSender を実装する', why: '業務のクラスからSDKへの直接の依存を消し、自分たちの窓口の約束どおりに外部を包むため' },
+  ],
   'advanced-template-method': [
     { from: 0, title: '2つの取り込みを、同じ部品に分ける', why: 'どこが共通で、どこが違うのかを見えるようにするため。違うのは「変換」だけです' },
     { from: 8, title: '共通の部品を1つにまとめる', why: '同じ処理が2か所にあると、検証ルールを変えるたびに両方を直すことになるため' },

@@ -49,11 +49,11 @@ describe('中級11: Controller に全部書いてある注文API', () => {
     expect(count).toBe(0);
   });
 
-  it('層を持つのはこのステージだけ(既存ステージの採点は変わらない)', () => {
+  it('層を持つのは中級11と上級10だけ', () => {
     // Arrange / Act
     const withLayers = stages.filter((candidate) => candidate.layers !== undefined).map((candidate) => candidate.id);
 
     // Assert
-    expect(withLayers).toEqual([stage.id]);
+    expect(withLayers).toEqual([stage.id, 'advanced-mail-adapter']);
   });
 });
