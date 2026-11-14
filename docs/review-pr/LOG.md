@@ -217,9 +217,3 @@
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(2766 passed) / npm run lint ✅ / npm run typecheck ✅。Issue #417の方針と差分を照合。E2Eはレビュー環境で実行できず未実施(PR本文の結果とCIに依存)
 - マージ: squash & delete-branch
-
-## 2026-11-04 UTC PR #445 ツアー終了時にクリア画面を出す (#414)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(2749 passed) / npm run lint ✅ / npm run typecheck ✅。Issue #414の方針・受け入れ基準と差分を照合。E2Eはレビュー環境で実行できず未実施(PR本文では560 passed と記載)
-- マージ: squash & delete-branch
