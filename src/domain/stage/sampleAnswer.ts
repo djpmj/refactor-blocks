@@ -469,6 +469,18 @@ export const sampleAnswerSteps: Partial<Record<string, readonly SolutionStep[]>>
       { addInterface: { class: toClass, interface: 'OrderState' } },
     ];
   }),
+  'advanced-approval-chain': ([
+    ['amount', 'AmountLimitRule'], ['receipt', 'ReceiptRule'],
+    ['duplicate', 'DuplicateClaimRule'], ['manager', 'ManagerApprovalRule'],
+  ] as const).flatMap(([rule, toClass]): SolutionStep[] => {
+    const file = `src/expense/${toClass}.ts`;
+    return [
+      { addFile: file }, { addClass: { name: toClass, file } },
+      { extract: { from: 'review', fragmentIds: [`frag-rule-${rule}`], name: 'check' } },
+      { move: { method: 'check', fromClass: 'ClaimReviewer', toClass } },
+      { addInterface: { class: toClass, interface: 'ApprovalRule' } },
+    ];
+  }),
   'advanced-template-method': [
     { extract: { from: 'importOrders', fromClass: 'CsvOrderImporter', fragmentIds: ['frag-csv-read'], name: 'readLines' } },
     { extract: { from: 'importOrders', fromClass: 'CsvOrderImporter', fragmentIds: ['frag-csv-validate'], name: 'validateOrders' } },

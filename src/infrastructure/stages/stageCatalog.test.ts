@@ -155,6 +155,7 @@ function redFailuresAcross(stage: Stage, snapshots: readonly Codebase[]) {
 
 const templateSolution = sampleAnswerSteps['advanced-template-method'] ?? [];
 const orderStateSolution = sampleAnswerSteps['advanced-order-state'] ?? [];
+const approvalChainSolution = sampleAnswerSteps['advanced-approval-chain'] ?? [];
 
 describe('初期違反の種類', () => {
   it('役割タグを付けた全クラスは初期状態で減点されない', () => {
@@ -189,6 +190,7 @@ describe('初期違反の種類', () => {
     ['advanced-payment-gateway-interface', ['line-limit', 'contract']],
     ['advanced-discount-strategy', ['line-limit', 'responsibility']],
     ['advanced-order-state', ['line-limit', 'responsibility']],
+    ['advanced-approval-chain', ['line-limit', 'responsibility']],
     ['advanced-mail-adapter', ['responsibility', 'layer']],
     ['advanced-report-factory', ['line-limit', 'responsibility', 'empty']],
     ['advanced-collapse-hierarchy', ['coupling', 'cycle', 'visibility', 'lone-superclass']],
@@ -374,6 +376,21 @@ describe('責務の混ざったメソッド', () => {
 
 /** ステージの狙いを飛ばした手順。これで100点になってしまうなら、ステージの数値の作りが甘い。 */
 const shortcuts: ReadonlyArray<{ readonly stageId: string; readonly description: string; readonly steps: readonly SolutionStep[]; readonly expectedScore?: number }> = [
+  {
+    stageId: 'advanced-approval-chain',
+    description: 'ルールのクラスへ移すが ApprovalRule を実装しない',
+    steps: approvalChainSolution.filter((step) => !('addInterface' in step)),
+  },
+  {
+    stageId: 'advanced-approval-chain',
+    description: '4つのルールをまとめて1つのクラスへ移す',
+    steps: [
+      { addFile: 'src/expense/RuleBook.ts' },
+      { addClass: { name: 'RuleBook', file: 'src/expense/RuleBook.ts' } },
+      { extract: { from: 'review', fragmentIds: ['frag-rule-amount', 'frag-rule-receipt', 'frag-rule-duplicate', 'frag-rule-manager'], name: 'checkAll' } },
+      { move: { method: 'checkAll', fromClass: 'ClaimReviewer', toClass: 'RuleBook' } },
+    ],
+  },
   {
     stageId: 'advanced-mail-adapter',
     description: 'Adapter へ移すが MailSender を実装しない',

@@ -8,6 +8,7 @@ import { advancedInterfaceSegregationRuntime } from './runtime/advanced-interfac
 import { advancedValueObjectRuntime } from './runtime/advanced-value-object';
 import { advancedTemplateMethodRuntime } from './runtime/advanced-template-method';
 import { advancedOrderStateRuntime } from './runtime/advanced-order-state';
+import { advancedApprovalChainRuntime } from './runtime/advanced-approval-chain';
 import { advancedMailAdapterRuntime } from './runtime/advanced-mail-adapter';
 
 /**
@@ -1652,6 +1653,56 @@ const mailAdapterStage: Stage = {
   ] },
 };
 
+const approvalChainStage: Stage = {
+  id: 'advanced-approval-chain', level: 'advanced', runtime: advancedApprovalChainRuntime,
+  title: '上級11: 経費申請の審査を Chain of Responsibility へ組み替える',
+  problem: '経費申請の審査ルールが、1つのメソッドの if の連鎖に詰まっている',
+  outcome: 'if の連鎖を、順に流れる1ルール1クラスに組み替えられる',
+  learns: ['Chain of Responsibility', '1ルール1クラス'], principles: ['ocp'],
+  description: '経費精算の審査。ClaimReviewer の review が、金額の上限・領収書・二重申請・上長の承認の4つのルールを if の連鎖で順に確かめ、最後にどのルールにも止められなかった申請を承認している。ルールを足すにも順番を入れ替えるにも、この長いメソッドを全部読んで直すことになる。申請画面の ClaimController は、前任者が ApprovalRule(インターフェース)経由で審査を流す形に先に書き換えたが、ルールごとのクラスはまだ無い。',
+  goal: '4つのルールを、それぞれ新しいクラス(AmountLimitRule/ReceiptRule/DuplicateClaimRule/ManagerApprovalRule)へ分けよう。Extract Methodでルールを check として取り出し、Move Methodでルールのクラスへ移し、4クラスとも ApprovalRule を実装(implements)する。審査の順番と結果の確定は ClaimReviewer に残す。上級3(Strategy)は1つの方式を選んだが、ここでは全ルールが順に流れ、結論を出したルールの後ろは素通りする。メソッドは22行・クラスは26行・ファイルは28行以内、1クラスの責務は2種類まで、依存先は4クラスまで',
+  why: 'ルールを足すたびに、審査の if の連鎖を全部読み直していました。1ルール1クラスに分けると、新しいルールはクラスを1つ足すだけで済み、順番を変えるときもルールの中身を開かずに済みます。',
+  responsibilityNames: { http: '申請の受付', 'chain-dispatch': '審査への受け渡し', 'rule-amount': '金額の上限', 'rule-receipt': '領収書の確認', 'rule-duplicate': '二重申請の確認', 'rule-manager': '上長の承認', 'review-flow': '審査の流れ', 'rule-entertainment': '交際費のルール' },
+  classNames: { http: 'ClaimRequestValidator', 'chain-dispatch': 'ApprovalChainRunner', 'rule-amount': 'AmountLimitRule', 'rule-receipt': 'ReceiptRule', 'rule-duplicate': 'DuplicateClaimRule', 'rule-manager': 'ManagerApprovalRule', 'review-flow': 'ReviewFlow' },
+  methodNames: { http: 'validateClaimRequest', 'chain-dispatch': 'runApprovalChain', 'rule-amount': 'checkAmountLimit', 'rule-receipt': 'checkReceipt', 'rule-duplicate': 'checkDuplicateClaim', 'rule-manager': 'checkManagerApproval', 'review-flow': 'finishReview' },
+  limits: { method: 22, class: 26, file: 28 },
+  // 呼び出し先の付け替え操作がないため、ClaimReviewer から4ルールへの依存を認める。
+  dependencyLimit: 4,
+  conditionNotes: { coupling: 'このゲームでは呼び出し先を書き換えられないため、ClaimReviewer が4つのルールを順に呼ぶ形を答えとして認めるため' },
+  responsibilityLimit: 2,
+  changeRequests: [
+    { id: 'req-add-entertainment-rule', kind: 'extend', title: '交際費のルールを足して', description: '取引先との会食(交際費)の申請は、参加者の名前が書かれていなければ差し戻したい。ほかのルールはこれまでどおり使う。', responsibility: 'rule-entertainment', linesPerSite: 4, partName: 'checkEntertainmentGuests' },
+    { id: 'req-duplicate-first', title: '二重申請のチェックをいちばん先にして', description: '二重申請が多いので、同じ領収書の確認を最初に回し、見つかったらほかの審査をせずに却下したい。', responsibility: 'review-flow', linesPerSite: 3, partName: 'reorderDuplicateFirst' },
+    { id: 'req-travel-limit', title: '出張の上限額を上げて', description: '出張の申請の上限を、30万円から50万円に上げたい。', responsibility: 'rule-amount', linesPerSite: 3, partName: 'raiseTravelLimit', rumor: { from: '営業の佐藤さん', text: '経費で使える金額の決まりを見直す話が、いつか出てくるかもしれないらしいです。' } },
+  ],
+  checks: [
+    { id: 'check-1', question: '審査のルールを1ルール1クラスの連鎖に分けると、何が良くなる?', choices: [
+      { text: '新しいルールを、ほかのルールのクラスを開かずに、クラスを1つ足して足せる', explanation: 'ルールが互いに独立するので、追加や変更でほかのルールを読み直さずに済みます。' },
+      { text: 'ルールの順番を気にせずに、どの順に並べても同じ審査結果になるようになり、順番を管理する必要もなくなる', explanation: '連鎖では、前のルールが結論を出すと後ろは素通りするので、順番で結果が変わります。順番は ClaimReviewer で決めます。' },
+      { text: 'ルールの数がいくつ増えても、審査を呼び出す側のコードが1行も要らなくなる', explanation: '呼び出す側は残ります。変わるのは、ルールの中身を知らずに順に流すだけになることです。' },
+    ], answer: 0 },
+    { id: 'check-2', question: 'Chain of Responsibility と Strategy(上級3)の違いとして、合っているのはどれ?', choices: [
+      { text: 'Strategy はインターフェースを使うが、Chain of Responsibility は if の連鎖のまま使う', explanation: 'どちらも共通のインターフェースを実装したクラスに分けます。違いは、呼ばれ方です。' },
+      { text: 'どちらも外から1つのクラスを選んで差し替えるもので、名前が違うだけの同じ形であり、呼ばれ方も同じである', explanation: '1つを選ぶのは Strategy です。連鎖では、並んだ全員に順に申請が回ります。' },
+      { text: 'Strategy は1つを選んで使い、連鎖は並んだルールに順に回して結論を出したところで止める', explanation: 'Strategy は方式の差し替え、Chain of Responsibility は処理を順に受け渡す形です。' },
+    ], answer: 2 },
+  ],
+  codebase: { files: [
+    { id: 'file-claim-controller', path: 'src/expense/ClaimController.ts', classes: [{ id: 'class-claim-controller', name: 'ClaimController', methods: [{ id: 'method-submit-claim', name: 'submitClaim', visibility: 'public', parameters: [{ type: 'string', name: 'claimId' }], fragments: [
+      { id: 'frag-submit-load', label: '申請IDを検証して申請を読み込む', lines: 2, responsibility: 'http', code: { csharp: 'if (string.IsNullOrWhiteSpace(claimId)) throw new ValidationException("申請IDがありません");\nvar claim = FakeClaimRepository.Find(claimId);' }, variables: { declares: [{ name: 'claim', type: { csharp: 'ExpenseClaim' } }], uses: ['claimId'] } },
+      { id: 'frag-submit-chain', label: 'ApprovalRule(インターフェース)経由で審査に流し、結果を保存する', lines: 3, responsibility: 'chain-dispatch', uses: ['method-approval-rule-check'], code: { csharp: 'var result = new ReviewResult();\ncheck(claim, result);\nFakeClaimRepository.SaveResult(claim.Id, result.Status);' }, variables: { declares: [{ name: 'result', type: { csharp: 'ReviewResult' } }], uses: ['claim'] } },
+    ] }] }] },
+    { id: 'file-claim-reviewer', path: 'src/expense/ClaimReviewer.ts', classes: [{ id: 'class-claim-reviewer', name: 'ClaimReviewer', methods: [{ id: 'method-review-claim', name: 'review', visibility: 'public', parameters: [{ type: 'ExpenseClaim', name: 'claim' }, { type: 'ReviewResult', name: 'result' }], fragments: [
+      { id: 'frag-rule-amount', label: '金額が上限を超えていたら却下する', lines: 3, responsibility: 'rule-amount', suggestedName: 'check', code: { csharp: 'var amountLimit = claim.Category == "出張" ? 300000m : 100000m;\nvar overLimit = claim.Amount > amountLimit;\nif (!result.IsDecided && overLimit) result.Reject($"金額が上限 {amountLimit} 円を超えています");' }, variables: { declares: [{ name: 'amountLimit', type: { csharp: 'decimal' } }, { name: 'overLimit', type: { csharp: 'bool' } }], uses: ['claim', 'result'] } },
+      { id: 'frag-rule-receipt', label: '3,000円以上で領収書が無ければ差し戻す', lines: 3, responsibility: 'rule-receipt', suggestedName: 'check', code: { csharp: 'var needsReceipt = claim.Amount >= 3000m;\nvar missingReceipt = needsReceipt && claim.ReceiptIds.Count == 0;\nif (!result.IsDecided && missingReceipt) result.SendBack("領収書を添付してください");' }, variables: { declares: [{ name: 'needsReceipt', type: { csharp: 'bool' } }, { name: 'missingReceipt', type: { csharp: 'bool' } }], uses: ['claim', 'result'] } },
+      { id: 'frag-rule-duplicate', label: '同じ領収書で申請済みなら却下する', lines: 3, responsibility: 'rule-duplicate', suggestedName: 'check', code: { csharp: 'var claimedReceipts = FakeClaimRepository.ClaimedReceiptIds();\nvar duplicated = claim.ReceiptIds.Any(id => claimedReceipts.Contains(id));\nif (!result.IsDecided && duplicated) result.Reject("同じ領収書で申請済みです");' }, variables: { declares: [{ name: 'claimedReceipts', type: { csharp: 'List<string>' } }, { name: 'duplicated', type: { csharp: 'bool' } }], uses: ['claim', 'result'] } },
+      { id: 'frag-rule-manager', label: '5万円以上で上長の承認が無ければ、承認待ちにする', lines: 3, responsibility: 'rule-manager', suggestedName: 'check', code: { csharp: 'var needsManager = claim.Amount >= 50000m;\nvar waitingManager = needsManager && !claim.ManagerApproved;\nif (!result.IsDecided && waitingManager) result.Hold("上長の承認待ちです");' }, variables: { declares: [{ name: 'needsManager', type: { csharp: 'bool' } }, { name: 'waitingManager', type: { csharp: 'bool' } }], uses: ['claim', 'result'] } },
+      { id: 'frag-review-flow', label: 'どのルールにも止められなければ承認し、審査の結果を記録する', lines: 2, responsibility: 'review-flow', code: { csharp: 'if (!result.IsDecided) result.Approve();\nLog.Info($"申請 {claim.Id} の審査結果: {result.Status}");' }, variables: { uses: ['claim', 'result'] } },
+    ] }] }] },
+    { id: 'file-approval-rule', path: 'src/expense/ApprovalRule.ts', classes: [{ id: 'class-approval-rule', name: 'ApprovalRule', methods: [{ id: 'method-approval-rule-check', name: 'check', visibility: 'public', parameters: [{ type: 'ExpenseClaim', name: 'claim' }, { type: 'ReviewResult', name: 'result' }], fragments: [] }] }] },
+  ] },
+};
+
 export const advancedStages: readonly Stage[] = [
   notifierHierarchyStage,
   paymentGatewayInterfaceStage,
@@ -1663,4 +1714,5 @@ export const advancedStages: readonly Stage[] = [
   templateMethodStage,
   orderStateStage,
   mailAdapterStage,
+  approvalChainStage,
 ];
