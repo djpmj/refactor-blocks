@@ -9,7 +9,7 @@ export function ChangeMemo() {
     <section className="change-memo" data-testid="change-memo" aria-label="前回の変更依頼">
       <h3 className="change-memo__title">前回の変更依頼</h3>
       <p className="method-editor__hint">
-        減点の理由を減らすように直してから、「もう一度挑戦」で点数を比べましょう。「変更×n」の印は、変更が必要だったメソッドです
+        減点の理由を減らすように直してから、「もう一度挑戦」で点数を比べましょう。「変更×n」の印は、変更が必要だったメソッドです。色が濃いクラスほど多くの依頼で変更が必要でした。
       </p>
       <ul className="change-memo__list">
         {report.outcomes.map((outcome) => (

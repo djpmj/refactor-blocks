@@ -30,11 +30,11 @@ function useMethodOverLimit(method: Method): boolean {
   return methodLines(method, codebase) > limit;
 }
 
-function useMethodAccessibleName(method: Method, fixed: boolean, mixed: boolean): string {
+function useMethodAccessibleName(method: Method, fixed: boolean, mixed: boolean, changeCount: number): string {
   const codebase = useGameStore((state) => state.codebase);
   const limit = useGameStore((state) => state.stage.limits.method);
   const lines = methodLines(method, codebase);
-  return methodChipLabel({ name: method.name, visibility: method.visibility, lines, lineLimit: limit, overLimit: lines > limit, mixed, fixed });
+  return methodChipLabel({ name: method.name, visibility: method.visibility, lines, lineLimit: limit, overLimit: lines > limit, mixed, fixed, changeCount });
 }
 
 function MethodChipLineCount({ method, preview }: Readonly<{ method: Method; preview: MethodLinePreview | undefined }>) {
@@ -45,7 +45,7 @@ function MethodChipLineCount({ method, preview }: Readonly<{ method: Method; pre
 }
 
 function MethodChipMarkers({ fixed, changeCount }: Readonly<{ fixed: boolean; changeCount: number }>) {
-  return <>{fixed ? <span className="method-chip__fixed-mark" data-testid="fixed-mark">✔ 直した</span> : null}{changeCount > 0 ? <span className="method-chip__badge" data-testid="change-site-badge" title="直前の変更依頼で、変更が必要だったメソッド">変更×{changeCount}</span> : null}</>;
+  return <>{fixed ? <span className="method-chip__fixed-mark" data-testid="fixed-mark">✔ 直した</span> : null}{changeCount > 0 ? <span className="method-chip__badge" data-change-heat={Math.min(changeCount, 3)} data-testid="change-site-badge" title="直前の変更依頼で、変更が必要だったメソッド">変更×{changeCount}</span> : null}</>;
 }
 
 function useMethodMixed(methodId: string): boolean {
@@ -116,13 +116,13 @@ export function MethodChip({ method, linePreview }: Readonly<{ method: Method; l
   const renameMethod = useGameStore((state) => state.renameMethod);
   const { manualFixing, fixed, onClick } = useManualFixMark(method.id);
   const mixed = useMethodMixed(method.id);
-  const accessibleName = useMethodAccessibleName(method, fixed, mixed);
   // 実装中に出すと答えが見えてしまうので、変更依頼に挑戦していないときだけ数える
   const changeCount = useGameStore((state) =>
     state.changeSession === null
       ? (state.lastChangeReport?.outcomes.filter((outcome) => outcome.current?.impact.sites.includes(method.id)).length ?? 0)
       : 0,
   );
+  const accessibleName = useMethodAccessibleName(method, fixed, mixed, changeCount);
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: methodDragId(method.id) });
   const { editing, startEditing, inputProps } = useInlineEdit(method.name, (name) => renameMethod(method.id, name));
 

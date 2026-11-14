@@ -1421,6 +1421,47 @@ async function reachFullScoreOnOrderStage(page: Page) {
   await expect(page.getByTestId('score-value')).toContainText('100');
 }
 
+test('変更ホットスポットは依頼数をクラスに表示し、再挑戦中は隠す', async ({ page }) => {
+  test.setTimeout(90_000);
+  // Arrange
+  await openOrderStage(page);
+  // 現行UIはリファクタリング前の挑戦を許可しない。開始可能な最初の状態まで進める。
+  await expect(page.getByTestId('change-request-start')).toBeDisabled();
+  await reachFullScoreOnOrderStage(page);
+  await expect(page.getByTestId('class-OrderService')).not.toHaveAttribute('data-change-heat');
+  await expect(page.locator('[data-testid^="class-change-count-"]')).toHaveCount(0);
+  await implementRequests(page, TAX_PARTS, ['OrderService', 'OrderService', 'OrderService', 'OrderService']);
+  await page.getByTestId('change-request-close').click();
+
+  // Assert
+  const order = page.getByTestId('class-OrderService');
+  await expect(order).toHaveAttribute('data-change-heat', /^[1-3]$/);
+  await expect(page.getByTestId('class-change-count-OrderService')).toHaveText(/変更×\d+/);
+  await expect(page.getByTestId('class-header-OrderService')).toHaveAttribute('aria-label', /前回の変更依頼 \d+件で変更が必要/);
+  for (let index = 0; index < 4; index += 1) await page.getByRole('button', { name: 'Zoom Out' }).click();
+  await expect(page.getByTestId('class-change-count-OrderService')).toBeVisible();
+
+  // Act
+  await startChangeRequests(page);
+
+  // Assert
+  await expect(page.locator('[data-testid^="class-change-count-"]')).toHaveCount(0);
+  await expect(order).not.toHaveAttribute('data-change-heat');
+});
+
+test('税を分離した後の変更ホットスポットは TaxCalculator に現れる', async ({ page }) => {
+  // Arrange
+  await openOrderStage(page);
+  await reachFullScoreOnOrderStage(page);
+  await implementRequests(page, TAX_PARTS, ['TaxCalculator', 'OrderService', 'OrderService', 'TaxCalculator']);
+
+  // Act
+  await page.getByTestId('change-request-close').click();
+
+  // Assert
+  await expect(page.getByTestId('class-change-count-TaxCalculator')).toHaveText(/変更×\d+/);
+});
+
 test('変更依頼に挑戦すると部品置き場に部品が出て、置くまで「実装を終える」は押せない。置いて終えると、コストと置き方の点数・理由が出る', async ({ page }) => {
   // Arrange
   await openOrderStage(page);

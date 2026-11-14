@@ -24,6 +24,7 @@ import { useDropTargetClassNames } from "./DropTargetsContext";
 import { useResolvedCelebration } from "./useResolvedCelebration";
 import { findUnplacedParts, TRAY_CLASS_ID } from "../../domain/blank/tray";
 import { classRoleName, classStereotype } from "./classStereotype";
+import { classChangeCount } from "../../domain/change/changeHeat";
 
 /** 循環依存に関与しているクラスの印。色だけに頼らずアイコンとラベルでも伝える。ズームで詳細を隠していても出す。 */
 function CyclicMark() {
@@ -75,10 +76,11 @@ function ClassStereotypeMark({ stereotype }: Readonly<{ stereotype: ReturnType<t
   return <span className="class-node__stereotype">«{stereotype}»</span>;
 }
 
-function classHeaderLabel(codeClass: CodeClass): string {
+function classHeaderLabel(codeClass: CodeClass, changeCount: number): string {
   const roleName = classRoleName(classStereotype(codeClass));
   const rolePrefix = roleName === '' ? '' : `${roleName} `;
-  return `${rolePrefix}${codeClass.name} を別ファイルへ移動`;
+  const label = `${rolePrefix}${codeClass.name} を別ファイルへ移動`;
+  return changeCount > 0 ? `${label}(前回の変更依頼 ${changeCount}件で変更が必要)` : label;
 }
 
 function classNameGroupClass(stereotype: ReturnType<typeof classStereotype>): string {
@@ -171,7 +173,7 @@ function ClassResponsibilityBadge({ codeClass, limit }: Readonly<{ codeClass: Co
 }
 
 /** ヘッダー右側の印と数値。部品置き場は採点されないので、責務・行数は出さない。 */
-function ClassHeaderBadges({ codeClass, layerName, isCyclic, isTray }: Readonly<{ codeClass: CodeClass; layerName: string | undefined; isCyclic: boolean; isTray: boolean }>) {
+function ClassHeaderBadges({ codeClass, layerName, isCyclic, isTray, changeCount }: Readonly<{ codeClass: CodeClass; layerName: string | undefined; isCyclic: boolean; isTray: boolean; changeCount: number }>) {
   const showDetails = useShowDetails();
   const limit = useGameStore((state) => state.stage.limits.class);
   const responsibilityLimit = useGameStore((state) => state.stage.responsibilityLimit);
@@ -180,6 +182,7 @@ function ClassHeaderBadges({ codeClass, layerName, isCyclic, isTray }: Readonly<
     <>
       {layerName === undefined ? null : <LayerTag name={layerName} className={codeClass.name} />}
       {isCyclic ? <CyclicMark /> : null}
+      {changeCount > 0 ? <span className="class-node__change-count" data-testid={`class-change-count-${codeClass.name}`} title="前回の変更依頼で、このクラスの変更が必要だった依頼の数">変更×{changeCount}</span> : null}
       {showCounts ? <ClassResponsibilityBadge codeClass={codeClass} limit={responsibilityLimit} /> : null}
       {showCounts ? <ClassLineBadge codeClass={codeClass} limit={limit} /> : null}
     </>
@@ -190,6 +193,16 @@ function ClassHeaderBadges({ codeClass, layerName, isCyclic, isTray }: Readonly<
 function TrayHeaderLabel() {
   const remaining = useGameStore((state) => findUnplacedParts(state.stage.codebase, state.codebase).length);
   return <span className="class-node__name" data-testid="tray-label">部品置き場(あと {remaining} 個)</span>;
+}
+
+function useClassChangeCount(classId: string): number {
+  return useGameStore((state) => {
+    if (state.changeSession !== null || classId === TRAY_CLASS_ID) return 0;
+    const codeClass = findClass(state.codebase, classId);
+    if (codeClass === undefined) return 0;
+    const sites = state.lastChangeReport?.outcomes.flatMap((outcome) => outcome.current === null ? [] : [outcome.current.impact.sites]) ?? [];
+    return classChangeCount(codeClass, sites);
+  });
 }
 
 export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
@@ -211,6 +224,7 @@ export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
       ? violationTargets(state.codebase, state.stage)[rule].classIds.includes(data.classId)
       : state.hintTarget?.classIds.includes(data.classId) ?? (state.previewRule !== null && violationTargets(state.codebase, state.stage)[state.previewRule].classIds.includes(data.classId));
   });
+  const changeCount = useClassChangeCount(data.classId);
   const showDetails = useShowDetails();
   const dropTargetClasses = useDropTargetClassNames('class', data.classId);
   const { setNodeRef, isOver } = useDroppable({
@@ -226,7 +240,7 @@ export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
   if (codeClass === undefined) return null;
   const isTray = data.classId === TRAY_CLASS_ID;
   return (
-    <div ref={setNodeRef} className={[classNodeClassName({ isOver, isCyclic }), isTray ? 'class-node--tray' : '', dropTargetClasses, flagged ? 'class-node--flagged' : '', resolved ? 'class-node--resolved' : ''].filter(Boolean).join(' ')} data-testid={`class-${codeClass.name}`}>
+    <div ref={setNodeRef} className={[classNodeClassName({ isOver, isCyclic }), isTray ? 'class-node--tray' : '', dropTargetClasses, flagged ? 'class-node--flagged' : '', resolved ? 'class-node--resolved' : ''].filter(Boolean).join(' ')} data-testid={`class-${codeClass.name}`} data-change-heat={changeCount > 0 ? Math.min(changeCount, 3) : undefined}>
       {/* 依存の矢印の接続点。つなぐ操作はさせないので見た目には出さない。 */}
       <DependencyHandles />
       <div
@@ -234,7 +248,7 @@ export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
         className="class-node__header nodrag nopan"
         style={{ opacity: isDragging ? 0.3 : 1 }}
         data-testid={`class-header-${codeClass.name}`}
-        aria-label={classHeaderLabel(codeClass)}
+        aria-label={classHeaderLabel(codeClass, changeCount)}
         title={BLOCK_OPERATION_TITLES.class}
         {...attributes}
         {...listeners}
@@ -243,7 +257,7 @@ export function ClassNode({ data }: Readonly<NodeProps<ClassFlowNode>>) {
           <ClassStereotypeMark stereotype={classStereotype(codeClass)} />
           {isTray ? <TrayHeaderLabel /> : <ClassNameLabel classId={data.classId} name={codeClass.name} />}
         </span>
-        <ClassHeaderBadges codeClass={codeClass} layerName={layerName} isCyclic={isCyclic} isTray={isTray} />
+        <ClassHeaderBadges codeClass={codeClass} layerName={layerName} isCyclic={isCyclic} isTray={isTray} changeCount={changeCount} />
       </div>
       {showDetails ? <ClassBody codeClass={codeClass} /> : null}
     </div>
