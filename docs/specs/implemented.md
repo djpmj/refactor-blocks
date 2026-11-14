@@ -219,3 +219,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [adapter-pattern-stage](adapter-pattern-stage.md) | メール送信SDKの呼び出しを Adapter に閉じ込める上級ステージ |
 | [notice-uses-final-class-name](notice-uses-final-class-name.md) | 自動public化の通知に、自動命名後のクラス名を表示する |
 | [change-hotspot-heatmap](change-hotspot-heatmap.md) | 前回の変更依頼で変更が必要だったクラス・メソッドを色の濃さと回数で示す |
+| [chain-of-responsibility-stage](chain-of-responsibility-stage.md) | 経費申請の審査を Chain of Responsibility へ組み替える上級ステージ |
