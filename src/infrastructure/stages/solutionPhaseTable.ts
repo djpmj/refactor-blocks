@@ -74,6 +74,10 @@ export const solutionPhaseTable: Partial<Record<string, readonly SolutionPhase[]
     { from: 9, title: '「支払済み」も同じ形で PaidState にまとめる', why: '同じ手順で作れば、どの状態も OrderState として同じように扱えるため' },
     { from: 18, title: '「発送済み」も ShippedState にまとめる', why: '最後の状態も分ければ、Order に状態ごとの判断が残らなくなるため' },
   ],
+  'advanced-approval-chain': [
+    { from: 0, title: '金額の上限のルールを AmountLimitRule に分け、ApprovalRule を実装する', why: '1つのルールを1つのクラスにすれば、そのルールを直すときにほかのルールを読まずに済むため' },
+    { from: 5, title: '残りの3つのルールも、同じ形で1ルール1クラスにする', why: 'どのルールも ApprovalRule として同じように並べられ、ClaimReviewer には順番と結果の確定だけが残るため' },
+  ],
   'advanced-mail-adapter': [
     { from: 0, title: 'SDKを呼ぶ処理を、3つのサービスから sendMail として取り出す', why: '業務の処理とSDKの呼び方が同じメソッドに混ざっていると、SDKの変更のたびに業務のコードまで読むことになるため' },
     { from: 3, title: 'コピペされた3つの sendMail を1つに統合する', why: 'SDKの呼び方を知っている場所を1つにすれば、外部の変更で直すのも1か所になるため' },

@@ -187,9 +187,16 @@ export const storyChapters: readonly StoryChapter[] = [
   },
   {
     stageId: 'advanced-mail-adapter',
-    title: '最後の章、メール配信SDK',
+    title: 'メール配信SDK',
     speaker: SUZUKI,
     intro: 'PMの鈴木です。メール配信のSDKが、近いうちに新しいバージョンになるそうです。今は注文・会員登録・パスワード再設定のあちこちから直接呼んでいて、全部直すことになります。SDKの呼び方を1か所に閉じ込めておいてください。',
     outro: '3月31日の夕方。SDKの新しいバージョンの案内が届きました。このコードが整っていたからこそ、慌てずに済みそうです。',
+  },
+  {
+    stageId: 'advanced-approval-chain',
+    title: '最後の章、経費の審査',
+    speaker: SUZUKI,
+    intro: '経費精算の審査が、1つのメソッドの if の連鎖になっています。ルールを足すたびに全部読み直していて、順番を入れ替えるのも怖いんです。ルールごとに分けて、並べ替えやすくしてください。',
+    outro: '3月31日の夕方。最後の依頼が届きました。このコードが整っていたからこそ、慌てずに済みそうです。',
   },
 ];
