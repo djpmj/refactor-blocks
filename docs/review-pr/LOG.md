@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-11-14 UTC PR #493 メソッド移動通知に自動命名後のクラス名を表示 (#439)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅ / auto-class-naming E2E ✅
+- マージ: squash & delete-branch
+
 ## 2026-11-13 11:45 UTC PR #492 メールアダプターステージを追加 (#480)
 
 - 判定: 合格(blocker無し)
@@ -211,10 +217,3 @@
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(2743 passed) / npm run lint ✅ / npm run typecheck ✅。Issue #420の決定事項と差分を照合。E2Eはレビュー環境で実行できず未実施(PR本文では全件通過と記載)
 - マージ: squash & delete-branch
-
-## 2026-11-03 UTC PR #413 上級ステージの C# 実行化と bindings 選択結果の検証 (#395)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm run check ✅(lint・typecheck・Vitest 2736件)。Issue #395の内容と差分を照合。.github/workflows/配下なし。E2E・dotnetはこの環境で未実行、PR記載のCI実績に依拠
-- マージ: squash & delete-branch
-
