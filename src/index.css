@@ -275,6 +275,10 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .file-node__header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; font-size: 13px; font-family: ui-monospace, monospace; }
 
 .class-node { width: 100%; height: 100%; background: var(--surface); border: 2px solid var(--border); border-radius: 10px; transition: border-color 0.15s, box-shadow 0.15s; }
+.class-node:where([data-change-heat="1"]) { background: color-mix(in srgb, var(--warning) 12%, var(--surface)); }
+.class-node:where([data-change-heat="2"]) { background: color-mix(in srgb, var(--warning) 28%, var(--surface)); }
+.class-node:where([data-change-heat="3"]) { background: color-mix(in srgb, var(--warning) 45%, var(--surface)); border-color: var(--warning); }
+.class-node__change-count { font-size: 11px; color: var(--text); border: 1px solid var(--warning); border-radius: 999px; padding: 0 6px; white-space: nowrap; }
 .class-node--can-drop { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); background: color-mix(in srgb, var(--accent) 5%, var(--surface)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 12%, transparent); }
 .class-node--cannot-drop { opacity: 0.45; }
 .class-node--tray { border-style: dashed; }
@@ -569,6 +573,9 @@ input.class-node__name { width: 14ch; }
 .change-inspect__fragments { margin: 0; padding-left: 18px; }
 .change-inspect__methods { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .method-chip__badge { font-size: 11px; color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 0 6px; }
+.method-chip__badge[data-change-heat="1"] { background: color-mix(in srgb, var(--warning) 12%, var(--surface)); color: var(--text); }
+.method-chip__badge[data-change-heat="2"] { background: color-mix(in srgb, var(--warning) 28%, var(--surface)); color: var(--text); }
+.method-chip__badge[data-change-heat="3"] { background: color-mix(in srgb, var(--warning) 45%, var(--surface)); color: var(--text); border-color: var(--warning); }
 .change-memo { margin-top: 16px; border-top: 1px solid var(--border); padding-top: 8px; font-size: 13px; }
 .change-memo__title { margin: 0 0 4px; font-size: 14px; }
 .change-memo__list { margin: 0; padding-left: 18px; color: var(--muted); }
