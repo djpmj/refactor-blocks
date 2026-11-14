@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-11-14 UTC PR #494 変更依頼の影響が大きいクラスを可視化する (#489)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅ / 変更依頼系E2E 7件 ✅
+- マージ: squash & delete-branch
+
 ## 2026-11-14 UTC PR #493 メソッド移動通知に自動命名後のクラス名を表示 (#439)
 
 - 判定: 合格(blocker無し)
@@ -210,10 +216,4 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(2749 passed) / npm run lint ✅ / npm run typecheck ✅。Issue #414の方針・受け入れ基準と差分を照合。E2Eはレビュー環境で実行できず未実施(PR本文では560 passed と記載)
-- マージ: squash & delete-branch
-
-## 2026-11-04 UTC PR #444 クリア直後のステージを次のおすすめから外す (#420)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(2743 passed) / npm run lint ✅ / npm run typecheck ✅。Issue #420の決定事項と差分を照合。E2Eはレビュー環境で実行できず未実施(PR本文では全件通過と記載)
 - マージ: squash & delete-branch
