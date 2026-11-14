@@ -97,6 +97,7 @@ test('メソッドを別クラスへドラッグで移すと、移した処理�
   const targetBox = await page.getByTestId('class-TaxCalculator').boundingBox();
   if (targetBox === null) throw new Error('移動先クラスが見つかりません');
   await page.mouse.move(targetBox.x + targetBox.width / 2, targetBox.y + targetBox.height / 2, { steps: 5 });
+  await expect(page.getByTestId('class-TaxCalculator')).toHaveClass(/class-node--drop-target/);
   await page.mouse.up();
   await expect(page.getByTestId('class-TaxCalculator').getByTestId('method-placeOrder')).toBeVisible();
   await page.getByTestId('method-placeOrder').click();
