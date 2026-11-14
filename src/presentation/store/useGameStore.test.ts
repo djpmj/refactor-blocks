@@ -201,6 +201,28 @@ describe('クリア画面', () => {
 });
 
 describe('move visibility notice', () => {
+  it('余白へ移して作ったクラスの通知は、自動命名後の名前を使う', () => {
+    // Arrange
+    const stage = stages.find((candidate) => candidate.title === '初級2: クラスを自分で作る');
+    if (stage === undefined) throw new Error('初級2のステージが必要です');
+    const source = allClasses(stage.codebase).flatMap((codeClass) => codeClass.methods).find((method) => method.name === 'sendInvoice');
+    const fragment = source?.fragments.find((candidate) => candidate.label === '送信履歴を記録する');
+    if (source === undefined || fragment === undefined) throw new Error('抽出元が必要です');
+    const store = createGameStore([stage], false, false);
+
+    // Act
+    expect(store.getState().extractMethod({ sourceMethodId: source.id, fragmentIds: [fragment.id], newMethodName: 'recordHistory' })).toBe(true);
+    const extracted = allClasses(store.getState().codebase).flatMap((codeClass) => codeClass.methods).find((method) => method.name === 'recordHistory');
+    if (extracted === undefined) throw new Error('抽出メソッドが必要です');
+    store.getState().moveMethodToNewClass(extracted.id);
+
+    // Assert
+    const className = findClassOfMethod(store.getState().codebase, extracted.id)?.name;
+    expect(className).toBe('InvoiceStorage');
+    expect(store.getState().notice).toBe(`recordHistory() は ${className} の外(InvoiceService)から呼ばれるようになったので、public にしました`);
+    expect(store.getState().notice).not.toContain('NewClass');
+  });
+
   it('抽出メソッドを別クラスへ移すとpublic化を知らせ、undoでprivateと通知を戻す', () => {
     // Arrange
     const stage = stages.find((candidate) => candidate.title === 'チュートリアル2: 太った placeOrder');

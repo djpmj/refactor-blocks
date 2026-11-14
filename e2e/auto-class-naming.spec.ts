@@ -96,3 +96,23 @@ test('作成したクラス名は内容に追従し、手動リネーム後は�
   await expect(page.getByTestId('class-InvoicePdfRenderer')).toHaveCount(0);
 });
 
+test('余白へ移したメソッドの通知は自動命名後のクラス名を示す', async ({ page }) => {
+  // Arrange
+  await page.goto('/');
+  await selectStage(page, '初級2: クラスを自分で作る');
+  await page.getByTestId('method-sendInvoice').click();
+  await page.getByLabel('送信履歴を記録する').check();
+  await page.getByLabel('新しいメソッド名').fill('recordHistory');
+  await page.getByRole('button', { name: '選んだ処理をメソッドとして抽出' }).click();
+  await page.getByRole('button', { name: 'Fit View' }).click();
+
+  // Act
+  await dragToEmptyCanvas(page, page.getByTestId('method-recordHistory'));
+
+  // Assert
+  await expect(page.getByTestId('class-InvoiceStorage').getByTestId('method-recordHistory')).toBeVisible();
+  const notice = page.locator('.error-toast[role="status"]');
+  await expect(notice).toContainText('recordHistory() は InvoiceStorage の外(InvoiceService)から呼ばれるようになったので、public にしました');
+  await expect(notice).not.toContainText('NewClass');
+});
+

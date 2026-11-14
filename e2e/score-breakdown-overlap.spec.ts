@@ -76,3 +76,32 @@ for (const width of [1280, 1001, 1000, 975, 961, 960, 600, 375]) {
     }
   });
 }
+
+test('中級9で採点内訳を開いても、内訳は画面の高さの1/3までで、下のメソッドのボタンに被らない(幅1280×高さ720)', async ({ page }) => {
+  // Arrange: フォントが変わって内訳が少し高くなっても被らないよう、余白ではなく高さの上限で守る
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto('/');
+  await selectStage(page, '中級9: コピペされた消費税計算を1か所にまとめる');
+
+  // Act
+  await page.locator('.score-breakdown summary').click();
+  const items = await page.locator('.score-breakdown__items').boundingBox();
+  const confirm = await page.getByTestId('method-confirm').boundingBox();
+
+  // Assert
+  expect(items).not.toBeNull();
+  expect(confirm).not.toBeNull();
+  if (items === null || confirm === null) return;
+  expect(items.height).toBeLessThanOrEqual(720 / 3);
+  expect(apart(confirm, items)).toBe(true);
+  const breakdown = page.getByRole('region', { name: '減点の内訳' });
+  for (const why of await breakdown.getByRole('button', { name: 'なぜ?' }).all()) await why.click();
+  expect(await breakdown.evaluate((element) => element.scrollHeight)).toBeGreaterThan(await breakdown.evaluate((element) => element.clientHeight));
+  await breakdown.focus();
+  await expect(breakdown).toBeFocused();
+  await page.keyboard.press('End');
+  await expect.poll(() => breakdown.evaluate((element) => element.scrollTop > 0 && element.scrollTop + element.clientHeight >= element.scrollHeight - 1)).toBe(true);
+  await expect(breakdown.locator('.score-breakdown__item').last()).toBeInViewport();
+  await page.getByTestId('method-confirm').click({ button: 'right' });
+  await expect(page.getByTestId('context-menu')).toBeVisible();
+});
