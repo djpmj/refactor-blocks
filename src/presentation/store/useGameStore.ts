@@ -368,10 +368,12 @@ function commit(state: GameState, codebase: Codebase, label: string, celebrate =
   };
 }
 
-function publicizedMoveNotice(after: Codebase, changes: readonly { readonly methodId: string; readonly visibility: 'public' | 'protected' }[]): string | null {
+function publicizedMoveNotice(after: Codebase, changes: readonly { readonly methodId: string; readonly visibility: 'public' | 'protected' }[], classNames: Readonly<Record<string, string>>): string | null {
+  // ponytail: 通知と commit で命名を2回行う。ステージ内のクラス数は少なく、遅くなったら命名済み Codebase を commit に渡す。
+  const named = autoNameClasses(after, classNames);
   const changed = changes.flatMap(({ methodId, visibility }) => {
-    const method = findMethod(after, methodId);
-    const owner = method === undefined ? undefined : findClassOfMethod(after, methodId);
+    const method = findMethod(named, methodId);
+    const owner = method === undefined ? undefined : findClassOfMethod(named, methodId);
     return method === undefined || owner === undefined ? [] : [{ method, owner, visibility }];
   });
   if (changed.length === 0) return null;
@@ -381,7 +383,7 @@ function publicizedMoveNotice(after: Codebase, changes: readonly { readonly meth
     return `外のクラスから呼ばれるようになったので、${names} を ${visibility} にしました`;
   }
   const { method, owner, visibility } = changed[0];
-  const caller = allClasses(after).find((codeClass) => codeClass.id !== owner.id && codeClass.methods.some((candidate) => candidate.fragments.some((fragment) => (fragment.uses ?? []).includes(method.id))));
+  const caller = allClasses(named).find((codeClass) => codeClass.id !== owner.id && codeClass.methods.some((candidate) => candidate.fragments.some((fragment) => (fragment.uses ?? []).includes(method.id))));
   return caller === undefined ? null : `${method.name}() は ${owner.name} の外(${caller.name})から呼ばれるようになったので、${visibility} にしました`;
 }
 
@@ -834,7 +836,7 @@ function moveMethodAction(set: (partial: Partial<GameState>) => void, get: () =>
     }
     const enforced = state.stage.visibilityEnforced === true;
     const result = moveMethodUseCase(state.codebase, methodId, targetClassId, { visibilityEnforced: enforced });
-    const notice = result.ok ? publicizedMoveNotice(result.value.codebase, result.value.changed) : null;
+    const notice = result.ok ? publicizedMoveNotice(result.value.codebase, result.value.changed, state.stage.classNames) : null;
     set({ ...applyResult(state, result.ok ? { ok: true, value: result.value.codebase } : result, describeMoveError, 'メソッドの移動'), ...(result.ok ? { notice } : {}) });
   };
 }
@@ -848,7 +850,7 @@ function moveMethodToNewClassInFileAction(set: (partial: Partial<GameState>) => 
       return;
     }
     const result = moveMethodToNewClassInFileUseCase(state.codebase, methodId, fileId, { generateId: newId, visibilityEnforced: state.stage.visibilityEnforced === true });
-    const notice = result.ok ? publicizedMoveNotice(result.value.codebase, result.value.changed) : null;
+    const notice = result.ok ? publicizedMoveNotice(result.value.codebase, result.value.changed, state.stage.classNames) : null;
     set({ ...applyResult(state, result.ok ? { ok: true, value: result.value.codebase } : result, describeMoveOutError, 'メソッドを新しいクラスへ移動'), ...(result.ok ? { notice } : {}) });
   };
 }
@@ -897,9 +899,8 @@ function moveActions(
         apply(result, describeMoveOutError, 'メソッドを新しいクラスへ移動');
         return null;
       }
-      const notice = publicizedMoveNotice(result.value.codebase, result.value.changed);
-      const codebase = autoNameClasses(result.value.codebase, state.stage.classNames);
-      set({ ...applyResult(state, { ok: true, value: codebase }, describeMoveOutError, 'メソッドを新しいクラスへ移動'), notice });
+      const notice = publicizedMoveNotice(result.value.codebase, result.value.changed, state.stage.classNames);
+      set({ ...applyResult(state, { ok: true, value: result.value.codebase }, describeMoveOutError, 'メソッドを新しいクラスへ移動'), notice });
       return result.value.fileId;
     },
     moveMethodToNewClassInFile: moveMethodToNewClassInFileAction(set, get, newId),
