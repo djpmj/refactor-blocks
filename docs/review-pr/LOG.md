@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-11-14 UTC PR #495 コード差分ビューのE2Eでdrop-target付与を待ってからマウスを離す (#490)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅ / 該当E2E(refactor-code-diff-view)3件 ✅
+- マージ: squash & delete-branch
+
 ## 2026-11-14 10:10 UTC PR #496 承認チェーンの上級ステージを追加 (#481)
 
 - 判定: 合格(blocker無し)
@@ -210,10 +216,4 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(2773 passed) / npm run lint ✅ / npm run typecheck ✅。Issue #415・仕様(feedback-snapshot-staleness)と差分を照合。E2Eはレビュー環境で実行できず未実施(PR本文の全件565 passedに依存)
-- マージ: squash & delete-branch
-
-## 2026-11-04 UTC PR #446 メソッド名の提案と混在判定を改善し、混在の警告を表示する (#417)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(2766 passed) / npm run lint ✅ / npm run typecheck ✅。Issue #417の方針と差分を照合。E2Eはレビュー環境で実行できず未実施(PR本文の結果とCIに依存)
 - マージ: squash & delete-branch
