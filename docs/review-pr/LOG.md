@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-11-15 08:10 UTC PR #497 Compositeパターンの上級ステージを追加 (#482)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅
+- マージ: squash & delete-branch
+
 ## 2026-11-14 UTC PR #495 コード差分ビューのE2Eでdrop-target付与を待ってからマウスを離す (#490)
 
 - 判定: 合格(blocker無し)
@@ -210,10 +216,4 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm run check(lint/typecheck/vitest 2766 passed)✅。差分(.react-flow の min-size 1px とE2E追加)をIssue #422 の原因と照合。E2Eはレビュー環境で実行できず未実施(CI待ち)
-- マージ: squash & delete-branch
-
-## 2026-11-05 12:32 UTC PR #447 講評の取得タイミングを案内し、古い講評の再表示を防ぐ (#415)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(2773 passed) / npm run lint ✅ / npm run typecheck ✅。Issue #415・仕様(feedback-snapshot-staleness)と差分を照合。E2Eはレビュー環境で実行できず未実施(PR本文の全件565 passedに依存)
 - マージ: squash & delete-branch
