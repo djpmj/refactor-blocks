@@ -194,9 +194,16 @@ export const storyChapters: readonly StoryChapter[] = [
   },
   {
     stageId: 'advanced-approval-chain',
-    title: '最後の章、経費の審査',
+    title: '経費の審査',
     speaker: SUZUKI,
     intro: '経費精算の審査が、1つのメソッドの if の連鎖になっています。ルールを足すたびに全部読み直していて、順番を入れ替えるのも怖いんです。ルールごとに分けて、並べ替えやすくしてください。',
+    outro: '3月31日の朝。春のギフトセットについて、相談が届きました。',
+  },
+  {
+    stageId: 'advanced-composite-item',
+    title: '最後の章、セット商品',
+    speaker: SUZUKI,
+    intro: 'PMの鈴木です。春のギフトセットを売り出します。セットの中に小さなセットが入るので、価格と明細の分岐がどんどん複雑になっているんです。単品でもセットでも、同じように扱える形にしてください。',
     outro: '3月31日の夕方。最後の依頼が届きました。このコードが整っていたからこそ、慌てずに済みそうです。',
   },
 ];

@@ -78,6 +78,10 @@ export const solutionPhaseTable: Partial<Record<string, readonly SolutionPhase[]
     { from: 0, title: '金額の上限のルールを AmountLimitRule に分け、ApprovalRule を実装する', why: '1つのルールを1つのクラスにすれば、そのルールを直すときにほかのルールを読まずに済むため' },
     { from: 5, title: '残りの3つのルールも、同じ形で1ルール1クラスにする', why: 'どのルールも ApprovalRule として同じように並べられ、ClaimReviewer には順番と結果の確定だけが残るため' },
   ],
+  'advanced-composite-item': [
+    { from: 0, title: '単品の分岐を、SingleItem にまとめる', why: '単品の価格と明細を1つのクラスに寄せ、CatalogItem として扱える「葉」にするため' },
+    { from: 7, title: 'セットの分岐を、BundleItem にまとめる', why: 'セットも CatalogItem にそろえれば、中身が単品でもセットでも同じ呼び方でたどれるため' },
+  ],
   'advanced-mail-adapter': [
     { from: 0, title: 'SDKを呼ぶ処理を、3つのサービスから sendMail として取り出す', why: '業務の処理とSDKの呼び方が同じメソッドに混ざっていると、SDKの変更のたびに業務のコードまで読むことになるため' },
     { from: 3, title: 'コピペされた3つの sendMail を1つに統合する', why: 'SDKの呼び方を知っている場所を1つにすれば、外部の変更で直すのも1か所になるため' },
