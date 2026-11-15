@@ -156,6 +156,7 @@ function redFailuresAcross(stage: Stage, snapshots: readonly Codebase[]) {
 const templateSolution = sampleAnswerSteps['advanced-template-method'] ?? [];
 const orderStateSolution = sampleAnswerSteps['advanced-order-state'] ?? [];
 const approvalChainSolution = sampleAnswerSteps['advanced-approval-chain'] ?? [];
+const compositeItemSolution = sampleAnswerSteps['advanced-composite-item'] ?? [];
 
 describe('初期違反の種類', () => {
   it('役割タグを付けた全クラスは初期状態で減点されない', () => {
@@ -197,6 +198,7 @@ describe('初期違反の種類', () => {
     ['advanced-interface-segregation', ['stub']],
     ['advanced-value-object', ['line-limit', 'responsibility', 'feature-envy']],
     ['advanced-template-method', ['line-limit', 'coupling', 'responsibility']],
+    ['advanced-composite-item', ['line-limit', 'responsibility']],
   ] as const)('%s keeps the baseline initial violation rule types', (stageId, expectedRules) => {
     // Arrange
     const stage = stages.find((candidate) => candidate.id === stageId);
@@ -390,6 +392,29 @@ const shortcuts: ReadonlyArray<{ readonly stageId: string; readonly description:
       { extract: { from: 'review', fragmentIds: ['frag-rule-amount', 'frag-rule-receipt', 'frag-rule-duplicate', 'frag-rule-manager'], name: 'checkAll' } },
       { move: { method: 'checkAll', fromClass: 'ClaimReviewer', toClass: 'RuleBook' } },
     ],
+  },
+  {
+    stageId: 'advanced-composite-item',
+    description: '単品・セットのクラスへ移すが CatalogItem を実装しない',
+    steps: compositeItemSolution.filter((step) => !('addInterface' in step)),
+  },
+  {
+    stageId: 'advanced-composite-item',
+    description: '型でなく操作ごとのクラス(PriceCalculator/LineWriter)へ分ける',
+    steps: ([['priceItem', 'price', 'PriceCalculator'], ['listItem', 'list', 'LineWriter']] as const).flatMap(([operation, kind, name]): SolutionStep[] => {
+      const file = `src/catalog/${name}.ts`;
+      return [
+        { addFile: file },
+        { addClass: { name, file } },
+        ...(['Single', 'Bundle'] as const).flatMap((type): SolutionStep[] => {
+          const method = `${kind === 'price' ? 'price' : 'write'}${type}`;
+          return [
+            { extract: { from: operation, fragmentIds: [`frag-${kind}-${type.toLowerCase()}`], name: method } },
+            { move: { method, fromClass: 'CartService', toClass: name } },
+          ];
+        }),
+      ];
+    }),
   },
   {
     stageId: 'advanced-mail-adapter',

@@ -10,6 +10,7 @@ import { advancedTemplateMethodRuntime } from './runtime/advanced-template-metho
 import { advancedOrderStateRuntime } from './runtime/advanced-order-state';
 import { advancedApprovalChainRuntime } from './runtime/advanced-approval-chain';
 import { advancedMailAdapterRuntime } from './runtime/advanced-mail-adapter';
+import { advancedCompositeItemRuntime } from './runtime/advanced-composite-item';
 
 /**
  * 上級1: メール通知(EmailNotifier)とSMS通知(SmsNotifier)が、
@@ -1590,6 +1591,59 @@ const orderStateStage: Stage = {
   ] },
 };
 
+const compositeItemStage: Stage = {
+  id: 'advanced-composite-item', level: 'advanced',
+  runtime: advancedCompositeItemRuntime,
+  title: '上級12: 単品とセットの型分岐を Composite パターンへ組み替える',
+  problem: '単品かセットかを型で見分ける分岐が、価格と明細の両方に散らばっている',
+  outcome: '単品とセットを、共通のインターフェースでそろえた入れ子の構造にできる',
+  learns: ['Composite', '再帰構造'],
+  principles: ['ocp'],
+  description: 'ネットショップのカート。CartService の priceItem(価格を求める)と listItem(明細の行を書き出す)が、商品が単品かセットかを型で見分けて(C# の as。Java の instanceof にあたる)分岐している。セットの中には単品も、さらに小さなセットも入る。前任者が、セットの中身は CatalogItem(インターフェース)として扱い、中身の価格と明細は CatalogItem の getPrice・writeLines で求めるよう先に書き換えたが、単品とセットのクラスはまだ無い。',
+  goal: '単品とセットの分岐を、それぞれの新しいクラス(SingleItem/BundleItem)に集めよう。Extract Methodで分岐を getPrice / writeLines として取り出し、Move Methodで単品・セットのクラスへ移す。最後に2クラスとも CatalogItem を実装(implements)しよう。BundleItem は中身を CatalogItem として呼ぶので、中身が単品でもセットでも同じように扱える(Composite)。メソッドは12行・クラスは28行・ファイルは29行以内、1クラスの責務は1種類まで、依存先は2クラスまで',
+  why: '新しい種類の商品が増えるたびに、価格と明細の両方の型分岐を探して書き足していました。単品もセットも同じインターフェースにそろえると、セットは中身の種類を気にせずに済み、新しい種類はクラスを足すだけで入れられます。',
+  responsibilityNames: { 'single-item': '単品の処理', 'bundle-item': 'セットの処理', 'gift-card': 'ギフトカードの処理' },
+  classNames: { 'single-item': 'SingleItem', 'bundle-item': 'BundleItem' },
+  methodNames: { 'single-item': 'handleSingleItem', 'bundle-item': 'handleBundleItem' },
+  limits: { method: 12, class: 28, file: 29 },
+  // 呼び出し先の付け替え操作がないため、CartService から単品とセットの2クラスへの依存を認める。
+  dependencyLimit: 2,
+  conditionNotes: { coupling: 'このゲームでは呼び出し先を書き換えられないため、CartService が単品とセットの2クラスを呼ぶ形を答えとして認めるため' },
+  responsibilityLimit: 1,
+  changeRequests: [
+    { id: 'req-add-gift-card', kind: 'extend', title: 'ギフトカードをセットに入れられるようにして', description: '金額を選べるギフトカードを、セットの中身として入れられるようにしたい。価格は選んだ金額で、明細には「ギフトカード 3000円」のように書き出す。', responsibility: 'gift-card', linesPerSite: 6, partName: 'priceGiftCard' },
+    { id: 'req-empty-bundle', title: '中身が空のセットを分かるようにして', description: '中身が空のセットは、価格を0円にして、明細にも「(中身なし)」と書き出したい。', responsibility: 'bundle-item', linesPerSite: 2, partName: 'markEmptyBundle' },
+  ],
+  checks: [
+    { id: 'check-1', question: '単品とセットを CatalogItem(共通のインターフェース)にそろえると、何が良くなる?', choices: [
+      { text: '型ごとの分岐は減るが、セットの中にセットを入れることはできなくなる', explanation: '入れ子はそのまま扱えます。セットは中身を CatalogItem として呼ぶだけなので、中身がセットでも同じです。' },
+      { text: '単品とセットのどちらも CatalogItem を実装しなくても、そのままセットの中身として入れられるようになる', explanation: '中身として扱えるのは、CatalogItem を実装したクラスだけです。実装の宣言が約束になります。' },
+      { text: 'セットは中身が単品かセットかを気にせず、同じ getPrice を呼ぶだけで済む', explanation: '単体と集合が同じ顔をしているので、再帰的な構造を分岐なしでたどれます。' },
+    ], answer: 2 },
+    { id: 'check-2', question: '型を見て分岐する書き方(as / instanceof)のまま、新しい種類の商品を足すと、何が起きる?', choices: [
+      { text: '価格と明細の両方の分岐を探して、同じ種類の分岐を書き足すことになる', explanation: '型分岐は操作の数だけ散らばるので、種類を足すたびに全部を探して直します。' },
+      { text: '新しい種類も既存のどれかの分岐に自動で当てはまるので、どのメソッドも書き換えずにそのまま動き続ける', explanation: 'どの分岐にも当てはまらず、価格にも明細にも出てきません。' },
+      { text: '型を見る分岐はコンパイルが通らないので、そもそも書けない', explanation: '書けますし動きます。問題は、種類が増えるたびに直す場所が増えることです。' },
+    ], answer: 0 },
+  ],
+  codebase: { files: [
+    { id: 'file-cart-service', path: 'src/catalog/CartService.ts', classes: [{ id: 'class-cart-service', name: 'CartService', methods: [
+      { id: 'method-cart-price-item', name: 'priceItem', visibility: 'public', parameters: [{ type: 'ItemData', name: 'item' }, { type: 'PriceQuote', name: 'quote' }], fragments: [
+        { id: 'frag-price-single', label: '単品なら、単価×数量を価格に足す', lines: 3, responsibility: 'single-item', suggestedName: 'getPrice', code: { csharp: "var pricedSingle = item as SingleData;\nif (pricedSingle is not null) quote.Amount += pricedSingle.UnitPrice * pricedSingle.Quantity;\nif (pricedSingle is not null) Log.Debug($\"単品 {pricedSingle.Name} の価格を足しました\");" }, variables: { declares: [{ name: 'pricedSingle', type: { csharp: 'SingleData' } }], uses: ['item', 'quote'] } },
+        { id: 'frag-price-bundle', label: 'セットなら、中身それぞれの価格を CatalogItem(インターフェース)の getPrice で求め、セット割引を引いて足す', lines: 4, responsibility: 'bundle-item', uses: ['method-catalog-item-get-price'], suggestedName: 'getPrice', code: { csharp: "var pricedBundle = item as BundleData;\nvar bundleQuote = new PriceQuote();\npricedBundle?.Children.ForEach(child => getPrice(child, bundleQuote));\nif (pricedBundle is not null) quote.Amount += decimal.Round(bundleQuote.Amount * (1 - pricedBundle.DiscountRate), 0);" }, variables: { declares: [{ name: 'pricedBundle', type: { csharp: 'BundleData' } }, { name: 'bundleQuote', type: { csharp: 'PriceQuote' } }], uses: ['item', 'quote'] } },
+      ] },
+      { id: 'method-cart-list-item', name: 'listItem', visibility: 'public', parameters: [{ type: 'ItemData', name: 'item' }, { type: 'List<string>', name: 'lines' }], fragments: [
+        { id: 'frag-list-single', label: '単品なら、商品名と数量を1行書き出す', lines: 3, responsibility: 'single-item', suggestedName: 'writeLines', code: { csharp: "var listedSingle = item as SingleData;\nif (listedSingle is not null) lines.Add($\"{listedSingle.Name} ×{listedSingle.Quantity}\");\nif (listedSingle is not null) Log.Debug($\"単品 {listedSingle.Name} の行を書き出しました\");" }, variables: { declares: [{ name: 'listedSingle', type: { csharp: 'SingleData' } }], uses: ['item', 'lines'] } },
+        { id: 'frag-list-bundle', label: 'セットなら、セット名を書き出し、中身それぞれの行を CatalogItem の writeLines で求めて字下げして書き出す', lines: 4, responsibility: 'bundle-item', uses: ['method-catalog-item-write-lines'], suggestedName: 'writeLines', code: { csharp: "var listedBundle = item as BundleData;\nvar childLines = new List<string> { $\"{listedBundle?.Name}(セット)\" };\nlistedBundle?.Children.ForEach(child => writeLines(child, childLines));\nif (listedBundle is not null) lines.AddRange(childLines.Select((line, index) => index == 0 ? line : \"  \" + line));" }, variables: { declares: [{ name: 'listedBundle', type: { csharp: 'BundleData' } }, { name: 'childLines', type: { csharp: 'List<string>' } }], uses: ['item', 'lines'] } },
+      ] },
+    ] }] },
+    { id: 'file-catalog-item', path: 'src/catalog/CatalogItem.ts', classes: [{ id: 'class-catalog-item', name: 'CatalogItem', methods: [
+      { id: 'method-catalog-item-get-price', name: 'getPrice', visibility: 'public', parameters: [{ type: 'ItemData', name: 'item' }, { type: 'PriceQuote', name: 'quote' }], fragments: [] },
+      { id: 'method-catalog-item-write-lines', name: 'writeLines', visibility: 'public', parameters: [{ type: 'ItemData', name: 'item' }, { type: 'List<string>', name: 'lines' }], fragments: [] },
+    ] }] },
+  ] },
+};
+
 const mailSendFragment = {
   label: 'SendGrid SDK の形式でメールを組み立てて送る', lines: 4,
   responsibility: 'mail-sdk-call', uses: ['method-mail-sendgrid-send-email'],
@@ -1715,4 +1769,5 @@ export const advancedStages: readonly Stage[] = [
   orderStateStage,
   mailAdapterStage,
   approvalChainStage,
+  compositeItemStage,
 ];

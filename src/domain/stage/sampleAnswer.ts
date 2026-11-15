@@ -469,6 +469,20 @@ export const sampleAnswerSteps: Partial<Record<string, readonly SolutionStep[]>>
       { addInterface: { class: toClass, interface: 'OrderState' } },
     ];
   }),
+  'advanced-composite-item': (['Single', 'Bundle'] as const).flatMap((kind): SolutionStep[] => {
+    const suffix = kind.toLowerCase();
+    const file = `src/catalog/${kind}Item.ts`;
+    const toClass = `${kind}Item`;
+    return [
+      { addFile: file },
+      { addClass: { name: toClass, file } },
+      { extract: { from: 'priceItem', fragmentIds: [`frag-price-${suffix}`], name: 'getPrice' } },
+      { move: { method: 'getPrice', fromClass: 'CartService', toClass } },
+      { extract: { from: 'listItem', fragmentIds: [`frag-list-${suffix}`], name: 'writeLines' } },
+      { move: { method: 'writeLines', fromClass: 'CartService', toClass } },
+      { addInterface: { class: toClass, interface: 'CatalogItem' } },
+    ];
+  }),
   'advanced-approval-chain': ([
     ['amount', 'AmountLimitRule'], ['receipt', 'ReceiptRule'],
     ['duplicate', 'DuplicateClaimRule'], ['manager', 'ManagerApprovalRule'],

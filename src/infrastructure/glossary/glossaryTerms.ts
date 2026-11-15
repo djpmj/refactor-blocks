@@ -33,5 +33,6 @@ export const glossaryTerms: readonly GlossaryTerm[] = [
   term('state', 'State', [], ['状態ごとの振る舞いをクラスに分け、状態が変わると使うクラスを差し替える設計パターン。', '注文の「受付中」「発送済み」を別々のクラスにする。']),
   term('adapter', 'Adapter', [], ['外部のクラスの呼び方を、自分たちが使いたい窓口に合わせて包む設計パターン。', 'メール配信SDKを `MailSender` の形で呼べるようにする。']),
   term('chain-of-responsibility', 'Chain of Responsibility', [], ['複数のルールを決まった順に通し、結論が出たら後続の処理を止める設計パターン。', '経費申請を金額・領収書・二重申請・上長承認の順に審査する。']),
+  term('composite', 'Composite', [], ['単体と、単体を入れた集合を同じインターフェースにそろえ、集合が中身を同じ呼び方でたどれるようにする設計パターン。', '単品とセット商品を `CatalogItem` にそろえ、セットの中にセットを入れても価格を同じように求める。']),
   term('layer', 'レイヤー(層)', ['層'], ['役割ごとにクラスを段に分け、依存を上の段から下の段への一方通行にする構成。', 'Controller → Service → Repository。']),
 ];
