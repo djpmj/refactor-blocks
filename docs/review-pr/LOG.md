@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-11-16 10:20 UTC PR #498 Null Objectパターンの上級ステージを追加 (#483)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅(データ・テスト・文書のみの変更のためE2Eは省略)
+- マージ: squash & delete-branch
+
 ## 2026-11-15 08:10 UTC PR #497 Compositeパターンの上級ステージを追加 (#482)
 
 - 判定: 合格(blocker無し)
