@@ -21,7 +21,6 @@ describe('上級12: 単品とセット(Composite)', () => {
     const initial = scoreCodebase(stage.codebase, stage);
     const final = scoreCodebase(solved, stage);
     // Assert
-    expect(stages.filter((item) => item.level === 'advanced').at(-1)?.id).toBe(stage.id);
     expect(solution).toHaveLength(14);
     expect(initial.total).toBe(50);
     expect(initial.deductions.filter((deduction) => deduction.count > 0).map((deduction) => deduction.rule).sort((a, b) => a.localeCompare(b))).toEqual(['line-limit', 'responsibility']);

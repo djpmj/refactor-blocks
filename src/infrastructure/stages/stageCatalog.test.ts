@@ -157,6 +157,7 @@ const templateSolution = sampleAnswerSteps['advanced-template-method'] ?? [];
 const orderStateSolution = sampleAnswerSteps['advanced-order-state'] ?? [];
 const approvalChainSolution = sampleAnswerSteps['advanced-approval-chain'] ?? [];
 const compositeItemSolution = sampleAnswerSteps['advanced-composite-item'] ?? [];
+const nullObjectSolution = sampleAnswerSteps['advanced-null-object'] ?? [];
 
 describe('初期違反の種類', () => {
   it('役割タグを付けた全クラスは初期状態で減点されない', () => {
@@ -199,6 +200,7 @@ describe('初期違反の種類', () => {
     ['advanced-value-object', ['line-limit', 'responsibility', 'feature-envy']],
     ['advanced-template-method', ['line-limit', 'coupling', 'responsibility']],
     ['advanced-composite-item', ['line-limit', 'responsibility']],
+    ['advanced-null-object', ['responsibility']],
   ] as const)('%s keeps the baseline initial violation rule types', (stageId, expectedRules) => {
     // Arrange
     const stage = stages.find((candidate) => candidate.id === stageId);
@@ -415,6 +417,16 @@ const shortcuts: ReadonlyArray<{ readonly stageId: string; readonly description:
         }),
       ];
     }),
+  },
+  {
+    stageId: 'advanced-null-object',
+    description: 'NoCoupon へ移すが Coupon を実装しない',
+    steps: nullObjectSolution.filter((step) => !('addInterface' in step)),
+  },
+  {
+    stageId: 'advanced-null-object',
+    description: 'null の扱いを抽出して統合するが、呼び出し側に残す',
+    steps: nullObjectSolution.slice(0, 6),
   },
   {
     stageId: 'advanced-mail-adapter',

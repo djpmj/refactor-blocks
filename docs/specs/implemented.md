@@ -221,3 +221,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [change-hotspot-heatmap](change-hotspot-heatmap.md) | 前回の変更依頼で変更が必要だったクラス・メソッドを色の濃さと回数で示す |
 | [chain-of-responsibility-stage](chain-of-responsibility-stage.md) | 経費申請の審査を Chain of Responsibility へ組み替える上級ステージ |
 | [composite-pattern-stage](composite-pattern-stage.md) | 単品とセットの型分岐を Composite パターンへ組み替える上級ステージ |
+| [null-object-pattern-stage](null-object-pattern-stage.md) | クーポンが無いときの null チェックを Null Object にまとめる上級ステージ |

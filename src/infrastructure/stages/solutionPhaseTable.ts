@@ -82,6 +82,11 @@ export const solutionPhaseTable: Partial<Record<string, readonly SolutionPhase[]
     { from: 0, title: '単品の分岐を、SingleItem にまとめる', why: '単品の価格と明細を1つのクラスに寄せ、CatalogItem として扱える「葉」にするため' },
     { from: 7, title: 'セットの分岐を、BundleItem にまとめる', why: 'セットも CatalogItem にそろえれば、中身が単品でもセットでも同じ呼び方でたどれるため' },
   ],
+  'advanced-null-object': [
+    { from: 0, title: '「割引0円にする」null の扱いを1つにまとめる', why: '会計とカートに同じ null チェックがあるので、まず取り出して1つにすれば、無いときの割引を1か所で読めるため' },
+    { from: 3, title: '「クーポンなし」と表示する null の扱いも1つにまとめる', why: 'カートとレシートの表示も同じ形で集めれば、無いときの振る舞いがそろうため' },
+    { from: 6, title: 'NoCoupon を作り、Coupon の実装の1つにする', why: '無いときの振る舞いを Coupon の実装にすれば、呼び出し側は null を気にせず Coupon を呼ぶだけで済むため' },
+  ],
   'advanced-mail-adapter': [
     { from: 0, title: 'SDKを呼ぶ処理を、3つのサービスから sendMail として取り出す', why: '業務の処理とSDKの呼び方が同じメソッドに混ざっていると、SDKの変更のたびに業務のコードまで読むことになるため' },
     { from: 3, title: 'コピペされた3つの sendMail を1つに統合する', why: 'SDKの呼び方を知っている場所を1つにすれば、外部の変更で直すのも1か所になるため' },

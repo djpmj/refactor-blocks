@@ -613,7 +613,7 @@ describe('runtime を持つステージの変数', () => {
 
   it('第6弾の上級9ステージが runtime を持ち、全ステージが C# で書き出せる', () => {
     // Arrange
-    const ids = ['advanced-notifier-hierarchy', 'advanced-payment-gateway-interface', 'advanced-discount-strategy', 'advanced-report-factory', 'advanced-collapse-hierarchy', 'advanced-interface-segregation', 'advanced-value-object', 'advanced-template-method', 'advanced-order-state', 'advanced-composite-item'];
+    const ids = ['advanced-notifier-hierarchy', 'advanced-payment-gateway-interface', 'advanced-discount-strategy', 'advanced-report-factory', 'advanced-collapse-hierarchy', 'advanced-interface-segregation', 'advanced-value-object', 'advanced-template-method', 'advanced-order-state', 'advanced-composite-item', 'advanced-null-object'];
 
     // Act
     const withRuntime = stages.filter((stage) => stage.runtime !== undefined).map((stage) => stage.id);

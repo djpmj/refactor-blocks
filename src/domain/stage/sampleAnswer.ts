@@ -483,6 +483,19 @@ export const sampleAnswerSteps: Partial<Record<string, readonly SolutionStep[]>>
       { addInterface: { class: toClass, interface: 'CatalogItem' } },
     ];
   }),
+  'advanced-null-object': [
+    { extract: { from: 'checkout', fragmentIds: ['frag-coupon-checkout-no-coupon'], name: 'applyDiscount' } },
+    { extract: { from: 'showCart', fragmentIds: ['frag-coupon-cart-no-coupon-discount'], name: 'applyDiscount' } },
+    { merge: { methodA: 'applyDiscount', methodAClass: 'CheckoutService', methodB: 'applyDiscount', methodBClass: 'CartService', name: 'applyDiscount' } },
+    { extract: { from: 'showCart', fragmentIds: ['frag-coupon-cart-no-coupon-label'], name: 'describe' } },
+    { extract: { from: 'printReceipt', fragmentIds: ['frag-coupon-receipt-no-coupon'], name: 'describe' } },
+    { merge: { methodA: 'describe', methodAClass: 'CartService', methodB: 'describe', methodBClass: 'ReceiptService', name: 'describe' } },
+    { addFile: 'src/coupon/NoCoupon.ts' },
+    { addClass: { name: 'NoCoupon', file: 'src/coupon/NoCoupon.ts' } },
+    { move: { method: 'applyDiscount', fromClass: 'CheckoutService', toClass: 'NoCoupon' } },
+    { move: { method: 'describe', fromClass: 'CartService', toClass: 'NoCoupon' } },
+    { addInterface: { class: 'NoCoupon', interface: 'Coupon' } },
+  ],
   'advanced-approval-chain': ([
     ['amount', 'AmountLimitRule'], ['receipt', 'ReceiptRule'],
     ['duplicate', 'DuplicateClaimRule'], ['manager', 'ManagerApprovalRule'],
