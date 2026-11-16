@@ -11,6 +11,7 @@ import { advancedOrderStateRuntime } from './runtime/advanced-order-state';
 import { advancedApprovalChainRuntime } from './runtime/advanced-approval-chain';
 import { advancedMailAdapterRuntime } from './runtime/advanced-mail-adapter';
 import { advancedCompositeItemRuntime } from './runtime/advanced-composite-item';
+import { advancedNullObjectRuntime } from './runtime/advanced-null-object';
 
 /**
  * 上級1: メール通知(EmailNotifier)とSMS通知(SmsNotifier)が、
@@ -1757,6 +1758,82 @@ const approvalChainStage: Stage = {
   ] },
 };
 
+// 同じ duplicateGroup の Fragment は、コードを完全一致させる。
+const noCouponDiscountCode = 'if (order.CouponCode is null) order.Discount = 0m;\nif (order.CouponCode is null) Log.Info($"注文 {order.Id} はクーポンなしで計算しました");';
+const noCouponLabelCode = 'if (order.CouponCode is null) order.CouponLabel = "クーポンなし";\nif (order.CouponCode is null) Log.Info($"注文 {order.Id} のクーポン表示: {order.CouponLabel}");';
+
+const nullObjectStage: Stage = {
+  id: 'advanced-null-object', level: 'advanced',
+  runtime: advancedNullObjectRuntime,
+  title: '上級13: クーポンが無いときの null チェックを Null Object にまとめる',
+  problem: 'クーポンが無いとき(null)の扱いが、呼び出し側のあちこちに書かれている',
+  outcome: 'null のときの扱いを、何もしない既定のクラスにまとめられる',
+  learns: ['Null Object', '多態'],
+  principles: ['dry'],
+  description: 'ネットショップのクーポン。注文にクーポンが付いていないとき、クーポンコードは null になる。会計の CheckoutService.checkout、カートの見積もり CartService.showCart、レシートの ReceiptService.printReceipt が、それぞれ「クーポンが無ければ(null なら)割引を0円にする」「クーポンが無ければ「クーポンなし」と表示する」の if を自分で書いている。新しい画面を足すたびに同じ null チェックを書くことになり、1か所でも書き忘れると例外で落ちる。クーポンの割引と表示は Coupon(インターフェース)経由で PercentCoupon(割引率のクーポン)に任せる形に、前任者が先に書き換えている。',
+  goal: '「クーポンが無いとき」の処理を、何もしない既定の実装の新しいクラス(NoCoupon)に集めよう。Extract Methodで null のときの処理を applyDiscount / describe として取り出し、同じ処理は Merge Methods で1つにまとめてから、Move Methodで NoCoupon へ移す。最後に NoCoupon が Coupon を実装(implements)すれば、呼び出し側から null のときの分岐が消え、無いときも Coupon として同じように呼べる。メソッドは24行・クラスは28行・ファイルは30行以内、1クラスの責務は1種類まで、依存先は2クラスまで',
+  why: 'クーポンが無いときの扱いが3つの呼び出し側に散らばっていて、新しい画面を足すたびに null チェックを書き、変えるたびに3か所を直していました。「無いとき」を NoCoupon という Coupon の実装の1つにしたので、呼び出し側は null を気にせず呼べて、無いときの扱いは1か所を直せば済みます。',
+  responsibilityNames: { checkout: '会計', 'cart-display': 'カートの表示', receipt: 'レシート', 'no-coupon': 'クーポンなし', 'percent-coupon': '割引率クーポン', 'free-shipping-coupon': '送料無料クーポン' },
+  classNames: { checkout: 'CheckoutFlow', 'cart-display': 'CartView', receipt: 'ReceiptPrinter', 'no-coupon': 'NoCoupon', 'percent-coupon': 'RateCoupon' },
+  methodNames: { checkout: 'checkoutOrder', 'cart-display': 'showEstimate', receipt: 'buildReceipt', 'no-coupon': 'handleNoCoupon', 'percent-coupon': 'applyPercentCoupon' },
+  limits: { method: 24, class: 28, file: 30 },
+  // 呼び出し先の付け替え操作がないため、呼び出し側から Coupon と NoCoupon の2つへの依存を認める。
+  dependencyLimit: 2,
+  conditionNotes: { coupling: 'このゲームでは呼び出し先を書き換えられないため、呼び出し側が Coupon と NoCoupon の2つを呼ぶ形を答えとして認めるため' },
+  responsibilityLimit: 1,
+  changeRequests: [
+    { id: 'req-add-free-shipping-coupon', kind: 'extend', title: '送料無料のクーポンを足して', description: '割引率ではなく、送料を0円にするクーポンを新しく出したい。割引率のクーポンは、これまでどおり使う。', responsibility: 'free-shipping-coupon', linesPerSite: 8, partName: 'applyFreeShippingCoupon' },
+    { id: 'req-no-coupon-guidance', title: 'クーポンなしの注文に、次回のクーポンを案内して', description: 'クーポンを使っていない注文では、割引0円の記録と表示のときに「次回使える10%オフクーポン」の案内も出したい。', responsibility: 'no-coupon', linesPerSite: 2, partName: 'suggestNextCoupon' },
+    { id: 'req-no-coupon-points', title: 'クーポンなしの注文は、ポイントを2倍にして', description: 'クーポンを使わなかったお客様には、代わりにポイントを2倍つけたい。', responsibility: 'no-coupon', linesPerSite: 2, partName: 'grantDoublePoints', rumor: { from: '営業の佐藤さん', text: 'クーポンを使わないお客様向けの特典を考えている、という話があるらしいです。' } },
+  ],
+  checks: [
+    { id: 'check-1', question: 'クーポンが無いときの扱いを NoCoupon にまとめる(Null Object)と、何が良くなる?', choices: [
+      { text: '呼び出し側が null を気にしなくてよくなる代わりに、割引率のクーポンの割引は計算できなくなってしまう', explanation: '割引率のクーポンは PercentCoupon が今までどおり受け持ちます。NoCoupon は「無いとき」の振る舞いだけを持ちます。' },
+      { text: '新しい呼び出し側を足しても、null チェックを書き忘れる心配が減る', explanation: '「無いとき」の振る舞いが Coupon の実装の1つになるので、呼び出し側は Coupon を呼ぶだけで済みます。' },
+      { text: 'null チェックを書く場所が1か所に集まるだけで、if 文の数も呼び出し側の書き方も今までと何も変わらない', explanation: '狙いは if を1か所に寄せることではなく、多態で呼び出し側から分岐をなくすことです。' },
+    ], answer: 1 },
+    { id: 'check-2', question: 'NoCoupon の『割引0円』と、上級6で消した空実装(未対応のメソッド)の違いとして、合っているのはどれ?', choices: [
+      { text: 'NoCoupon は無いときの正しい振る舞いで、空実装は使わない契約を書かされた跡', explanation: '既定の振る舞いを持つのが Null Object、契約を押し付けられた結果が空実装です。だから NoCoupon は消しません。' },
+      { text: 'どちらも中身がほとんど無いので同じものであり、見つけたらどちらも消してしまってかまわない', explanation: 'NoCoupon を消すと、呼び出し側に null チェックが戻ってきます。' },
+      { text: 'NoCoupon はインターフェースを実装するが、空実装はインターフェースとは関係なく、どのクラスに書いてもよいもの', explanation: '空実装も、インターフェースの契約を満たすために書かされたものです。違いは振る舞いに意味があるかどうかです。' },
+    ], answer: 0 },
+  ],
+  codebase: { files: [
+    { id: 'file-coupon-checkout-service', path: 'src/coupon/CheckoutService.ts', classes: [{ id: 'class-coupon-checkout-service', name: 'CheckoutService', methods: [{ id: 'method-coupon-checkout', name: 'checkout', visibility: 'public', parameters: [{ type: 'OrderData', name: 'order' }], fragments: [
+      { id: 'frag-coupon-checkout-subtotal', label: 'カートの商品から小計を計算する', lines: 2, responsibility: 'checkout', code: { csharp: 'if (order.Items.Count == 0) throw new ValidationException("カートが空です");\norder.Subtotal = order.Items.Sum(item => item.UnitPrice * item.Quantity);' }, variables: { uses: ['order'] } },
+      { id: 'frag-coupon-checkout-no-coupon', label: 'クーポンが無ければ(null なら)、割引を0円にして記録する', lines: 2, responsibility: 'no-coupon', duplicateGroup: 'no-coupon-discount', suggestedName: 'applyDiscount', code: { csharp: noCouponDiscountCode }, variables: { uses: ['order'] } },
+      { id: 'frag-coupon-checkout-discount', label: 'Coupon(インターフェース)経由で、クーポンの割引を計算する', lines: 1, responsibility: 'checkout', uses: ['method-coupon-apply-discount'], code: { csharp: 'applyDiscount(order);' }, variables: { uses: ['order'] } },
+      { id: 'frag-coupon-checkout-pay', label: '割引後の金額で決済する', lines: 2, responsibility: 'checkout', code: { csharp: 'order.Total = order.Subtotal - order.Discount;\nFakePayment.Charge(order.Id, order.Total);' }, variables: { uses: ['order'] } },
+    ] }] }] },
+    { id: 'file-coupon-cart-service', path: 'src/coupon/CartService.ts', classes: [{ id: 'class-coupon-cart-service', name: 'CartService', methods: [{ id: 'method-coupon-show-cart', name: 'showCart', visibility: 'public', parameters: [{ type: 'OrderData', name: 'order' }], fragments: [
+      { id: 'frag-coupon-cart-subtotal', label: '小計を計算して見積もりを作る', lines: 2, responsibility: 'cart-display', code: { csharp: 'order.Subtotal = order.Items.Sum(item => item.UnitPrice * item.Quantity);\nLog.Info($"注文 {order.Id} の見積もりを作りました: 小計 {order.Subtotal} 円");' }, variables: { uses: ['order'] } },
+      { id: 'frag-coupon-cart-no-coupon-discount', label: 'クーポンが無ければ(null なら)、割引を0円にして記録する', lines: 2, responsibility: 'no-coupon', duplicateGroup: 'no-coupon-discount', suggestedName: 'applyDiscount', code: { csharp: noCouponDiscountCode }, variables: { uses: ['order'] } },
+      { id: 'frag-coupon-cart-discount', label: 'Coupon(インターフェース)経由で、クーポンの割引を計算する', lines: 1, responsibility: 'cart-display', uses: ['method-coupon-apply-discount'], code: { csharp: 'applyDiscount(order);' }, variables: { uses: ['order'] } },
+      { id: 'frag-coupon-cart-no-coupon-label', label: 'クーポンが無ければ(null なら)、「クーポンなし」と表示する', lines: 2, responsibility: 'no-coupon', duplicateGroup: 'no-coupon-label', suggestedName: 'describe', code: { csharp: noCouponLabelCode }, variables: { uses: ['order'] } },
+      { id: 'frag-coupon-cart-label', label: 'Coupon(インターフェース)経由で、クーポンの表示文言を作る', lines: 1, responsibility: 'cart-display', uses: ['method-coupon-describe'], code: { csharp: 'describe(order);' }, variables: { uses: ['order'] } },
+      { id: 'frag-coupon-cart-render', label: '見積もりを画面に表示する', lines: 2, responsibility: 'cart-display', code: { csharp: 'order.Total = order.Subtotal - order.Discount;\nConsole.WriteLine($"[画面] 合計 {order.Total} 円({order.CouponLabel})");' }, variables: { uses: ['order'] } },
+    ] }] }] },
+    { id: 'file-coupon-receipt-service', path: 'src/coupon/ReceiptService.ts', classes: [{ id: 'class-coupon-receipt-service', name: 'ReceiptService', methods: [{ id: 'method-coupon-print-receipt', name: 'printReceipt', visibility: 'public', parameters: [{ type: 'OrderData', name: 'order' }], fragments: [
+      { id: 'frag-coupon-receipt-header', label: 'レシートの見出しと明細を組み立てる', lines: 2, responsibility: 'receipt', code: { csharp: 'Console.WriteLine($"[レシート] 注文 {order.Id}");\nConsole.WriteLine($"[レシート] 明細 {order.Items.Count} 点 小計 {order.Subtotal} 円");' }, variables: { uses: ['order'] } },
+      { id: 'frag-coupon-receipt-no-coupon', label: 'クーポンが無ければ(null なら)、「クーポンなし」と表示する', lines: 2, responsibility: 'no-coupon', duplicateGroup: 'no-coupon-label', suggestedName: 'describe', code: { csharp: noCouponLabelCode }, variables: { uses: ['order'] } },
+      { id: 'frag-coupon-receipt-label', label: 'Coupon(インターフェース)経由で、クーポンの表示文言を作る', lines: 1, responsibility: 'receipt', uses: ['method-coupon-describe'], code: { csharp: 'describe(order);' }, variables: { uses: ['order'] } },
+      { id: 'frag-coupon-receipt-print', label: 'レシートを印刷する', lines: 2, responsibility: 'receipt', code: { csharp: 'Console.WriteLine($"[レシート] クーポン: {order.CouponLabel}");\nConsole.WriteLine($"[レシート] 合計 {order.Subtotal - order.Discount} 円");' }, variables: { uses: ['order'] } },
+    ] }] }] },
+    { id: 'file-coupon-contract', path: 'src/coupon/Coupon.ts', classes: [{ id: 'class-coupon-contract', name: 'Coupon', methods: [
+      { id: 'method-coupon-apply-discount', name: 'applyDiscount', visibility: 'public', parameters: [{ type: 'OrderData', name: 'order' }], fragments: [] },
+      { id: 'method-coupon-describe', name: 'describe', visibility: 'public', parameters: [{ type: 'OrderData', name: 'order' }], fragments: [] },
+    ] }] },
+    { id: 'file-coupon-percent', path: 'src/coupon/PercentCoupon.ts', classes: [{ id: 'class-coupon-percent', name: 'PercentCoupon', interfaceIds: ['class-coupon-contract'], methods: [
+      { id: 'method-coupon-percent-apply', name: 'applyDiscount', visibility: 'public', parameters: [{ type: 'OrderData', name: 'order' }], fragments: [
+        { id: 'frag-coupon-percent-discount', label: 'クーポンコードの割引率で割引額を計算する', lines: 2, responsibility: 'percent-coupon', code: { csharp: 'if (order.CouponCode is not null) order.Discount = decimal.Round(order.Subtotal * CouponCatalog.RateOf(order.CouponCode), 0);\nif (order.CouponCode is not null) Log.Info($"注文 {order.Id} にクーポン {order.CouponCode} を使いました");' }, variables: { uses: ['order'] } },
+      ] },
+      { id: 'method-coupon-percent-describe', name: 'describe', visibility: 'public', parameters: [{ type: 'OrderData', name: 'order' }], fragments: [
+        { id: 'frag-coupon-percent-label', label: 'クーポンコードと割引額を表示用の文言にする', lines: 2, responsibility: 'percent-coupon', code: { csharp: 'if (order.CouponCode is not null) order.CouponLabel = $"クーポン {order.CouponCode}(-{order.Discount}円)";\nif (order.CouponCode is not null) Log.Info($"注文 {order.Id} のクーポン表示: {order.CouponLabel}");' }, variables: { uses: ['order'] } },
+      ] },
+    ] }] },
+  ] },
+};
+
 export const advancedStages: readonly Stage[] = [
   notifierHierarchyStage,
   paymentGatewayInterfaceStage,
@@ -1770,4 +1847,5 @@ export const advancedStages: readonly Stage[] = [
   mailAdapterStage,
   approvalChainStage,
   compositeItemStage,
+  nullObjectStage,
 ];
