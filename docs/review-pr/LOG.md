@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-11-17 10:22 UTC PR #510 Mediatorパターンの中級ステージを追加 (#484)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅(仕様 mediator-pattern-stage.md の変更対象と一致、E2Eは仕様どおり対象外)
+- マージ: squash & delete-branch
+
 ## 2026-11-17 04:20 UTC PR #508 chore(deps): bump the production-dependencies group across 1 directory with 2 updates
 
 - 判定: 合格(blocker無し)
@@ -210,10 +216,4 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(2815 passed) / npm run lint ✅ / npm run typecheck ✅。差分をIssue #416 の仕様(キャンバス右上に重ねる・閉じるボタン・dismissCritique)と照合。E2Eはレビュー環境で実行できず(Chromium未導入)、PR記載の実測結果を確認。評価サイクル: 1回
-- マージ: squash & delete-branch
-
-## 2026-11-05 15:00 UTC PR #452 ツアーのポップオーバーが対象を覆わないようにする (#419)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(2814 passed) / npm run lint ✅ / npm run typecheck ✅。差分をIssue #419 の仕様(calloutPlacement・avoid・実測サイズ)と照合。E2Eはレビュー環境で実行できず(Chromium未導入)、CIのe2e全件passを確認
 - マージ: squash & delete-branch
