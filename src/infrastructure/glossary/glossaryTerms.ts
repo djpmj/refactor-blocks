@@ -35,5 +35,6 @@ export const glossaryTerms: readonly GlossaryTerm[] = [
   term('chain-of-responsibility', 'Chain of Responsibility', [], ['複数のルールを決まった順に通し、結論が出たら後続の処理を止める設計パターン。', '経費申請を金額・領収書・二重申請・上長承認の順に審査する。']),
   term('composite', 'Composite', [], ['単体と、単体を入れた集合を同じインターフェースにそろえ、集合が中身を同じ呼び方でたどれるようにする設計パターン。', '単品とセット商品を `CatalogItem` にそろえ、セットの中にセットを入れても価格を同じように求める。']),
   term('null-object', 'Null Object', [], ['「無いとき」の振る舞いを、何もしない既定の実装のクラスにして、呼び出し側から null チェックをなくす設計パターン。', 'クーポンが無いときを `NoCoupon` にして、`Coupon` として同じように呼ぶ。']),
+  term('mediator', 'Mediator', [], ['部品どうしが直接呼び合う代わりに、連携のルールを仲介役のクラス1つへ集める設計パターン。', 'カート一覧・クーポン欄・配送方法欄が互いを呼ばず、`OrderFormMediator` だけが3つを呼ぶ。']),
   term('layer', 'レイヤー(層)', ['層'], ['役割ごとにクラスを段に分け、依存を上の段から下の段への一方通行にする構成。', 'Controller → Service → Repository。']),
 ];

@@ -123,6 +123,13 @@ export const storyChapters: readonly StoryChapter[] = [
     outro: '2月の半ば。QAの高橋さんから、注文の受付とキャンセルについて確認がありました。',
   },
   {
+    stageId: 'intermediate-order-form-mediator',
+    title: '呼び合う注文画面の部品',
+    speaker: SATO,
+    intro: '営業の佐藤です。注文画面で数量を変えてもクーポンが外れなかったり、配送方法を変えても明細が古いままだったり、という問い合わせが続いています。画面の部品どうしが呼び合っていて、どこを直せばいいか分からないそうです。',
+    outro: 'その週の金曜日。PMの鈴木さんから、注文ボタンについて相談がありました。',
+  },
+  {
     stageId: 'advanced-notifier-hierarchy',
     title: '通知クラスの共通処理',
     speaker: TANAKA,
