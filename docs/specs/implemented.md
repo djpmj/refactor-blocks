@@ -222,3 +222,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [chain-of-responsibility-stage](chain-of-responsibility-stage.md) | 経費申請の審査を Chain of Responsibility へ組み替える上級ステージ |
 | [composite-pattern-stage](composite-pattern-stage.md) | 単品とセットの型分岐を Composite パターンへ組み替える上級ステージ |
 | [null-object-pattern-stage](null-object-pattern-stage.md) | クーポンが無いときの null チェックを Null Object にまとめる上級ステージ |
+| [mediator-pattern-stage](mediator-pattern-stage.md) | 呼び合う画面部品を仲介役(Mediator)1つへつなぎ直す中級ステージ |

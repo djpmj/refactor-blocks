@@ -403,6 +403,16 @@ export const sampleAnswerSteps: Partial<Record<string, readonly SolutionStep[]>>
     { inline: { method: 'cancelOrder', fromClass: 'OrderManager' } },
     { deleteFile: 'src/order/OrderManager.ts' },
   ],
+  'intermediate-order-form-mediator': [
+    { addFile: 'src/orderForm/OrderFormMediator.ts' },
+    { addClass: { name: 'OrderFormMediator', file: 'src/orderForm/OrderFormMediator.ts' } },
+    { extract: { from: 'changeQuantity', fragmentIds: ['frag-form-cart-change'], name: 'updateCartLines' } },
+    { move: { method: 'changeQuantity', toClass: 'OrderFormMediator' } },
+    { extract: { from: 'applyCoupon', fragmentIds: ['frag-form-coupon-apply'], name: 'applyCouponDiscount' } },
+    { move: { method: 'applyCoupon', toClass: 'OrderFormMediator' } },
+    { extract: { from: 'selectShipping', fragmentIds: ['frag-form-shipping-select'], name: 'applyShippingFee' } },
+    { move: { method: 'selectShipping', toClass: 'OrderFormMediator' } },
+  ],
   'advanced-interface-segregation': [
     { renameClass: { name: 'CollaborationTool', newName: 'ChatClient' } },
     { addFile: 'src/integration/TaskTracker.ts' },

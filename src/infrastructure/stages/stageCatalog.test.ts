@@ -201,6 +201,7 @@ describe('初期違反の種類', () => {
     ['advanced-template-method', ['line-limit', 'coupling', 'responsibility']],
     ['advanced-composite-item', ['line-limit', 'responsibility']],
     ['advanced-null-object', ['responsibility']],
+    ['intermediate-order-form-mediator', ['cycle', 'responsibility']],
   ] as const)('%s keeps the baseline initial violation rule types', (stageId, expectedRules) => {
     // Arrange
     const stage = stages.find((candidate) => candidate.id === stageId);
@@ -417,6 +418,28 @@ const shortcuts: ReadonlyArray<{ readonly stageId: string; readonly description:
         }),
       ];
     }),
+  },
+  {
+    stageId: 'intermediate-order-form-mediator',
+    description: '知らせる処理だけを抽出して仲介役へ移し、部品から呼ぶ',
+    steps: [
+      { addFile: 'src/orderForm/OrderFormMediator.ts' },
+      { addClass: { name: 'OrderFormMediator', file: 'src/orderForm/OrderFormMediator.ts' } },
+      ...([['changeQuantity', 'frag-form-cart-notify', 'notifyCartChanged'], ['applyCoupon', 'frag-form-coupon-notify', 'notifyCouponChanged'], ['selectShipping', 'frag-form-shipping-notify', 'notifyShippingChanged']] as const).flatMap(([from, fragment, name]): SolutionStep[] => [
+        { extract: { from, fragmentIds: [fragment], name } },
+        { move: { method: name, toClass: 'OrderFormMediator' } },
+      ]),
+    ],
+  },
+  {
+    stageId: 'intermediate-order-form-mediator',
+    description: '仲介役を作らず、入口を CartList に集める',
+    steps: [
+      { extract: { from: 'applyCoupon', fragmentIds: ['frag-form-coupon-apply'], name: 'applyCouponDiscount' } },
+      { extract: { from: 'selectShipping', fragmentIds: ['frag-form-shipping-select'], name: 'applyShippingFee' } },
+      { move: { method: 'applyCoupon', toClass: 'CartList' } },
+      { move: { method: 'selectShipping', toClass: 'CartList' } },
+    ],
   },
   {
     stageId: 'advanced-null-object',

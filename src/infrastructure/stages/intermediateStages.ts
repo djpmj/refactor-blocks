@@ -1,5 +1,6 @@
 import type { Stage } from '../../domain/stage/Stage';
 import { intermediateMiddleManRuntime } from './runtime/intermediate-middle-man';
+import { intermediateOrderFormMediatorRuntime } from './runtime/intermediate-order-form-mediator';
 import { intermediateLayeredOrderApiRuntime } from './runtime/intermediate-layered-order-api';
 import { intermediateMemberRankBranchingRuntime } from './runtime/intermediate-member-rank-branching';
 import { intermediateCopyPasteTaxRuntime } from './runtime/intermediate-copy-paste-tax';
@@ -1694,6 +1695,100 @@ const middleManStage: Stage = {
   },
 };
 
+const orderFormMediatorStage: Stage = {
+  responsibilityNames: { cart: 'カートの明細', coupon: 'クーポン', shipping: '配送方法', coordination: '部品の連携' },
+  classNames: {
+    "cart": "CartItemsPanel",
+    "coupon": "CouponPanel",
+    "shipping": "ShippingPanel",
+    "coordination": "OrderFormMediator",
+  },
+  methodNames: {
+    "cart": "updateCartLines",
+    "coupon": "applyCouponDiscount",
+    "shipping": "applyShippingFee",
+    "coordination": "notifyOtherParts",
+  },
+  id: 'intermediate-order-form-mediator',
+  runtime: intermediateOrderFormMediatorRuntime,
+  problem: '注文画面の部品どうしが、互いのメソッドを直接呼び合っている',
+  level: 'intermediate',
+  title: '中級13: 呼び合う画面部品を仲介役(Mediator)でつなぐ',
+  outcome: '呼び合う部品どうしを、仲介役1つを通す形に組み替えられる',
+  learns: ['Mediator', '循環依存', '多対一の依存'],
+  principles: ['adp', 'srp'],
+  checks: [
+    {
+      id: 'check-1',
+      question: '部品どうしが直接呼び合う形を、仲介役1つを通す形に変えると、何が良くなる?',
+      choices: [
+        { text: 'どの部品も仲介役とだけつながるので、部品をいくつ足しても仲介役を含めてどのクラスも書き換えずに済むようになる', explanation: '部品を足すと、その部品とのやり取りを仲介役に書き足します。連携の変更が仲介役1か所に集まる、というのが効き目です。' },
+        { text: 'メソッドの呼び出しが減るので、画面の動きが速くなる', explanation: '速さの話ではありません。変更のときに追う範囲の話です。' },
+        { text: '連携のルールが仲介役1か所に集まり、部品どうしは互いを知らずに済む', explanation: '6本の呼び合いが、仲介役から3本の一方向になります。連携ルールは仲介役だけを読めば分かります。' },
+      ],
+      answer: 2,
+    },
+    {
+      id: 'check-2',
+      question: '知らせる処理だけを仲介役へ移し、部品から仲介役を呼ぶ形にすると、赤い矢印が残るのはなぜ?',
+      choices: [
+        { text: '部品が仲介役を呼び、仲介役も部品を呼ぶので、その間で輪ができるから', explanation: 'このステージでは操作の入口ごと仲介役へ移し、部品には自分の仕事だけを残すと一方向になります。実務では、インターフェースを挟んで輪を切る形もあります。' },
+        { text: '仲介役のクラスの行数が上限を超えるから', explanation: '行数ではなく、呼び合う向きの問題です。' },
+        { text: '移したメソッドが private のままなので、部品から仲介役を呼ぶたびにアクセス制御の違反として数えられるから', explanation: '可視性は矢印の向きとは関係ありません。移したメソッドは自動で public になります。' },
+      ],
+      answer: 0,
+    },
+  ],
+  why: '部品どうしの連携ルールを変えるたびに、3つの部品クラスを開いて呼び合いを追っていました。連携を仲介役1つに集めると、連携の変更は仲介役だけ、部品の変更はその部品だけで済みます。',
+  description: 'ネットショップの注文確認画面。カート一覧(CartList)・クーポン欄(CouponInput)・配送方法欄(ShippingSelector)の3つの部品が、それぞれ自分の操作(数量の変更・クーポンの適用・配送方法の選択)を受けたあと、ほかの2つの部品のメソッドを直接呼んで表示を合わせている。部品どうしが6本の矢印で呼び合っていて、どれも循環している。どの部品も自分の仕事は正しい場所に持っているので、メソッドを持ち主へ戻すだけでは呼び合いは消えない。',
+  goal: '赤い矢印(循環依存)をなくそう。各部品の操作メソッドから「自分の仕事」を Extract Method で切り出して部品に残し、残った「ほかの部品に知らせる」入口のメソッドを、空いた場所へドラッグして作る仲介役のクラスへ Move Method で集める。知らせる処理だけを仲介役へ出して部品から呼ぶと、部品と仲介役の間で循環が残るので注意。メソッドは12行・クラスは40行・ファイルは42行以内、1クラスの責務は1種類まで、依存先は3クラスまで',
+  limits: { method: 12, class: 40, file: 42 },
+  dependencyLimit: 3,
+  responsibilityLimit: 1,
+  conditionNotes: { coupling: '仲介役はすべての部品を呼ぶので、部品の数(3)まで依存を認めるため', responsibility: '部品に連携を混ぜず、仲介役にも部品の仕事を混ぜないため' },
+  changeRequests: [
+    { id: 'req-order-button', title: '注文ボタンの押せる・押せないも切り替えて', description: 'カート・クーポン・配送方法のどれが変わっても、未入力の欄が残っていれば注文ボタンを押せないようにしたい。', responsibility: 'coordination', linesPerSite: 2, partName: 'toggleOrderButton' },
+    { id: 'req-first-order-coupon', title: 'クーポンの使用条件を変えて', description: '初回購入向けのクーポンは、2回目以降の注文では使えないようにしたい。', responsibility: 'coupon', linesPerSite: 4, partName: 'restrictFirstOrderCoupon', rumor: { from: '営業の佐藤さん', text: '「クーポンの使い方」を変えたいという話が、いつか出てくるかもしれないらしいです。' } },
+  ],
+  codebase: {
+    files: [
+      {
+        id: 'file-form-cart-list', path: 'src/orderForm/CartList.ts', classes: [{ id: 'class-form-cart-list', name: 'CartList', methods: [
+          { id: 'method-form-change-quantity', name: 'changeQuantity', visibility: 'public', parameters: [{ type: 'OrderDraft', name: 'draft' }, { type: 'int', name: 'productId' }, { type: 'int', name: 'quantity' }], fragments: [
+            { id: 'frag-form-cart-change', label: '数量を検証して、下書きの明細を更新する', lines: 3, responsibility: 'cart', suggestedName: 'updateCartLines', code: { csharp: "if (quantity < 0) throw new ArgumentOutOfRangeException(nameof(quantity));\ndraft.SetQuantity(productId, quantity);\nLog.Info($\"商品 {productId} の数量を {quantity} にしました\");" }, variables: { uses: ['quantity', 'productId', 'draft'] } },
+            { id: 'frag-form-cart-notify', label: 'クーポン欄と配送方法欄に、カートが変わったことを知らせる', lines: 2, responsibility: 'coordination', uses: ['method-form-refresh-coupon', 'method-form-refresh-shipping-options'], code: { csharp: "refreshCoupon(draft);\nrefreshShippingOptions(draft);" }, variables: { uses: ['draft'] } },
+          ] },
+          { id: 'method-form-refresh-cart-items', name: 'refreshCartItems', visibility: 'public', parameters: [{ type: 'OrderDraft', name: 'draft' }], fragments: [
+            { id: 'frag-form-cart-refresh', label: '割引とお届け予定を明細の表示に反映する', lines: 3, responsibility: 'cart', code: { csharp: "var discountedLines = draft.Lines.Count(line => line.Discounted);\nvar deliveryDate = FakeShippingRates.DeliveryDateFor(draft.ShippingMethod);\nLog.Info($\"明細を表示し直しました(割引 {discountedLines} 件・お届け {deliveryDate:MM/dd})\");" }, variables: { declares: [{ name: 'discountedLines', type: { csharp: 'int' } }, { name: 'deliveryDate', type: { csharp: 'DateTime' } }], uses: ['draft'] } },
+          ] },
+        ] }],
+      },
+      {
+        id: 'file-form-coupon-input', path: 'src/orderForm/CouponInput.ts', classes: [{ id: 'class-form-coupon-input', name: 'CouponInput', methods: [
+          { id: 'method-form-apply-coupon', name: 'applyCoupon', visibility: 'public', parameters: [{ type: 'OrderDraft', name: 'draft' }, { type: 'string', name: 'couponCode' }], fragments: [
+            { id: 'frag-form-coupon-apply', label: 'クーポンコードを検証して、下書きに割引を入れる', lines: 3, responsibility: 'coupon', suggestedName: 'applyCouponDiscount', code: { csharp: "if (string.IsNullOrWhiteSpace(couponCode)) throw new ValidationException(\"クーポンコードを入力してください\");\ndraft.Discount = FakeCoupons.DiscountFor(couponCode, draft.Subtotal);\nLog.Info($\"クーポン {couponCode} で {draft.Discount} 円引きにしました\");" }, variables: { uses: ['couponCode', 'draft'] } },
+            { id: 'frag-form-coupon-notify', label: 'カート一覧と配送方法欄に、割引が変わったことを知らせる', lines: 2, responsibility: 'coordination', uses: ['method-form-refresh-cart-items', 'method-form-refresh-shipping-options'], code: { csharp: "refreshCartItems(draft);\nrefreshShippingOptions(draft);" }, variables: { uses: ['draft'] } },
+          ] },
+          { id: 'method-form-refresh-coupon', name: 'refreshCoupon', visibility: 'public', parameters: [{ type: 'OrderDraft', name: 'draft' }], fragments: [
+            { id: 'frag-form-coupon-refresh', label: '条件を満たさなくなったクーポンを外す', lines: 3, responsibility: 'coupon', code: { csharp: "var stillValid = FakeCoupons.IsValid(draft.CouponCode, draft.Subtotal);\nif (!stillValid) draft.Discount = 0m;\nLog.Info(stillValid ? \"クーポンはそのまま使えます\" : \"条件を満たさないのでクーポンを外しました\");" }, variables: { declares: [{ name: 'stillValid', type: { csharp: 'bool' } }], uses: ['draft'] } },
+          ] },
+        ] }],
+      },
+      {
+        id: 'file-form-shipping-selector', path: 'src/orderForm/ShippingSelector.ts', classes: [{ id: 'class-form-shipping-selector', name: 'ShippingSelector', methods: [
+          { id: 'method-form-select-shipping', name: 'selectShipping', visibility: 'public', parameters: [{ type: 'OrderDraft', name: 'draft' }, { type: 'string', name: 'shippingMethod' }], fragments: [
+            { id: 'frag-form-shipping-select', label: '配送方法を検証して、下書きに送料を入れる', lines: 3, responsibility: 'shipping', suggestedName: 'applyShippingFee', code: { csharp: "if (!FakeShippingRates.Supports(shippingMethod)) throw new ValidationException(\"選べない配送方法です\");\ndraft.ShippingFee = FakeShippingRates.FeeFor(shippingMethod, draft.TotalWeight);\nLog.Info($\"配送方法を {shippingMethod} にしました(送料 {draft.ShippingFee} 円)\");" }, variables: { uses: ['shippingMethod', 'draft'] } },
+            { id: 'frag-form-shipping-notify', label: 'カート一覧とクーポン欄に、配送方法が変わったことを知らせる', lines: 2, responsibility: 'coordination', uses: ['method-form-refresh-cart-items', 'method-form-refresh-coupon'], code: { csharp: "refreshCartItems(draft);\nrefreshCoupon(draft);" }, variables: { uses: ['draft'] } },
+          ] },
+          { id: 'method-form-refresh-shipping-options', name: 'refreshShippingOptions', visibility: 'public', parameters: [{ type: 'OrderDraft', name: 'draft' }], fragments: [
+            { id: 'frag-form-shipping-refresh', label: '選べる配送方法を絞り込み、送料を計算し直す', lines: 3, responsibility: 'shipping', code: { csharp: "var options = FakeShippingRates.OptionsFor(draft.TotalWeight);\ndraft.ShippingFee = FakeShippingRates.FeeFor(draft.ShippingMethod, draft.TotalWeight);\nLog.Info($\"選べる配送方法は {options.Count} 種類です\");" }, variables: { declares: [{ name: 'options', type: { csharp: 'List<string>' } }], uses: ['draft'] } },
+          ] },
+        ] }],
+      },
+    ],
+  },
+};
+
 export const intermediateStages: readonly Stage[] = [
   cyclicDependencyStage,
   godFileStage,
@@ -1707,4 +1802,5 @@ export const intermediateStages: readonly Stage[] = [
   memberRankBranchingStage,
   layeredOrderApiStage,
   middleManStage,
+  orderFormMediatorStage,
 ];

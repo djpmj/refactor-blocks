@@ -41,6 +41,11 @@ export const solutionPhaseTable: Partial<Record<string, readonly SolutionPhase[]
     { from: 4, title: '保存の処理を OrderRepository へ移す', why: 'DB の都合を1つのクラスに閉じ込めると、保存方法の変更が他に響かないため' },
     { from: 6, title: '注文の流れを OrderService へ移す', why: '業務の流れを Controller から離すと、API の形式が変わっても流れは変わらずに済むため' },
   ],
+  'intermediate-order-form-mediator': [
+    { from: 0, title: '部品の連携を引き受ける仲介役のクラスを用意する', why: '連携の約束を置く場所が1つ決まれば、部品どうしが互いを知らなくて済むため' },
+    { from: 2, title: 'カート一覧の操作から自分の仕事を残し、入口を仲介役へ移す', why: '部品には自分の仕事だけを残し、ほかの部品に知らせる役は仲介役に任せるため' },
+    { from: 4, title: 'クーポン欄と配送方法欄も同じ形で仲介役へ移す', why: '全部の入口が仲介役に集まると、矢印が仲介役からの一方向にそろうため' },
+  ],
   'advanced-notifier-hierarchy': [
     { from: 0, title: 'メールと SMS の処理を、同じ形に切り出す', why: '共通の部分と違う部分に分けないと、何を基底クラスに集めてよいか分からないため' },
     { from: 4, title: '同じ処理を1つにまとめ、基底クラスへ移す', why: '同じ処理が2か所にあると、直すたびに両方を直すことになるため' },
