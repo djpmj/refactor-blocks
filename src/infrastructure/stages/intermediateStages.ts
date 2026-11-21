@@ -1,6 +1,7 @@
 import type { Stage } from '../../domain/stage/Stage';
 import { intermediateMiddleManRuntime } from './runtime/intermediate-middle-man';
 import { intermediateOrderFormMediatorRuntime } from './runtime/intermediate-order-form-mediator';
+import { intermediateLawOfDemeterRuntime } from './runtime/intermediate-law-of-demeter';
 import { intermediateLayeredOrderApiRuntime } from './runtime/intermediate-layered-order-api';
 import { intermediateMemberRankBranchingRuntime } from './runtime/intermediate-member-rank-branching';
 import { intermediateCopyPasteTaxRuntime } from './runtime/intermediate-copy-paste-tax';
@@ -1789,6 +1790,130 @@ const orderFormMediatorStage: Stage = {
   },
 };
 
+const lawOfDemeterStage: Stage = {
+  responsibilityNames: { 'order-access': '注文からの取り出し', 'customer-access': '顧客からの取り出し', 'address-format': '宛先の書式', 'label-print': 'ラベル印字', 'note-print': '納品書の印字' },
+  classNames: {
+    "order-access": "OrderAccessor",
+    "customer-access": "CustomerAccessor",
+    "address-format": "AddressFormatter",
+    "label-print": "LabelRenderer",
+    "note-print": "NoteRenderer",
+  },
+  methodNames: {
+    "order-access": "takeCustomer",
+    "customer-access": "takeAddress",
+    "address-format": "formatAddress",
+    "label-print": "renderLabel",
+    "note-print": "renderNote",
+  },
+  id: 'intermediate-law-of-demeter',
+  runtime: intermediateLawOfDemeterRuntime,
+  problem: '印刷のたびに、注文から顧客、顧客から住所へと中をたどっている',
+  level: 'intermediate',
+  title: '中級14: 注文から住所までたどる宛名印刷',
+  outcome: '他クラスの内部をたどる呼び出しを、委譲メソッドで隠せる',
+  learns: ['Law of Demeter', 'Hide Delegate', "Tell, Don't Ask"],
+  principles: ['encapsulation'],
+  checks: [
+    {
+      id: 'check-1',
+      question: 'ShippingLabelPrinter が order.getCustomer().getAddress().formatForLabel() とたどる形の、いちばんの問題は?',
+      choices: [
+        { text: '呼び出しが長くて1行に収まらないから', explanation: '長さではなく、知っている相手の数が問題です。' },
+        { text: 'Order の中に Customer、その中に Address という構造を知ってしまい、その構造が変わると印刷クラスまで直すことになるから', explanation: '呼び出し元が知る相手が増えるほど、変更の波及先も増えます。' },
+        { text: 'getter を呼ぶと処理が遅くなるから', explanation: '速度の話ではなく、変更の広がり方の話です。' },
+      ],
+      answer: 1,
+    },
+    {
+      id: 'check-2',
+      question: 'Order に shippingAddressLine() を足して、印刷クラスがそれを呼ぶようにすると、何が変わる?',
+      choices: [
+        { text: '印刷クラスは Order に頼むだけになり、住所のたどり方は Order と Customer の中に閉じ込められる', explanation: '聞いて自分で組み立てる代わりに、頼む(Tell, Don\'t Ask)形になります。' },
+        { text: 'Customer と Address が要らなくなり、削除できる', explanation: 'データと振る舞いは残り、たどり方が隠れるだけです。' },
+        { text: 'Order がすべてを知る神クラスになるので、かえって悪くなる', explanation: 'Order が知るのは直接持っている Customer だけです。' },
+      ],
+      answer: 0,
+    },
+    {
+      id: 'check-3',
+      question: '委譲メソッドを増やし続けて、クラスが横流しするだけになったら?',
+      choices: [
+        { text: '委譲メソッドは多いほど良いので、そのままにする', explanation: '横流しだけの層は、それ自体が変更の手間になります。' },
+        { text: 'チェーンに戻すしかない', explanation: '戻す以外にも、仕事そのものを持ち主へ移す選び方があります。' },
+        { text: '中級12のように、呼び出し元へ戻して消すことも考える(Middle Man とのバランス)', explanation: '隠しすぎと知りすぎは表裏です。どちらに傾いたかで直し方を選びます。' },
+      ],
+      answer: 2,
+    },
+  ],
+  why: '住所の持ち方や宛先の書き方が変わるたびに、住所をたどっている印刷クラスすべてに影響が出ます。たどり方を Order と Customer の中に隠せば、印刷クラスは Order に頼むだけになり、住所の変更は Customer と Address の間で閉じます。',
+  description: '配送の宛名ラベルを印刷する ShippingLabelPrinter と、納品書を印刷する DeliveryNotePrinter。どちらも order.getCustomer() で顧客を、customer.getAddress() で住所を取り出し、address.formatForLabel() で宛先の文字列を作っている。印刷クラスが、注文・顧客・住所の3つのクラスの中身を知っている。',
+  goal: '印刷クラスが知っていてよいのは Order だけ(直接の友だちにだけ話す)。チェーンの後ろ側から Extract Method して Customer へ、残りを Order へ移し、印刷クラスからは Order に頼むだけにしよう。同じ形の抽出は Merge Methods で1つにまとめられる。外から使われなくなった getter は private に。メソッドは11行以内、依存先は1クラスまで',
+  limits: { method: 11, class: 30, file: 40 },
+  dependencyLimit: 1,
+  responsibilityLimit: 1,
+  changeRequests: [
+    { id: 'req-label-barcode', title: '配送ラベルに追跡番号のバーコードも印字して', description: '宛名ラベルに、追跡番号のバーコードも印字する。', responsibility: 'label-print', linesPerSite: 1, partName: 'addTrackingBarcode' },
+    { id: 'req-address-building', title: '宛先に建物名と部屋番号も載せて', description: '宛先の文字列に、建物名と部屋番号を足す。', responsibility: 'address-format', linesPerSite: 2, partName: 'appendBuildingName', rumor: { from: '先輩の田中さん', text: '住所の書き方を変えたいという話が、そのうち出てくるらしいです。' } },
+  ],
+  codebase: {
+    files: [
+      {
+        id: 'file-shipping-label-printer', path: 'src/shipping/ShippingLabelPrinter.ts', classes: [{ id: 'class-shipping-label-printer', name: 'ShippingLabelPrinter', methods: [
+          { id: 'method-print-label', name: 'printLabel', visibility: 'public', parameters: [{ type: 'string', name: 'trackingNumber' }], fragments: [
+            { id: 'frag-label-get-customer', label: 'order.getCustomer() で顧客を取り出す', lines: 1, responsibility: 'call', uses: ['method-get-customer'], variables: { declares: [{ name: 'customer', type: { csharp: 'Customer' } }] } },
+            { id: 'frag-label-get-address', label: 'customer.getAddress() で住所を取り出す', lines: 1, responsibility: 'call', uses: ['method-get-address'], variables: { declares: [{ name: 'address', type: { csharp: 'Address' } }], uses: ['customer'] } },
+            { id: 'frag-label-format-address', label: 'address.formatForLabel() で宛先の文字列を作る', lines: 1, responsibility: 'call', uses: ['method-format-for-label'], variables: { declares: [{ name: 'addressLine', type: { csharp: 'string' } }], uses: ['address'] } },
+            { id: 'frag-label-print', label: '宛名ラベルを組み立てて印刷する', lines: 1, responsibility: 'label-print', code: { csharp: "Console.WriteLine($\"=== 配送ラベル === お届け先: {addressLine} 追跡番号: {trackingNumber}\");"  }, variables: { uses: ['trackingNumber', 'addressLine'] } },
+          ] },
+        ] }],
+      },
+      {
+        id: 'file-delivery-note-printer', path: 'src/shipping/DeliveryNotePrinter.ts', classes: [{ id: 'class-delivery-note-printer', name: 'DeliveryNotePrinter', methods: [
+          { id: 'method-print-note', name: 'printNote', visibility: 'public', parameters: [{ type: 'int', name: 'orderId' }], fragments: [
+            { id: 'frag-note-get-customer', label: 'order.getCustomer() で顧客を取り出す', lines: 1, responsibility: 'call', uses: ['method-get-customer'], variables: { declares: [{ name: 'customer', type: { csharp: 'Customer' } }] } },
+            { id: 'frag-note-get-address', label: 'customer.getAddress() で住所を取り出す', lines: 1, responsibility: 'call', uses: ['method-get-address'], variables: { declares: [{ name: 'address', type: { csharp: 'Address' } }], uses: ['customer'] } },
+            { id: 'frag-note-format-address', label: 'address.formatForLabel() で宛先の文字列を作る', lines: 1, responsibility: 'call', uses: ['method-format-for-label'], variables: { declares: [{ name: 'addressLine', type: { csharp: 'string' } }], uses: ['address'] } },
+            { id: 'frag-note-print', label: '納品書を組み立てて印刷する', lines: 1, responsibility: 'note-print', code: { csharp: "Console.WriteLine($\"納品書 No.{orderId} / 納品先: {addressLine} / 発行日: {SampleData.Today:yyyy-MM-dd}\");"  }, variables: { uses: ['orderId', 'addressLine'] } },
+          ] },
+        ] }],
+      },
+      {
+        id: 'file-order', path: 'src/order/Order.ts', classes: [{ id: 'class-order', name: 'Order',
+          fields: [{ id: 'field-order-customer', name: 'customer', visibility: 'private', description: '注文した顧客', type: { csharp: 'Customer' } }],
+          methods: [
+            { id: 'method-get-customer', name: 'getCustomer', visibility: 'public', returns: [{ name: 'customer', type: { csharp: 'Customer' } }], fragments: [
+              { id: 'frag-get-customer', label: '顧客を返す', lines: 1, responsibility: 'order-access', reads: ['field-order-customer'], accessor: true, code: { csharp: "var customer = this.customer;" }, variables: { declares: [{ name: 'customer', type: { csharp: 'Customer' } }] } },
+            ] },
+          ] }],
+      },
+      {
+        id: 'file-customer', path: 'src/customer/Customer.ts', classes: [{ id: 'class-customer', name: 'Customer',
+          fields: [{ id: 'field-customer-address', name: 'address', visibility: 'private', description: '顧客の住所', type: { csharp: 'Address' } }],
+          methods: [
+            { id: 'method-get-address', name: 'getAddress', visibility: 'public', returns: [{ name: 'address', type: { csharp: 'Address' } }], fragments: [
+              { id: 'frag-get-address', label: '住所を返す', lines: 1, responsibility: 'customer-access', reads: ['field-customer-address'], accessor: true, code: { csharp: "var address = this.address;" }, variables: { declares: [{ name: 'address', type: { csharp: 'Address' } }] } },
+            ] },
+          ] }],
+      },
+      {
+        id: 'file-address', path: 'src/customer/Address.ts', classes: [{ id: 'class-address', name: 'Address',
+          fields: [
+            { id: 'field-address-postal-code', name: 'postalCode', visibility: 'private', description: '郵便番号', type: { csharp: 'string' } },
+            { id: 'field-address-prefecture', name: 'prefecture', visibility: 'private', description: '都道府県', type: { csharp: 'string' } },
+            { id: 'field-address-city', name: 'city', visibility: 'private', description: '市区町村', type: { csharp: 'string' } },
+            { id: 'field-address-street', name: 'street', visibility: 'private', description: '番地', type: { csharp: 'string' } },
+          ],
+          methods: [
+            { id: 'method-format-for-label', name: 'formatForLabel', visibility: 'public', returns: [{ name: 'addressLine', type: { csharp: 'string' } }], fragments: [
+              { id: 'frag-format-for-label', label: '郵便番号と住所を宛先の1行にまとめる', lines: 3, responsibility: 'address-format', reads: ['field-address-postal-code', 'field-address-prefecture', 'field-address-city', 'field-address-street'], code: { csharp: "var cityLine = $\"{prefecture}{city}{street}\";\nvar addressLine = $\"〒{postalCode} {cityLine}\";\nLog.Debug($\"宛先を組み立てました: {addressLine}\");" }, variables: { declares: [{ name: 'addressLine', type: { csharp: 'string' } }] } },
+            ] },
+          ] }],
+      },
+    ],
+  },
+};
+
 export const intermediateStages: readonly Stage[] = [
   cyclicDependencyStage,
   godFileStage,
@@ -1803,4 +1928,5 @@ export const intermediateStages: readonly Stage[] = [
   layeredOrderApiStage,
   middleManStage,
   orderFormMediatorStage,
+  lawOfDemeterStage,
 ];
