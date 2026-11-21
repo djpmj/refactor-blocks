@@ -38,6 +38,12 @@
 
 ## ログ一覧
 
+## 2026-11-21 10:35 UTC PR #511 デメテルの法則の中級ステージを追加 (#485)
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅ / E2E(law-of-demeter・reference-menu) ✅
+- マージ: squash & delete-branch
+
 ## 2026-11-17 10:22 UTC PR #510 Mediatorパターンの中級ステージを追加 (#484)
 
 - 判定: 合格(blocker無し)
@@ -210,10 +216,4 @@
 
 - 判定: 合格(blocker無し)
 - 確認した内容: npm test ✅(2827 passed) / npm run lint ✅ / npm run typecheck ✅。差分をIssue #428 の仕様(isShortcutBlocked・data-allows-shortcuts による操作ガイドの例外)と照合。E2Eはレビュー環境で実行できず、PR記載の実測結果を確認。評価サイクル: 1回
-- マージ: squash & delete-branch
-
-## 2026-11-06 23:40 UTC PR #454 講評パネルを閉じられるようにする (#416)
-
-- 判定: 合格(blocker無し)
-- 確認した内容: npm test ✅(2815 passed) / npm run lint ✅ / npm run typecheck ✅。差分をIssue #416 の仕様(キャンバス右上に重ねる・閉じるボタン・dismissCritique)と照合。E2Eはレビュー環境で実行できず(Chromium未導入)、PR記載の実測結果を確認。評価サイクル: 1回
 - マージ: squash & delete-branch
