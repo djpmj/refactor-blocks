@@ -1,5 +1,5 @@
-# law-of-demeter-stage: 中級13「注文から住所までたどる宛名印刷」(Law of Demeter / Hide Delegate)
-> **実装順の注意**: 同じ区分の新ステージ仕様(上級: adapter/chain/composite/null-object、中級: mediator/law-of-demeter/temporal-coupling/flag-argument)と、題名の番号(上級10・中級13)と登録ファイル(`*Stages.ts`・`sampleAnswer.ts`・`solutionPhaseTable.ts`・`storyChapters.ts`・`stageCatalog.test.ts`・`docs/stages/report.md`)が衝突する。**同時に実装しない**。先にマージされたものがあれば、番号は次の空き番号に付け直し、`storyChapters.ts` の「最後の章」も最新のものに合わせる。
+# law-of-demeter-stage: 中級14「注文から住所までたどる宛名印刷」(Law of Demeter / Hide Delegate)
+> **実装順の注意**: 同じ区分の新ステージ仕様(上級: adapter/chain/composite/null-object、中級: mediator/law-of-demeter/temporal-coupling/flag-argument)と、題名の番号(上級10・中級14)と登録ファイル(`*Stages.ts`・`sampleAnswer.ts`・`solutionPhaseTable.ts`・`storyChapters.ts`・`stageCatalog.test.ts`・`docs/stages/report.md`)が衝突する。**同時に実装しない**。先にマージされたものがあれば、番号は次の空き番号に付け直し、`storyChapters.ts` の「最後の章」も最新のものに合わせる。
 
 > **既存との重複確認**: 同名の仕様書・実装は無い。ただし `docs/specs/delete-class-code-guard.md` 45行目と
 > `docs/specs/extends-interface-loophole.md` 201行目が、未作成の旧案 `law-of-demeter-stage`(`Address.ts` を空にして消す02案)に触れている。
@@ -32,7 +32,7 @@ Customer → Order の順に持ち主へ移す。最後に、外から使われ�
 | --- | --- | --- | --- |
 | 変更 | `src/infrastructure/stages/intermediateStages.ts` | infrastructure | `lawOfDemeterStage` を定義し、`intermediateStages` の**末尾**(`middleManStage` の後)に追加。**他の新規中級ステージ仕様と衝突しやすい** |
 | 新規 | `src/infrastructure/stages/runtime/intermediate-law-of-demeter.ts` | infrastructure | C# 実行用の `StageRuntime`(全ステージ必須。`stageCode.test.ts` 625行目) |
-| 変更 | `src/domain/stage/sampleAnswer.ts` | domain | `sampleAnswerSteps` に `'intermediate-law-of-demeter'` の10手を追加。**衝突しやすい** |
+| 変更 | `src/domain/stage/sampleAnswer.ts` | domain | `sampleAnswerSteps` に `'intermediate-law-of-demeter'` の10手を追加(画面で操作するのは8手目まで。下記「模範解答」参照)。**衝突しやすい** |
 | 変更 | `src/infrastructure/stages/solutionPhaseTable.ts` | infrastructure | 8手以上なので方針の表を追加(`stageCatalog.test.ts` 1450行目)。**衝突しやすい** |
 | 変更 | `src/infrastructure/story/storyChapters.ts` | infrastructure | 中級12の章の直後に章を1つ追加(`storyChapters.test.ts` が全ステージ・同じ順を要求)。**衝突しやすい** |
 | 新規 | `src/infrastructure/stages/lawOfDemeterStage.test.ts` | infrastructure(テスト) | 本ステージ固有の点数・依存・近道の確認(下記 TDD対象) |
@@ -52,19 +52,19 @@ Customer → Order の順に持ち主へ移す。最後に、外から使われ�
 | --- | --- |
 | `id` | `'intermediate-law-of-demeter'` |
 | `level` | `'intermediate'` |
-| `title` | `'中級13: 注文から住所までたどる宛名印刷'` |
+| `title` | `'中級14: 注文から住所までたどる宛名印刷'` |
 | `problem` | `'印刷のたびに、注文から顧客、顧客から住所へと中をたどっている'`(コード識別子を含めない) |
 | `outcome` | `'他クラスの内部をたどる呼び出しを、委譲メソッドで隠せる'` |
 | `learns` | `['Law of Demeter', 'Hide Delegate', "Tell, Don't Ask"]` |
 | `principles` | `['encapsulation']` |
-| `limits` | `{ method: 7, class: 30, file: 40 }` |
+| `limits` | `{ method: 11, class: 30, file: 40 }` |
 | `dependencyLimit` | `1` |
 | `responsibilityLimit` | `1` |
 | `visibilityEnforced` | 省略(false。移動後は `publicizeCrossClassCalls` が public にする) |
 | `runtime` | `intermediateLawOfDemeterRuntime` |
 
 - `description`: 「配送の宛名ラベルを印刷する ShippingLabelPrinter と、納品書を印刷する DeliveryNotePrinter。どちらも `order.getCustomer()` で顧客を、`customer.getAddress()` で住所を取り出し、`address.formatForLabel()` で宛先の文字列を作っている。印刷クラスが、注文・顧客・住所の3つのクラスの中身を知っている。」
-- `goal`: 「印刷クラスが知っていてよいのは Order だけ(直接の友だちにだけ話す)。チェーンの後ろ側から Extract Method して Customer へ、残りを Order へ移し、印刷クラスからは Order に頼むだけにしよう。同じ形の抽出は Merge Methods で1つにまとめられる。外から使われなくなった getter は private に。メソッドは7行以内、依存先は1クラスまで」
+- `goal`: 「印刷クラスが知っていてよいのは Order だけ(直接の友だちにだけ話す)。チェーンの後ろ側から Extract Method して Customer へ、残りを Order へ移し、印刷クラスからは Order に頼むだけにしよう。同じ形の抽出は Merge Methods で1つにまとめられる。外から使われなくなった getter は private に。メソッドは11行以内、依存先は1クラスまで」
 - `why`: 「住所の持ち方や宛先の書き方が変わるたびに、住所をたどっている印刷クラスすべてに影響が出ます。たどり方を Order と Customer の中に隠せば、印刷クラスは Order に頼むだけになり、住所の変更は Customer と Address の間で閉じます。」
 - `responsibilityNames`: `{ accessor: '値の取り出し', 'address-format': '宛先の書式', 'label-print': 'ラベル印字', 'note-print': '納品書の印字' }`
 - `classNames`(自動命名。初期クラス名と重ねない): `{ accessor: 'AccessorHandler', 'address-format': 'AddressFormatter', 'label-print': 'LabelRenderer', 'note-print': 'NoteRenderer' }`
@@ -88,16 +88,16 @@ Fragment(`printNote` は `label` → `note` に読み替えた同じ形。id は
 | `frag-label-get-customer` | `order.getCustomer() で顧客を取り出す` | `call` | 1 | uses `method-get-customer` | declares `customer: Customer` |
 | `frag-label-get-address` | `customer.getAddress() で住所を取り出す` | `call` | 1 | uses `method-get-address` | declares `address: Address` |
 | `frag-label-format-address` | `address.formatForLabel() で宛先の文字列を作る` | `call` | 1 | uses `method-format-for-label` | declares `addressLine: string` |
-| `frag-label-print` | `宛名ラベルを組み立てて印刷する` | `label-print` | 5 | なし | uses `trackingNumber`, `addressLine` |
-| `frag-note-print` | `納品書を組み立てて印刷する` | `note-print` | 5 | なし | uses `orderId`, `addressLine` |
+| `frag-label-print` | `宛名ラベルを組み立てて印刷する` | `label-print` | 1 | なし | uses `trackingNumber`, `addressLine` |
+| `frag-note-print` | `納品書を組み立てて印刷する` | `note-print` | 1 | なし | uses `orderId`, `addressLine` |
 | `frag-get-customer` | `顧客を返す` | `accessor`(`accessor: true`) | 1 | reads `field-order-customer` | declares `customer: Customer` |
 | `frag-get-address` | `住所を返す` | `accessor`(`accessor: true`) | 1 | reads `field-customer-address` | declares `address: Address` |
 | `frag-format-for-label` | `郵便番号と住所を宛先の1行にまとめる` | `address-format` | 3 | reads 4フィールドすべて | declares `addressLine: string` |
 
 - call Fragment には `code` を書かない(`stageCode.test.ts` 430行目。呼び出し文は生成される)。
-- 印刷の2つの処理(5行)と getter・`formatForLabel` のC#の例:
-  - `frag-label-print`: `if (string.IsNullOrWhiteSpace(trackingNumber)) throw new ArgumentException("追跡番号がありません");` / `var header = "=== 配送ラベル ===";` / `var body = $"お届け先: {addressLine}";` / `var footer = $"追跡番号: {trackingNumber}";` / `Console.WriteLine($"{header} {body} {footer}");`
-  - `frag-note-print`: `if (orderId <= 0) throw new ArgumentOutOfRangeException(nameof(orderId));` / `var title = $"納品書 No.{orderId}";` / `var deliverTo = $"納品先: {addressLine}";` / `var issuedOn = $"発行日: {SampleData.Today:yyyy-MM-dd}";` / `Console.WriteLine($"{title} / {deliverTo} / {issuedOn}");`
+- 印刷の2つの処理(各1行)と getter・`formatForLabel` のC#の例:
+  - `frag-label-print`: `Console.WriteLine($"=== 配送ラベル === お届け先: {addressLine} 追跡番号: {trackingNumber}");`
+  - `frag-note-print`: `Console.WriteLine($"納品書 No.{orderId} / 納品先: {addressLine} / 発行日: {SampleData.Today:yyyy-MM-dd}");`
   - `frag-get-customer`: `var customer = this.customer;`、`frag-get-address`: `var address = this.address;`
   - `frag-format-for-label`: `var cityLine = $"{prefecture}{city}{street}";` / `var addressLine = $"〒{postalCode} {cityLine}";` / `Log.Debug($"宛先を組み立てました: {addressLine}");`
 - getter は `accessor: true` にする(1行メソッドが `trivial-method` で減点されないため。`overExtraction.ts` 14行目)。
@@ -127,7 +127,7 @@ Fragment(`printNote` は `label` → `note` に読み替えた同じ形。id は
    - 「チェーンに戻すしかない」/ 戻す以外にも、仕事そのものを持ち主へ移す選び方があります。
    - **「中級12のように、呼び出し元へ戻して消すことも考える(Middle Man とのバランス)」**(answer: 2)/ 隠しすぎと知りすぎは表裏です。どちらに傾いたかで直し方を選びます。
 
-### 模範解答(`sampleAnswerSteps['intermediate-law-of-demeter']`、10手)
+### 模範解答(`sampleAnswerSteps['intermediate-law-of-demeter']`、10手。画面で操作するのは8手目まで)
 
 ```ts
 'intermediate-law-of-demeter': [
@@ -179,16 +179,22 @@ Fragment(`printNote` は `label` → `note` に読み替えた同じ形。id は
   生成される呼び出しは注入された受け手(`_customer.addressLine()` など)を使い、`customer`・`address` フィールドの値を参照しないので、未設定でも落ちない。
 - `npm run csharp-export` と `bash scripts/verify-csharp.sh` で、初期・各手・最終形がビルド・実行でき、出力が一致することを確かめる。ビルドに失敗する手があれば `expectedBuildFailures` に入れる(3手目が該当する見込み)。
 
+## 仕様変更の記録(評価2回目の指摘への対応)
+
+- **method 上限 7 → 11**: 7行以下は不可能。初期の `printLabel` は実測14行(メソッド分3+call 3つ+印刷+区切り3)。8行でも、変更依頼で追加するFragmentの区切り行が+1行されて成立しないため、11にした。
+- **print Fragment 5行 → 1行**: 上限を11にしたので、印刷の処理を5行に膨らませる必要がなくなった(初期の行数超過は printLabel・printNote の14行 > 11 で成り立つ)。
+- **受け入れ基準2を10手 → 8手に変更**: 9・10手目(`getCustomer`・`getAddress` の private 化)は、画面に可視性を選ぶ欄がなく画面では行えない。8手目で100点になるので、画面の確認は8手目までとし、ユーザーが承認済み。
+
 ## 動きの仕様
 
-- ステージ一覧・ストーリーで、中級12の次に「中級13: 注文から住所までたどる宛名印刷」が出る。
-- 初期状態は **60点**: 行数 -20(`printLabel`・`printNote` が8行 > 7)、結合度 -20(印刷クラス2つがそれぞれ Order・Customer・Address の3クラスに依存 > 1)。
-- 模範解答の8手目(移動)で100点。最終形の依存は ShippingLabelPrinter → Order、DeliveryNotePrinter → Order、Order → Customer、Customer → Address の各1本。
+- ステージ一覧・ストーリーで、中級12の次に「中級14: 注文から住所までたどる宛名印刷」が出る。
+- 初期状態は **60点**: 行数 -20(`printLabel`・`printNote` が14行 > 11。メソッド分3行+call Fragment 3つ(各2行)+印刷1行(コード1行=2行)+Fragment区切り3行)、結合度 -20(印刷クラス2つがそれぞれ Order・Customer・Address の3クラスに依存 > 1)。
+- 模範解答の8手目(移動)で100点(9・10手目は可視性の変更で、点数は変わらない)。最終形の依存は ShippingLabelPrinter → Order、DeliveryNotePrinter → Order、Order → Customer、Customer → Address の各1本。
 - 「チェーンを丸ごと Order へ移すだけ」(後ろ側を Customer へ移さない)では Order が Customer・Address の2つに依存して **90点**にとどまる。
   知りすぎを別のクラスへ移しただけでは直らないことを、点数で見せる。
 - 最終形で Order・Customer は getter を持つので、`middle-man`(全メソッドが1行の横流し)には当たらない。
 - 変更依頼:
-  - `req-label-barcode`: 初期は `printLabel`(8行)が上限超えのまま +1行で -10 → 90点、解答後は 6+1=7行で 100点。痛みカードは「読む行数」8 → 6(0.75倍以下)で「はっきり楽になる」。
+  - `req-label-barcode`: 初期は `printLabel`(14行)が上限超えのまま +1行で -10 → 90点、解答後は上限内で100点。痛みカードは「読む行数」が0.75倍以下に減り「はっきり楽になる」。
   - `req-address-building`: 初期は波及2クラスで 90点、解答後は波及1クラス(Customer)で 95点。
 
 ## TDD対象
@@ -209,10 +215,10 @@ Fragment(`printNote` は `label` → `note` に読み替えた同じ形。id は
 
 ## 受け入れ基準
 
-1. ステージ一覧から中級13を選べ、初期点が60点と表示される
-2. 模範解答の手順どおりに画面で操作すると100点になり、理解度チェックが3問出る(Extract Method・Merge Methods・Move Method・可視性の変更だけで解ける)
-3. 中級13のメニューから C# プロジェクトの zip をダウンロードできる(`e2e/reference-menu.spec.ts` の追加行)
-4. `docs/stages/report.md` に中級13の行があり、「初期点が高い」「手数が多い」の注意が付かない(60点・10手)
+1. ステージ一覧から中級14を選べ、初期点が60点と表示される
+2. 模範解答の8手目まで画面で操作すると100点になり、理解度チェックが3問出る。9・10手目の getter private 化は、可視性を選ぶ欄が画面にないため画面では行わない(Extract Method・Merge Methods・Move Method だけで解ける。private 化はドメインのテストで確かめる)
+3. 中級14のメニューから C# プロジェクトの zip をダウンロードできる(`e2e/reference-menu.spec.ts` の追加行)
+4. `docs/stages/report.md` に中級14の行があり、「初期点が高い」「手数が多い」の注意が付かない(60点・10手)
 5. `stageCatalog.test.ts`・`stageCode.test.ts`・`storyChapters.test.ts`・`stageReport.test.ts` の既存の全ステージ共通テストが、例外表を増やさずに通る
 6. `npm run check` と `npm run test:e2e` が通る。CI の `csharp` ジョブが通る
 

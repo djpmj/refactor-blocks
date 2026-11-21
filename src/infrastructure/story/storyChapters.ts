@@ -130,6 +130,13 @@ export const storyChapters: readonly StoryChapter[] = [
     outro: 'その週の金曜日。PMの鈴木さんから、注文ボタンについて相談がありました。',
   },
   {
+    stageId: 'intermediate-law-of-demeter',
+    title: '住所までたどる印刷クラス',
+    speaker: TAKAHASHI,
+    intro: '印刷まわりのテストを書いていて気づきました。宛名ラベルも納品書も、注文の中の顧客、その中の住所まで知っています。住所の持ち方が変わったら、印刷のテストが全部壊れそうなんです。',
+    outro: '2月の下旬。配送センターから、ラベルの印字について相談が届きました。',
+  },
+  {
     stageId: 'advanced-notifier-hierarchy',
     title: '通知クラスの共通処理',
     speaker: TANAKA,

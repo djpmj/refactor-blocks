@@ -19,7 +19,7 @@ describe('中級13: 呼び合う画面部品の Mediator', () => {
     const initial = scoreCodebase(stage.codebase, stage);
     const final = scoreCodebase(solved, stage);
     // Assert
-    expect(stages.filter((item) => item.level === 'intermediate').at(-1)?.id).toBe(stage.id);
+    expect(stages.filter((item) => item.level === 'intermediate').map((item) => item.id)).toContain(stage.id);
     expect(solution).toHaveLength(8);
     expect(initial.total).toBe(10);
     expect(final.total).toBe(100);

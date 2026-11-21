@@ -223,3 +223,4 @@ skill・`/spec-to-issue` コマンドなど)は問わず、`docs/specs/` にあ�
 | [composite-pattern-stage](composite-pattern-stage.md) | 単品とセットの型分岐を Composite パターンへ組み替える上級ステージ |
 | [null-object-pattern-stage](null-object-pattern-stage.md) | クーポンが無いときの null チェックを Null Object にまとめる上級ステージ |
 | [mediator-pattern-stage](mediator-pattern-stage.md) | 呼び合う画面部品を仲介役(Mediator)1つへつなぎ直す中級ステージ |
+| [law-of-demeter-stage](law-of-demeter-stage.md) | 注文から住所までたどる呼び出しを委譲メソッドで隠す中級ステージ(Law of Demeter) |

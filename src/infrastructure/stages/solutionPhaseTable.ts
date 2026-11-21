@@ -46,6 +46,11 @@ export const solutionPhaseTable: Partial<Record<string, readonly SolutionPhase[]
     { from: 2, title: 'カート一覧の操作から自分の仕事を残し、入口を仲介役へ移す', why: '部品には自分の仕事だけを残し、ほかの部品に知らせる役は仲介役に任せるため' },
     { from: 4, title: 'クーポン欄と配送方法欄も同じ形で仲介役へ移す', why: '全部の入口が仲介役に集まると、矢印が仲介役からの一方向にそろうため' },
   ],
+  'intermediate-law-of-demeter': [
+    { from: 0, title: 'チェーンの後ろ側(住所をたどって宛先を作る)を、Customer へ移す', why: '住所を持っているのは Customer なので、住所のたどり方は Customer の中に隠すのが自然なため' },
+    { from: 4, title: '残りの「顧客を取り出して頼む」を、Order へ移す', why: '印刷クラスの直接の友だちは Order だけにして、Order から先の構造を知らずに済むようにするため' },
+    { from: 8, title: '外から使われなくなった getter を private にする', why: '開いたままの getter は、またチェーンでたどられる入口になるため' },
+  ],
   'advanced-notifier-hierarchy': [
     { from: 0, title: 'メールと SMS の処理を、同じ形に切り出す', why: '共通の部分と違う部分に分けないと、何を基底クラスに集めてよいか分からないため' },
     { from: 4, title: '同じ処理を1つにまとめ、基底クラスへ移す', why: '同じ処理が2か所にあると、直すたびに両方を直すことになるため' },

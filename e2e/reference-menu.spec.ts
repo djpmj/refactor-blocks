@@ -167,6 +167,7 @@ const runtimeStages = [
   ['中級10: 会員ランクごとのif分岐をクラスに分ける', 'intermediate-member-rank-branching'],
   ['中級11: Controller に全部書いてある注文API', 'intermediate-layered-order-api'],
   ['中級12: 横流しするだけの OrderManager', 'intermediate-middle-man'],
+  ['中級14: 注文から住所までたどる宛名印刷', 'intermediate-law-of-demeter'],
 ] as const;
 
 for (const [title, stageId] of runtimeStages) {

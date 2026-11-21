@@ -413,6 +413,18 @@ export const sampleAnswerSteps: Partial<Record<string, readonly SolutionStep[]>>
     { extract: { from: 'selectShipping', fragmentIds: ['frag-form-shipping-select'], name: 'applyShippingFee' } },
     { move: { method: 'selectShipping', toClass: 'OrderFormMediator' } },
   ],
+  'intermediate-law-of-demeter': [
+    { extract: { from: 'printLabel', fragmentIds: ['frag-label-get-address', 'frag-label-format-address'], name: 'buildAddressLine' } },
+    { extract: { from: 'printNote', fragmentIds: ['frag-note-get-address', 'frag-note-format-address'], name: 'buildAddressLine' } },
+    { merge: { methodA: 'buildAddressLine', methodAClass: 'ShippingLabelPrinter', methodB: 'buildAddressLine', methodBClass: 'DeliveryNotePrinter', name: 'buildAddressLine' } },
+    { move: { method: 'buildAddressLine', toClass: 'Customer' } },
+    { extract: { from: 'printLabel', fragmentIds: ['frag-label-get-customer', 'solution-0:call'], name: 'shippingAddressLine' } },
+    { extract: { from: 'printNote', fragmentIds: ['frag-note-get-customer', 'solution-1:call'], name: 'shippingAddressLine' } },
+    { merge: { methodA: 'shippingAddressLine', methodAClass: 'ShippingLabelPrinter', methodB: 'shippingAddressLine', methodBClass: 'DeliveryNotePrinter', name: 'shippingAddressLine' } },
+    { move: { method: 'shippingAddressLine', toClass: 'Order' } },
+    { changeVisibility: { method: 'getCustomer', class: 'Order', visibility: 'private' } },
+    { changeVisibility: { method: 'getAddress', class: 'Customer', visibility: 'private' } },
+  ],
   'advanced-interface-segregation': [
     { renameClass: { name: 'CollaborationTool', newName: 'ChatClient' } },
     { addFile: 'src/integration/TaskTracker.ts' },
