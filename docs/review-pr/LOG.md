@@ -38,6 +38,18 @@
 
 ## ログ一覧
 
+## 2026-11-23 20:30 UTC PR #513 chore(deps): bump the development-dependencies group with 7 updates
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅(依存更新のみ、CIのe2e/csharp/knip/jscpdもpass)
+- マージ: squash & delete-branch
+
+## 2026-11-23 20:30 UTC PR #512 chore(deps): bump @rolldown/binding-linux-x64-gnu from 1.3.2 to 1.3.3 in the production-dependencies group
+
+- 判定: 合格(blocker無し)
+- 確認した内容: npm test ✅ / npm run lint ✅ / npm run typecheck ✅(依存更新のみ、CIのe2e/csharp/knip/jscpdもpass)
+- マージ: squash & delete-branch
+
 ## 2026-11-21 10:35 UTC PR #511 デメテルの法則の中級ステージを追加 (#485)
 
 - 判定: 合格(blocker無し)
